@@ -22,6 +22,8 @@ interface Registrant {
   id: string; fullName: string; phone: string | null; email: string | null; workField: string | null;
   careerLevel: string | null; interests: string[];
   channel: string | null; wave: string | null; createdAt: string; code: string | null; state: State; advisor: string | null;
+  /** الدوراتُ التي اختارها في صفحة المنحة بأسمائها */
+  picks: string[];
 }
 
 const STATE_AR: Record<State, string> = { bought: "اشترى", pending: "ينتظر الدفع", none: "لم يشتر بعد" };
@@ -41,7 +43,7 @@ export default function GrantRegistrants() {
 
   const matched = useMemo(
     () => (rows ?? []).filter((r) => (!only || r.state === only)
-      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, r.code, r.id])),
+      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, ...r.picks, r.code, r.id])),
     [rows, q, only],
   );
   if (!rows) return null;
@@ -97,6 +99,7 @@ export default function GrantRegistrants() {
                         {r.workField ?? "—"}
                         {r.careerLevel && <><br /><span className="text-muted-foreground">{r.careerLevel}</span></>}
                         {r.interests.length > 0 && <><br /><span className="text-muted-foreground">يريد: {r.interests.join("، ")}</span></>}
+                        {r.picks.length > 0 && <><br /><span className="font-bold">اختار: {r.picks.join("، ")}</span></>}
                       </td>
                       <td className="p-2">{[r.channel, r.wave && `دفعة ${r.wave}`].filter(Boolean).join(" · ") || "—"}</td>
                       <td className={`p-2 font-bold ${r.state === "bought" ? "text-teal-light-ink" : ""}`}>{STATE_AR[r.state]}</td>

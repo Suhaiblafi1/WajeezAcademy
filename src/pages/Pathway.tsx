@@ -63,7 +63,7 @@ import { couponFieldCls } from "@/components/FormKit";
 import Button from "@/components/ui/Button";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import DiscountProofLink from '@/components/DiscountProofLink'
-import { siteOrigin } from "@/application/site/origin";
+import { pathwayUrlOf, referralTextAr } from "@/application/advisor/brief-message";
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
   const raw = safeGet("wajeez_user");
@@ -596,7 +596,7 @@ export default function PathwayPage() {
           {briefOpen && (
             <AdvisorBrief
               pathwayName={pathway.name}
-              pathwayUrl={`${siteOrigin()}/pathways/${pathway.id}`}
+              pathwayUrl={pathwayUrlOf(pathway.id)}
               courseNames={pathwayCoursesList.map((c) => c.name)}
               message={advisorMsg}
               onClose={() => setBriefOpen(false)}
@@ -681,8 +681,9 @@ export default function PathwayPage() {
                 طلبت استشارة. جلسة تعريفية (٣٠ دقيقة) تبني خطتك بدقة،
                 ولا تدفع شيئا قبلها.
               </p>
+              {/* وتحمل الرسالةُ المسارَ ودوراتِه كرسالة «قبل الدفع» — `referralTextAr` */}
               <AdvisorContact
-                text="مرحبا، أكملت مؤشر وجيز وأخبرني أن حالتي تستحق جلسة مع مستشار بشري — أريد حجز الجلسة التعريفية."
+                text={referralTextAr(pathway.id, pathwayCoursesList.map((c) => c.name))}
                 label="احجز جلسة مستشار عبر واتساب"
                 className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/60 px-5 py-2.5 text-sm font-bold text-gold-ink transition hover:bg-gold/10"
               />

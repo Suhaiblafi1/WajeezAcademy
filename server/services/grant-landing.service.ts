@@ -167,6 +167,22 @@ export class GrantLandingService {
   }
 
   /** «تواصل مع مستشار» — حالةٌ واحدةٌ لصاحب المرجع، تُسند تلقائيّا */
+  /** الدوراتُ التي اختارها في صفحة المنحة — تُحفظ في ملفّه فيراها المستشار (٢٧ أكتوبر ٢٠٢٦).
+
+      كانت في متصفّحه وحدَه، فلا يعرفها من يتّصل به إلّا إن كتبها في واتساب. قرارُ صاحب المنصّة: «Do all» على اقتراحٍ
+      هذا ثالثُه. والمفتاحُ رقمُ طلبه (`ref`) كما في `askAdvisor`: لا يعرفه إلّا متصفّحُه. ولا يُحفظ إلّا ما يُشترى اليوم
+      في حملته، وبحدِّ دوراتها — فلا يكتب أحدٌ في ملفٍّ ما لا يُختار. */
+  async savePicks(ref: string, courseIds: string[], now = new Date()) {
+    const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: { in: GRANT_SLUGS }, erasedAt: null }, select: { id: true, campaign: true } })
+    if (!lead) throw new AuthError('not_found', 'عبئ النموذج أولا', 404)
+    const own = lead.campaign === this.slug ? this : new GrantLandingService(this.prisma, lead.campaign as GrantSlug)
+    const v = await own.view(now)
+    const open = new Set(v.openCourses.map((c) => c.courseId))
+    const picks = [...new Set(courseIds)].filter((id) => open.has(id)).slice(0, v.campaign.maxCourses)
+    await this.prisma.lead.update({ where: { id: lead.id }, data: { grantPicks: picks, grantPicksAt: now } })
+    return { picks }
+  }
+
   async askAdvisor(ref: string, noteAr?: string | null, ip?: string) {
     const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: { in: GRANT_SLUGS }, erasedAt: null } })
     if (!lead) throw new AuthError('not_found', 'عبئ النموذج أولا', 404)

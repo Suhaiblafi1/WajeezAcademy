@@ -3795,6 +3795,10 @@ model Lead {
   careerLevel        String?
   /// ما يريد تطويرَه — مجالاتُ دوراتٍ اختارها في نموذج المنحة، اختياريّة، وبها تُرتَّب له الدورات
   interests          String[]      @default([])
+  /// الدوراتُ التي اختارها في صفحة المنحة بمعرّفاتها — يراها المستشارُ في ملفّه (٢٧ أكتوبر ٢٠٢٦، `grant-landing.service.ts#savePicks`)
+  grantPicks         String[]      @default([])
+  /// متى اختارها آخرَ مرّة
+  grantPicksAt       DateTime?
   createdAt          DateTime      @default(now())
   user               User?         @relation("LeadUser", fields: [userId], references: [id])
   cases              AdvisorCase[]

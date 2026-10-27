@@ -35,7 +35,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { Award, ChevronDown, Clock, Copy, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, UserRound, Video, type LucideIcon } from "lucide-react";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
 import { toast, toastError } from "@/components/Toast";
@@ -89,6 +89,9 @@ const USD = "USD";
 const PICK_PATH = "/grant/build";
 const influencerPickPath = (code: string) => `${INFLUENCER_GRANT_PATH}/${code}/build`;
 const BUY_TITLE_AR = "دورات منحتك";
+/** حيث يُحفظ ما اختاره، وكم يُنتظر بعد آخر نقرةٍ قبل حفظه */
+const GRANT_PICKS_PATH = "/api/public/grant/picks";
+const PICKS_SAVE_DELAY_MS = 800;
 const money = (n: number) => fmtMoney(n, USD);
 /** «دورة» و«دورتين» بلا رقم، و«4 دورات» */
 const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
@@ -210,7 +213,16 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   );
   const listTotal = chosen.reduce((sum, x) => sum + x.price, 0);
   const payTotal = grantPrice(listTotal, pct);
-  const toggle = (id: string) => setPicked((p) => toggleCourse(p, id, max));
+  /* ما اختاره يُحفظ في ملفّه فيراه المستشار (`savePicks`) — بعد أن يغيّره هو لا عند فتح الصفحة: الصفحةُ تفتح
+     فارغةً في جهازٍ آخر، فلو حُفظ فتحُها لمحا ما اختاره قبله. وبمهلةٍ تجمع النقرات المتتابعة في طلبٍ واحد */
+  const [touched, setTouched] = useState(false);
+  const toggle = (id: string) => { setTouched(true); setPicked((p) => toggleCourse(p, id, max)); };
+  const ref = stored?.ref;
+  useEffect(() => {
+    if (!touched || !ref) return;
+    const t = setTimeout(() => { void apiPut(GRANT_PICKS_PATH, { ref, courseIds: picked }).catch(() => {}); }, PICKS_SAVE_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [touched, ref, picked]);
 
   const apply = async (e: React.FormEvent) => {
     e.preventDefault();

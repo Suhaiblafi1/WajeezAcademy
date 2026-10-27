@@ -1,4 +1,5 @@
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
+import { returnTargetOf } from '@/application/links/return-to'
 import { Compass, Presentation } from 'lucide-react'
 import AuthGate from '@/components/AuthGate'
 import { Card, Inset } from '@/components/ui/Surface'
@@ -9,6 +10,8 @@ import { homePathForRoles, readRoles } from '@/services/auth'
 /** صفحة الدخول الرسمية — /auth */
 export default function Auth() {
   const navigate = useNavigate()
+  /* من حوّله حارسُ البوّابات إلى هنا يعود إلى ما فتحه (`?next=`)، وغيرُه إلى بوّابة دوره */
+  const back = returnTargetOf(useLocation().search)
 
   return (
     <SiteShell>
@@ -20,7 +23,7 @@ export default function Auth() {
       />
       <div className="py-6">
         {/* بعد الدخول: كل دور إلى بوابته — مدير النظام للإدارة، المدرب لبوابته، وهكذا */}
-        <AuthGate onDone={() => navigate(homePathForRoles(readRoles()))} />
+        <AuthGate onDone={() => navigate(back ?? homePathForRoles(readRoles()))} />
 
         {/* ═══ ع-٨ · لا حسابَ يُولد فارغا ═══
 
