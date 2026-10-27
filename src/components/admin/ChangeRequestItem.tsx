@@ -24,7 +24,8 @@ export default function ChangeRequestItem({ cr, status, canDecide, busy, onDecid
   const waiting = cr.status === "in_review";
   return (
     <Card className="flex flex-wrap items-start justify-between gap-3">
-      <div className="min-w-0 flex-1 text-read leading-6">
+      {/* والنصُّ يأخذ عرضَه قبل الزرّين: في الهاتف ينزلان تحته، ولا يُعصر هو في عمودٍ بكلمةٍ في السطر */}
+      <div className="min-w-0 flex-1 basis-72 text-read leading-6">
         <p className="text-sm font-bold">{v.kindAr} · {v.subjectAr}</p>
         {v.lines.map((line) => <p key={line} className="whitespace-pre-line text-foreground">{line}</p>)}
         <p className="text-muted-foreground">{fmtDateTime(new Date(cr.createdAt))}</p>
