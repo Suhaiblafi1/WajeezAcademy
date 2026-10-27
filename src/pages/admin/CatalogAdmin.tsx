@@ -168,7 +168,7 @@ export default function CatalogAdmin() {
       setOverview(ov); setCrs(crList); setPathways(pw); setCourses(co); setSkills(sk);
       setQuestions(qs); setTemplates(tp);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev");
+      setError(e instanceof ApiError ? e.message : "تعذر تحميل الكتالوج");
     }
   }, []);
 

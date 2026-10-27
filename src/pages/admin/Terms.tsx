@@ -103,7 +103,7 @@ export default function Terms() {
       }
       setWindows(Object.fromEntries(rows.map((t) => [t.id, { opensAt: toLocal(t.registrationOpensAt), closesAt: toLocal(t.registrationClosesAt) }])));
       setError(null);
-    } catch (e) { setError(permissionMessage(e, "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev")); setTerms([]); }
+    } catch (e) { setError(permissionMessage(e, "تعذر تحميل الشروط")); setTerms([]); }
   }, []);
   useEffect(() => { void load(); }, [load]);
 

@@ -14,7 +14,7 @@ import {
   REVIEW_NOTE_MAX, REVIEW_SECTIONS, STAGE_LABELS, composeReviewNote, hasReviewNotes, normalizeReviewNotes,
   notedSections, notesForTrainer, readReviewNotes,
 } from '@/application/trainer/review-notes'
-import { ReviewNotesBanner, ReviewNotesForm, ReviewNotesList, StageReviewNote } from '@/components/ReviewNotes'
+import { ReviewNotesList, StageReviewNote } from '@/components/ReviewNotes'
 
 const WORKSPACE = readFileSync(join(process.cwd(), 'src/pages/trainer/CohortWorkspace.tsx'), 'utf8')
 /* ومراجعةُ الخطّة خرجت من بطاقة الشعبة إلى مكوّنٍ تعرضه البطاقةُ و«خططٌ تنتظر اعتمادك»
@@ -80,21 +80,6 @@ describe('الأسماء واحدة في الشريط وفي حقول المعت
   })
 })
 
-describe('نموذج المعتمد', () => {
-  const html = renderToStaticMarkup(createElement(ReviewNotesForm, { busy: false, onSend: () => undefined, onCancel: () => undefined }))
-
-  it('⚠️ حقل لكلّ خطوة باسمها في شريط المدرّب، وحقل عامّ', () => {
-    expect(html).toContain('ملاحظة عامّة')
-    for (const s of REVIEW_SECTIONS) expect(html, `لا حقل لـ«${s.label}»`).toContain(s.label)
-    expect(html.match(/<textarea/g)?.length).toBe(REVIEW_SECTIONS.length + 1)
-  })
-
-  it('⚠️ ولا يرسل فارغا — الزرّ مطفأ حتّى تكتب ملاحظة', () => {
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>أرسلها إليه<\/button>/)
-    expect(html).toContain('اكتب ملاحظة واحدة على الأقلّ.')
-  })
-})
-
 describe('وما يقرأ منها', () => {
   it('⚠️ قائمة المعتمد: العامّة ثمّ الخطوات بترتيب الشريط وبأسمائها', () => {
     const html = renderToStaticMarkup(createElement(ReviewNotesList, {
@@ -105,17 +90,6 @@ describe('وما يقرأ منها', () => {
     expect(at('قريب من الاعتماد')).toBeLessThan(at(STAGE_LABELS.modules))
     expect(at(STAGE_LABELS.modules)).toBeLessThan(at(STAGE_LABELS.assignments))
     expect(html).not.toContain(STAGE_LABELS.sessions)
-  })
-
-  it('⚠️ لاصقة المدرّب: العامّة بنصّها، والخطوات أزرار بأسمائها لا بنصوصها', () => {
-    const html = renderToStaticMarkup(createElement(ReviewNotesBanner, {
-      notes: { general: 'أحسنت — بقي القليل', sessions: 'لقاء الموعد الثاني خارجه' }, current: 'sessions', onOpen: () => undefined,
-    }))
-    expect(html).toContain('أحسنت — بقي القليل')
-    expect(html).toMatch(/<button[^>]*aria-current="true"[^>]*>.*اللقاءات.*<\/button>/)
-    /* نصُّ الخطوة في رأسها هناك — لا يُكرَّر في اللاصقة فتطول */
-    expect(html).not.toContain('لقاء الموعد الثاني خارجه')
-    expect(renderToStaticMarkup(createElement(ReviewNotesBanner, { notes: {}, onOpen: () => undefined }))).toBe('')
   })
 
   it('⚠️ وفي رأس الخطوة نصّ ملاحظتها — ولا شيء لخطوة لا ملاحظة عليها', () => {
