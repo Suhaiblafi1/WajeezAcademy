@@ -48,7 +48,7 @@ import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
 import { pathwayOffer, readyPathwayPrice } from "@/application/commerce/pathway-offer";
-import { pathwayExtraOptions, PATHWAY_EXTRA_OPTIONS } from "@/application/catalog/course-path";
+import { pathwayExtraOptions, PATHWAY_EXTRA_OPTIONS, NEXT_SEASON_AR } from "@/application/catalog/course-path";
 import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 import { whyPathwayFacts, whyResultForPathway } from "@/application/plan/why-pathway";
 import { loadLastResult } from "@/application/diagnostic/session-store";
@@ -551,7 +551,7 @@ export default function PathwayPage() {
                         <span className="text-fine leading-relaxed text-muted-foreground">{s.reason_ar}</span>
                         <span className="mt-auto flex items-center justify-between gap-2">
                           {price ? <span dir="ltr" className="text-read font-black">{formatCohortPrice(price)}</span>
-                            : <span className="text-fine text-muted-foreground">لم تفتح شعبتها بعد</span>}
+                            : <span className="text-fine text-muted-foreground">{NEXT_SEASON_AR}</span>}
                           {chosen ? (
                             <Button tone="ghost" size="sm" onClick={() => setExtraId(null)} aria-label={`أزل «${s.course.name}» من مسارك`}>
                               <Check className="h-3.5 w-3.5" /> أضيفت · إزالة
