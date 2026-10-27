@@ -111,6 +111,9 @@ describe('يُرفَع ما هو موجود', () => {
 
      حارسٌ بلا هذا نصفُ حارس: «لا يرمي» تتحقّق أيضا بـ`return` دائم. */
   it('وصفٌّ قائمٌ يُرفع كما كان — فالإصلاحُ لم يُعطّل الرفع', async () => {
+    /* والمرفوعُ المسودّةُ وحدَها (٢٦ أكتوبر ٢٠٢٦): كانت الدورةُ هنا منشورةً من الملفّ فيُنزلها الاعتمادُ «معتمدة»،
+       وكان الحارسُ يحسب ذلك رفعا. والمنشورةُ تبقى منشورة — `change-request-queue.test.ts` */
+    await prisma.course.update({ where: { id: courseId }, data: { status: 'draft' } })
     const cr = await admin.submitChangeRequest('course', courseId, { kind: 'tidy' }, ACTOR)
     const done = await admin.decide(cr.id, 'approve', 'تعديلٌ مقبول', CHECKER)
     expect(done.status).toBe('approved')

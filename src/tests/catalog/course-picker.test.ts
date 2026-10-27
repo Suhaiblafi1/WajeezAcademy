@@ -105,14 +105,14 @@ describe('ترشيح الدورات', () => {
    على حالها ولَافترقتا عند أوّل تحسين. */
 describe('وموضعا الاختيار يقرآن مكوّنا واحدا', () => {
   /* وكان الأوّلُ طابورَ «دوراتٌ مقترحة» — ثمّ صار القرارُ في الاقتراح في ملفّ صاحبه (قرارُ «A»، ٢٦ أكتوبر ٢٠٢٦)
-     فذهب منه الربطُ ومُختارُه. والموضعان اليومَ: ربطُ الاقتراح في ملفّ المدرّب، وطلبُ التعديل في الكتالوج. */
-  const SCREENS = [
-    'src/pages/admin/PreparationSteps.tsx',
-    'src/pages/admin/CatalogAdmin.tsx',
-  ]
+     فذهب منه الربطُ ومُختارُه. والثاني صندوقُ «طلب تعديل» في الكتالوج — ذهب في المرحلة الثامنة (٢٦ أكتوبر ٢٠٢٦)،
+     وصار اسمُ كلّ دورةٍ حقلا في صفّها لا اختيارا من قائمة. فالموضعُ اليومَ ربطُ الاقتراح في ملفّ المدرّب،
+     والكتالوجُ باقٍ في الحارس الثاني: لا تعود إليه قائمةٌ خامّة. */
+  const PICKERS = ['src/pages/admin/PreparationSteps.tsx']
+  const SCREENS = [...PICKERS, 'src/pages/admin/CatalogAdmin.tsx']
 
-  it('وكلتاهما تستورد `CoursePicker`', () => {
-    for (const f of SCREENS) {
+  it('وموضع الاختيار يستورد `CoursePicker`', () => {
+    for (const f of PICKERS) {
       expect(read(f), `${f}: لا تستورد المكوّن المشترك`)
         .toContain('@/components/admin/CoursePicker')
     }

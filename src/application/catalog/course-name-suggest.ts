@@ -162,3 +162,12 @@ export function tidyCourseTitleAr(input: string): string | null {
   const s = plainAr(input).replace(/\s+/g, ' ').trim()
   return s.length >= 3 && s.length <= 120 ? s : null
 }
+
+/** ما يُقال بعد تغيير الاسم — كُتب أم ينتظر مراجعا، ونُشر الآن أم مع النشر التالي. وله ثلاثةُ أبواب: «أسماء الدورات»،
+    و«اسمها» في قائمة الدورات، واعتمادُ طلبه في الطابور — فالجملةُ واحدةٌ لا ثلاث */
+export function renameDoneAr(out: { applied: boolean; titleAr: string; published?: boolean }): string {
+  if (!out.applied) return 'قدم الاسم للاعتماد — ينتظر مراجعا آخر'
+  return out.published
+    ? `صار اسمها «${out.titleAr}» — وفي الموقع الآن`
+    : `صار اسمها «${out.titleAr}» — ويصل الموقع مع النشر التالي`
+}
