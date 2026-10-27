@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { bestCode, emailSubject, hashtags, manualNoteAr, roleOf, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, WAJEEZ_PERKS, type ShareInput } from '@/application/trainer/share-kit'
+import { bestCode, emailSubject, hashtags, manualNoteAr, modeFor, roleOf, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, WAJEEZ_PERKS, type ShareInput } from '@/application/trainer/share-kit'
 import { artPlan } from '@/components/trainer/share-art'
 import { previewFaceOf, previewLinksOf, previewSig } from '@/components/trainer/link-preview'
 import { isCrawler, VIA_OF, viaOf, withVia } from '@/application/links/share-via'
@@ -413,9 +413,24 @@ describe('النص المعدل', () => {
   })
   it('⚠️ واللوحة تختار النوع وتعيد نصنا بتبديل المنصة أو النوع', () => {
     const kit = readFileSync(join(process.cwd(), 'src/components/trainer/ShareKit.tsx'), 'utf8')
-    expect(kit).toMatch(/useState<ShareMode>\("join"\)/)
+    expect(kit).toMatch(/useState<ShareMode>\(\(\) => modeFor\(taughtBefore\)\)/)
     expect(kit).toMatch(/onChange=\{\(m\) => \{ setMode\(m\); setDraft\(null\); \}\}/)
     expect(kit).toMatch(/const pick = [\s\S]{0,140}setDraft\(null\);/)
     expect(kit).toMatch(/mode, headline: face\.headline/)
+  })
+})
+
+/* «b» (صاحب المنصّة، ٢٧ أكتوبر ٢٠٢٦): اللوحةُ تُفتح على «إعلان انضمامي» لمن لم يُتمّ شعبة، و«دعوة لدوراتي» لمن أتمّ */
+describe('ما تفتح عليه اللوحة', () => {
+  it('⚠️ من أتم شعبة يدعو لدوراته، ومن لم يتم يعلن انضمامه', () => {
+    expect(modeFor(true)).toBe('invite')
+    expect(modeFor(false)).toBe('join')
+    expect(modeFor(undefined), 'بلا جواب من الخادم').toBe('join')
+  })
+  it('⚠️ واللوحة تأخذه من الخادم في لوحتي صفحته كلتيهما', () => {
+    const kit = readFileSync(join(process.cwd(), 'src/components/trainer/ShareKit.tsx'), 'utf8')
+    expect(kit).toMatch(/useState<ShareMode>\(\(\) => modeFor\(taughtBefore\)\)/)
+    const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
+    expect(page.match(/<ShareKit [^>]*taughtBefore=\{kit\.taughtBefore\}/g) ?? []).toHaveLength(2)
   })
 })

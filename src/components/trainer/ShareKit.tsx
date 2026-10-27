@@ -23,7 +23,7 @@ import { Inset } from "@/components/ui/Surface";
 import { staffControlCls } from "@/components/FormKit";
 import TabBar from "@/components/ui/TabBar";
 import { fmtDayMonth } from "@/application/text/format-ar";
-import { emailSubject, manualNoteAr, SHARE_MODES, SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type ShareMode, type SharePlatform } from "@/application/trainer/share-kit";
+import { emailSubject, manualNoteAr, modeFor, SHARE_MODES, SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type ShareMode, type SharePlatform } from "@/application/trainer/share-kit";
 import { artPlan, drawArt, toFile, type ArtData, type ArtKind } from "./share-art";
 import { withVia } from "@/application/links/share-via";
 
@@ -52,7 +52,7 @@ export interface ShareContent {
   key: string;
 }
 
-export default function ShareKit({ face, courses, url, code, fileStem, content }: {
+export default function ShareKit({ face, courses, url, code, fileStem, content, taughtBefore }: {
   face: ShareFace;
   courses: ShareCourse[];
   url: string;
@@ -60,6 +60,8 @@ export default function ShareKit({ face, courses, url, code, fileStem, content }
   /** اسمُ الملفّات المنزَّلة */
   fileStem: string;
   content?: ShareContent;
+  /** أتمّ شعبةً من قبل — فتُفتح اللوحةُ على «دعوة لدوراتي» (`modeFor`) */
+  taughtBefore?: boolean;
 }) {
   const [platform, setPlatform] = useState<SharePlatform>("whatsapp");
   const [format, setFormat] = useState<Format>("post");
@@ -69,7 +71,7 @@ export default function ShareKit({ face, courses, url, code, fileStem, content }
   /* ═══ إعلانُ انضمامه أو دعوةٌ لدوراته، ونصُّه بيده (٢٧ أكتوبر ٢٠٢٦) ═══
      «منهم من يريد أن يقول: سعيد بانضمامي لأكاديمية وجيز كمدرّبة في مجال كذا» — فيختار نوعَ منشوره، والنصُّ يُعدَّل
      قبل نشره، وما عدّله هو ما يُنسخ ويُفتح به بابُ المنصّة (`shareUrl`). وتبديلُ المنصّة أو النوع يعيد نصَّنا */
-  const [mode, setMode] = useState<ShareMode>("join");
+  const [mode, setMode] = useState<ShareMode>(() => modeFor(taughtBefore));
   const [draft, setDraft] = useState<string | null>(null);
 
   /* والرابطُ يحمل منصّتَه (`?p=wa`) — فيُقال للمدرّب تحت رابطه من أيّ منصّةٍ فُتح (`share-via.ts`) */

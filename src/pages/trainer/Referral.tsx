@@ -84,6 +84,8 @@ interface ShareKitData {
   previews?: Record<string, string | null>
   /** ما بلغه كلُّ رابطٍ قصيرٍ برمزه — كم فتحه ومن أيّ منصّة، وكم سجّل منه (`link-opens.ts`) */
   reach?: Record<string, { opens: number; byVia: Record<string, number>; registered: number }>
+  /** أتمّ شعبةً من قبل — فتُفتح لوحتُه على «دعوة لدوراتي» (`modeFor` في `share-kit.ts`) */
+  taughtBefore?: boolean
 }
 
 /** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
@@ -619,7 +621,7 @@ export default function Referral() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
               </div>
             ) : cohortLinks.length > 0 ? (
-              <ShareKit face={kit} fileStem="wajeez-courses" url={kit.short.wide ?? referral.url} code={shareCodeOf(kit)}
+              <ShareKit face={kit} fileStem="wajeez-courses" url={kit.short.wide ?? referral.url} code={shareCodeOf(kit)} taughtBefore={kit.taughtBefore}
                 courses={cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }))} />
             ) : (
               <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
@@ -772,7 +774,7 @@ export default function Referral() {
                       </div>
                       {kit?.short.cohorts[c.cohortId] && <LinkReachLine url={kit.short.cohorts[c.cohortId]} reach={kit.reach} />}
                       {kit && sharing === c.cohortId && (
-                        <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={kit.short.cohorts[c.cohortId] ?? c.url} code={shareCodeOf(kit)}
+                        <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={kit.short.cohorts[c.cohortId] ?? c.url} code={shareCodeOf(kit)} taughtBefore={kit.taughtBefore}
                           courses={[{ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }]} />
                       )}
                     </li>

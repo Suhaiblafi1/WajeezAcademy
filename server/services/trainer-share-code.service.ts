@@ -12,6 +12,7 @@ import { ShortLinkService } from './short-link.service'
 import { isJpeg, PREVIEW_MAX_BYTES, previewCopy } from './link-preview'
 import { reachOf, type LinkReach } from './link-opens'
 import { bestCode } from '../../src/application/trainer/share-kit'
+import { leadCohortsOf } from './cohort-lead'
 
 export interface ShareCode { code: string; percentOff: number }
 
@@ -28,6 +29,8 @@ export interface ShareKit extends ShareCode {
   previews: Record<string, string | null>
   /** ما بلغه كلُّ رابطٍ قصيرٍ برمزه: كم فُتح ومن أيّ منصّة، وكم سجّل منه (`link-opens.ts`) */
   reach: Record<string, LinkReach>
+  /** أتمّ شعبةً من قبل — فنشرُه يُفتح على «دعوة لدوراتي» لا «إعلان انضمامي» (`modeFor`) */
+  taughtBefore: boolean
 }
 
 /** رابطٌ من روابطه القصيرة، والدوراتُ التي يدعو إليها */
@@ -46,7 +49,7 @@ export class TrainerShareCodeService {
     const profile = await this.prisma.trainerProfile.findUniqueOrThrow({
       where: { userId },
       select: {
-        headline: true, photoUrl: true, application: { select: { fullName: true } },
+        id: true, headline: true, photoUrl: true, application: { select: { fullName: true } },
         codes: { where: { status: 'live', coupon: { active: true } }, select: { percentOff: true, coupon: { select: { code: true } } } },
       },
     })
@@ -64,6 +67,7 @@ export class TrainerShareCodeService {
       headline: profile.headline,
       photoUrl: photoPublicUrl(profile.photoUrl),
       hisCodes: profile.codes.map((c) => ({ code: c.coupon.code, percentOff: c.percentOff })),
+      taughtBefore: (await leadCohortsOf(this.prisma, profile.id, ['completed'])).length > 0,
     }
   }
 
