@@ -22,7 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   ArrowLeft, Award, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, CheckCircle2, ChevronDown, Circle,
-  Clock3, ExternalLink, FileText, Hourglass, Library, Loader2, Lock, PenLine, Play, PlayCircle, Ruler, Send, Star, Video,
+  Clock3, ExternalLink, FileText, Hourglass, Library, Loader2, Lock, Play, PlayCircle, Ruler, Send, Star, Video,
 } from "lucide-react";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
 import { SubmissionFilePick, SubmittedWork, UploadProgress } from "@/components/journey/SubmissionFile";
@@ -42,8 +42,9 @@ import { overlayModules, readTypedLinks, resourceKind, type LearnerCohortWorkboo
 import { groupLabelAr } from "@/application/trainer/cohort-workbooks";
 import { dayLabelAr } from "@/application/trainer/axis-timeline";
 import { whenAr } from "@/application/learning/cohort-gate";
-import { buildStagePath, inPlanOnly, nextStep, type NextStep, type PathStop, type StagePath } from "@/application/student/stage-path";
+import { buildStagePath, evidenceOf, inPlanOnly, nextStep, readableModules, type NextStep, type PathStop, type StagePath } from "@/application/student/stage-path";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
+import StopStars from "@/components/journey/StopStars";
 import type { CourseFull } from "@/data/courses";
 import type { JourneyStage } from "@/application/student/journey";
 import type { LearnerRequest } from "@/services/learner-requests";
@@ -104,10 +105,9 @@ export default function StageWork({
     return () => clearInterval(t);
   }, []);
 
-  const doneModules = useMemo(
-    () => new Set(detail.moduleProgress.filter((m) => m.status === "completed").map((m) => m.moduleId)),
-    [detail.moduleProgress],
-  );
+  /* الأثرُ من موضعٍ واحدٍ تقرؤه شاشةُ الدراسة أيضا — فلا تختلف نجومُ المحطّة بينهما */
+  const evidence = useMemo(() => evidenceOf(detail), [detail]);
+  const { doneModules, attended, accepted } = evidence;
   /* ═══ خطّةُ المدرّب تعلو الكتالوج ═══
 
      كان `full.modules` وحدَها — وحداتُ الكتالوج — فما يؤلّفه مدرّبُ الشعبة
@@ -137,23 +137,7 @@ export default function StageWork({
     () => new Map(detail.cohort.assessments.map((a) => [a.id, latestSubmission(detail, a.id)])),
     [detail],
   );
-  const attended = useMemo(
-    () => new Set(detail.attendance.filter((a) => a.status === "present" || a.status === "late").map((a) => a.sessionId)),
-    [detail.attendance],
-  );
-  const accepted = useMemo(
-    () => new Set([...latest].filter(([, s]) => s?.status === "accepted").map(([id]) => id)),
-    [latest],
-  );
-  /* المقروءُ: مفتوحٌ له متنٌ أو ملفّ — وما «يُكتب الآن» لا يُدعى إليه */
-  const readable = useMemo(
-    () => new Set(
-      modules
-        .filter((m) => !m.locked && (splitLessons(m.body).length > 0 || Boolean((m.bodyFileKey ?? "").trim())))
-        .map((m) => m.id),
-    ),
-    [modules],
-  );
+  const readable = useMemo(() => readableModules(modules), [modules]);
   const path = useMemo(
     () => buildStagePath({
       modules, slots, sessions: detail.cohort.sessions, assessments: detail.cohort.assessments,
@@ -523,7 +507,6 @@ function LessonRow({
             {!m.locked && lessons.length === 0 && hasFile && " · محتواها ملفّ من مدرّبك"}
             {!m.locked && checks > 0 && ` · ${checks} تمرين استرجاع`}
             {!m.locked && m.scenario && " · سيناريو قرار"}
-            {!m.locked && lessons.length === 0 && !hasFile && " · محتواها يكتب الآن"}
           </span>
         </span>
         {/* وحدةٌ بلا متن لا تُوسَم «ابدأ من هنا» ولا «لم تبدأ»:
@@ -536,7 +519,9 @@ function LessonRow({
           </span>
         ) : !readable ? (
           <span className="flex shrink-0 items-center gap-1 rounded-full border border-gold/40 bg-gold/[0.07] px-2.5 py-0.5 text-fine font-bold text-gold-ink">
-            <PenLine className="h-2.5 w-2.5" /> قيد التأليف
+            {/* «قيد التأليف» كانت تُقرأ «الدورة لم تكتمل» — فقرّر صاحبُ المنصّة (٢٧ أكتوبر ٢٠٢٦)
+                أن يُقال ما يعني المتعلّمَ: متى يصله، لا أنّ أحدا يكتبه */}
+            <Clock3 className="h-2.5 w-2.5" aria-hidden="true" /> يصلك قبل جلسته
           </span>
         ) : done ? (
           <span className="shrink-0 rounded-full border border-teal/50 px-2.5 py-0.5 text-fine font-bold text-teal-ink">
@@ -859,27 +844,6 @@ function StopChip({ stop }: { stop: PathStop }) {
   return <span className="shrink-0 rounded-full border border-foreground/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">مفتوحة</span>;
 }
 
-/* نجمةٌ لكلّ نوعٍ في المحطّة: قرأ · حضر · قُبل عملُه — `stage-path.ts` */
-function Stars({ stars }: { stars: { earned: number; total: number } }) {
-  if (stars.total === 0) return null;
-  return (
-    <span
-      className="flex shrink-0 items-center gap-0.5"
-      role="img"
-      aria-label={`${stars.earned} من ${stars.total} نجوم`}
-      title="نجمة للقراءة، ونجمة للحضور، ونجمة حين يقبل عملك"
-    >
-      {Array.from({ length: stars.total }, (_, i) => (
-        <Star
-          key={i}
-          aria-hidden="true"
-          className={`h-3.5 w-3.5 ${i < stars.earned ? "fill-gold text-gold" : "text-muted-foreground/40"}`}
-        />
-      ))}
-    </span>
-  );
-}
-
 function StopPart({
   icon: Icon,
   label,
@@ -962,7 +926,7 @@ function StopItem({
             </span>
           </span>
           <span className="flex shrink-0 items-center gap-2">
-            <Stars stars={s.stars} />
+            <StopStars stars={s.stars} />
             <StopChip stop={s} />
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
