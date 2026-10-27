@@ -4,14 +4,14 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { advisorBriefTextAr } from '@/application/advisor/brief-message'
+import { BRIEF_ATTACH_MSG_AR, REFERRAL_MSG_AR, advisorBriefTextAr, referralTextAr } from '@/application/advisor/brief-message'
 import { plainAr } from '@/application/text/plain-ar'
-import { BRIEF_ATTACH_MSG_AR } from '@/components/AdvisorBrief'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 const BRIEF = code('src/components/AdvisorBrief.tsx')
 const PATHWAY = code('src/pages/Pathway.tsx')
+const DIAG = code('src/pages/Diagnostic.tsx')
 
 describe('رسالة ملخص المستشار', () => {
   it('⚠️ تحمل المسار ورابطه ودوراته وطلب السيرة — فتصل ولو لم يرفق PDF', () => {
@@ -26,7 +26,7 @@ describe('رسالة ملخص المستشار', () => {
     /* وآخرُ الرسالة بلسان مرسلها لا سطرُ الورقة — وإلّا قرأه المستشارُ طلبا منه هو */
     expect(BRIEF).toContain('const text = advisorBriefTextAr({ message, pathwayUrl, courseNames, attachNote: BRIEF_ATTACH_MSG_AR });')
     expect(BRIEF).toContain('buildWaHref(numbers, "advisor_brief", CONTACT.whatsapp, text)')
-    expect(PATHWAY).toMatch(/<AdvisorBrief[\s\S]*?pathwayUrl=\{`\$\{siteOrigin\(\)\}\/pathways\/\$\{pathway\.id\}`\}/)
+    expect(PATHWAY).toMatch(/<AdvisorBrief[\s\S]*?pathwayUrl=\{pathwayUrlOf\(pathway\.id\)\}/)
   })
 
   it('⚠️ طلب السيرة صندوق مضاء بنغمة التنبيه وخط عريض — لا سطر باهت', () => {
@@ -45,5 +45,21 @@ describe('رسالة ملخص المستشار', () => {
       expect(t).toBe(plainAr(t))
     }
     expect(BRIEF).toContain('رسالة واتساب تحمل مسارك ودوراتك.')
+  })
+
+  /* رسالةُ الإحالة («حالتك تستحق جلسة مع مستشار بشري») تحمل ما تحمله رسالةُ «قبل الدفع» (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ رسالة الإحالة تحمل المسار ورابطه ودوراته وسطر السيرة بلسان مرسلها', () => {
+    const t = referralTextAr('PP-BIZ', ['دورة استراتيجية التسعير: بناء النطاق'])
+    expect(t.startsWith(REFERRAL_MSG_AR + '\n\nرابط المسار: ')).toBe(true)
+    expect(t).toMatch(/\/pathways\/PP-BIZ\n\nالدورات في خطتي:\n1\. استراتيجية التسعير\n\n/)
+    expect(t.endsWith(BRIEF_ATTACH_MSG_AR)).toBe(true)
+  })
+
+  it('⚠️ زرا الإحالة في صفحة المسار وصفحة التشخيص يبنيان رسالتهما بها — لا سطرا ثابتا', () => {
+    expect(PATHWAY).toMatch(/<AdvisorContact\s+text=\{referralTextAr\(pathway\.id, pathwayCoursesList\.map\(\(c\) => c\.name\)\)\}/)
+    expect(DIAG).toMatch(/<AdvisorContact\s+text=\{referralTextAr\(topPathway\.id, planCourseIds\.map\(/)
+    for (const [name, src] of [['Pathway', PATHWAY], ['Diagnostic', DIAG]] as const) {
+      expect(src.includes('أخبرني أن حالتي تستحق جلسة مع مستشار بشري'), `${name}: عاد السطر الثابت`).toBe(false)
+    }
   })
 })
