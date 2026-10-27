@@ -26,6 +26,7 @@ import { CommerceService } from '../../services/commerce.service'
 import { grantRegistrants } from '../../services/grant-followup.service'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 import { courseDomain } from '../../../src/application/catalog/course-domain'
+import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 
 let prisma: PrismaClient
 let grants: GrantService
@@ -57,7 +58,7 @@ async function cohort(courseId: string, over: Record<string, unknown> = {}) {
 const person = (over: Partial<{
   fullName: string; phone: string; email: string; workField: string; channel: string; wave: string; careerLevel: string | null; interests: string[]
 }> = {}) => ({
-  fullName: `مستخدم وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
+  fullName: `قارئ وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
 
@@ -94,16 +95,16 @@ describe('① النموذج يعطي الكود فورا', () => {
 
 describe('①ب وبريد الكود ورابط الهدية (٢٧ أكتوبر ٢٠٢٦)', () => {
   /* قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة»، و«لا تستخدم كلمة عضو بل مستخدم وجيز»، و«الرابط قصير جدّا» */
-  it('⚠️ بريد الكود بقالب الأكاديمية — شكر لمستخدم وجيز وكوده وزر دوراته، ولا «عضو»', async () => {
+  it('⚠️ بريد الكود بقالب الأكاديمية — شكر لقارئ وجيز وكوده وزر دوراته، ولا «عضو» ولا «مستخدم»', async () => {
     const p = person({})
     const out = await landing.apply(p)
     const mail = await prisma.outboxMail.findFirstOrThrow({ where: { to: p.email, purpose: 'grant.code' }, orderBy: { createdAt: 'desc' } })
     expect(mail.subject).toBe('كود منحة وجيز الخاص بك')
     expect(mail.html, 'بلا قالب الأكاديمية').toBeTruthy()
-    for (const t of ['منحتك جاهزة', 'شكرا لأنك من مستخدمي تطبيق وجيز', `كود منحتك: ${out.grant!.code}`, 'اختر دوراتك:', '/grant']) {
+    for (const t of ['منحتك جاهزة', 'شكرا لأنك من قراء وجيز', `كود منحتك: ${out.grant!.code}`, 'اختر دوراتك:', '/grant']) {
       expect(mail.text, t).toContain(t)
     }
-    expect(`${mail.subject}\n${mail.text}`, 'عادت «عضو»').not.toMatch(/أعضاء|عضو/)
+    expect(`${mail.subject}\n${mail.text}`, 'عادت «عضو» أو «مستخدم»').not.toMatch(/أعضاء|عضو|مستخدم/)
   })
 
   it('⚠️ رابط الهدية القصير يصنع مرة لكل وجهة ويعاد — إلى صفحة المنحة بوسم الهدية', async () => {
@@ -256,6 +257,33 @@ describe('⑧ ونتائج الحملة بالقناة والدفعة', () => {
     expect(r.rows.find((x) => x.channel === ch && x.wave === '2')).toMatchObject({ leads: 1, codes: 1, bought: 0, revenue: 0 })
     expect(r.fields.find((f) => f.workField === 'الهندسة')!.leads).toBeGreaterThanOrEqual(2)
     expect(r.totals.leads).toBeGreaterThanOrEqual(3)
+  })
+})
+
+/* «عندما يقوم بالدفع لا يظهر نفس السعر… يجب أن يصلح ويتغيّر من جهتك» — واختار صاحبُ المنصّة المطابقةَ بالبريد (٢٧ أكتوبر ٢٠٢٦) */
+describe('⑧ب وكود منحته لصاحب الحساب ببريد النموذج', () => {
+  it('⚠️ بريد حسابه بريد نموذج في الحملة يأخذ كوده — بلا فرق حروف، ويكتب الأثر، ولا يأخذه غيره ولا من حملة أخرى', async () => {
+    const p = person()
+    const out = await landing.apply(p)
+    /* وعبّأه ثانيةً فلم يُعرض الكود — هذا من يحتاجه */
+    expect((await landing.apply(p)).grant?.code).toBeNull()
+    const owner = (await new AuthService(prisma).register(p.email.toUpperCase(), 'Owner#12345', p.fullName)).userId
+    expect(await landing.myCode(owner, '10.0.0.9')).toEqual({ code: out.grant!.code })
+    expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_claim', entityId: out.ref, actorId: owner } })).toBe(1)
+    const other = (await new AuthService(prisma).register(`gl-other-${STAMP}@test.local`, 'Other#12345', 'غيره')).userId
+    expect(await landing.myCode(other), 'أخذ كود غيره').toEqual({ code: null })
+    expect(await new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG).myCode(owner), 'أخذ كود حملة أخرى').toEqual({ code: null })
+  })
+
+  it('⚠️ وكود استعمل في شراء مدفوع لا يعاد — ولو أهداه فاشترى به صديقه', async () => {
+    const p = person()
+    const out = await landing.apply(p)
+    const friend = (await new AuthService(prisma).register(`gl-gift-${STAMP}@test.local`, 'Friend#12345', 'صديق')).userId
+    const commerce = new CommerceService(prisma)
+    const bought = await commerce.checkout(friend, [(await cohort(nextCourse())).id], out.grant!.code!)
+    await commerce.payOrder(bought.orderId, friend, `gl-gift-${bought.orderId}`)
+    const owner = (await new AuthService(prisma).register(p.email, 'Owner#12345', p.fullName)).userId
+    expect(await landing.myCode(owner)).toEqual({ code: null })
   })
 })
 

@@ -236,6 +236,32 @@ export class GrantLandingService {
     }
   }
 
+  /* ═══ كودُ منحته لصاحب الحساب — ببريد النموذج (٢٧ أكتوبر ٢٠٢٦) ═══
+     من عبّأ النموذجَ ثانيةً، أو فتح الصفحةَ من جهازٍ آخر، يُقال له «أرسلناه إلى بريدك» ولا يُعرض الكود — فكان لوحُ الدفع
+     يفتح بلا منحةٍ وبسعرٍ غير الذي رآه. وقرارُ صاحب المنصّة: «يجب أن يصلح ويتغيّر من جهتك»، وخُيّر فاختار **المطابقة
+     بالبريد**: حسابٌ بريدُه بريدُ نموذجٍ في هذه الحملة يأخذ كودَه، ولو لم يوثّق بريدَه بعدُ (الدفعُ لا ينتظر التوثيق).
+     وعُرض عليه أثرُها: من سبق صاحبَ بريدٍ إلى حسابٍ ببريده أخذ منحتَه، ويستعيد صاحبُ البريد حسابَه ببريده. فيُكتب الأثر.
+     ولا كودَ استُعمل في شراءٍ مدفوع. */
+  async myCode(userId: string, ip?: string): Promise<{ code: string | null }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+    if (!user?.email) return { code: null }
+    const lead = await this.prisma.lead.findFirst({
+      where: { campaign: this.slug, erasedAt: null, email: user.email.toLowerCase(), grantCode: { isNot: null } },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        grantCode: { select: { coupon: { select: { code: true, orders: { where: { status: { in: BOUGHT } }, select: { id: true } } } } } },
+      },
+    })
+    const coupon = lead?.grantCode?.coupon
+    if (!lead || !coupon || coupon.orders.length > 0) return { code: null }
+    await recordAudit(this.prisma, {
+      action: 'coupon.grant_claim', entityType: 'lead', entityId: lead.id, actorId: userId, ip,
+      meta: { campaign: this.slug },
+    })
+    return { code: coupon.code }
+  }
+
   /** «تواصل مع مستشار» — حالةٌ واحدةٌ لصاحب المرجع، تُسند تلقائيّا */
   /** الدوراتُ التي اختارها في صفحة المنحة — تُحفظ في ملفّه فيراها المستشار (٢٧ أكتوبر ٢٠٢٦).
 
@@ -276,7 +302,7 @@ export class GrantLandingService {
 
   /* ═══ بريدُ الكود — بقالب الأكاديمية لا نصّا خاما (٢٧ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة». فعنوانٌ وشكرٌ وكودٌ في جدولٍ وزرٌّ يفتح الدورات،
-     ولا «عضو»: «مستخدمُ وجيز». ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
+     ولا «عضو» ولا «مستخدم»: «قرّاءُ وجيز» (قرارُه في اليوم نفسِه). ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
   private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
     const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode) : `${publicSiteUrl()}/grant`
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
@@ -292,7 +318,7 @@ export class GrantLandingService {
         heading: 'منحتك جاهزة',
         blocks: [
           { kind: 'p', text: member
-            ? 'شكرا لأنك من مستخدمي تطبيق وجيز. يسعدنا أن نقدم لك منحة حصرية في منتجنا الجديد: أكاديمية وجيز.'
+            ? 'شكرا لأنك من قراء وجيز. يسعدنا أن نقدم لك منحة حصرية في منتجنا الجديد: أكاديمية وجيز.'
             : 'يسعدنا أن نقدم لك منحة في أكاديمية وجيز.' },
           { kind: 'facts', rows: [
             { label: 'كود منحتك', value: code },
