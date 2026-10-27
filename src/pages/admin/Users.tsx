@@ -26,6 +26,10 @@ const ROLE_NAMES_AR: Record<string, string> = {
   academic_coordinator: "منسّق أكاديميّ",
   diagnostic_manager: "مدير التشخيص", operations_manager: "مدير العمليات",
   advisor: "مستشار", trainer: "مدرب", finance: "المالية", support: "الدعم", learner: "متعلم",
+  /* «مؤثر» بوّابتُه `/influencer` لا بوّابةُ المتعلّم (`homePathForRoles`)، وكان غائبا عن هذه الأزرار — فحفظُ أدوار
+     مؤثّرٍ من هنا كان ينزعه بصمت (٢٧ أكتوبر ٢٠٢٦، «أضف دور مؤثر لكي لا تختلط الأمور مع منصة الطالب»). والقائمةُ
+     تتبع أدوارَ الخادم كلَّها إلّا أدوارَ الحالة: `src/tests/admin/role-buttons.test.ts`. */
+  influencer: "مؤثر",
   /* «متقدّم لعضوية التدريب» ليس في القائمة عمدا: حالةٌ يكتسبها صاحبُها
      بطلبه وينزعها القرارُ عليه، والخادمُ يرفض إسنادَها من هنا
      (`LIFECYCLE_ROLES`). واسمُها معروضٌ في بطاقة الحساب لا في أزرار التعيين. */
@@ -751,6 +755,12 @@ export default function Users() {
                     <Inset as="p" className="mt-3 flex items-start gap-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-read font-bold leading-6 text-[#FABC05]">
                       <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       نزع «متعلّم» يغلق بوابة التعلّم عن الحساب. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.
+                    </Inset>
+                  )}
+                  {/* الدورُ يفتح صفحتَه، والكودُ والعمولةُ ملفُّه في «منحة مؤثرين وجيز» — فمن أُعطي الدورَ هنا بلا ملفٍّ يرى صفحةً فارغة */}
+                  {rolePick.includes("influencer") && !u.roles.some((r) => r.id === "influencer") && (
+                    <Inset as="p" className="mt-3 px-3 py-2.5 text-read leading-6 text-muted-foreground">
+                      دور «مؤثر» يفتح صفحة المؤثر. وكوده وعمولته تضيفهما من «منحة مؤثرين وجيز».
                     </Inset>
                   )}
                   <Button tone="confirm" size="sm" disabled={busy || rolePick.length === 0}
