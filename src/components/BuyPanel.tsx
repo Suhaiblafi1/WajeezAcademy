@@ -116,6 +116,8 @@ interface Quote {
   couponDiscount: number;
   /** نسبةُ منحة أعضاء وجيز إن كان الكودُ كودَها — وهي بدلُ خصم الباقة (٢٠ أكتوبر ٢٠٢٦) */
   grantPct: number | null;
+  /** نسبةُ كود أوّل عمليّة شراء إن كان هو الكود — يُسمّى به بندُه وسطرُه */
+  firstPurchasePct?: number | null;
   /** واسمُ حملتها — «منحة وجيز» أو «منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) */
   grantNameAr?: string | null;
   discount: number;
@@ -570,9 +572,14 @@ export default function BuyPanel({
             )}
             {/* كودٌ وقع على بعض الدورات دون بعض — كودُ المدرّب على دوراته وحدَها،
                 فيُسمّى ما خصمه، ولا يُظنّ أنّه خصم الطلبَ كلَّه */}
+            {/* ═══ على أيّ دورةٍ وقع الكود — سطرٌ واحدٌ قصير (٢٧ أكتوبر ٢٠٢٦) ═══
+                كان «خصم الكود على:» ثمّ عنوانُ الشعبة كما في الفاتورة — اسمُ الدورة مرّتين و«— شعبة ١». فقال صاحبُ المنصّة:
+                «يجب أن يكون احترافيّا: هذا الخصمُ الخاصّ بشراء أوّل دورةٍ تمّ منحُه لدورة كذا الأعلى سعرا، باختصار».
+                فاسمُ الدورة من بنود اللوح نفسِه، وكودُ أوّل شراءٍ باسمه. */}
             {quote && quote.couponDiscount > 0 && quote.items.some((i) => i.couponApplies === false) && (
               <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                خصم الكود على: <span className="text-foreground">{quote.items.filter((i) => i.couponApplies).map((i) => i.titleAr).join("، ")}</span>
+                {quote.firstPurchasePct ? "خصم أول عملية شراء على الدورة الأعلى سعرا: " : "خصم الكود على: "}
+                <span className="text-foreground">{quote.items.filter((i) => i.couponApplies).map((i) => lines.find((l) => l.courseId === i.courseId)?.name ?? i.titleAr).join("، ")}</span>
               </p>
             )}
 
@@ -648,7 +655,7 @@ export default function BuyPanel({
                 )}
                 {quote.couponDiscount > 0 && (
                   <div className="flex items-center justify-between text-gold-ink">
-                    <span>{quote.grantPct !== null ? `${quote.grantNameAr ?? MEMBER_GRANT_NAME_AR} — ${quote.grantPct}٪` : `الكود ${quote.couponCode}`}</span>
+                    <span>{quote.grantPct !== null ? `${quote.grantNameAr ?? MEMBER_GRANT_NAME_AR} — ${quote.grantPct}٪` : quote.firstPurchasePct ? `خصم أول عملية شراء — ${quote.firstPurchasePct}٪` : `الكود ${quote.couponCode}`}</span>
                     <span dir="ltr">−{money(quote.couponDiscount, quote.currency)}</span>
                   </div>
                 )}

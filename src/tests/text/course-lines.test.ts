@@ -21,6 +21,6 @@ describe('أسطر الدورات في الرسالة', () => {
 
   it('⚠️ رسالتا المسار والمنحة تكتبانها هكذا', () => {
     expect(advisorBriefTextAr({ message: 'م', pathwayUrl: 'u', courseNames: [LONG], attachNote: 'ن' })).toContain('الدورات في خطتي:\n1. اكتشاف العملاء وعرض القيمة\n\nن')
-    expect(grantAdvisorTextAr('سارة', null, [LONG])).toContain('الدورات التي اخترتها:\n1. اكتشاف العملاء وعرض القيمة')
+    expect(grantAdvisorTextAr({ name: 'سارة', courses: [LONG] })).toContain('الدورات التي اخترتها:\n1. اكتشاف العملاء وعرض القيمة')
   })
 })

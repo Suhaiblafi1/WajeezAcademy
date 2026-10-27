@@ -5,6 +5,7 @@
 import { randomUUID } from 'node:crypto'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { FIRST_TIME_PROMO } from '../../src/application/commerce/first-time-promo'
 import { ReferralService } from './referral.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
@@ -336,6 +337,8 @@ export class CommerceService {
       /* نسبةُ المنحة إن كان الكودُ كودَها، واسمُ حملتها — فيُسمّى بندُها «منحة وجيز» لا «الكود» */
       grantPct,
       grantNameAr,
+      /* وكودُ أوّل عمليّة شراء باسمه ونسبته — فيقول اللوحُ «خصم أول عملية شراء» لا «الكود …» (٢٧ أكتوبر ٢٠٢٦) */
+      firstPurchasePct: code === FIRST_TIME_PROMO.code ? FIRST_TIME_PROMO.percentOff : null,
       discount: pricing.discount,
       total: pricing.total,
       items: pricing.lines.map((l) => ({

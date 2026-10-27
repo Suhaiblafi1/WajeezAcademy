@@ -27,7 +27,7 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
   const influencers = new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG)
 
   app.get('/api/public/grant', {
-    schema: { tags: ['public'], summary: 'حال منحة أعضاء وجيز ودوراتها بفصلها' },
+    schema: { tags: ['public'], summary: 'حال منحة وجيز ودوراتها بفصلها' },
   }, async () => landing.view())
 
   app.post('/api/public/grant', {

@@ -43,6 +43,7 @@ import { recordAudit } from './audit'
 import { AdvisorService } from './advisor.service'
 import { liveChannels } from './notification.service'
 import { enqueueMail } from './outbox.service'
+import { renderMail } from './mail-template'
 import { publicSiteUrl } from './site-url'
 import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
 import { influencerLink } from '../../src/application/commerce/influencer'
@@ -217,18 +218,26 @@ export async function sendGrantReminders(
         action: 'coupon.grant_reminder', entityType: 'lead', entityId: lead.id,
         meta: { stage: due.stage, campaign: slug },
       })
+      /* بقالب الأكاديمية لا نصّا خاما — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «رسالةُ البريد يجب أن تكون احترافيّة» */
       await enqueueMail(tx, {
         to: lead.email!, purpose: 'grant.reminder', subject,
-        text: [
-          `مرحبا ${lead.fullName}،`, '',
-          days <= 1 ? `${subject}.` : `${subject}. آخر يوم: ${fmtDateLong(lastDay)}.`,
-          `كود منحتك: ${coupon.code}`,
+        ...renderMail({
+          greetingName: lead.fullName,
           /* المنحةُ بنسبتها لا بما يبقى — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، كسطر الصفحة الأولى */
-          `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`,
-          /* ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — برابط مؤثّره */
-          '', `اختر دوراتك: ${lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant`}`, '',
-          'وإن لم تحتجه فيمكنك أن تهديه لغيرك.',
-        ].join('\n'),
+          preheader: `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`,
+          heading: subject,
+          blocks: [
+            { kind: 'p', text: `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom مع مدربين معتمدين.` },
+            { kind: 'facts', rows: [
+              { label: 'كود منحتك', value: coupon.code },
+              /* وفي آخر يومٍ لا يُكرَّر: عنوانُه «اليوم آخر يوم لمنحتك» */
+              ...(days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]),
+            ] },
+            /* ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — برابط مؤثّره */
+            { kind: 'cta', label: 'اختر دوراتك', href: lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant` },
+            { kind: 'note', text: 'وإن لم تحتجها، يمكنك أن تهدي الكود لغيرك.' },
+          ],
+        }),
       })
     })
     sent += 1

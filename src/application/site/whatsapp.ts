@@ -52,7 +52,7 @@ export const WHATSAPP_SPOTS: WhatsAppSpot[] = [
      وكُتب رقمُه مرّةً بقرار صاحب المنصّة (`seedGrantAdvisorWhatsApp`) */
   {
     key: 'grant_advisor',
-    labelAr: 'مستشار منحة أعضاء وجيز',
+    labelAr: 'مستشار منحة وجيز',
     whereAr: 'صفحة المنحة · بعد النموذج',
   },
 ]
