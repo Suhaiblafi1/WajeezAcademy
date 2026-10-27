@@ -17,6 +17,7 @@
 import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-domain'
 import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
 import { courseLinesAr } from '../text/course-lines'
+import { plainAr } from '../text/plain-ar'
 import { MEMBER_GRANT_NAME_AR } from './grant'
 import { ENDORSEMENT_MIN_ATTENDANCE } from '../learning/endorsement'
 
@@ -399,22 +400,70 @@ export function grantCallDueAt(formAt: Date, now: Date): Date {
   return zonedInstant(morning, [GRANT_CALL_WINDOW[0] + 1, 0, 0, 0])
 }
 
+/* ═══ نبذةُ الدورة تحت سهمٍ في صفّها — لا انتقالَ إلى الموقع (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «عند النقر على الدورات لشرائها لا يجب أن تأخذ النقرةُ العميلَ إلى الدورات في صفحة الموقع… "تفاصيل
+   الدورة" أريد أن تبدلها بسهمٍ للأسفل، وينسدل نبذةٌ بسيطةٌ عن الدورة: نبذةٌ عنها وأهدافُها ولمن هي، بشكلٍ مختصرٍ وجميل».
+   فمن آخر نسخةٍ للدورة كعنوانها: وعدُها سطرا (أو وصفُها إن لم يُكتب)، وثلاثةُ أهدافٍ بترتيبها، ولمن هي. والكتالوجُ كُتب قبل
+   قرار التشكيل فيمرّ بـ`plainAr`. وما لا شيءَ فيه لا سهمَ له. */
+
+/** أقصى ما يُعرض من أهداف الدورة في نبذتها */
+export const GRANT_SUMMARY_GOALS = 3
+
+export interface GrantCourseSummary { aboutAr: string | null; goalsAr: string[]; audienceAr: string | null }
+
+/** نبذةُ الدورة من نسختها — `null` إن لم يُكتب فيها شيء */
+export function grantCourseSummary(v: {
+  shortPromiseAr?: string | null; descriptionAr?: string | null; audienceAr?: string | null; objectives?: readonly { textAr: string }[]
+} | null | undefined): GrantCourseSummary | null {
+  if (!v) return null
+  const clean = (t: string | null | undefined) => (t ? plainAr(t).replace(/\s+/g, ' ').trim() : '') || null
+  const aboutAr = clean(v.shortPromiseAr) ?? clean(v.descriptionAr)
+  const goalsAr = (v.objectives ?? []).map((o) => clean(o.textAr)).filter((x): x is string => !!x).slice(0, GRANT_SUMMARY_GOALS)
+  const audienceAr = clean(v.audienceAr)
+  return aboutAr || goalsAr.length > 0 || audienceAr ? { aboutAr, goalsAr, audienceAr } : null
+}
+
 /* ═══ الدوراتُ: ما اخترناه له فوق، والباقي أقسامٌ مطويّةٌ بمجالها (٢٤ أكتوبر ٢٠٢٦) ═══
 
    قال صاحبُ المنصّة: «الدوراتُ كثيرةٌ وتحيّر الشخص». وخُيّر بين أربعة (مختاراتُه وأقسامٌ مطويّة، أو بطاقاتُ المسارات
    أوّلا، أو تصفيةٌ بالمجال، أو ثمانٍ وزرُّ «المزيد») — فاختار **مختاراتِه فوق، والباقي أقسامًا مطويّةً بمجالها**: يرى
    أربعَ بطاقاتٍ وستّةَ أسطرٍ بدلَ خمسٍ وعشرين بطاقة، ويبقى الاختيارُ له. */
 
-/** الدوراتُ الباقيةُ أقساما بمجالها — ما يريد تطويرَه أوّلا، ثمّ الأكثرُ دورات، و«أخرى» آخرا */
+/* ═══ وكلُّ مجالين قسمٌ واحد — في صفحتي المنحة وحدَهما (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «أشعر بأنّ التصميمَ سطحيٌّ نوعا ما، فهي عناوين… لا أن تكون أزرارا متكدّسةً وراء بعضها… فكرةٌ مثلا
+   أن تدمج كلَّ جزئين: المالُ الشخصيّ والمالية والمحاسبة، الموارد البشريّة والبحث عن عمل، ريادة الأعمال والقيادة، التسويق
+   والتواصل… فيزيد عددُ الدورات في كلّ خانة… ولكن هذا التغييرُ للمنح فقط، لا تغيّره في الموقع». فالأربعةُ بنصّه، والباقي
+   على قياسها: كلُّ عائلةٍ إلى أقرب قسم. والعائلةُ بلا قسمٍ تبقى باسمها، فلا تضيع دورة. والموقعُ يبقى بمجالاته (`course-domain.ts`). */
+
+/** أقسامُ المنحة بعائلات مجالاتها — والعنوانُ ما يراه */
+export const GRANT_SECTION_GROUPS: readonly { title: string; families: readonly string[] }[] = [
+  { title: 'المال والمحاسبة', families: ['FIN', 'FINM'] },
+  { title: 'الموارد البشرية والبحث عن عمل', families: ['HR', 'JOB', 'CAR'] },
+  { title: 'القيادة وريادة الأعمال', families: ['MGR', 'BIZ'] },
+  { title: 'التسويق والتواصل', families: ['MKT', 'COMX', 'SAL', 'SVC', 'NEG'] },
+  { title: 'التقنية والذكاء الاصطناعي', families: ['AI', 'DAT', 'AUT', 'CYB', 'WEB'] },
+  { title: 'علم النفس والتركيز', families: ['PSY', 'WEL'] },
+  { title: 'المشاريع والعمليات', families: ['PRD', 'PM', 'OPS', 'SCM'] },
+  { title: 'التصميم والهندسة', families: ['GRPH', 'INTR', 'ENGR'] },
+  { title: 'التعليم والأسرة', families: ['LND', 'EDU', 'FAM'] },
+]
+const GRANT_SECTION_OF = new Map(GRANT_SECTION_GROUPS.flatMap((g) => g.families.map((f) => [courseDomainByFamily(f), g.title] as const)))
+/** قسمُ المجال في صفحة المنحة — ومجالٌ بلا قسمٍ قسمُ نفسه */
+export const grantSectionOf = (domain: string): string => GRANT_SECTION_OF.get(domain) ?? domain
+
+/** الدوراتُ الباقيةُ أقساما بمجالها المدموج — ما يريد تطويرَه أوّلا، ثمّ الأكثرُ دورات، و«أخرى» آخرا */
 export function grantSections<T extends { domainAr?: string | null }>(
   courses: readonly T[], interests: readonly string[], other: string,
 ): { domain: string; items: T[] }[] {
   const by = new Map<string, T[]>()
   for (const c of courses) {
-    const d = c.domainAr || other
+    const d = c.domainAr ? grantSectionOf(c.domainAr) : other
     by.set(d, [...(by.get(d) ?? []), c])
   }
-  const rank = (d: string) => (d === other ? 2 : interests.includes(d) ? 0 : 1)
+  const wanted = new Set(interests.map(grantSectionOf))
+  const rank = (d: string) => (d === other ? 2 : wanted.has(d) ? 0 : 1)
   return [...by.entries()]
     .map(([domain, items]) => ({ domain, items }))
     .sort((a, b) => rank(a.domain) - rank(b.domain) || b.items.length - a.items.length || a.domain.localeCompare(b.domain, 'ar'))

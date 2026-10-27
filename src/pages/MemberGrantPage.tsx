@@ -34,7 +34,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { ChevronDown, Clock, Copy, Flame, Gift, Loader2, Mail, MessageCircle, Share2, Sparkles, UserRound } from "lucide-react";
+import { Check, ChevronDown, Clock, Copy, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, Share2, Sparkles, UserRound } from "lucide-react";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -54,7 +54,7 @@ import { grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/ap
 import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -69,6 +69,8 @@ interface GrantCourse {
   courseId: string; titleAr: string; cohortId: string; startsAt: string | null; seatsLeft?: number | null; price: number; domainAr?: string;
   /** مدرّبُها المنشور — ببوّابة النشر في الخادم (`grant-courses.service.ts`) */
   trainer?: { id: string; name: string; photoUrl: string | null } | null;
+  /** نبذتُها تحت سهمٍ في صفّها (`grantCourseSummary`) — بلا شيءٍ لا سهمَ لها */
+  summary?: GrantCourseSummary | null;
 }
 interface View {
   campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
@@ -121,6 +123,8 @@ const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
   .map((x) => ({ id: x.id, title: x.title, courseIds: x.course_ids }));
 /** مجالُ دورةٍ لم تُسمَّ عائلتُها — لا يُعرض فيما يريد تطويرَه */
 const OTHER_DOMAIN = "أخرى";
+/** كم وجها في رأس كلِّ قسم */
+const SECTION_FACES = 3;
 
 export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" }) {
   const forInfluencer = variant === "influencer";
@@ -152,6 +156,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [picked, setPicked] = useState<string[]>([]);
   /* ما اخترناه له سلفا — يبقى أعلى القائمة بشارته وإن حذفه، فلا تقفز الصفوفُ تحت يده */
   const [suggested, setSuggested] = useState<string[]>([]);
+  /* نبذةُ أيِّ دورةٍ مفتوحةٌ الآن — واحدةٌ في كلّ مرّة، فتبقى القائمةُ مرتّبة */
+  const [summaryOf, setSummaryOf] = useState<string | null>(null);
   /* المسارُ الذي اخترنا دوراتِه له. وكان معه بديلٌ يبدّل إليه بضغطة، فحُذف بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لا داعي
      لخيار بدّل للمسار لأنّه غير مفهوم» — ومن أراد غيرَ ما اقترحناه يجده في أقسام المجالات تحته */
   const [mainPath, setMainPath] = useState<GrantPathOption | null>(null);
@@ -284,41 +290,68 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       const full = !on && picked.length >= max;
       const seats = seatsLeftAr(x.seatsLeft);
       const tag = ours.has(x.courseId) ? "نقترحها لك" : fits(x) > 0 ? "يناسب ما تريد تطويره" : null;
+      const sum = x.summary ?? null;
+      const open = sum !== null && summaryOf === x.courseId;
+      const sumId = `sum-${x.courseId}`;
+      /* الصفُّ كلُّه يختار — والسهمُ خارجَ وسمه، فنبذتُه تُفتح ولا تختار. ولا رابطَ فيه إلى الموقع: قرارُ صاحب المنصّة
+         (٢٧ أكتوبر ٢٠٢٦): «عند النقر على الدورات لشرائها لا يجب أن تأخذ النقرةُ العميلَ إلى صفحة الموقع» */
       return (
-        <Inset
-          as="label" key={x.courseId} tone={on ? "accent" : "default"} interactive={!full}
-          className={`flex cursor-pointer items-start gap-4 ${full ? "opacity-50" : ""}`}
-        >
-          {/* والاختيارُ على الصورة نفسِها — يُرى ويُضغط معها */}
-          <span className="relative shrink-0">
-            {x.trainer?.photoUrl
-              ? <img src={x.trainer.photoUrl} alt="" loading="lazy" className="h-24 w-24 rounded-2xl object-cover shadow-lg sm:h-28 sm:w-28" />
-              : <span className="grid h-24 w-24 place-items-center rounded-2xl bg-teal/10 text-teal-light-ink sm:h-28 sm:w-28"><UserRound className="h-10 w-10" aria-hidden="true" /></span>}
-            <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} aria-label={x.titleAr} className="absolute start-2 top-2 h-5 w-5 shadow" />
-          </span>
-          <span className="min-w-0 flex-1">
-            {(tag || seats) && (
-              <span className="mb-1 flex flex-wrap items-center gap-x-3 text-read font-bold">
-                {tag && <span className="inline-flex items-center gap-1 text-gold-ink"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{tag}</span>}
-                {seats && <span className="inline-flex items-center gap-1 text-red-300"><Flame className="h-3.5 w-3.5" aria-hidden="true" />{seats}</span>}
-              </span>
-            )}
-            <span className="block font-bold leading-6">{x.titleAr}</span>
-            {/* المدرّبُ ببوّابة النشر، وتفاصيلُ الدورة — في نافذةٍ جديدة فلا يضيع ما اختاره */}
-            {x.trainer && (
-              <a href={`/trainers#trainer-${encodeURIComponent(x.trainer.id)}`} target="_blank" rel="noreferrer" className="mt-0.5 block text-read font-bold text-teal-light-ink">
-                مع {x.trainer.name}
-              </a>
-            )}
-            <span className="mt-0.5 block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
-            <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <span className="flex items-baseline gap-2">
+        <Inset key={x.courseId} tone={on ? "accent" : "default"} interactive={!full} className={full ? "opacity-50" : ""}>
+          <label className="flex cursor-pointer items-start gap-4">
+            {/* والاختيارُ على الصورة نفسِها — يُرى ويُضغط معها */}
+            <span className="relative shrink-0">
+              {x.trainer?.photoUrl
+                ? <img src={x.trainer.photoUrl} alt="" loading="lazy" className="h-24 w-24 rounded-2xl object-cover shadow-lg sm:h-28 sm:w-28" />
+                : <span className="grid h-24 w-24 place-items-center rounded-2xl bg-teal/10 text-teal-light-ink sm:h-28 sm:w-28"><UserRound className="h-10 w-10" aria-hidden="true" /></span>}
+              <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} aria-label={x.titleAr} className="absolute start-2 top-2 h-5 w-5 shadow" />
+            </span>
+            <span className="min-w-0 flex-1">
+              {(tag || seats) && (
+                <span className="mb-1 flex flex-wrap items-center gap-x-3 text-read font-bold">
+                  {tag && <span className="inline-flex items-center gap-1 text-gold-ink"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{tag}</span>}
+                  {seats && <span className="inline-flex items-center gap-1 text-red-300"><Flame className="h-3.5 w-3.5" aria-hidden="true" />{seats}</span>}
+                </span>
+              )}
+              <span className="block font-bold leading-6">{x.titleAr}</span>
+              {x.trainer && <span className="mt-0.5 block text-read font-bold text-teal-light-ink">مع {x.trainer.name}</span>}
+              <span className="mt-0.5 block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
+              <span className="mt-2 flex items-baseline gap-2">
                 <bdi dir="ltr" className="text-lg font-black">{money(grantPrice(x.price, pct))}</bdi>
                 <bdi dir="ltr" className="text-read text-muted-foreground line-through">{money(x.price)}</bdi>
               </span>
-              <a href={`/build/${encodeURIComponent(x.courseId)}`} target="_blank" rel="noreferrer" className="text-read text-muted-foreground underline">تفاصيل الدورة</a>
             </span>
-          </span>
+          </label>
+          {sum && (
+            <>
+              <button
+                type="button" aria-expanded={open} aria-controls={sumId} onClick={() => setSummaryOf(open ? null : x.courseId)}
+                className="mt-2 flex min-h-9 w-full cursor-pointer items-center justify-center gap-1.5 border-t border-border pt-2 text-read text-muted-foreground"
+              >
+                {open ? "إخفاء النبذة" : "نبذة عن الدورة"}
+                <ChevronDown className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+              </button>
+              {open && (
+                <div id={sumId} className="mt-1 space-y-3 text-read leading-6">
+                  {sum.aboutAr && <p>{sum.aboutAr}</p>}
+                  {sum.goalsAr.length > 0 && (
+                    <div>
+                      <p className="font-bold">أهدافها</p>
+                      <ul className="mt-1 space-y-1">
+                        {sum.goalsAr.map((g) => (
+                          <li key={g} className="flex items-start gap-2"><Check className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />{g}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {sum.audienceAr && <p><span className="font-bold">لمن هي: </span>{sum.audienceAr}</p>}
+                  {/* و«المزيد» بطلبه وحدَه، في نافذةٍ جديدة — فلا يضيع ما اختاره */}
+                  <a href={`/build/${encodeURIComponent(x.courseId)}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground underline">
+                    المزيد عن الدورة<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
+                </div>
+              )}
+            </>
+          )}
         </Inset>
       );
     };
@@ -367,28 +400,38 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         ) : (
           <>
             {top.length > 0 && <div className="mt-5 space-y-3">{top.map((x) => row(x))}</div>}
-            {/* والباقي أقسامٌ مطويّةٌ بمجالها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «الدوراتُ كثيرةٌ وتحيّر الشخص» */}
+            {/* والباقي أقسامٌ مطويّةٌ بمجالها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «الدوراتُ كثيرةٌ وتحيّر الشخص».
+                ثمّ (٢٧ أكتوبر ٢٠٢٦): «التصميمُ سطحيٌّ… لا أزرارا متكدّسةً وراء بعضها… ادمج كلَّ جزئين». فبطاقةٌ واحدةٌ هادئة،
+                أقسامُها مدموجةٌ (`GRANT_SECTION_GROUPS`) بينها خطوطٌ رفيعة، وفي كلّ قسمٍ وجوهُ مدرّبيه وعددُ دوراته */}
             {sections.length > 0 && (
-              <>
-                {top.length > 0 && <p className="mt-6 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية</p>}
-                <div className="mt-2 space-y-2">
+              <Card className="mt-6">
+                {top.length > 0 && <p className="mb-1 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية</p>}
+                <div className="divide-y divide-border">
                   {sections.map((sec) => {
                     const mineHere = sec.items.filter((x) => picked.includes(x.courseId)).length;
+                    /* وجهُ كلِّ مدرّبٍ مرّةً — ومن درّس دورتين في القسم لا يتكرّر */
+                    const faces = [...new Map(sec.items.filter((x) => x.trainer?.photoUrl).map((x) => [x.trainer!.id, x])).values()].slice(0, SECTION_FACES);
                     return (
-                      <Inset as="details" key={sec.domain} className="group">
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-                          <span className="font-bold">{sec.domain}</span>
-                          <span className="flex shrink-0 items-center gap-2 text-read text-muted-foreground">
-                            {grantCountAr(sec.items.length)}{mineHere > 0 && <Chip tone="accent">اخترت {mineHere}</Chip>}
-                            <ChevronDown className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+                      <details key={sec.domain} className="group py-3 last:pb-0">
+                        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
+                          {faces.length > 0 && (
+                            <span className="flex shrink-0 -space-x-2 rtl:space-x-reverse" aria-hidden="true">
+                              {faces.map((x) => <img key={x.courseId} src={x.trainer!.photoUrl!} alt="" loading="lazy" className="h-8 w-8 rounded-full object-cover object-[50%_25%] ring-2 ring-paper" />)}
+                            </span>
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-bold leading-6">{sec.domain}</span>
+                            <span className="block text-read text-muted-foreground">{grantCountAr(sec.items.length)}</span>
                           </span>
+                          {mineHere > 0 && <Chip tone="accent">اخترت {mineHere}</Chip>}
+                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
                         </summary>
                         <div className="mt-3 space-y-3">{sec.items.map((x) => row(x, true))}</div>
-                      </Inset>
+                      </details>
                     );
                   })}
                 </div>
-              </>
+              </Card>
             )}
             {picked.length >= max && <p className="mt-2 text-read text-muted-foreground">وصلت الحد: {max} دورات. احذف دورة لتضيف غيرها.</p>}
           </>

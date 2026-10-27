@@ -176,6 +176,22 @@ describe('⑤ والدورات للزائر بلا أجور المدربين', (
     expect(v.openCourses.some((x) => x.courseId === b), 'عرض دورة أغلقت شعبتها').toBe(false)
     expect(v.termAr).toBe('موسم الربيع 2099')
   })
+
+  /* «"تفاصيل الدورة" أريد أن تبدلها بسهمٍ للأسفل، وينسدل نبذةٌ بسيطة: عنها وأهدافُها ولمن هي» — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ ونبذة كل دورة في الرد من آخر نسخة لها — وعدها وثلاثة أهداف بترتيبها ولمن هي', async () => {
+    const a = nextCourse()
+    await cohort(a)
+    const last = await prisma.courseVersion.findFirstOrThrow({ where: { courseId: a }, orderBy: { version: 'desc' } })
+    await prisma.courseVersion.create({
+      data: {
+        courseId: a, version: last.version + 1, titleAr: last.titleAr, totalHours: last.totalHours,
+        shortPromiseAr: 'تكتب خطتك في أسبوع.', audienceAr: 'لمن يبدأ عملا جديدا.',
+        objectives: { create: ['يحدد', 'يبني', 'يقيّم', 'ينفذ'].map((textAr, i) => ({ sequence: 4 - i, textAr })) },
+      },
+    })
+    const row = (await landing.view(NOW)).openCourses.find((x) => x.courseId === a)!
+    expect(row.summary, 'النبذة من غير آخر نسخة').toEqual({ aboutAr: 'تكتب خطتك في أسبوع.', goalsAr: ['ينفذ', 'يقيّم', 'يبني'], audienceAr: 'لمن يبدأ عملا جديدا.' })
+  })
 })
 
 describe('⑥ وتواصل مع مستشار حالة واحدة', () => {

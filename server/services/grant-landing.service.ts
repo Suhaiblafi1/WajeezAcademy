@@ -39,7 +39,8 @@ import { mintShortLink } from './short-link.service'
 import { publicSiteUrl } from './site-url'
 import { normalizePhone } from '../../src/application/advisor/guest-contact'
 import {
-  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, WORK_FIELDS, campaignTag, leadProfileAr,
+  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, WORK_FIELDS, campaignTag, grantCourseSummary, leadProfileAr,
+  type GrantCourseSummary,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
 import { INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
@@ -117,6 +118,7 @@ export class GrantLandingService {
   /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين */
   async view(now = new Date()) {
     const [s, open] = await Promise.all([this.grants.settings(now), this.courses.openCourses(now)])
+    const summaries = await this.summaries(open.courses.map((c) => c.courseId))
     return {
       /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
       campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
@@ -127,8 +129,30 @@ export class GrantLandingService {
         domainAr: courseDomain(c.courseId),
         /* والمقاعدُ والمدرّبُ لـ«بقي X مقاعد» و«مع مدربك» في صفّ الدورة */
         seatsLeft: c.seatsLeft, trainer: c.trainer,
+        /* ونبذتُها تحت سهمٍ في صفّها — فلا ينتقل إلى الموقع ليعرف عمّ هي (`grantCourseSummary`) */
+        summary: summaries.get(c.courseId) ?? null,
       })),
     }
+  }
+
+  /** نبذةُ كلِّ دورةٍ من آخر نسخةٍ لها — كعنوانها في دورات المنحة (`grant-courses.service.ts`) */
+  private async summaries(courseIds: string[]): Promise<Map<string, GrantCourseSummary>> {
+    if (courseIds.length === 0) return new Map()
+    const rows = await this.prisma.courseVersion.findMany({
+      where: { courseId: { in: courseIds } },
+      orderBy: [{ courseId: 'asc' }, { version: 'desc' }],
+      distinct: ['courseId'],
+      select: {
+        courseId: true, shortPromiseAr: true, descriptionAr: true, audienceAr: true,
+        objectives: { orderBy: { sequence: 'asc' }, take: GRANT_SUMMARY_GOALS, select: { textAr: true } },
+      },
+    })
+    const out = new Map<string, GrantCourseSummary>()
+    for (const r of rows) {
+      const sum = grantCourseSummary(r)
+      if (sum) out.set(r.courseId, sum)
+    }
+    return out
   }
 
   /** النموذج: عميلٌ محتملٌ وكودُه — أو سببُ غيابه */

@@ -14,7 +14,7 @@ import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -306,7 +306,7 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'عاد «اخترناها لك» أو «حددنا لك»').not.toMatch(/اخترناها لك|حددنا لك/)
   })
 
-  it('⚠️ «بقي X مقاعد» حين تقل وحدها — والمدرب المنشور وتفاصيل الدورة في نافذة جديدة', () => {
+  it('⚠️ «بقي X مقاعد» حين تقل وحدها — والمدرب المنشور اسما في الصف بلا رابط إلى الموقع', () => {
     expect(seatsLeftAr(3)).toBe('بقي 3 مقاعد')
     expect(seatsLeftAr(2)).toBe('بقي مقعدان')
     expect(seatsLeftAr(1)).toBe('بقي مقعد واحد')
@@ -322,9 +322,44 @@ describe('بعد النموذج', () => {
     expect(card).toMatch(/: <span className="grid h-24 w-24 place-items-center rounded-2xl/)
     expect(card.indexOf('x.trainer?.photoUrl'), 'الصورة قبل العنوان').toBeLessThan(card.indexOf('<span className="block font-bold leading-6">{x.titleAr}'))
     expect(card, 'عادت الصورة الصغيرة').not.toMatch(/h-6 w-6 rounded-full/)
-    /* والمدرّبُ من الخادم وحدَه — لا اسمَ يُكتب في الصفحة — وإلى بطاقته في صفحة الفريق */
-    expect(PAGE).toMatch(/\{x\.trainer && \(\s*<a href=\{`\/trainers#trainer-\$\{encodeURIComponent\(x\.trainer\.id\)\}`\} target="_blank"/)
-    expect(PAGE).toMatch(/<a href=\{`\/build\/\$\{encodeURIComponent\(x\.courseId\)\}`\} target="_blank"[^>]*>تفاصيل الدورة<\/a>/)
+    /* والمدرّبُ من الخادم وحدَه — لا اسمَ يُكتب في الصفحة. واسمُه نصٌّ في الصفّ لا رابط: قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦):
+       «عند النقر على الدورات لشرائها لا يجب أن تأخذ النقرةُ العميلَ إلى صفحة الموقع» */
+    expect(card).toMatch(/\{x\.trainer && <span className="mt-0\.5 block text-read font-bold text-teal-light-ink">مع \{x\.trainer\.name\}<\/span>\}/)
+    expect(card, 'عاد رابط إلى صفحة الفريق').not.toContain('/trainers#trainer-')
+    expect(card, 'عادت «تفاصيل الدورة» رابطا في الصف').not.toContain('تفاصيل الدورة')
+  })
+
+  /* «"تفاصيل الدورة" أريد أن تبدلها بسهمٍ للأسفل، وينسدل نبذةٌ بسيطةٌ عن الدورة: نبذةٌ عنها وأهدافُها ولمن هي» — قرارُه (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ نبذة الدورة تنسدل في صفها — والصف وحده يختار، ولا رابط فيه إلا «المزيد» بطلبه في نافذة جديدة', () => {
+    const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf(TOP_CARD))
+    /* الوسمُ يغلق قبل السهم: فالسهمُ لا يختار، والنبذةُ لا تختار */
+    const label = card.slice(card.indexOf('<label className="flex cursor-pointer items-start gap-4">'), card.indexOf('</label>'))
+    expect(label, 'الصف لا يختار').toContain('onChange={() => toggle(x.courseId)}')
+    expect(label, 'رابط داخل ما يختار').not.toMatch(/<a |<button /)
+    const after = card.slice(card.indexOf('</label>'))
+    expect(after).toMatch(/<button\s+type="button" aria-expanded=\{open\} aria-controls=\{sumId\} onClick=\{\(\) => setSummaryOf\(open \? null : x\.courseId\)\}/)
+    expect(after).toMatch(/\{open \? "إخفاء النبذة" : "نبذة عن الدورة"\}\s*<ChevronDown className=\{`h-4 w-4 transition \$\{open \? "rotate-180" : ""\}`\}/)
+    expect(after).toMatch(/\{open && \(\s*<div id=\{sumId\}/)
+    expect(after).toMatch(/\{sum\.aboutAr && <p>\{sum\.aboutAr\}<\/p>\}/)
+    expect(after).toMatch(/<p className="font-bold">أهدافها<\/p>/)
+    expect(after).toMatch(/<span className="font-bold">لمن هي: <\/span>\{sum\.audienceAr\}/)
+    /* ورابطٌ واحدٌ في الصفّ كلِّه: «المزيد» داخلَ النبذة، في نافذةٍ جديدة */
+    expect(card.match(/<a /g)?.length, 'رابط غير «المزيد» في الصف').toBe(1)
+    expect(after).toMatch(/<a href=\{`\/build\/\$\{encodeURIComponent\(x\.courseId\)\}`\} target="_blank" rel="noreferrer"[^>]*>\s*المزيد عن الدورة/)
+    expect(PAGE).toMatch(/const \[summaryOf, setSummaryOf\] = useState<string \| null>\(null\);/)
+  })
+
+  it('⚠️ والنبذة من نسخة الدورة — وعدها أو وصفها، وثلاثة أهداف، ولمن هي، بلا تشكيل — ولا شيء بلا نص', () => {
+    const v = {
+      shortPromiseAr: 'تعرِف من تحتاج بعد سنة.', descriptionAr: 'وصف', audienceAr: ' من يوظّف  عند الحاجة. ',
+      objectives: [{ textAr: 'أ' }, { textAr: 'ب' }, { textAr: '  ' }, { textAr: 'ج' }, { textAr: 'د' }],
+    }
+    expect(grantCourseSummary(v)).toEqual({ aboutAr: 'تعرف من تحتاج بعد سنة.', goalsAr: ['أ', 'ب', 'ج'], audienceAr: 'من يوظّف عند الحاجة.' })
+    expect(GRANT_SUMMARY_GOALS).toBe(3)
+    expect(grantCourseSummary({ ...v, shortPromiseAr: null })?.aboutAr, 'بلا وعد يقال الوصف').toBe('وصف')
+    expect(grantCourseSummary({ shortPromiseAr: ' ', descriptionAr: null, audienceAr: '', objectives: [] }), 'سهم بلا نبذة').toBeNull()
+    expect(grantCourseSummary(null)).toBeNull()
+    expect(PAGE, 'السهم يظهر بلا نبذة').toMatch(/\{sum && \(/)
   })
 
   it('⚠️ «يحق لك أن تهدي هذه المنحة لأصدقائك» — صندوق وحده خارج لوح الدفع، برسالة جاهزة في واتساب والبريد', () => {
@@ -456,14 +491,44 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/grantSections\(courses\.filter\(\(x\) => !ours\.has\(x\.courseId\)\), stored\.interests, OTHER_DOMAIN\)/)
     expect(PAGE).toMatch(/\{top\.length > 0 && <div className="mt-5 space-y-3">\{top\.map\(\(x\) => row\(x\)\)\}<\/div>\}/)
     /* وعنوانُ الأقسام بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «دوراتٌ أخرى حسب المجال.. عنوانٌ فاشل» */
-    expect(PAGE).toMatch(/\{top\.length > 0 && <p className="mt-6 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية<\/p>\}/)
+    expect(PAGE).toMatch(/\{top\.length > 0 && <p className="mb-1 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية<\/p>\}/)
     expect(PAGE).not.toContain('دورات أخرى حسب المجال')
     expect(PAGE, 'عاد «كل الدورات المتاحة»').not.toContain('كل الدورات المتاحة')
     expect(PAGE).toMatch(/اختر دوراتك\{view\.termAr && <span className="text-read font-normal text-muted-foreground"> · \{view\.termAr\}<\/span>\}/)
-    expect(PAGE, 'الأقسام مطوية بلا فتح').toMatch(/<Inset as="details" key=\{sec\.domain\} className="group">/)
+    expect(PAGE, 'الأقسام مطوية بلا فتح').toMatch(/<details key=\{sec\.domain\} className="group py-3 last:pb-0">/)
     expect(PAGE, 'يعيد اسم المجال تحت قسمه').toMatch(/\{sec\.items\.map\(\(x\) => row\(x, true\)\)\}/)
     expect(PAGE).toMatch(/\{x\.domainAr && !inSection \? `\$\{x\.domainAr\} · ` : ""\}/)
     expect(PAGE, 'لا تقول كم اختار في القسم المطوي').toMatch(/mineHere > 0 && <Chip tone="accent">اخترت \{mineHere\}<\/Chip>/)
+  })
+
+  /* «أشعر بأنّ التصميمَ سطحيٌّ… لا أزرارا متكدّسة… ادمج كلَّ جزئين… للمنح فقط، لا تغيّره في الموقع» — قرارُه (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ وكل مجالين قسم واحد في صفحة المنحة — بنص صاحب المنصة، وكل عائلة في قسم واحد على الأكثر، والموقع بمجالاته', () => {
+    const named = (f: string) => courseDomain(`C-${f}-101`)
+    for (const [a, b] of [['FIN', 'FINM'], ['HR', 'JOB'], ['BIZ', 'MGR'], ['MKT', 'COMX']]) {
+      expect(grantSectionOf(named(a)), `${a} و${b} قسمان`).toBe(grantSectionOf(named(b)))
+      expect(grantSectionOf(named(a)), 'بقي اسم المجال').not.toBe(named(a))
+    }
+    const fams = GRANT_SECTION_GROUPS.flatMap((g) => g.families)
+    expect(new Set(fams).size, 'عائلة في قسمين').toBe(fams.length)
+    for (const f of fams) expect(named(f), `${f} ليست عائلة`).not.toBe('أخرى')
+    for (const g of GRANT_SECTION_GROUPS) expect(plainAr(g.title)).toBe(g.title)
+    expect(grantSectionOf('مجال بلا قسم'), 'ضاع مجال بلا قسم').toBe('مجال بلا قسم')
+    /* والأقسامُ بقسمها المدموج، وما يريد تطويرَه يرفع قسمَه */
+    const c = (id: string, f: string) => ({ id, domainAr: named(f) })
+    const secs = grantSections([c('a', 'MKT'), c('b', 'FIN'), c('c', 'COMX'), c('d', 'FINM'), c('e', 'SVC')], [named('FIN')], 'أخرى')
+    expect(secs.map((x) => [x.domain, x.items.map((i) => i.id)])).toEqual([
+      [grantSectionOf(named('FIN')), ['b', 'd']],
+      [grantSectionOf(named('MKT')), ['a', 'c', 'e']],
+    ])
+    /* والموقعُ يبقى بمجالاته: لا يقرأ الأقسامَ إلّا صفحةُ المنحة */
+    expect(courseDomain('C-FIN-101')).toBe('المال الشخصي والادّخار')
+    for (const f of ['src/pages/CoursePath.tsx', 'src/pages/Pathway.tsx', 'src/application/catalog/course-domain.ts']) {
+      expect(code(f), `${f} يقرأ أقسام المنحة`).not.toMatch(/grantSectionOf|GRANT_SECTION_GROUPS/)
+    }
+    /* وبطاقةٌ واحدةٌ هادئة لا أزرارٌ متكدّسة: الأقسامُ صفوفٌ بينها خطوط، وفي رأس كلٍّ وجوهُ مدرّبيه */
+    expect(PAGE).toMatch(/<Card className="mt-6">\s*\{top\.length > 0 && <p className="mb-1 font-bold">/)
+    expect(PAGE).toMatch(/<div className="divide-y divide-border">\s*\{sections\.map\(/)
+    expect(PAGE, 'تكرر وجه المدرب في رأس القسم').toMatch(/const faces = \[\.\.\.new Map\(sec\.items\.filter\(\(x\) => x\.trainer\?\.photoUrl\)\.map\(\(x\) => \[x\.trainer!\.id, x\]\)\)\.values\(\)\]\.slice\(0, SECTION_FACES\);/)
   })
 
   it('⚠️ عداد انتهاء المنحة — بالأيام، وتحت اليوم بالساعات، وفوق وحده — وآخر يوم بتاريخه', () => {
@@ -501,13 +566,14 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/\{GRANT_GAINS_AR\.map\(\(g, i\) => \(/)
     expect(PAGE, 'عادت النبذة الطويلة').not.toMatch(/FAMILY_INTRO|grantStepsAr|كيف تعمل المنحة|ماذا تحصل عليه/)
     /* الاختياريّان داخل <details> مطويّ — لا مفتوحَين فوق الزرّ */
-    const folded = PAGE.match(/<details[^>]*>([\s\S]*?)<\/details>/)
+    const formAt = PAGE.indexOf('<Card as="form"')
+    const folded = PAGE.slice(formAt).match(/<details[^>]*>([\s\S]*?)<\/details>/)
     expect(folded, 'لا طي للاختياري').not.toBeNull()
     expect(folded![1]).toMatch(/value=\{form\.careerLevel\}/)
     expect(folded![1]).toMatch(/toggleCourse\(p, d, GRANT_MAX_INTERESTS\)|pickInterest\(d\)/)
-    expect(PAGE.match(/<details[^>]*>/)![0], 'الاختياري مفتوح').not.toMatch(/\bopen\b/)
+    expect(folded![0].match(/<details[^>]*>/)![0], 'الاختياري مفتوح').not.toMatch(/\bopen\b/)
     /* وخانةٌ لازمةٌ بلا سطر شرحٍ تحتها: الوسمُ يُغلق بعد الحقل مباشرة */
-    const form = PAGE.slice(PAGE.indexOf('<Card as="form"'), PAGE.indexOf('<details'))
+    const form = PAGE.slice(formAt, PAGE.indexOf('<details', formAt))
     expect(form.match(/<span className="text-muted-foreground">/g) ?? [], 'عاد الشرح تحت الخانات').toEqual([])
     expect(PAGE).toMatch(/\{GRANT_ACADEMY_LINE_AR\}/)
   })
@@ -536,7 +602,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'نقترحها لك', 'نقترح لك دورات مسار', 'تناسبك.', 'يناسب ما تريد تطويره', 'تحتاج مساعدة في الاختيار؟', 'مستشارك الخاص يرد عليك مباشرة على واتساب.', 'راسل مستشارك', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'تفاصيل الدورة']
+      'نقترحها لك', 'نقترح لك دورات مسار', 'تناسبك.', 'يناسب ما تريد تطويره', 'تحتاج مساعدة في الاختيار؟', 'مستشارك الخاص يرد عليك مباشرة على واتساب.', 'راسل مستشارك', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')
