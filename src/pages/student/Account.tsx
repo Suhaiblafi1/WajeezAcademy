@@ -11,8 +11,9 @@ import { fetchMe } from "@/services/me";
 import { showsLearnerFields } from "@/application/site/account-fields";
 import { portalPrefixFor } from "@/application/site/portal-paths";
 import { clearLocalSession, readSession } from "@/services/auth";
-import { ImageConditionError, PHOTO_OUT_MIME } from "@/lib/prepare-image";
+import { ImageConditionError } from "@/lib/prepare-image";
 import ImageFramer from "@/components/ImageFramer";
+import { AvatarUploadError, uploadAccountAvatar } from "@/services/avatar-upload";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import DateField from "@/components/ui/DateField";
@@ -29,11 +30,6 @@ import NotificationPreferences from "@/components/NotificationPreferences";
 
 const LOCAL_KEY = "wajeez_profile";
 
-/* رابطُ الرفع نسبيٌّ يُصدره الخادم، ويُسبق بأصل الـAPI كما تفعل بقيّةُ
-   شاشات الرفع. وفي الإنتاج `VITE_API_URL` غيرُ مضبوطٍ فيستوي الأمران،
-   لكنّه في التطوير يشير إلى منفذٍ آخر — فالرفعُ بلا هذه البادئة يقصد
-   خادمَ Vite لا الـAPI، فيسقط حيث لا يسقط في الإنتاج. */
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 /* أقدمُ سنةِ ميلادٍ في القائمة — ومن وُلد قبلها فحالٌ لا يُخدَم بقائمةٍ أطول:
    تطويلُها إلى ١٩٠٠ يزيد ثلاثين سطرا يمرّ عليها كلُّ متعلّمٍ ولا يختارها أحد. */
@@ -256,21 +252,7 @@ export default function StudentAccount() {
   const uploadAvatar = async (blob: Blob) => {
     setErr(""); setSavedMsg(""); setPhotoMsg(null); setPhotoBusy(true);
     try {
-      const r = await apiPost<{
-        uploadUrl: string; maxBytes: number; avatarUrl: string; awaitingApproval: boolean;
-      }>("/api/learner/avatar-upload", { mime: PHOTO_OUT_MIME });
-      if (blob.size > r.maxBytes) {
-        setPhotoMsg({ bad: true, text: `الصورة أكبر من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)` });
-        return;
-      }
-      const res = await fetch(`${API_BASE}${r.uploadUrl}`, {
-        method: "PUT", headers: { "content-type": PHOTO_OUT_MIME }, body: blob,
-      });
-      if (!res.ok) {
-        /* الحالةُ تُقال: ٥٠١ إشعالٌ مطفأ، و٤١٥ نوعٌ مرفوض، و٤٠٣ رابطٌ منتهٍ */
-        setPhotoMsg({ bad: true, text: `تعذّر رفع الصورة (${res.status})` });
-        return;
-      }
+      const r = await uploadAccountAvatar(blob);
       setStoredAvatar(r.avatarUrl);
       setFraming(null);
       setForm((f) => ({ ...f, avatarUrl: "" }));
@@ -278,7 +260,7 @@ export default function StudentAccount() {
         ? "رفعت صورتك — وتظهر للعامّة بعد اعتماد الإدارة."
         : "رفعت صورتك." });
     } catch (e) {
-      setPhotoMsg({ bad: true, text: e instanceof ImageConditionError ? e.message
+      setPhotoMsg({ bad: true, text: e instanceof ImageConditionError || e instanceof AvatarUploadError ? e.message
         : e instanceof ApiError ? e.message : "تعذّر رفع الصورة" });
     } finally {
       setPhotoBusy(false);

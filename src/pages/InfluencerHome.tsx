@@ -10,65 +10,59 @@
    (صاحب المنصّة). فاللوحةُ لوحةُ المدرّب (`ShareKit`) بمحتوى المنحة: صورُها (`influencer/grant-art.ts`) ونصُّها لكلّ
    منصّة برابط صفحته (`influencer-share.ts`). ومفتوحةٌ أوّلَ الصفحة كما قال للمدرّب: «صمم منشورك هو الأهمّ». */
 
-import { useEffect, useMemo, useState } from "react";
-import { Copy, Loader2, Megaphone, ServerOff, Share2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Copy, ImagePlus, Loader2, Megaphone, ServerOff, Share2 } from "lucide-react";
 import { apiGet, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
 import InfluencerLayout from "./influencer/InfluencerLayout";
-import { Card, Panel } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
+import { controlCls } from "@/components/FormKit";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { fmtDate, fmtDayMonth, fmtMoney } from "@/application/text/format-ar";
 import ShareKit, { type ShareContent } from "@/components/trainer/ShareKit";
 import { drawGrantArt, grantArtPlan, grantDesigns, GRANT_DESIGNS, parseGrantKind, type GrantArtData, type GrantDesign } from "@/components/influencer/grant-art";
-import { grantTrainerFaces } from "@/application/commerce/grant-landing";
 import { grantEmailSubject, grantShareText, grantShareUrl, type GrantShareInput } from "@/application/commerce/influencer-share";
 import { waShare } from "@/application/site/whatsapp";
+import ImageFramer from "@/components/ImageFramer";
+import { ImageConditionError } from "@/lib/prepare-image";
+import { AvatarUploadError, uploadAccountAvatar } from "@/services/avatar-upload";
 
 interface Row { orderId: string; at: string; buyerAr: string; courses: number; listTotal: number; percent: number; commission: number; stateAr: string; refunded: boolean }
 interface Me {
   nameAr: string; code: string; active: boolean; commissionPercent: number; link: string; currency: string;
   photoUrl: string | null;
+  /** مادّةُ التصاميم — الدوراتُ وصورُ المدرّبين بلا أسماء (`designMaterial`) */
+  designs: { termAr: string | null; courses: { title: string; startsAt: string | null }[]; photos: string[]; trainerTotal: number };
   grant: { nameAr: string; open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
   totals: { signups: number; codes: number; buyers: number; sales: number; earned: number; paid: number; balance: number };
   rows: Row[];
   payouts: { id: string; amount: number; currency: string; noteAr: string | null; paidAt: string }[];
 }
 
-/** ما تعطيه صفحةُ المنحة العامّة — دوراتُها ومدرّبوها المنشورون بفصلها (`grant-landing.service.ts#influencerView`) */
-interface GrantView {
-  termAr: string | null;
-  openCourses: { titleAr: string; startsAt: string | null; trainer?: { id: string; name: string; photoUrl: string | null } | null }[];
-}
-
 /** «صمم منشورك» — تصاميمُ المنحة والأكاديميّة، ونصُّها لكلّ منصّة برابط صفحته وكوده.
 
     وبلا صورته: «لا داعيَ لوجود صورة صاحب المنحة، فهو ينشرها لحساباته فقط، اذكرها مع الكود كاسمه» (صاحب المنصّة،
-    ٢٦ أكتوبر ٢٠٢٦). فيختار تصميما من أربعة (`GRANT_DESIGNS`)، والدوراتُ ومدرّبوها من صفحة المنحة نفسِها. */
+    ٢٦ أكتوبر ٢٠٢٦). فيختار تصميما من سبعة (`GRANT_DESIGNS`)، ومادّتُها من كشفه (`designMaterial` في الخادم):
+    الدوراتُ وصورُ مدرّبيها بلا أسماء، وبلا صاحب المنصّة.
+
+    ثمّ «تصميمك الخاص» أوّلَها ومختارا عند الفتح: «امنحه فرصةً أن يصمّم تصميما خاصّا به، ويُطلب منه رفعُ صورته واسمه!
+    اجعل هذا تلقائيّا» (٢٧ أكتوبر ٢٠٢٦). فبلا صورةٍ يرى القالبَ ويُطلب منه رفعُها، وبها يُرسم التصميمُ وحدَه. وصورتُه صورةُ
+    حسابه (`uploadAccountAvatar`) فتبقى لكلّ زيارة، واسمُه في التصميم يكتبه هو ويُحفظ في متصفّحه. */
 function GrantShare({ me }: { me: Me }) {
-  const [view, setView] = useState<GrantView | null>(null);
-  const [design, setDesign] = useState<GrantDesign>("offer");
-  useEffect(() => {
-    apiGet<GrantView>(`/api/public/grant/influencer?code=${encodeURIComponent(me.code)}`)
-      .then(setView).catch(() => setView({ termAr: null, openCourses: [] }));
-  }, [me.code]);
+  const [design, setDesign] = useState<GrantDesign>("personal");
+  const [photo, setPhoto] = useState<string | null>(me.photoUrl);
+  const [ownName, setOwnName] = useState(() => readOwnName(me.code) ?? me.nameAr);
+  const art = useMemo<GrantArtData>(() => ({
+    name: me.nameAr, code: me.code, percentOff: me.grant.percentOff, maxCourses: me.grant.maxCourses,
+    lastDayAr: me.grant.closesAt ? fmtDayMonth(new Date(new Date(me.grant.closesAt).getTime() - 1).toISOString()) : null,
+    termAr: me.designs.termAr, photos: me.designs.photos, trainerTotal: me.designs.trainerTotal,
+    courses: me.designs.courses, dayAr: (iso: string) => fmtDayMonth(iso),
+    own: { photo, name: ownName.trim() || me.nameAr },
+  }), [me, photo, ownName]);
+  const available = useMemo(() => grantDesigns(art), [art]);
 
-  const art = useMemo<GrantArtData | null>(() => {
-    if (!view) return null;
-    const faces = grantTrainerFaces(view.openCourses, 24);
-    return {
-      name: me.nameAr, code: me.code, percentOff: me.grant.percentOff, maxCourses: me.grant.maxCourses,
-      lastDayAr: me.grant.closesAt ? fmtDayMonth(new Date(new Date(me.grant.closesAt).getTime() - 1).toISOString()) : null,
-      termAr: view.termAr,
-      trainers: faces.faces.map((t) => ({ name: t.name, photoUrl: t.photoUrl })), trainerTotal: faces.total,
-      courses: view.openCourses.map((c) => ({ title: c.titleAr, startsAt: c.startsAt })),
-      dayAr: (iso: string) => fmtDayMonth(iso),
-    };
-  }, [me, view]);
-  const available = useMemo(() => (art ? grantDesigns(art) : []), [art]);
-
-  const content = useMemo<ShareContent | null>(() => {
-    if (!art) return null;
+  const content = useMemo<ShareContent>(() => {
     const g: GrantShareInput = {
       nameAr: me.nameAr, code: me.code, percentOff: art.percentOff, maxCourses: art.maxCourses, lastDayAr: art.lastDayAr, url: me.link,
     };
@@ -76,11 +70,12 @@ function GrantShare({ me }: { me: Me }) {
       text: (p) => grantShareText(p, g),
       subject: () => grantEmailSubject(g),
       door: (p) => grantShareUrl(p, g),
-      plan: (f) => grantArtPlan(f, design, available),
+      plan: (f) => grantArtPlan(f, design, available, Boolean(photo)),
       draw: (kind) => { const k = parseGrantKind(kind); return drawGrantArt(k.design, k.size, art); },
       key: `${design}|${available.join(",")}|${JSON.stringify({ ...art, dayAr: undefined })}`,
     };
-  }, [me, art, design, available]);
+  }, [me, art, design, available, photo]);
+  const needsPhoto = design === "personal" && !photo;
 
   return (
     <Panel as="section" className="mt-5">
@@ -90,24 +85,96 @@ function GrantShare({ me }: { me: Me }) {
         </h2>
         <p className="text-read text-muted-foreground">تصاميم عن المنحة والأكاديمية وكودك باسمك، ونص جاهز لكل منصة برابطك.</p>
       </div>
-      {!content ? (
-        <div className="grid place-items-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>
-      ) : (
-        <>
-          <p className="mt-3 text-read font-bold">التصميم</p>
-          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="التصميم">
-            {GRANT_DESIGNS.filter((x) => available.includes(x.id)).map((x) => (
-              <Button key={x.id} size="sm" type="button" tone={design === x.id ? "confirm" : "secondary"}
-                aria-pressed={design === x.id} onClick={() => setDesign(x.id)}>
-                {x.label}
-              </Button>
-            ))}
-          </div>
-          <ShareKit face={{ name: me.nameAr, photoUrl: null }} courses={[]} url={me.link}
-            code={{ code: me.code, percentOff: me.grant.percentOff }} fileStem={`wajeez-grant-${design}`} content={content} />
-        </>
+      <p className="mt-3 text-read font-bold">التصميم</p>
+      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="التصميم">
+        {GRANT_DESIGNS.filter((x) => available.includes(x.id)).map((x) => (
+          <Button key={x.id} size="sm" type="button" tone={design === x.id ? "confirm" : "secondary"}
+            aria-pressed={design === x.id} onClick={() => setDesign(x.id)}>
+            {x.label}
+          </Button>
+        ))}
+      </div>
+      {design === "personal" && (
+        <OwnDesign photo={photo} name={ownName} art={art}
+          onPhoto={setPhoto} onName={(v) => { setOwnName(v); writeOwnName(me.code, v); }} />
+      )}
+      {!needsPhoto && (
+        <ShareKit face={{ name: me.nameAr, photoUrl: null }} courses={[]} url={me.link}
+          code={{ code: me.code, percentOff: me.grant.percentOff }} fileStem={`wajeez-grant-${design}`} content={content} />
       )}
     </Panel>
+  );
+}
+
+/** اسمُه في التصميم — في متصفّحه، وقد يمنعه المتصفّح فيبقى اسمُ ملفّه */
+const ownNameKey = (code: string) => `wajeez_influencer_design_name:${code}`;
+function readOwnName(code: string): string | null {
+  try { return localStorage.getItem(ownNameKey(code)); } catch { return null; }
+}
+function writeOwnName(code: string, v: string) {
+  try { localStorage.setItem(ownNameKey(code), v); } catch { /* يبقى للزيارة وحدَها */ }
+}
+
+/** «تصميمك الخاص»: صورتُه واسمُه — وبلا صورةٍ القالبُ ومكانُها «صورتك هنا» */
+function OwnDesign({ photo, name, art, onPhoto, onName }: {
+  photo: string | null; name: string; art: GrantArtData;
+  onPhoto: (url: string) => void; onName: (v: string) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [framing, setFraming] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ bad: boolean; text: string } | null>(null);
+  const [template, setTemplate] = useState<string | null>(null);
+
+  /* القالبُ يُرسم ما دامت لا صورة — يرى أين تقع صورتُه واسمُه قبل أن يرفع */
+  useEffect(() => {
+    if (photo) { setTemplate(null); return; }
+    let live = true;
+    void drawGrantArt("personal", "post", art).then((c) => { if (live) setTemplate(c.toDataURL("image/png")); });
+    return () => { live = false; };
+  }, [photo, art]);
+
+  const upload = async (blob: Blob) => {
+    setBusy(true); setMsg(null);
+    try {
+      const r = await uploadAccountAvatar(blob);
+      setFraming(null);
+      onPhoto(r.avatarUrl);
+      setMsg({ bad: false, text: "رفعت صورتك، وصار تصميمك جاهزا." });
+    } catch (e) {
+      setMsg({ bad: true, text: e instanceof ImageConditionError || e instanceof AvatarUploadError || e instanceof ApiError ? e.message : "تعذر رفع الصورة" });
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <Inset tone="accent" className="mt-4 p-4">
+      <p className="text-read font-bold">{photo ? "تصميمك بصورتك واسمك" : "ارفع صورتك واكتب اسمك، ويجهز تصميمك وحده"}</p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+        <label className="block">
+          <span className="text-read text-muted-foreground">اسمك في التصميم</span>
+          <input value={name} maxLength={40} onChange={(e) => onName(e.target.value)}
+            className={`mt-1 ${controlCls}`} />
+        </label>
+        <div>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) { setMsg(null); setFraming(f); } }} />
+          <Button tone={photo ? "secondary" : "confirm"} icon={busy ? undefined : ImagePlus} loading={busy}
+            onClick={() => fileRef.current?.click()}>
+            {busy ? "جار الرفع…" : photo ? "غير صورتك" : "ارفع صورتك"}
+          </Button>
+        </div>
+      </div>
+      <p className="mt-2 text-read text-muted-foreground">صورة واضحة لوجهك. وهي صورة حسابك أيضا.</p>
+      {msg && <p role="alert" className={`mt-2 text-read font-semibold ${msg.bad ? "text-red-300" : "text-teal-light-ink"}`}>{msg.text}</p>}
+      {framing && <ImageFramer file={framing} onDone={upload} onCancel={() => { setFraming(null); if (fileRef.current) fileRef.current.value = ""; }} />}
+      {template && (
+        <img src={template} alt="قالب تصميمك الخاص — صورتك مكان «صورتك هنا»"
+          className="mx-auto mt-4 w-full max-w-sm rounded-xl shadow-sm ring-1 ring-black/10" />
+      )}
+    </Inset>
   );
 }
 

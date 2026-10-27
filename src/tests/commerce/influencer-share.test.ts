@@ -9,7 +9,8 @@ import { join } from 'node:path'
 import { grantEmailSubject, grantShareText, grantShareUrl, type GrantShareInput } from '@/application/commerce/influencer-share'
 import { SHARE_PLATFORMS } from '@/application/trainer/share-kit'
 import { plainAr } from '@/application/text/plain-ar'
-import { coursesAr, grantArtPlan, grantDesigns, parseGrantKind, shortTitle, ACADEMY_FEATURES, MIN_FACES } from '@/components/influencer/grant-art'
+import { coursesAr, grantArtPlan, grantDesigns, parseGrantKind, shortTitle, trainersCountAr, ACADEMY_FEATURES, ACADEMY_PERKS, ASSESSMENTS, GRANT_DESIGNS, MIN_FACES } from '@/components/influencer/grant-art'
+import { FIELD_CHECKS } from '@/domain/placement/field-check'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 const URL = 'https://www.wajeezacademy.com/grant/i/SARA'
@@ -75,9 +76,12 @@ describe('الصور واللوحة', () => {
     expect(page).toMatch(/<ShareKit [^>]*content=\{content\} \/>/)
     expect(page).toMatch(/text: \(p\) => grantShareText\(p, g\)/)
     expect(page).toMatch(/draw: \(kind\) => \{ const k = parseGrantKind\(kind\); return drawGrantArt\(k\.design, k\.size, art\); \}/)
-    /* وبلا صورته: وجهُ اللوحة بلا صورة، وصورُ المدرّبين من صفحة المنحة نفسِها */
+    /* وبلا صورته: وجهُ اللوحة بلا صورة، وصورُ المدرّبين ودوراتُ الموسم من حسابه (بلا صاحب المنصّة) */
     expect(page).toMatch(/face=\{\{ name: me\.nameAr, photoUrl: null \}\}/)
-    expect(page).toMatch(/apiGet<GrantView>\(`\/api\/public\/grant\/influencer\?code=/)
+    expect(page).toMatch(/termAr: me\.designs\.termAr, photos: me\.designs\.photos, trainerTotal: me\.designs\.trainerTotal,/)
+    expect(page, 'عادت صور المدربين من صفحة المنحة العامة — وفيها صاحب المنصة').not.toMatch(/\/api\/public\/grant/)
+    /* والتصميمُ يُختار من المتاح وحدَه */
+    expect(page).toMatch(/GRANT_DESIGNS\.filter\(\(x\) => available\.includes\(x\.id\)\)/)
     expect(page, 'اللوحة بعد الكود والأرقام').toMatch(/<GrantShare me=\{me\} \/>[\s\S]*كودك/)
   })
 
@@ -97,36 +101,94 @@ describe('الصور واللوحة', () => {
 })
 
 /* «أضف تصاميم أخرى تدل على الأكاديمية ودوراتها ومدربيها… لا داعي لوجود صورة صاحب المنحة… اذكرها مع الكود كاسمه»
-   (صاحب المنصة، ٢٦ أكتوبر ٢٠٢٦) */
-describe('أربعة تصاميم بلا صورة المؤثر', () => {
-  const face = { name: 'م', photoUrl: '/x.jpg' }
-  it('⚠️ وجوه المدربين بثلاثة فأكثر، والدورات بواحدة فأكثر — والمنحة والأكاديمية دائما', () => {
-    expect(grantDesigns({ trainers: [face, face, face], courses: [{ title: 'أ', startsAt: null }] })).toEqual(['offer', 'trainers', 'courses', 'academy'])
-    expect(grantDesigns({ trainers: [face, face], courses: [] }), 'وجهان لا يقولان «مدربون»').toEqual(['offer', 'academy'])
+   (صاحب المنصة، ٢٦ أكتوبر ٢٠٢٦)، ثمّ (٢٧ أكتوبر): «لا اريد ان توضح صور المدربين بشكل قوي… ولا تضع صهيب من ضمنهم
+   ولا داعي لاسمائهم… نحتاج تصميم للاكاديمية ككل… كلما زادت التصاميم كان افضل… تصميم فيه كل المدربين معا… اكثر نعومة» */
+describe('عشرة تصاميم: صورة المؤثر في تصميمه وحده، وبلا أسماء المدربين', () => {
+  const course = { title: 'أ', startsAt: null }
+  it('⚠️ صور المدربين بثلاث فأكثر، والدورات بواحدة فأكثر — وما سواها دائما', () => {
+    const ALL = ['personal', 'offer', 'academy', 'start', 'features', 'why', 'trainers', 'team', 'courses', 'steps']
+    expect(GRANT_DESIGNS.map((x) => x.id)).toEqual(ALL)
+    expect(grantDesigns({ photos: ['/a', '/b', '/c'], courses: [course] })).toEqual(ALL)
+    expect(grantDesigns({ photos: ['/a', '/b'], courses: [] }), 'صورتان لا تقولان «مدربون»').toEqual(['personal', 'offer', 'academy', 'start', 'features', 'why', 'steps'])
     expect(MIN_FACES).toBe(3)
   })
-  it('⚠️ المنشور والستوري للتصميم المختار، والكاروسيل كلها ثم «كيف تحجز»', () => {
+  it('⚠️ المنشور والستوري للتصميم المختار، والكاروسيل بصور المدربين مرة واحدة و«مزايا وجيز» مكان «لماذا» ثم «كيف تحجز»', () => {
     expect(grantArtPlan('post', 'trainers', ['offer', 'trainers'])).toEqual([{ kind: 'trainers:post', index: 0 }])
-    expect(grantArtPlan('carousel', 'offer', ['offer', 'trainers', 'academy']).map((x) => x.kind))
-      .toEqual(['offer:slide', 'trainers:slide', 'academy:slide', 'steps:slide'])
+    expect(grantArtPlan('story', 'academy', ['offer', 'academy'])).toEqual([{ kind: 'academy:story', index: 0 }])
+    const all = grantDesigns({ photos: ['/a', '/b', '/c'], courses: [course] })
+    expect(grantArtPlan('carousel', 'offer', all).map((x) => x.kind))
+      .toEqual(['offer:slide', 'academy:slide', 'start:slide', 'team:slide', 'courses:slide', 'features:slide', 'steps:slide'])
+    /* وتصميمُه الخاصّ أوّلَ الكاروسيل إن رفع صورته — والقالبُ الفارغُ لا يُنزَّل */
+    expect(grantArtPlan('carousel', 'offer', all, true)[0].kind).toBe('personal:slide')
     expect(parseGrantKind('courses:story')).toEqual({ design: 'courses', size: 'story' })
   })
-  it('⚠️ لا صورة له في بيانات الرسم — واسمه مع الكود في كل تصميم', () => {
+  it('⚠️ صورته في «تصميمك الخاص» وحده، ولا أسماء للمدربين — واسمه مع الكود في كل تصميم', () => {
     const art = code('src/components/influencer/grant-art.ts')
     const data = art.slice(art.indexOf('export interface GrantArtData'), art.indexOf('\n}', art.indexOf('export interface GrantArtData')))
-    expect(data, 'عادت صورة المؤثر إلى بيانات الرسم').not.toMatch(/^\s*photoUrl/m)
+    expect(data, 'عادت صورة المؤثر إلى بيانات الرسم العامة').not.toMatch(/^\s*photoUrl/m)
+    expect(data).toMatch(/^\s*own: \{ photo: string \| null; name: string \}$/m)
+    /* وصورتُه لا تُقرأ إلّا في تصميمه */
+    const reads = [...art.matchAll(/d\.own\.photo/g)].map((m) => m.index!)
+    const own = art.indexOf('async function drawPersonal(')
+    const next = art.indexOf('\n}', own)
+    expect(reads.length, 'لا يقرأ صورته أحد').toBeGreaterThan(0)
+    for (const i of reads) expect(i > own && i < next, 'صورته في تصميم غير تصميمه').toBe(true)
+    expect(data, 'المدربون صور فقط').toMatch(/^\s*photos: string\[\]$/m)
+    expect(data, 'عادت أسماء المدربين إلى بيانات الرسم').not.toMatch(/trainers|nameAr/)
     expect(art).toMatch(/const text = `\$\{influencerCodeLabelAr\(d\.name\)\}: \$\{d\.code\}`/)
-    expect(art, 'الكود لا يرسم في ذيل كل تصميم').toMatch(/codePill\(ctx, d, cx, m\.pillY,/)
+    expect(art, 'الكود لا يرسم في ذيل كل تصميم').toMatch(/codePill\(ctx, design === 'personal' \? \{ \.\.\.d, name: d\.own\.name \} : d, cx, f\.pillY,/)
   })
   it('والعدد فوق العشرة بالمفرد، واسم الدورة بلا ما بين القوسين', () => {
     expect(coursesAr(4)).toBe('4 دورات')
     expect(coursesAr(24)).toBe('24 دورة')
     expect(coursesAr(2)).toBe('دورتين')
+    expect(trainersCountAr(14)).toBe('14 مدربا معتمدا')
+    expect(trainersCountAr(5)).toBe('5 مدربين معتمدين')
     expect(shortTitle('أساسيات التخطيط الاستراتيجي (من فهم الواقع إلى تحديد الاتجاه)')).toBe('أساسيات التخطيط الاستراتيجي')
     expect(shortTitle('تمويل المشاريع: من الفكرة إلى التمويل')).toBe('تمويل المشاريع')
   })
-  it('ومزايا الأكاديمية مما تعده صفحة المنحة لا غيره', () => {
+  it('ومزايا الأكاديمية مما تعده صفحة المنحة لا غيره — ونصوص التصاميم بلا تشكيل', () => {
     expect(ACADEMY_FEATURES).toEqual(['لقاءات مباشرة على Zoom مع مدرب معتمد', 'تطبيقات عملية في كل دورة', 'تسجيل كل لقاء تعود إليه', 'شهادة موثقة ورسالة توصية لمن يلتزم'])
     for (const f of ACADEMY_FEATURES) expect(plainAr(f)).toBe(f)
+    for (const x of GRANT_DESIGNS) expect(plainAr(x.label)).toBe(x.label)
+  })
+
+  /* «تصميم آخر عن التشخيص واختبارات تحديد المستوى وتحديد الميول وغيرها، وأي ميزة للأكاديمية ضعها في مجموعة
+     التصاميم» (صاحب المنصة، ٢٧ أكتوبر ٢٠٢٦) — وكل رقم فيها رقم صفحته، لا وعد يختلق */
+  it('⚠️ «اعرف من أين تبدأ»: الأربعة بأرقام صفحاتها، ومجالات الفحص من الفحوص نفسها', () => {
+    expect(ASSESSMENTS.map((a) => [a.title, a.tag])).toEqual([
+      ['التشخيص الذكي', 'من 3 إلى 6 دقائق'],
+      ['مرآة وجيز', '24 بندا في 3 دقائق'],
+      ['تحديد مستوى الإنجليزية', 'نحو 30 سؤالا'],
+      ['فحص المهارة', '12 سؤالا'],
+    ])
+    expect(ASSESSMENTS[3].sub.split(' · ')).toEqual(FIELD_CHECKS.map((c) => c.title_ar))
+    expect(code('src/pages/Diagnostic.tsx'), 'تغير زمن التشخيص في صفحته').toContain('text: "٣–٦ دقائق"')
+    expect(code('src/application/site/public-pages.ts'), 'تغير وصف المرآة').toContain('أربعة وعشرون بندا في ثلاث دقائق')
+    for (const a of ASSESSMENTS) for (const t of [a.title, a.sub, a.tag]) expect(plainAr(t), t).toBe(t)
+    /* و«3–6» بشرطة تنقلب «6–3» في السطر العربي */
+    for (const a of ASSESSMENTS) expect(a.tag, 'شرطة بين رقمين').not.toMatch(/\d\s*[–-]\s*\d/)
+  })
+  it('⚠️ «مزايا وجيز» ثمان — وفيها ما تعده صفحة المنحة كله', () => {
+    expect(ACADEMY_PERKS).toHaveLength(8)
+    for (const p of ACADEMY_PERKS) expect(plainAr(p), p).toBe(p)
+    expect(ACADEMY_PERKS).toEqual(expect.arrayContaining(['لقاءات مباشرة على Zoom', 'تطبيقات عملية', 'تسجيل كل لقاء', 'رسالة توصية لمن يلتزم']))
+    const art = code('src/components/influencer/grant-art.ts')
+    expect(art).toMatch(/else if \(design === 'start'\) drawStart\(ctx, f, w, size\)/)
+    expect(art).toMatch(/else if \(design === 'features'\) drawFeatures\(ctx, f, w, size\)/)
+  })
+
+  /* «امنحه فرصة أن يصمم تصميما خاصا به، ويطلب منه رفع صورته واسمه! اجعل هذا تلقائيا» (صاحب المنصة، ٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ «تصميمك الخاص» مختار عند الفتح — وبلا صورة القالب وطلب رفعها، لا لوحة تنزل قالبا فارغا', () => {
+    const page = code('src/pages/InfluencerHome.tsx')
+    expect(page).toMatch(/useState<GrantDesign>\("personal"\)/)
+    expect(page).toMatch(/const needsPhoto = design === "personal" && !photo;/)
+    expect(page).toMatch(/\{!needsPhoto && \(\s*<ShareKit /)
+    expect(page).toMatch(/void drawGrantArt\("personal", "post", art\)/)
+    expect(page).toMatch(/own: \{ photo, name: ownName\.trim\(\) \|\| me\.nameAr \}/)
+    /* وصورتُه صورةُ حسابه — برفعٍ واحدٍ مع صفحة حسابه */
+    expect(page).toMatch(/const r = await uploadAccountAvatar\(blob\);/)
+    expect(code('src/pages/student/Account.tsx')).toMatch(/const r = await uploadAccountAvatar\(blob\);/)
+    expect(page).toMatch(/useState<string \| null>\(me\.photoUrl\)/)
   })
 })
