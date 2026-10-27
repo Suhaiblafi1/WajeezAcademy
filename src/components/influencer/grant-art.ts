@@ -21,6 +21,13 @@
      بلا حساب، وأرقامُها كما في صفحاتها (`ASSESSMENTS`)، ومجالاتُ الفحص من `FIELD_CHECKS` نفسِها.
    · **مزايا وجيز**: ثماني مزايا قائمةٌ في المنصّة (`ACADEMY_PERKS`)، وهي في الكاروسيل مكانَ «لماذا وجيز» لأنّها تحويها.
 
+   ═══ ثمّ «تصميمك الخاص» بصورته واسمه (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   «امنحه فرصةً أن يصمّم تصميما خاصّا به، ويُطلب منه رفعُ صورته واسمه! اجعل هذا تلقائيّا». فالتصميمُ العاشرُ أوّلُها:
+   صورتُه كبيرةً واسمُه، و«منحتي لكم» بنسبتها. وصورتُه صورةُ حسابه (يرفعها من اللوحة نفسِها، فتبقى لكلّ زيارة)،
+   واسمُه يكتبه هو. وبلا صورةٍ يرى القالبَ بمكانها «صورتك هنا» ويُطلب منه رفعُها — ولا يُنزَّل قالبٌ فارغ.
+   وصورتُه لا تُرسم في غيره: «لا داعي لوجود صورة صاحب المنحة» ما زال قاعدةَ التصاميم الأخرى.
+
    وفي ذيل كلٍّ «الكود الخاص بـ<اسمه>». وبلا عنوان الموقع: الرابطُ في النصّ المرافق يُنقر، وفي الصورة لا.
 
    وكلُّ ما يُقال قائمٌ في المنصّة لا وعدٌ يُختلق: المدرّبون والدوراتُ من دورات المنحة ببوّابة النشر، والمزايا ممّا
@@ -32,7 +39,7 @@ import { GRANT_ACADEMY_LINE_AR } from '@/application/commerce/grant-landing'
 import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { FIELD_CHECKS } from '@/domain/placement/field-check'
 
-export type GrantDesign = 'offer' | 'academy' | 'start' | 'features' | 'why' | 'trainers' | 'team' | 'courses' | 'steps'
+export type GrantDesign = 'personal' | 'offer' | 'academy' | 'start' | 'features' | 'why' | 'trainers' | 'team' | 'courses' | 'steps'
 export type GrantSize = 'post' | 'story' | 'slide'
 
 export interface GrantArtData {
@@ -51,10 +58,13 @@ export interface GrantArtData {
   trainerTotal: number
   courses: { title: string; startsAt: string | null }[]
   dayAr: (iso: string) => string
+  /** «تصميمك الخاص» وحدَه — صورةُ حسابه واسمُه كما كتبه، ولا يُرسمان في غيره */
+  own: { photo: string | null; name: string }
 }
 
 /** التصاميمُ بأسمائها كما تُعرض في اللوحة */
 export const GRANT_DESIGNS: { id: GrantDesign; label: string }[] = [
+  { id: 'personal', label: 'تصميمك الخاص' },
   { id: 'offer', label: 'المنحة' },
   { id: 'academy', label: 'الأكاديمية' },
   { id: 'start', label: 'التشخيص والاختبارات' },
@@ -626,6 +636,90 @@ function drawSteps(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: nu
   ctx.textAlign = 'center'
 }
 
+/** مكانُ الصورة في القالب — ظلُّ رأسٍ وكتفين و«صورتك هنا» */
+function photoSlot(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.fillStyle = SOFT.tint
+  ctx.fillRect(x, y, size, size)
+  ctx.fillStyle = 'rgba(31,111,120,0.22)'
+  ctx.beginPath(); ctx.arc(x + size / 2, y + size * 0.38, size * 0.16, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.ellipse(x + size / 2, y + size * 1.04, size * 0.34, size * 0.4, 0, Math.PI, 0); ctx.fill()
+  ctx.fillStyle = C.tealInk
+  ctx.font = font(700, Math.round(size * 0.075))
+  ctx.textAlign = 'center'
+  ctx.fillText('صورتك هنا', x + size / 2, y + size * 0.88)
+}
+
+/** تصميمُه الخاصّ — صورتُه كبيرةً مستديرةَ الزوايا، واسمُه، و«منحتي لكم تصل إلى ٤٥٪» في بطاقة */
+async function drawPersonal(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number, size: GrantSize) {
+  const cx = w / 2
+  /* الصورةُ أكبرُ ما يتّسع له المقاس — والستوري أطولُها فصورتُه أكبر */
+  const P = size === 'story' ? 560 : size === 'slide' ? 400 : 330
+  const cardH = 130 * f.s
+  const blockH = P + 72 * f.s + 50 * f.s + 40 * f.s + cardH
+  const y0 = f.top + Math.max(10, (f.bottom - f.top - blockH) / 2)
+  const x0 = cx - P / 2
+  const r = P * 0.22
+  const img = d.own.photo ? await loadImage(d.own.photo) : null
+  ctx.save()
+  ctx.shadowColor = 'rgba(31,42,46,0.16)'
+  ctx.shadowBlur = 50
+  ctx.shadowOffsetY = 18
+  roundRect(ctx, x0, y0, P, P, r)
+  ctx.fillStyle = C.white
+  ctx.fill()
+  ctx.restore()
+  const b = 10
+  ctx.save()
+  roundRect(ctx, x0 + b, y0 + b, P - b * 2, P - b * 2, r - b)
+  ctx.clip()
+  if (img) {
+    const side = Math.min(img.naturalWidth, img.naturalHeight)
+    const sy = img.naturalHeight > img.naturalWidth ? (img.naturalHeight - side) * 0.2 : (img.naturalHeight - side) / 2
+    ctx.drawImage(img, (img.naturalWidth - side) / 2, sy, side, side, x0 + b, y0 + b, P - b * 2, P - b * 2)
+  } else photoSlot(ctx, x0 + b, y0 + b, P - b * 2)
+  ctx.restore()
+  ctx.textAlign = 'center'
+  ctx.fillStyle = C.ink
+  const nm = fitLines(ctx, d.own.name, w - 200, 1, Math.round(58 * f.s), Math.round(36 * f.s))
+  ctx.font = font(700, nm.px)
+  ctx.fillText(nm.lines[0], cx, y0 + P + 72 * f.s)
+  ctx.fillStyle = C.muted
+  ctx.font = font(500, Math.round(28 * f.s))
+  ctx.fillText('أنصحكم بأكاديمية وجيز', cx, y0 + P + 122 * f.s)
+  /* «منحتي لكم تصل إلى» والنسبةُ ذهبيّةٌ كبيرةٌ إلى يسارها، في بطاقةٍ بيضاء */
+  const cy = y0 + P + 162 * f.s
+  const lead = 'منحتي لكم تصل إلى'
+  const tail = 'من سعر الدورات'
+  const big = `${d.percentOff}٪`
+  const lp = Math.round(32 * f.s)
+  const bp = Math.round(76 * f.s)
+  ctx.font = font(700, lp)
+  const lw = ctx.measureText(lead).width
+  const tw = ctx.measureText(tail).width
+  ctx.font = font(700, bp)
+  const bw = ctx.measureText(big).width
+  const gap = 22 * f.s
+  const total = lw + gap + bw + gap + tw
+  const cw = Math.min(w - 160, total + 90 * f.s)
+  card(ctx, cx - cw / 2, cy, cw, cardH, cardH / 2)
+  let right = cx + total / 2
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = C.tealInk
+  ctx.font = font(700, lp)
+  ctx.fillText(lead, right, cy + cardH / 2 + lp * 0.08)
+  right -= lw + gap
+  ctx.fillStyle = C.gold
+  ctx.font = font(700, bp)
+  ctx.fillText(big, right, cy + cardH / 2 + bp * 0.06)
+  right -= bw + gap
+  ctx.fillStyle = C.tealInk
+  ctx.font = font(700, lp)
+  ctx.fillText(tail, right, cy + cardH / 2 + lp * 0.08)
+  ctx.textBaseline = 'alphabetic'
+  ctx.textAlign = 'center'
+}
+
 /** يرسم تصميما بمقاسه */
 export async function drawGrantArt(design: GrantDesign, size: GrantSize, d: GrantArtData): Promise<HTMLCanvasElement> {
   const [w, h] = SIZE[size]
@@ -641,7 +735,8 @@ export async function drawGrantArt(design: GrantDesign, size: GrantSize, d: Gran
   const f = frameOf(size)
   const cx = w / 2
 
-  if (design === 'offer') drawOffer(ctx, d, f, w)
+  if (design === 'personal') await drawPersonal(ctx, d, f, w, size)
+  else if (design === 'offer') drawOffer(ctx, d, f, w)
   else if (design === 'academy') await drawAcademy(ctx, d, f, w)
   else if (design === 'start') drawStart(ctx, f, w, size)
   else if (design === 'features') drawFeatures(ctx, f, w, size)
@@ -651,9 +746,9 @@ export async function drawGrantArt(design: GrantDesign, size: GrantSize, d: Gran
   else if (design === 'courses') drawCourses(ctx, d, f, w, size)
   else drawSteps(ctx, d, f, w)
 
-  /* والذيلُ لكلّ تصميم: سطرُ المنحة (إلّا في تصميمها) ثمّ الكودُ باسمه */
-  if (design !== 'offer') grantLine(ctx, d, cx, f.lineY, Math.round(28 * f.s))
-  codePill(ctx, d, cx, f.pillY, Math.round(30 * f.s), w - 160)
+  /* والذيلُ لكلّ تصميم: سطرُ المنحة (إلّا فيما يقولها) ثمّ الكودُ باسمه — وفي تصميمه الخاصّ باسمه كما كتبه */
+  if (design !== 'offer' && design !== 'personal') grantLine(ctx, d, cx, f.lineY, Math.round(28 * f.s))
+  codePill(ctx, design === 'personal' ? { ...d, name: d.own.name } : d, cx, f.pillY, Math.round(30 * f.s), w - 160)
   if (f.cta) {
     ctx.textAlign = 'center'
     ctx.fillStyle = C.ink
@@ -666,18 +761,19 @@ export async function drawGrantArt(design: GrantDesign, size: GrantSize, d: Gran
   return canvas
 }
 
-/** التصاميمُ المتاحة — ما فيه صورُ المدرّبين بثلاثٍ فأكثر، والدوراتُ بواحدةٍ فأكثر */
+/** التصاميمُ المتاحة — «تصميمك الخاص» دائما (قالبُه يطلب صورته)، وما فيه صورُ المدرّبين بثلاثٍ فأكثر، والدوراتُ بواحدةٍ فأكثر */
 export function grantDesigns(d: Pick<GrantArtData, 'photos' | 'courses'>): GrantDesign[] {
   return GRANT_DESIGNS.map((x) => x.id).filter((id) =>
     id === 'trainers' || id === 'team' ? d.photos.length >= MIN_FACES : id === 'courses' ? d.courses.length > 0 : true)
 }
 
-/** ما يُرسم لكلّ صيغة: التصميمُ المختارُ منشورا أو ستوري، والكاروسيلُ شرائحُ التصاميم المتاحة — بلا «المدرّبون»
+/** ما يُرسم لكلّ صيغة: التصميمُ المختارُ منشورا أو ستوري، والكاروسيلُ شرائحُ التصاميم المتاحة — أوّلُها تصميمُه الخاصّ
+    إن رفع صورته (والقالبُ الفارغُ لا يُنزَّل)، وبلا «المدرّبون»
     وفيه «كلّ المدرّبين» (صورُهم مرّةً واحدةً تكفي في الكاروسيل)، وبلا «لماذا وجيز» وفيه «مزايا وجيز» التي تحويها،
     و«كيف تحجز» آخرَه */
-export function grantArtPlan(format: 'post' | 'story' | 'carousel', design: GrantDesign, available: GrantDesign[]): { kind: string; index: number }[] {
+export function grantArtPlan(format: 'post' | 'story' | 'carousel', design: GrantDesign, available: GrantDesign[], ownPhoto = false): { kind: string; index: number }[] {
   if (format !== 'carousel') return [{ kind: `${design}:${format}`, index: 0 }]
-  const order: GrantDesign[] = ['offer', 'academy', 'start', 'team', 'courses', 'features', 'steps']
+  const order: GrantDesign[] = [...(ownPhoto ? ['personal' as const] : []), 'offer', 'academy', 'start', 'team', 'courses', 'features', 'steps']
   return order.filter((x) => available.includes(x)).map((x) => ({ kind: `${x}:slide`, index: 0 }))
 }
 

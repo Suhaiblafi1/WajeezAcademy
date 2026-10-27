@@ -103,13 +103,13 @@ describe('الصور واللوحة', () => {
 /* «أضف تصاميم أخرى تدل على الأكاديمية ودوراتها ومدربيها… لا داعي لوجود صورة صاحب المنحة… اذكرها مع الكود كاسمه»
    (صاحب المنصة، ٢٦ أكتوبر ٢٠٢٦)، ثمّ (٢٧ أكتوبر): «لا اريد ان توضح صور المدربين بشكل قوي… ولا تضع صهيب من ضمنهم
    ولا داعي لاسمائهم… نحتاج تصميم للاكاديمية ككل… كلما زادت التصاميم كان افضل… تصميم فيه كل المدربين معا… اكثر نعومة» */
-describe('تسعة تصاميم بلا صورة المؤثر ولا أسماء المدربين', () => {
+describe('عشرة تصاميم: صورة المؤثر في تصميمه وحده، وبلا أسماء المدربين', () => {
   const course = { title: 'أ', startsAt: null }
   it('⚠️ صور المدربين بثلاث فأكثر، والدورات بواحدة فأكثر — وما سواها دائما', () => {
-    const ALL = ['offer', 'academy', 'start', 'features', 'why', 'trainers', 'team', 'courses', 'steps']
+    const ALL = ['personal', 'offer', 'academy', 'start', 'features', 'why', 'trainers', 'team', 'courses', 'steps']
     expect(GRANT_DESIGNS.map((x) => x.id)).toEqual(ALL)
     expect(grantDesigns({ photos: ['/a', '/b', '/c'], courses: [course] })).toEqual(ALL)
-    expect(grantDesigns({ photos: ['/a', '/b'], courses: [] }), 'صورتان لا تقولان «مدربون»').toEqual(['offer', 'academy', 'start', 'features', 'why', 'steps'])
+    expect(grantDesigns({ photos: ['/a', '/b'], courses: [] }), 'صورتان لا تقولان «مدربون»').toEqual(['personal', 'offer', 'academy', 'start', 'features', 'why', 'steps'])
     expect(MIN_FACES).toBe(3)
   })
   it('⚠️ المنشور والستوري للتصميم المختار، والكاروسيل بصور المدربين مرة واحدة و«مزايا وجيز» مكان «لماذا» ثم «كيف تحجز»', () => {
@@ -118,16 +118,25 @@ describe('تسعة تصاميم بلا صورة المؤثر ولا أسماء �
     const all = grantDesigns({ photos: ['/a', '/b', '/c'], courses: [course] })
     expect(grantArtPlan('carousel', 'offer', all).map((x) => x.kind))
       .toEqual(['offer:slide', 'academy:slide', 'start:slide', 'team:slide', 'courses:slide', 'features:slide', 'steps:slide'])
+    /* وتصميمُه الخاصّ أوّلَ الكاروسيل إن رفع صورته — والقالبُ الفارغُ لا يُنزَّل */
+    expect(grantArtPlan('carousel', 'offer', all, true)[0].kind).toBe('personal:slide')
     expect(parseGrantKind('courses:story')).toEqual({ design: 'courses', size: 'story' })
   })
-  it('⚠️ لا صورة له ولا أسماء للمدربين في بيانات الرسم — واسمه مع الكود في كل تصميم', () => {
+  it('⚠️ صورته في «تصميمك الخاص» وحده، ولا أسماء للمدربين — واسمه مع الكود في كل تصميم', () => {
     const art = code('src/components/influencer/grant-art.ts')
     const data = art.slice(art.indexOf('export interface GrantArtData'), art.indexOf('\n}', art.indexOf('export interface GrantArtData')))
-    expect(data, 'عادت صورة المؤثر إلى بيانات الرسم').not.toMatch(/^\s*photoUrl/m)
+    expect(data, 'عادت صورة المؤثر إلى بيانات الرسم العامة').not.toMatch(/^\s*photoUrl/m)
+    expect(data).toMatch(/^\s*own: \{ photo: string \| null; name: string \}$/m)
+    /* وصورتُه لا تُقرأ إلّا في تصميمه */
+    const reads = [...art.matchAll(/d\.own\.photo/g)].map((m) => m.index!)
+    const own = art.indexOf('async function drawPersonal(')
+    const next = art.indexOf('\n}', own)
+    expect(reads.length, 'لا يقرأ صورته أحد').toBeGreaterThan(0)
+    for (const i of reads) expect(i > own && i < next, 'صورته في تصميم غير تصميمه').toBe(true)
     expect(data, 'المدربون صور فقط').toMatch(/^\s*photos: string\[\]$/m)
     expect(data, 'عادت أسماء المدربين إلى بيانات الرسم').not.toMatch(/trainers|nameAr/)
     expect(art).toMatch(/const text = `\$\{influencerCodeLabelAr\(d\.name\)\}: \$\{d\.code\}`/)
-    expect(art, 'الكود لا يرسم في ذيل كل تصميم').toMatch(/codePill\(ctx, d, cx, f\.pillY,/)
+    expect(art, 'الكود لا يرسم في ذيل كل تصميم').toMatch(/codePill\(ctx, design === 'personal' \? \{ \.\.\.d, name: d\.own\.name \} : d, cx, f\.pillY,/)
   })
   it('والعدد فوق العشرة بالمفرد، واسم الدورة بلا ما بين القوسين', () => {
     expect(coursesAr(4)).toBe('4 دورات')
@@ -167,5 +176,19 @@ describe('تسعة تصاميم بلا صورة المؤثر ولا أسماء �
     const art = code('src/components/influencer/grant-art.ts')
     expect(art).toMatch(/else if \(design === 'start'\) drawStart\(ctx, f, w, size\)/)
     expect(art).toMatch(/else if \(design === 'features'\) drawFeatures\(ctx, f, w, size\)/)
+  })
+
+  /* «امنحه فرصة أن يصمم تصميما خاصا به، ويطلب منه رفع صورته واسمه! اجعل هذا تلقائيا» (صاحب المنصة، ٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ «تصميمك الخاص» مختار عند الفتح — وبلا صورة القالب وطلب رفعها، لا لوحة تنزل قالبا فارغا', () => {
+    const page = code('src/pages/InfluencerHome.tsx')
+    expect(page).toMatch(/useState<GrantDesign>\("personal"\)/)
+    expect(page).toMatch(/const needsPhoto = design === "personal" && !photo;/)
+    expect(page).toMatch(/\{!needsPhoto && \(\s*<ShareKit /)
+    expect(page).toMatch(/void drawGrantArt\("personal", "post", art\)/)
+    expect(page).toMatch(/own: \{ photo, name: ownName\.trim\(\) \|\| me\.nameAr \}/)
+    /* وصورتُه صورةُ حسابه — برفعٍ واحدٍ مع صفحة حسابه */
+    expect(page).toMatch(/const r = await uploadAccountAvatar\(blob\);/)
+    expect(code('src/pages/student/Account.tsx')).toMatch(/const r = await uploadAccountAvatar\(blob\);/)
+    expect(page).toMatch(/useState<string \| null>\(me\.photoUrl\)/)
   })
 })
