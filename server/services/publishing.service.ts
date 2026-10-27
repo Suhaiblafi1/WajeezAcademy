@@ -20,7 +20,7 @@ export class PublishingService {
   async listVersions() {
     return this.prisma.catalogVersion.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { snapshots: { select: { payloadHash: true, createdAt: true } }, events: { select: { action: true, createdAt: true } } },
+      include: { snapshots: { select: { payloadHash: true, createdAt: true } }, events: { select: { action: true, createdAt: true, details: true } } },
     })
   }
 

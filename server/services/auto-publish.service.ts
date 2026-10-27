@@ -30,6 +30,8 @@ export interface AutoPublishResult {
   activeLabel: string | null
   impactRunId?: string
   changedCount?: number
+  /** من كم شخصيةٍ قيس الأثر — فلا يُكتب العددُ في الشاشة رقما ثابتا */
+  totalPersonas?: number
 }
 
 /** تسمية تربط اللقطة بالالتزام الذي أنتجها وبمحتواها — مقروءة وفريدة */
@@ -40,7 +42,9 @@ export function autoLabel(commit: string | undefined, hash: string): string {
 
 export async function publishSnapshotIfChanged(
   prisma: PrismaClient,
-  opts: { commit?: string; log?: (line: string) => void } = {},
+  /* و`actorId` لـ«انشر الآن» في لوحة النشر: النشرُ نفسُه بيد مشغّلٍ يُكتب اسمُه على الإصدار وحدثه وتحليل أثره.
+     وفراغُه فعلٌ نظاميّ — النشرُ مع البناء */
+  opts: { commit?: string; log?: (line: string) => void; actorId?: string } = {},
 ): Promise<AutoPublishResult> {
   const log = opts.log ?? (() => {})
 
@@ -67,7 +71,7 @@ export async function publishSnapshotIfChanged(
   /* الأثر قبل النشر لا بعده — وهو السجل الذي يحلّ محلّ قراءة اللوحة */
   log('')
   log('── تحليل الأثر (12 شخصية) ──')
-  const impact = await analyzeImpact(prisma, 'نشر آلي مع البناء')
+  const impact = await analyzeImpact(prisma, opts.actorId ? 'نشر من لوحة النشر' : 'نشر آلي مع البناء', opts.actorId)
   log(`  مقيس على: ${impact.baselineAr}`)
   log(`  ${impact.verdictAr}`)
   log(`  تغيّرت توصية ${impact.changedCount} من ${impact.totalPersonas} شخصية.`)
@@ -84,8 +88,8 @@ export async function publishSnapshotIfChanged(
     if (n > 9) throw new Error(`تعذّر إيجاد تسمية حرة للقطة — آخر ما جرّب: ${label}`)
     label = `${autoLabel(opts.commit, candidate.hash)}-${n}`
   }
-  const version = await pub.createDraftVersion(label, undefined)
-  await pub.publish(version.id, null) // فعل نظامي — لا مشغّل بشري خلفه
+  const version = await pub.createDraftVersion(label, opts.actorId)
+  await pub.publish(version.id, opts.actorId ?? null) // وبلا مشغّل فعلٌ نظاميّ — لا بشرَ خلفه
   log(`✅ نشرت «${label}»`)
   log('   والتراجع متاح من /admin/publishing إن ساء شيء.')
 
@@ -100,5 +104,6 @@ export async function publishSnapshotIfChanged(
     label,
     impactRunId: impact.runId,
     changedCount: impact.changedCount,
+    totalPersonas: impact.totalPersonas,
   }
 }

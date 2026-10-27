@@ -48,7 +48,7 @@ if (s.snapshotStale) {
   console.log(`   بصمة اللقطة المنشورة: ${s.snapshotHash.slice(0, 16)}…`)
   console.log('   لا يصل التغيير إلى المستخدم إلا بنشر لقطة جديدة.')
   console.log('   في بناء الإنتاج: يجري تاليا وآليا (npm run catalog:publish).')
-  console.log('   وفي غيره: من /admin/publishing — تحقق ← تحليل أثر ← نشر ذرّي.')
+  console.log('   وفي غيره: «انشر الآن» في /admin/publishing — تحليل أثر ثمّ نشر ذرّي.')
   console.log('   والتراجع متاح من اللوحة في الحالتين إن ساء شيء.')
 }
 

@@ -5,6 +5,8 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { PublishingService } from '../../services/publishing.service'
 import { analyzeImpact, runRegressionAgainstBundled } from '../../services/impact.service'
+import { publishSnapshotIfChanged } from '../../services/auto-publish.service'
+import { buildStamp } from '../../build-stamp'
 import { requirePermission } from '../auth-plugin'
 
 export function registerPublishingRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -52,6 +54,16 @@ export function registerPublishingRoutes(app: FastifyInstance, prisma: PrismaCli
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return pub.publish(id, req.auth!.userId)
   })
+
+  /* «انشر الآن» — ما يفعله كلُّ تحديثٍ للموقع، بيد المشغّل وباسمه (٢٧ أكتوبر ٢٠٢٦، المرحلة الثامنة — ج).
+
+     كانت اللوحةُ تطلب وسمَ إصدارٍ يُكتب باليد ثمّ «أنشئ وانشر»، وبجانبها «تحقّق» و«تحليل أثر» يُضغطان قبله. والنشرُ
+     نفسُه يحلّل الأثرَ ويتحقّق قبل أن ينشر، ولا يُنشئ إصدارا حين لا جديد (`publishSnapshotIfChanged`) — فصار زرّا
+     واحدا لما اعتُمد ولم يُنشر بعد. والأبوابُ الأولى باقيةٌ للسكربتات والاختبارات. */
+  app.post('/api/admin/publishing/publish-now', {
+    preHandler: requirePermission('catalog.pathway.publish'),
+    schema: { tags: ['publishing'], summary: 'نشر ما في الجداول الآن — بتسمية آلية وتحليل أثر، ولا شيء إن لم يتغير' },
+  }, async (req) => publishSnapshotIfChanged(prisma, { commit: buildStamp().commit ?? undefined, actorId: req.auth!.userId }))
 
   app.post('/api/admin/publishing/rollback', {
     preHandler: requirePermission('catalog.rollback'),
