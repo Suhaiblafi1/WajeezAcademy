@@ -3,7 +3,7 @@
    قرارُ صاحب المنصّة: «امنح المؤثّرَ تصاميمَ يشاركها مع عملائه ليمثّل المنحة… كما فعلنا للمدرّب»، ثمّ: «أضف تصاميمَ
    أخرى تدلّ على الأكاديميّة ودوراتها ومدرّبيها… لا داعيَ لوجود صورة صاحب المنحة… اذكرها مع الكود كاسمه».
 
-   ═══ ثمّ أنعمُ وأكثر (٢٦ أكتوبر ٢٠٢٦) ═══
+   ═══ ثمّ أنعمُ وأكثر (٢٧ أكتوبر ٢٠٢٦) ═══
 
    «لا أريد أن توضَح صورُ المدرّبين بشكلٍ قويٍّ على شكل كرات، ولا تضع صهيبَ من ضمنهم، ولا داعيَ لأسمائهم. نحتاج
    تصميما للأكاديميّة ككلّ أيضا.. كلّما زادت التصاميمُ كان أفضل، وأريد تصميما فيه كلُّ المدرّبين معا.. اجعل التصميمَ
@@ -13,6 +13,14 @@
      (`influencer.service.ts#designMaterial`، بالدور لا بالاسم).
    · **سبعةُ تصاميم**، لكلٍّ منشورٌ وستوري، والكاروسيلُ شرائحُها:
      المنحة · الأكاديميّة · لماذا وجيز · المدرّبون · كلّ المدرّبين · الدورات · كيف تحجز.
+   ═══ ثمّ التشخيصُ والاختباراتُ ومزايا الأكاديميّة (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   «تصميم آخر عن التشخيص واختبارات تحديد المستوى وتحديد الميول وغيرها، وأيّ ميزةٍ للأكاديميّة ضعها في مجموعة
+   التصاميم». فزاد تصميمان:
+   · **اعرف من أين تبدأ**: التشخيصُ الذكيّ، ومرآةُ وجيز (الميول)، وتحديدُ مستوى الإنجليزيّة، وفحصُ المهارة — مجّانيّةٌ
+     بلا حساب، وأرقامُها كما في صفحاتها (`ASSESSMENTS`)، ومجالاتُ الفحص من `FIELD_CHECKS` نفسِها.
+   · **مزايا وجيز**: ثماني مزايا قائمةٌ في المنصّة (`ACADEMY_PERKS`)، وهي في الكاروسيل مكانَ «لماذا وجيز» لأنّها تحويها.
+
    وفي ذيل كلٍّ «الكود الخاص بـ<اسمه>». وبلا عنوان الموقع: الرابطُ في النصّ المرافق يُنقر، وفي الصورة لا.
 
    وكلُّ ما يُقال قائمٌ في المنصّة لا وعدٌ يُختلق: المدرّبون والدوراتُ من دورات المنحة ببوّابة النشر، والمزايا ممّا
@@ -22,8 +30,9 @@ import { C, fitLines, font, loadImage, roundRect } from '../trainer/share-art'
 import { splitTitle } from '@/application/trainer/share-kit'
 import { GRANT_ACADEMY_LINE_AR } from '@/application/commerce/grant-landing'
 import { influencerCodeLabelAr } from '@/application/commerce/influencer'
+import { FIELD_CHECKS } from '@/domain/placement/field-check'
 
-export type GrantDesign = 'offer' | 'academy' | 'why' | 'trainers' | 'team' | 'courses' | 'steps'
+export type GrantDesign = 'offer' | 'academy' | 'start' | 'features' | 'why' | 'trainers' | 'team' | 'courses' | 'steps'
 export type GrantSize = 'post' | 'story' | 'slide'
 
 export interface GrantArtData {
@@ -48,6 +57,8 @@ export interface GrantArtData {
 export const GRANT_DESIGNS: { id: GrantDesign; label: string }[] = [
   { id: 'offer', label: 'المنحة' },
   { id: 'academy', label: 'الأكاديمية' },
+  { id: 'start', label: 'التشخيص والاختبارات' },
+  { id: 'features', label: 'مزايا وجيز' },
   { id: 'why', label: 'لماذا وجيز' },
   { id: 'trainers', label: 'المدربون' },
   { id: 'team', label: 'كل المدربين' },
@@ -61,6 +72,29 @@ export const ACADEMY_FEATURES = [
   'تطبيقات عملية في كل دورة',
   'تسجيل كل لقاء تعود إليه',
   'شهادة موثقة ورسالة توصية لمن يلتزم',
+] as const
+
+/** ما يعرف به المتعلّمُ من أين يبدأ — بأرقام صفحاتها: التشخيصُ «٣–٦ دقائق» (`Diagnostic.tsx`)، والمرآةُ «أربعةٌ
+    وعشرون بندا في ثلاث دقائق» (`Mirror.tsx`)، والإنجليزيّةُ «ثلاثون سؤالا تقريبا» (`PlacementTest.tsx`)، والفحصُ «اثنا
+    عشر سؤالا» (`SkillCheck.tsx`). وكلُّها مجّانيّةٌ تُفتح بلا حساب (`/api/public/placement`) */
+export const ASSESSMENTS = [
+  { title: 'التشخيص الذكي', sub: 'يفهم هدفك ويرسم لك مسارا مفسرا', tag: 'من 3 إلى 6 دقائق' },
+  { title: 'مرآة وجيز', sub: 'تظهر ميولك وجاهزيتك للتطبيق', tag: '24 بندا في 3 دقائق' },
+  { title: 'تحديد مستوى الإنجليزية', sub: 'قواعد ومفردات وقراءة', tag: 'نحو 30 سؤالا' },
+  { title: 'فحص المهارة', sub: FIELD_CHECKS.map((c) => c.title_ar).join(' · '), tag: '12 سؤالا' },
+] as const
+
+/** مزايا الأكاديميّة — كلُّها قائمةٌ في المنصّة: التشخيصُ والاختبارات، واللقاءاتُ وتسجيلُها، والشهادةُ وصفحةُ التحقّق
+    منها برقمها (`/verify`)، ورسالةُ التوصية (`EndorsementLetter.tsx`) */
+export const ACADEMY_PERKS = [
+  'تشخيص مجاني يرسم مسارك',
+  'اختبارات تحديد المستوى',
+  'لقاءات مباشرة على Zoom',
+  'مدرب معتمد في كل دورة',
+  'تطبيقات عملية',
+  'تسجيل كل لقاء',
+  'شهادة تتحقق منها برقمها',
+  'رسالة توصية لمن يلتزم',
 ] as const
 
 /** صورُ المدرّبين لا تُرسم بأقلّ من ثلاث — صورتان لا تقولان «مدرّبون» */
@@ -402,6 +436,87 @@ function drawWhy(ctx: CanvasRenderingContext2D, f: Box, w: number, size: GrantSi
   ctx.textAlign = 'center'
 }
 
+/** اعرف من أين تبدأ — أربعُ بطاقات: اسمُ الاختبار وما يعطيك، وشارةٌ بزمنه أو عدد أسئلته */
+function drawStart(ctx: CanvasRenderingContext2D, f: Box, w: number, size: GrantSize) {
+  const cx = w / 2
+  const below = heading(ctx, 'اعرف من أين تبدأ', 'تشخيص واختبارات مجانية، بلا حساب', cx, f.top + 70 * f.s, Math.round(60 * f.s), w - 200)
+  const top = below + 56 * f.s
+  const cols = size === 'story' ? 1 : 2
+  const rows = Math.ceil(ASSESSMENTS.length / cols)
+  const gap = 26
+  const cw = (w - 160 - gap * (cols - 1)) / cols
+  const ch = Math.min((f.bottom - top - gap * (rows - 1)) / rows, (cols === 1 ? 210 : 260) * f.s)
+  const tagPx = Math.round(21 * f.s)
+  ASSESSMENTS.forEach((a, i) => {
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    const left = w - 80 - (col + 1) * cw - col * gap
+    const y = top + row * (ch + gap)
+    card(ctx, left, y, cw, ch, 36)
+    const pad = 36
+    const right = left + cw - pad
+    /* الكتلةُ (الشارة، فالاسم، فما يعطيك) وسطَ البطاقة — وتصغر إن لم تتّسع لها */
+    const t = fitLines(ctx, a.title, cw - pad * 2, 1, Math.round(36 * f.s), Math.round(26 * f.s))
+    const sl = fitLines(ctx, a.sub, cw - pad * 2, 2, Math.round(25 * f.s), Math.round(19 * f.s), 500)
+    const th0 = tagPx * 1.9
+    const blockH = th0 + t.px * 1.5 + sl.px * 0.6 + sl.lines.length * sl.px * 1.4
+    const k = Math.min(1, (ch - 44) / blockH)
+    const tp = tagPx * k
+    const th = th0 * k
+    let yy = y + (ch - blockH * k) / 2
+    ctx.font = font(700, tp)
+    const tw = ctx.measureText(a.tag).width + tp * 1.6
+    roundRect(ctx, right - tw, yy, tw, th, th / 2)
+    ctx.fillStyle = SOFT.tint
+    ctx.fill()
+    ctx.fillStyle = C.tealInk
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(a.tag, right - tw / 2, yy + th / 2 + tp * 0.05)
+    ctx.textBaseline = 'top'
+    yy += th + t.px * 0.4 * k
+    ctx.textAlign = 'right'
+    ctx.fillStyle = C.ink
+    ctx.font = font(700, t.px * k)
+    ctx.fillText(t.lines[0], right, yy)
+    yy += t.px * 1.1 * k + sl.px * 0.6 * k
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, sl.px * k)
+    sl.lines.forEach((l, n) => ctx.fillText(l, right, yy + n * sl.px * 1.4 * k))
+    ctx.textBaseline = 'alphabetic'
+  })
+  ctx.textAlign = 'center'
+}
+
+/** مزايا وجيز — ثماني مزايا بعلامة صحّ: عمودان في المنشور والشريحة، وعمودٌ في الستوري */
+function drawFeatures(ctx: CanvasRenderingContext2D, f: Box, w: number, size: GrantSize) {
+  const cx = w / 2
+  const below = heading(ctx, 'كل ما تجده في وجيز', 'من أول خطوة حتى الشهادة', cx, f.top + 70 * f.s, Math.round(60 * f.s), w - 200)
+  const top = below + 50 * f.s
+  const cols = size === 'story' ? 1 : 2
+  const rows = Math.ceil(ACADEMY_PERKS.length / cols)
+  const gap = 20
+  const cw = (w - 160 - gap * (cols - 1)) / cols
+  const ch = Math.min((f.bottom - top - gap * (rows - 1)) / rows, (cols === 1 ? 110 : 130) * f.s)
+  const r = Math.min(26 * f.s, ch * 0.26)
+  ACADEMY_PERKS.forEach((t, i) => {
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    const left = w - 80 - (col + 1) * cw - col * gap
+    const y = top + row * (ch + gap)
+    card(ctx, left, y, cw, ch, 30)
+    checkChip(ctx, left + cw - 28 - r, y + ch / 2, r)
+    ctx.fillStyle = C.tealInk
+    ctx.textAlign = 'right'
+    const tl = fitLines(ctx, t, cw - r * 2 - 76, 1, Math.round((cols === 1 ? 34 : 28) * f.s), Math.round(20 * f.s))
+    ctx.font = font(700, tl.px)
+    ctx.textBaseline = 'middle'
+    ctx.fillText(tl.lines[0], left + cw - 48 - r * 2, y + ch / 2)
+    ctx.textBaseline = 'alphabetic'
+  })
+  ctx.textAlign = 'center'
+}
+
 async function drawTrainers(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number) {
   const cx = w / 2
   heading(ctx, 'تتعلم مع نخبة من المدربين', `${trainersCountAr(d.trainerTotal)} · ${coursesAr(d.courses.length)} مباشرة على Zoom`, cx, f.top + 80 * f.s, Math.round(60 * f.s), w - 200)
@@ -528,6 +643,8 @@ export async function drawGrantArt(design: GrantDesign, size: GrantSize, d: Gran
 
   if (design === 'offer') drawOffer(ctx, d, f, w)
   else if (design === 'academy') await drawAcademy(ctx, d, f, w)
+  else if (design === 'start') drawStart(ctx, f, w, size)
+  else if (design === 'features') drawFeatures(ctx, f, w, size)
   else if (design === 'why') drawWhy(ctx, f, w, size)
   else if (design === 'trainers') await drawTrainers(ctx, d, f, w)
   else if (design === 'team') await drawTeam(ctx, d, f, w, size)
@@ -556,10 +673,11 @@ export function grantDesigns(d: Pick<GrantArtData, 'photos' | 'courses'>): Grant
 }
 
 /** ما يُرسم لكلّ صيغة: التصميمُ المختارُ منشورا أو ستوري، والكاروسيلُ شرائحُ التصاميم المتاحة — بلا «المدرّبون»
-    وفيه «كلّ المدرّبين» (صورُهم مرّةً واحدةً تكفي في الكاروسيل)، و«كيف تحجز» آخرَه */
+    وفيه «كلّ المدرّبين» (صورُهم مرّةً واحدةً تكفي في الكاروسيل)، وبلا «لماذا وجيز» وفيه «مزايا وجيز» التي تحويها،
+    و«كيف تحجز» آخرَه */
 export function grantArtPlan(format: 'post' | 'story' | 'carousel', design: GrantDesign, available: GrantDesign[]): { kind: string; index: number }[] {
   if (format !== 'carousel') return [{ kind: `${design}:${format}`, index: 0 }]
-  const order: GrantDesign[] = ['offer', 'academy', 'team', 'courses', 'why', 'steps']
+  const order: GrantDesign[] = ['offer', 'academy', 'start', 'team', 'courses', 'features', 'steps']
   return order.filter((x) => available.includes(x)).map((x) => ({ kind: `${x}:slide`, index: 0 }))
 }
 

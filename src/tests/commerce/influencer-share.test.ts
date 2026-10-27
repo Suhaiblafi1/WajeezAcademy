@@ -9,7 +9,8 @@ import { join } from 'node:path'
 import { grantEmailSubject, grantShareText, grantShareUrl, type GrantShareInput } from '@/application/commerce/influencer-share'
 import { SHARE_PLATFORMS } from '@/application/trainer/share-kit'
 import { plainAr } from '@/application/text/plain-ar'
-import { coursesAr, grantArtPlan, grantDesigns, parseGrantKind, shortTitle, trainersCountAr, ACADEMY_FEATURES, GRANT_DESIGNS, MIN_FACES } from '@/components/influencer/grant-art'
+import { coursesAr, grantArtPlan, grantDesigns, parseGrantKind, shortTitle, trainersCountAr, ACADEMY_FEATURES, ACADEMY_PERKS, ASSESSMENTS, GRANT_DESIGNS, MIN_FACES } from '@/components/influencer/grant-art'
+import { FIELD_CHECKS } from '@/domain/placement/field-check'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 const URL = 'https://www.wajeezacademy.com/grant/i/SARA'
@@ -102,20 +103,21 @@ describe('الصور واللوحة', () => {
 /* «أضف تصاميم أخرى تدل على الأكاديمية ودوراتها ومدربيها… لا داعي لوجود صورة صاحب المنحة… اذكرها مع الكود كاسمه»
    (صاحب المنصة، ٢٦ أكتوبر ٢٠٢٦)، ثمّ (٢٧ أكتوبر): «لا اريد ان توضح صور المدربين بشكل قوي… ولا تضع صهيب من ضمنهم
    ولا داعي لاسمائهم… نحتاج تصميم للاكاديمية ككل… كلما زادت التصاميم كان افضل… تصميم فيه كل المدربين معا… اكثر نعومة» */
-describe('سبعة تصاميم بلا صورة المؤثر ولا أسماء المدربين', () => {
+describe('تسعة تصاميم بلا صورة المؤثر ولا أسماء المدربين', () => {
   const course = { title: 'أ', startsAt: null }
-  it('⚠️ صور المدربين بثلاث فأكثر، والدورات بواحدة فأكثر — والمنحة والأكاديمية و«لماذا» و«كيف تحجز» دائما', () => {
-    expect(GRANT_DESIGNS.map((x) => x.id)).toEqual(['offer', 'academy', 'why', 'trainers', 'team', 'courses', 'steps'])
-    expect(grantDesigns({ photos: ['/a', '/b', '/c'], courses: [course] })).toEqual(['offer', 'academy', 'why', 'trainers', 'team', 'courses', 'steps'])
-    expect(grantDesigns({ photos: ['/a', '/b'], courses: [] }), 'صورتان لا تقولان «مدربون»').toEqual(['offer', 'academy', 'why', 'steps'])
+  it('⚠️ صور المدربين بثلاث فأكثر، والدورات بواحدة فأكثر — وما سواها دائما', () => {
+    const ALL = ['offer', 'academy', 'start', 'features', 'why', 'trainers', 'team', 'courses', 'steps']
+    expect(GRANT_DESIGNS.map((x) => x.id)).toEqual(ALL)
+    expect(grantDesigns({ photos: ['/a', '/b', '/c'], courses: [course] })).toEqual(ALL)
+    expect(grantDesigns({ photos: ['/a', '/b'], courses: [] }), 'صورتان لا تقولان «مدربون»').toEqual(['offer', 'academy', 'start', 'features', 'why', 'steps'])
     expect(MIN_FACES).toBe(3)
   })
-  it('⚠️ المنشور والستوري للتصميم المختار، والكاروسيل بصور المدربين مرة واحدة ثم «كيف تحجز»', () => {
+  it('⚠️ المنشور والستوري للتصميم المختار، والكاروسيل بصور المدربين مرة واحدة و«مزايا وجيز» مكان «لماذا» ثم «كيف تحجز»', () => {
     expect(grantArtPlan('post', 'trainers', ['offer', 'trainers'])).toEqual([{ kind: 'trainers:post', index: 0 }])
     expect(grantArtPlan('story', 'academy', ['offer', 'academy'])).toEqual([{ kind: 'academy:story', index: 0 }])
     const all = grantDesigns({ photos: ['/a', '/b', '/c'], courses: [course] })
     expect(grantArtPlan('carousel', 'offer', all).map((x) => x.kind))
-      .toEqual(['offer:slide', 'academy:slide', 'team:slide', 'courses:slide', 'why:slide', 'steps:slide'])
+      .toEqual(['offer:slide', 'academy:slide', 'start:slide', 'team:slide', 'courses:slide', 'features:slide', 'steps:slide'])
     expect(parseGrantKind('courses:story')).toEqual({ design: 'courses', size: 'story' })
   })
   it('⚠️ لا صورة له ولا أسماء للمدربين في بيانات الرسم — واسمه مع الكود في كل تصميم', () => {
@@ -140,5 +142,30 @@ describe('سبعة تصاميم بلا صورة المؤثر ولا أسماء �
     expect(ACADEMY_FEATURES).toEqual(['لقاءات مباشرة على Zoom مع مدرب معتمد', 'تطبيقات عملية في كل دورة', 'تسجيل كل لقاء تعود إليه', 'شهادة موثقة ورسالة توصية لمن يلتزم'])
     for (const f of ACADEMY_FEATURES) expect(plainAr(f)).toBe(f)
     for (const x of GRANT_DESIGNS) expect(plainAr(x.label)).toBe(x.label)
+  })
+
+  /* «تصميم آخر عن التشخيص واختبارات تحديد المستوى وتحديد الميول وغيرها، وأي ميزة للأكاديمية ضعها في مجموعة
+     التصاميم» (صاحب المنصة، ٢٧ أكتوبر ٢٠٢٦) — وكل رقم فيها رقم صفحته، لا وعد يختلق */
+  it('⚠️ «اعرف من أين تبدأ»: الأربعة بأرقام صفحاتها، ومجالات الفحص من الفحوص نفسها', () => {
+    expect(ASSESSMENTS.map((a) => [a.title, a.tag])).toEqual([
+      ['التشخيص الذكي', 'من 3 إلى 6 دقائق'],
+      ['مرآة وجيز', '24 بندا في 3 دقائق'],
+      ['تحديد مستوى الإنجليزية', 'نحو 30 سؤالا'],
+      ['فحص المهارة', '12 سؤالا'],
+    ])
+    expect(ASSESSMENTS[3].sub.split(' · ')).toEqual(FIELD_CHECKS.map((c) => c.title_ar))
+    expect(code('src/pages/Diagnostic.tsx'), 'تغير زمن التشخيص في صفحته').toContain('text: "٣–٦ دقائق"')
+    expect(code('src/application/site/public-pages.ts'), 'تغير وصف المرآة').toContain('أربعة وعشرون بندا في ثلاث دقائق')
+    for (const a of ASSESSMENTS) for (const t of [a.title, a.sub, a.tag]) expect(plainAr(t), t).toBe(t)
+    /* و«3–6» بشرطة تنقلب «6–3» في السطر العربي */
+    for (const a of ASSESSMENTS) expect(a.tag, 'شرطة بين رقمين').not.toMatch(/\d\s*[–-]\s*\d/)
+  })
+  it('⚠️ «مزايا وجيز» ثمان — وفيها ما تعده صفحة المنحة كله', () => {
+    expect(ACADEMY_PERKS).toHaveLength(8)
+    for (const p of ACADEMY_PERKS) expect(plainAr(p), p).toBe(p)
+    expect(ACADEMY_PERKS).toEqual(expect.arrayContaining(['لقاءات مباشرة على Zoom', 'تطبيقات عملية', 'تسجيل كل لقاء', 'رسالة توصية لمن يلتزم']))
+    const art = code('src/components/influencer/grant-art.ts')
+    expect(art).toMatch(/else if \(design === 'start'\) drawStart\(ctx, f, w, size\)/)
+    expect(art).toMatch(/else if \(design === 'features'\) drawFeatures\(ctx, f, w, size\)/)
   })
 })
