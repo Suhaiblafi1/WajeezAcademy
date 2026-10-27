@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { ArrowLeft, BookOpen, Flame, Heart, Route, Search, SlidersHorizontal, Target } from 'lucide-react'
+import { ArrowLeft, BookOpen, Flame, Heart, Route, Search, SlidersHorizontal } from 'lucide-react'
 import { bestsellers, pathwayDomain, pathwayDomains, pathways } from '@/data/pathways'
 import { publicPathways } from '@/data/public-pathways'
 import { bestsellerCourses, courses, pathwaySizeAr } from '@/data/courses'
@@ -26,6 +26,7 @@ import { sortKeyAr } from '@/application/catalog/course-title'
 import { useCourseCohorts } from '@/services/cohort-prices'
 import { trainerFacesOf } from '@/application/catalog/course-trainers'
 import TrainerFaces from '@/components/TrainerFaces'
+import PathOutput from '@/components/PathOutput'
 import { useListedCourses } from '@/services/listed-courses'
 import { listedOnly, listedWhole } from '@/application/catalog/listed-courses'
 import { cohortDayAr } from '@/application/learning/cohort-gate'
@@ -352,10 +353,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               )}
               {/* المخرَجُ الملموس مكانَ اسم مدرّبٍ لم يُعيَّن بعد — كان يظهر
                   مكرّرا بعدد مدرّبي المسار، فيملأ البطاقة بلا معلومة. */}
-              <div className="mt-3 flex items-start gap-1.5 text-fine leading-5 text-teal-light-ink">
-                <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span className="line-clamp-2 min-w-0">تتخرّج بـ: {p.output}</span>
-              </div>
+              <PathOutput output={p.output} className="mt-3 text-fine leading-5" clamp="line-clamp-2" />
               <div className="mt-3 text-fine leading-5 text-muted-foreground">
                 {pathwaySizeAr(p)} · {p.weeklyHours} أسبوعيا
               </div>

@@ -23,7 +23,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react"
 import { Link } from "react-router"
-import { ArrowLeft, ChevronDown, Compass, Flame, Route, Target } from "lucide-react"
+import { ArrowLeft, ChevronDown, Compass, Flame, Route } from "lucide-react"
 import { bestsellers, pathwayById, pathwayDomain, pathways } from "@/data/pathways"
 import { publicPathways, type PublicPathway } from "@/data/public-pathways"
 import { resolveCatalogRefsAr } from "@/application/catalog/visitor-text"
@@ -38,6 +38,7 @@ import { useListedCourses } from "@/services/listed-courses"
 import { useCourseCohorts } from "@/services/cohort-prices"
 import { trainerFacesOf } from "@/application/catalog/course-trainers"
 import TrainerFaces from "@/components/TrainerFaces"
+import PathOutput from "@/components/PathOutput"
 import { listedOnly, listedWhole } from "@/application/catalog/listed-courses"
 
 /* البابان يشتركان في هيئةٍ واحدة، ويفترق لونُهما وحدَه */
@@ -311,10 +312,7 @@ export function Bestsellers() {
                   <span>{spotlight.p.weeklyHours} أسبوعيا</span>
                 </div>
                 {/* المخرَج الملموس — لا اسمُ مدرّبٍ لم يُعيَّن بعد */}
-                <p className="mt-2 flex items-start gap-1.5 text-read leading-6 text-teal-light-ink">
-                  <Target className="mt-1 h-3.5 w-3.5 shrink-0" />
-                  <span>تتخرّج بـ: {spotlight.p.output}</span>
-                </p>
+                <PathOutput output={spotlight.p.output} className="mt-3 w-fit max-w-xl text-read leading-6" />
                 <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-deep px-5 py-2 text-sm font-bold text-white transition group-hover:bg-teal-darker">
                   افتح المسار
                   <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
@@ -386,10 +384,7 @@ export function Bestsellers() {
                       {resolveCatalogRefsAr(b.item.notFor, (id) => nameById.get(id))}
                     </p>
                   )}
-                  <p className="flex items-start gap-1.5 text-read leading-6 text-teal-light-ink">
-                    <Target className="mt-1 h-3.5 w-3.5 shrink-0" />
-                    <span className="line-clamp-3 min-w-0">تتخرّج بـ: {b.item.output}</span>
-                  </p>
+                  <PathOutput output={b.item.output} className="text-read leading-6" clamp="line-clamp-3" />
                   {/* ═══ سطران لا سطرٌ واحد (١٥ سبتمبر ٢٠٢٦) ═══
 
                       كانا في صفٍّ واحد: الحجمُ يمينا و«تفاصيل المسار» يسارا.
