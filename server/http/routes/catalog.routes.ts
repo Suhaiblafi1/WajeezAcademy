@@ -337,6 +337,16 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
     const body = z.object({
       decision: z.enum(['approve', 'request_changes', 'reject']), noteAr: z.string().optional(),
     }).parse(req.body)
-    return admin.decide(id, body.decision, body.noteAr, req.auth!.userId, req.auth!.permissions)
+    const out = await admin.decide(id, body.decision, body.noteAr, req.auth!.userId, req.auth!.permissions)
+    /* واسمٌ اعتُمد يُنشر في الحال كالاسم الذي يُكتب مباشرة (أعلاه) — كان ينتظر النشرَ التالي وحدَه، فالمراجعُ يعتمد
+       ولا يرى الاسمَ في الموقع */
+    if (!out.renamed) return out
+    try {
+      await publishSnapshotIfChanged(prisma, { commit: buildStamp().commit ?? undefined })
+      return { ...out, published: true }
+    } catch (e) {
+      req.log.warn({ err: e, changeRequestId: id }, 'تعذّر نشر اللقطة بعد اعتماد اسم الدورة — يصل مع النشر التالي')
+      return { ...out, published: false }
+    }
   })
 }

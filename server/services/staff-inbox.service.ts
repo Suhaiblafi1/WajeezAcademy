@@ -358,15 +358,17 @@ export class StaffInboxService {
       })
     }
 
-    /* ── محتوًى في المراجعة ── */
-    if (can('catalog.course.review') || can('catalog.content.final_approve')) {
+    /* ── محتوًى في المراجعة ──
+       يصل طابورَه في «الكتالوج» مفتوحا (`?requests=1`) — كان يفتح «النشر» ولا طابورَ فيه. ويراه من يملك القرارَ
+       وحدَه: حبّةُ مسار القرار نفسُها (`catalog.pathway.review`)، وكان يراه من يُردّ عن الزرّ ٤٠٣. */
+    if (can('catalog.pathway.review')) {
       const inReview = await this.prisma.contentChangeRequest.count({ where: { status: 'in_review' } })
       push({
         key: 'content_review',
         titleAr: 'تغييرات محتوى تنتظر مراجعة',
         whyAr: 'كاتب ينتظر مراجعا — والنشر محكوم',
         count: inReview,
-        href: '/admin/publishing',
+        href: '/admin/catalog?requests=1',
         severity: 'info',
         sample: [],
       })

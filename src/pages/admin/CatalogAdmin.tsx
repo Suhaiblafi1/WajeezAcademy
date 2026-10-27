@@ -1,10 +1,9 @@
-/* لوحة إدارة الكتالوج — عدادات الحالات، استعراض الكيانات، إنشاء مسودات
-   (مهارة/دورة/مسار)، تقديم طلبات تغيير، وقرارات maker-checker */
-import { useCallback, useEffect, useState } from "react";
+/* لوحة إدارة الكتالوج — عدادات الحالات، استعراض الكيانات واسمِ الدورة ومهاراتِها وترشيحِها، إنشاء مسودات
+   (مهارة/دورة/مسار)، وطابور طلبات التغيير وقراراته (maker-checker) */
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import {
-  ArrowRight, BookMarked, CheckCircle2, ChevronDown, FilePlus2, GitPullRequest, Layers,
-  PenLine, RefreshCw, Route, XCircle,
+  ArrowRight, BookMarked, ChevronDown, FilePlus2, GitPullRequest, Layers, PenLine, RefreshCw, Route,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -14,15 +13,16 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
-import { CHANGE_REQUEST_EXAMPLE } from "@/application/catalog/change-request-example";
+import { changeRequestView, draftApprovalBody } from "@/application/catalog/change-request-view";
+import { renameDoneAr, tidyCourseTitleAr } from "@/application/catalog/course-name-suggest";
 import { toast } from "@/components/Toast";
 import PathwayWizard from "@/components/PathwayWizard";
 import CourseWizard from "@/components/CourseWizard";
 import SkillPicker from "@/components/SkillPicker";
 import CourseNamesPanel from "@/components/admin/CourseNamesPanel";
-import CoursePicker from "@/components/admin/CoursePicker";
+import ChangeRequestItem from "@/components/admin/ChangeRequestItem";
+import DraftApproval from "@/components/admin/DraftApproval";
 import { useRealSession } from "@/services/session";
-import { fmtDateTime } from "@/application/text/format-ar";
 import { safeAdminBack } from "@/application/trainer/idea-links";
 
 import { Card, Inset } from "@/components/ui/Surface";
@@ -32,7 +32,7 @@ import Chip from "@/components/ui/Chip";
    فتُعرض مجالاتٌ لا يعرفها المحرّكُ ويردّها الخادم. */
 import { domainsV2 as DIAGNOSTIC_DOMAINS } from "@/domain/diagnostic/v2/data";
 import { CAREER_STAGE_LABELS_AR } from "@/domain/diagnostic/v2_1/maps";
-import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
+import { staffControlCls as inputCls } from "@/components/FormKit";
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
   templates: Record<string, number>; questions: Record<string, number>; changeRequests: Record<string, number>
@@ -40,37 +40,12 @@ type Overview = {
 type ChangeRequest = {
   id: string; entityType: string; entityId: string; status: string; createdAt: string
   payload?: Record<string, unknown> | null
+  /* اسمُ ما يُطلب وحالتُه الآن — من الخادم (`listChangeRequests`) */
+  entityLabelAr?: string | null; entityStatus?: string | null
   decisions: { decision: string; noteAr: string | null; createdAt: string }[]
 };
+type RenameResult = { applied: boolean; titleAr: string; published: boolean };
 
-/* مقترحُ مدرّبٍ في الطابور — يُقرأ بلا فتحِ حمولة.
-
-   كان البندُ يُعرض «دورة · C-PROPOSED-XY12Z» ولا شيءَ غيرُه: معرّفٌ لا يقول
-   ما هو ولا من اقترحه. فالمقترحُ يصل الطابورَ ولا يُفهم — وهو عطبُ الملاحظةِ
-   الميّتةِ نفسُه، منقولا من الملفّ إلى الطابور. */
-function TrainerSuggestion({ payload }: { payload: Record<string, unknown> | null | undefined }) {
-  const kind = typeof payload?.kind === 'string' ? payload.kind : null;
-  if (kind !== 'trainer_course_variant' && kind !== 'trainer_new_course') return null;
-  const from = payload?.fromApplication as { fullName?: string; reference?: string } | undefined;
-  const words = typeof payload?.trainerWordsAr === 'string' ? payload.trainerWordsAr : null;
-  const note = typeof payload?.noteAr === 'string' ? payload.noteAr : null;
-  const titleAr = typeof payload?.titleAr === 'string' ? payload.titleAr : null;
-  const skillIds = Array.isArray(payload?.skillIds) ? (payload.skillIds as string[]) : [];
-  return (
-    <div className="mt-1.5 text-read leading-6">
-      <p className="font-bold text-teal-light-ink">
-        {kind === 'trainer_new_course' ? `دورة مقترحة: ${titleAr ?? '—'}` : 'نسخة مقترحة من هذه الدورة'}
-        {from?.fullName ? ` · اقترحها ${from.fullName}` : ''}
-        {from?.reference ? ` (${from.reference})` : ''}
-      </p>
-      {skillIds.length > 0 && (
-        <p className="text-muted-foreground">مهاراتها: <span dir="ltr" className="font-mono text-fine">{skillIds.join(' · ')}</span></p>
-      )}
-      {words && <p className="whitespace-pre-line text-muted-foreground"><span className="font-bold">بقلمه: </span>{words}</p>}
-      {note && <p className="text-muted-foreground"><span className="font-bold">ملاحظة المراجع: </span>{note}</p>}
-    </div>
-  );
-}
 type PathwayRow = { id: string; status: string; title: string; courseCount: number };
 type CourseRow = {
   id: string; status: string; title: string; hours: number; skillCount: number;
@@ -93,10 +68,6 @@ const STATUS_AR: Record<string, string> = {
   draft: "مسودة", approved: "معتمد", published: "منشور", in_review: "قيد المراجعة",
   changes_requested: "مطلوب تعديل", rejected: "مرفوض", applied: "مطبق", superseded: "تجاوزه إصدار أحدث",
   pending_academic_review: "بانتظار مراجعة أكاديمية",
-};
-
-const ENTITY_AR: Record<string, string> = {
-  pathway: "مسار", course: "دورة", skill: "مهارة", question: "سؤال", template: "قالب توصية",
 };
 
 function Pill({ v }: { v: string }) {
@@ -128,6 +99,18 @@ export default function CatalogAdmin() {
      وتُنزع، والاسمُ لا يتبعها. والسطرُ أسفلَ الطابور يقول أيَّهما يحكمك،
      فلا يُكتشف الجوابُ بضغطِ زرٍّ يردّ ٤٠٣. */
   const canSelfApprove = me?.permissions.includes("catalog.self_approve") ?? false;
+  /* والقرارُ في الطابور حبّةُ مساره نفسُها — والخادمُ هو الحَكَم */
+  const canDecide = me?.permissions.includes("catalog.pathway.review") ?? false;
+  /* ويقدّم المسودّةَ للاعتماد من يملك تأليفَ صنفها — حبّةُ باب إنشائه */
+  const canSubmitDraft: Record<string, boolean> = {
+    course: canEditCourse,
+    skill: me?.permissions.includes("catalog.skill.edit") ?? false,
+    question: me?.permissions.includes("diagnostic.question.edit") ?? false,
+    pathway: me?.permissions.includes("catalog.pathway.create") ?? false,
+  };
+  /* اسمُ دورةٍ قائمة — لكلّ دورةٍ لا لما له شعبٌ وحدَه: كان صندوقُ JSON بابَ ما سواها */
+  const [nameFor, setNameFor] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState("");
   /* ك-٣: محرِّرُ مهارات دورةٍ قائمة — مفتوحٌ لواحدةٍ في المرّة، ومسوّدتُه
      منفصلةٌ عن المحفوظ حتّى يُضغط الحفظ. */
   const [skillsFor, setSkillsFor] = useState<string | null>(null);
@@ -143,10 +126,7 @@ export default function CatalogAdmin() {
   const [pathPick, setPathPick] = useState("");
 
   const [skillForm, setSkillForm] = useState({ id: "", slug: "", nameAr: "", familyId: "" });
-  /* والخانةُ تُفتح فارغة والمثالُ يُرى فيها ولا يُرسَل — كان قيمتَها، فمن لم يمسّها سمّى الدورةَ «الاسم الجديد»
-     (`change-request-example.ts`) */
-  const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: "" });
-  const [openForm, setOpenForm] = useState<"names" | "skill" | "course" | "pathway" | "cr" | null>(null);
+  const [openForm, setOpenForm] = useState<"names" | "skill" | "course" | "pathway" | null>(null);
 
   /* ═══ قادمٌ من اقتراحِ مدرّبٍ صُنِّف «دورةً جديدة» (ح-٤) ═══
 
@@ -169,6 +149,10 @@ export default function CatalogAdmin() {
   useEffect(() => {
     if (openNames) setOpenForm("names");
   }, [openNames]);
+  /* وبندُ «تغييرات محتوى تنتظر مراجعة» يصل الطابورَ نفسَه (`?requests=1`) — بعد أن يُحمَّل، ومرّةً واحدة: كان يفتح
+     «النشر» ولا طابورَ فيه */
+  const openRequests = params.get("requests") === "1";
+  const requestsShown = useRef(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -190,10 +174,42 @@ export default function CatalogAdmin() {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const act = async (fn: () => Promise<unknown>, doneMsg = "تم التنفيذ") => {
+  /* والرسالةُ قد تُبنى ممّا ردّه الخادم — اسمٌ نُشر الآن أو ينتظر النشرَ التالي. ويقول إن نجح: المحرّرُ يُغلق
+     بعد ما وقع لا بعد ما رُدّ */
+  const act = async <T,>(fn: () => Promise<T>, doneMsg: string | ((out: T) => string) = "تم التنفيذ"): Promise<boolean> => {
     setBusy(true); setError(null);
-    try { await fn(); await refresh(); toast(doneMsg); } catch (e) { setError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
-    finally { setBusy(false); }
+    try {
+      const out = await fn();
+      await refresh();
+      toast(typeof doneMsg === "function" ? doneMsg(out) : doneMsg);
+      return true;
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "فشل الإجراء");
+      return false;
+    } finally { setBusy(false); }
+  };
+
+  useEffect(() => {
+    if (!openRequests || overview === null || requestsShown.current) return;
+    requestsShown.current = true;
+    revealRow("change-requests");
+  }, [openRequests, overview]);
+
+  /* المسودّةُ تُقدَّم من صفّها — كان بابُها صندوقَ JSON (`draftApprovalBody`) */
+  const submitDraft = (entityType: string, entityId: string) => void act(
+    () => apiPost("/api/admin/catalog/change-requests", draftApprovalBody(entityType, entityId)),
+    "قدم للاعتماد — ينتظر مراجعا في «طلبات التغيير»",
+  );
+
+  /* القرارُ ورسالتُه — واسمٌ اعتُمد يقول أنُشر الآن أم ينتظر النشرَ التالي (`decide` يقول إن كتب اسما) */
+  const decideCr = (cr: ChangeRequest, decision: "approve" | "reject") => {
+    const renameTo = changeRequestView(cr).renameTo;
+    void act(
+      () => apiPost<{ renamed?: boolean; published?: boolean }>(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision }),
+      (out) => decision === "reject" ? "رفض الطلب — لم يتغير شيء"
+        : out.renamed && renameTo ? renameDoneAr({ applied: true, titleAr: renameTo, published: out.published })
+        : "اعتمد الطلب",
+    );
   };
 
   /* ب-٤: طلب مهارة غير موجودة يمرّ بالمراجعة (maker-checker) لا يُنشأ صامتا —
@@ -205,30 +221,6 @@ export default function CatalogAdmin() {
       payload: { kind: "skill_request", slug: input.slug, nameAr: input.nameAr, reasonAr: input.reasonAr },
     });
     toast("قدّم طلب المهارة للمراجعة");
-  };
-
-  /* ويُفحص قبل `act` لا داخلها: الرجوعُ من داخلها يُتبَع برسالة «قُدّم» فوق الخطأ */
-  const submitChangeRequest = () => {
-    if (crForm.payload.trim() === "") { setError("اكتب التعديل الذي تريده في الخانة"); return; }
-    let payload: Record<string, unknown>;
-    try { payload = JSON.parse(crForm.payload) as Record<string, unknown>; }
-    catch { setError("صيغة JSON غير صالحة في حقل التعديلات"); return; }
-    void act(async () => {
-      await apiPost("/api/admin/catalog/change-requests", {
-        entityType: crForm.entityType, entityId: crForm.entityId.trim(), payload,
-      });
-      setCrForm({ ...crForm, entityId: "" });
-      setOpenForm(null);
-    }, "قدم طلب التغيير — ينتظر اعتماد مراجع آخر (maker-checker)");
-  };
-
-  /* لا يُطلب معرّفٌ يُنسخ من قائمةٍ أعلاه — يُختار بالاسم من هنا مباشرة */
-  const entityOptionsFor = (t: string): { id: string; label: string }[] => {
-    if (t === "pathway") return pathways.map((p) => ({ id: p.id, label: p.title }));
-    if (t === "course") return courses.map((c) => ({ id: c.id, label: c.title }));
-    if (t === "skill") return skills.map((s) => ({ id: s.id, label: s.nameAr }));
-    if (t === "question") return questions.map((qq) => ({ id: qq.id, label: qq.text || qq.id }));
-    return templates.map((t2) => ({ id: t2.id, label: t2.name }));
   };
 
   const FormHead = ({ id, icon: Icon, title, hint }: { id: typeof openForm & string; icon: typeof FilePlus2; title: string; hint: string }) => (
@@ -266,7 +258,15 @@ export default function CatalogAdmin() {
 
   /* ما ينتظر قرارا فعلا: `in_review` وحدَها — والمعتمَدُ والمرفوضُ تاريخٌ
      لا عمل، وعدُّهما في الرأس يَعِد بعملٍ لا وجودَ له. */
-  const pendingCrs = crs.filter((cr) => cr.status === "in_review").length;
+  const waitingCrs = crs.filter((cr) => cr.status === "in_review");
+  const decidedCrs = crs.filter((cr) => cr.status !== "in_review");
+  const pendingCrs = waitingCrs.length;
+  /* ما له طلبٌ ينتظر — فلا يُقدَّم مرّتين */
+  const waitingFor = new Set(waitingCrs.map((cr) => `${cr.entityType}:${cr.entityId}`));
+  const draftControl = (entityType: string, row: { id: string; status: string }) => (
+    <DraftApproval status={row.status} waiting={waitingFor.has(`${entityType}:${row.id}`)}
+      canSubmit={canSubmitDraft[entityType] ?? false} busy={busy} onSubmit={() => submitDraft(entityType, row.id)} />
+  );
 
   /* مسارٌ واحدٌ لكلّ مرشِّحٍ يُعرض — فلا يُنسى ترشيحٌ ظاهرٌ على قائمةٍ لا تعنيه */
   const browseUi = browse === null ? null
@@ -366,7 +366,7 @@ export default function CatalogAdmin() {
                 <span className="font-mono text-fine text-muted-foreground" dir="ltr">{p.id}</span>
                 <span className="font-bold">{p.title}</span>
                 <span className="text-fine text-muted-foreground">{p.courseCount} دورة</span>
-                <span className="mr-auto"><Pill v={p.status} /></span>
+                <span className="mr-auto flex items-center gap-2"><Pill v={p.status} />{draftControl("pathway", p)}</span>
               </Inset>
             ))}
             {pathways.length === 0 && <p className="text-sm text-muted-foreground">لا مسارات بعد.</p>}
@@ -395,6 +395,19 @@ export default function CatalogAdmin() {
                   )}
                   <span className="mr-auto flex items-center gap-2">
                     <Pill v={c.status} />
+                    {draftControl("course", c)}
+                    {canEditCourse && (
+                      <Button
+                        tone="ghost" size="sm"
+                        aria-expanded={nameFor === c.id}
+                        onClick={() => {
+                          if (nameFor === c.id) { setNameFor(null); return; }
+                          setNameFor(c.id); setNameDraft(c.title);
+                        }}
+                      >
+                        اسمها
+                      </Button>
+                    )}
                     {canEditCourse && (
                       <Button
                         tone={c.skillCount === 0 ? "danger" : "ghost"} size="sm"
@@ -423,6 +436,34 @@ export default function CatalogAdmin() {
                     )}
                   </span>
                 </div>
+                {/* الاسمُ حقلٌ لا صندوقُ JSON — ويُكتب بالباب الذي تكتبه «أسماء الدورات» (`renameCourse`): مباشرةً لمن
+                    يعتمد ما يقدّمه، وطلبا في الطابور لغيره. ولا يعيده النشرُ التالي (`renamedTitleAr`) */}
+                {nameFor === c.id && (() => {
+                  const next = tidyCourseTitleAr(nameDraft);
+                  return (
+                    <Inset className="mt-3 grid gap-2">
+                      <label htmlFor={`course-name-${c.id}`} className="text-read font-bold text-muted-foreground">اسمها الجديد</label>
+                      <input id={`course-name-${c.id}`} value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} className={inputCls} />
+                      {nameDraft.trim() !== "" && !next && <p className="text-read text-muted-foreground">الاسم من ٣ إلى ١٢٠ حرفا.</p>}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          tone="confirm" size="sm" loading={busy}
+                          disabled={!next || next === c.title}
+                          onClick={() => void act(
+                            () => apiPost<RenameResult>(`/api/admin/catalog/courses/${c.id}/rename`, { titleAr: next }),
+                            renameDoneAr,
+                          ).then((ok) => { if (ok) setNameFor(null); })}
+                        >
+                          {canSelfApprove ? "اعتمد الاسم" : "قدم للاعتماد"}
+                        </Button>
+                        <Button tone="ghost" size="sm" onClick={() => setNameFor(null)}>أغلق</Button>
+                        <span className="text-fine text-muted-foreground">
+                          {canSelfApprove ? "يتغير في الموقع الآن." : "ينتظر مراجعا آخر في «طلبات التغيير»."} ولا تتغير أسماء شعبها.
+                        </span>
+                      </div>
+                    </Inset>
+                  );
+                })()}
                 {soloFor === c.id && (
                   <Inset className="mt-3 grid gap-3">
                     <p className="text-read leading-7 text-muted-foreground">
@@ -552,6 +593,7 @@ export default function CatalogAdmin() {
                     <span className="font-mono text-fine text-muted-foreground" dir="ltr">{s.id}</span>
                     <span className="min-w-0 flex-1 truncate font-bold">{s.nameAr}</span>
                     <Pill v={s.status} />
+                    {draftControl("skill", s)}
                   </div>
                   {s.measureNoteAr && (
                     <p className={`mt-1 text-read ${s.measureState === "measured" ? "text-teal-light-ink" : "text-muted-foreground"}`}>
@@ -571,7 +613,7 @@ export default function CatalogAdmin() {
                 <span className="font-mono text-fine text-muted-foreground" dir="ltr">{qq.id}</span>
                 <span className="min-w-0 flex-1 font-bold">{qq.text || "—"}</span>
                 <span className="text-fine text-muted-foreground">{qq.module} · {qq.optionCount} خيار{!qq.active && " · موقوف"}</span>
-                <span className="mr-auto"><Pill v={qq.status} /></span>
+                <span className="mr-auto flex items-center gap-2"><Pill v={qq.status} />{draftControl("question", qq)}</span>
               </Inset>
             ))}
             {questions.length === 0 && <p className="text-sm text-muted-foreground">لا أسئلة بعد.</p>}
@@ -659,91 +701,42 @@ export default function CatalogAdmin() {
             <Button tone="confirm" disabled={busy || !skillForm.id || !skillForm.slug || skillForm.nameAr.length < 2}
               onClick={() => act(async () => {
                 await apiPost("/api/admin/catalog/skills", { ...skillForm, familyId: skillForm.familyId || undefined });
+                /* وتُقدَّم للاعتماد معها — فلا تبقى مسودّةً بلا طريقٍ إلى النشر */
+                await apiPost("/api/admin/catalog/change-requests", draftApprovalBody("skill", skillForm.id));
                 setSkillForm({ id: "", slug: "", nameAr: "", familyId: "" });
-              }, "أنشئت المهارة كمسودة")} className="mt-4">
+              }, "أنشئت المهارة وقدمت للاعتماد — تنتظر مراجعا في «طلبات التغيير»")} className="mt-4">
               إنشاء المسودة
             </Button>
           </Card>
         )}
 
-        <FormHead id="cr" icon={GitPullRequest} title="طلب تعديل على كيان موجود" hint="المسميات والأهداف والروابط — لا يطبق قبل اعتماد مراجع آخر" />
-        {openForm === "cr" && (
-          <Card className="border-gold/20">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <select value={crForm.entityType} onChange={(e) => setCrForm({ ...crForm, entityType: e.target.value, entityId: "" })} className={selectCls}>
-                {Object.entries(ENTITY_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-              {/* الدورةُ تُختار ببحثٍ لا من قائمةٍ منسدلةٍ بمئة سطر */}
-              {crForm.entityType === "course" ? (
-                <CoursePicker
-                  courses={courses.map((c) => ({ id: c.id, title: c.title, pathwayNames: c.pathwayNames, diagnosticDomains: c.diagnosticDomains }))}
-                  value={crForm.entityId}
-                  onChange={(id) => setCrForm({ ...crForm, entityId: id })}
-                />
-              ) : (
-                <select value={crForm.entityId} onChange={(e) => setCrForm({ ...crForm, entityId: e.target.value })} className={selectCls}>
-                  <option value="">اختر {ENTITY_AR[crForm.entityType]}…</option>
-                  {entityOptionsFor(crForm.entityType).map((o) => <option key={o.id} value={o.id}>{o.label} ({o.id})</option>)}
-                </select>
-              )}
-            </div>
-            <textarea value={crForm.payload} onChange={(e) => setCrForm({ ...crForm, payload: e.target.value })} rows={5}
-              dir="ltr" placeholder={CHANGE_REQUEST_EXAMPLE} aria-label="التعديلات المطلوبة"
-              className={`${inputCls} mt-3 font-mono text-xs`} />
-            <p className="mt-2 text-read text-muted-foreground">
-              أمثلة: titleAr للاسم، objectives للأهداف، skillIds للمهارات — تطبّق في إصدار جديد بعد الاعتماد والنشر.
-              {crForm.entityType === "course" && (
-                <> ولاسم الدورة طريق أسهل:{" "}
-                  <button type="button" onClick={() => setOpenForm("names")} className="cursor-pointer font-bold text-gold-ink underline">
-                    أسماء الدورات
-                  </button>.
-                </>
-              )}
-            </p>
-            {/* `confirm` لا `primary`: هذا الزرُّ حفظُ **قسمٍ** في صفحةٍ فيها
-                ثلاثةُ أقسامِ إنشاءٍ متوازية (دورة · مسار · طلبُ تعديل) — فليس
-                فعلَ الصفحة الأوّل. وهو النمطُ نفسُه الذي صُوّب في شاشتَي
-                التكاملات والمالية حين هبط الذهبيُّ من ٤٨ إلى ٢٣. */}
-            <Button tone="confirm" disabled={busy || !crForm.entityId.trim()} onClick={submitChangeRequest} className="mt-3">
-              تقديم الطلب
-            </Button>
-          </Card>
-        )}
       </section>
 
-      {/* طلبات التغيير — وهي هدفُ زرِّ الرأس، فتقبل التركيزَ لتُقرأ حين تُبلَغ */}
+      {/* طلبات التغيير — وهي هدفُ زرِّ الرأس، فتقبل التركيزَ لتُقرأ حين تُبلَغ.
+          ما ينتظر قرارا أوّلا، وما قُرّر تاريخٌ مطويٌّ تحته: كانت كلُّها قائمةً واحدةً بالأحدث، فيُبحث عن العمل بين التاريخ. */}
       <section id="change-requests" tabIndex={-1} className="mt-8 outline-none">
         <h2 className="flex items-center gap-2 text-lg font-black"><GitPullRequest className="h-5 w-5 text-gold-ink" /> طلبات التغيير</h2>
         <div className="mt-4 space-y-3">
-          {crs.length === 0 && <p className="text-sm text-muted-foreground">لا طلبات بعد.</p>}
-          {crs.map((cr) => (
-            <Card key={cr.id} className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-bold text-sm">{ENTITY_AR[cr.entityType] ?? cr.entityType} · <span dir="ltr" className="font-mono text-xs">{cr.entityId}</span></p>
-                <p className="mt-1 text-read text-muted-foreground">{fmtDateTime(new Date(cr.createdAt))} — {cr.decisions.length} قرار</p>
-                <TrainerSuggestion payload={cr.payload} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Pill v={cr.status} />
-                {cr.status === "in_review" && (
-                  <>
-                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "approve" }), "اعتمد الطلب")}>
-                      <CheckCircle2 className="h-3.5 w-3.5" /> اعتماد
-                    </Button>
-                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "request_changes", noteAr: "راجع التفاصيل" }), "طلب تعديل")}>
-                      <XCircle className="h-3.5 w-3.5" /> طلب تعديل
-                    </Button>
-                  </>
-                )}
-              </div>
-            </Card>
+          {waitingCrs.length === 0 && <p className="text-sm text-muted-foreground">لا طلب ينتظر قرارا.</p>}
+          {waitingCrs.map((cr) => (
+            <ChangeRequestItem key={cr.id} cr={cr} status={<Pill v={cr.status} />} canDecide={canDecide} busy={busy} onDecide={(d) => decideCr(cr, d)} />
           ))}
         </div>
+        {decidedCrs.length > 0 && (
+          <details className="mt-4">
+            <summary className="cursor-pointer text-read font-bold text-muted-foreground">قرارات سابقة ({decidedCrs.length})</summary>
+            <div className="mt-3 space-y-3">
+              {decidedCrs.map((cr) => (
+                <ChangeRequestItem key={cr.id} cr={cr} status={<Pill v={cr.status} />} canDecide={canDecide} busy={busy} onDecide={(d) => decideCr(cr, d)} />
+              ))}
+            </div>
+          </details>
+        )}
         <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
           <BookMarked className="h-3.5 w-3.5" />
           {canSelfApprove
-            ? "maker-checker: من يقدّم الطلب لا يعتمده — إلّا حسابك: تعتمد ما قدّمته، ويسجّل ذلك في سجلّ الأثر."
-            : "maker-checker: من يقدّم الطلب لا يعتمده — والخادم يرفض ذلك."}
+            ? "من يقدم الطلب لا يعتمده، إلا حسابك: تعتمد ما قدمته، ويسجل ذلك في سجل الأثر."
+            : "من يقدم الطلب لا يعتمده، والخادم يرفض ذلك."}
         </p>
       </section>
 

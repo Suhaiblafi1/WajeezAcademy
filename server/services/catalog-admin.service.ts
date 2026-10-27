@@ -1003,8 +1003,8 @@ export class CatalogAdminService {
     return { applied: true as const, titleAr }
   }
 
-  /** البابُ الواحدُ الذي يكتب اسمَ الدورة — داخل معاملة الاعتماد أو التغيير المباشر */
-  private async applyCourseRename(tx: Prisma.TransactionClient, courseId: string, titleAr: string, actorId: string, changeRequestId?: string) {
+  /** البابُ الواحدُ الذي يكتب اسمَ الدورة — داخل معاملة الاعتماد أو التغيير المباشر. ويقول إن كتب */
+  private async applyCourseRename(tx: Prisma.TransactionClient, courseId: string, titleAr: string, actorId: string, changeRequestId?: string): Promise<boolean> {
     const course = await tx.course.findUnique({
       where: { id: courseId },
       select: {
@@ -1013,7 +1013,7 @@ export class CatalogAdminService {
         cohorts: { select: { title: true, status: true } },
       },
     })
-    if (!course) return
+    if (!course) return false
     const latest = course.versions[0]
     const versions = [...new Set([latest?.version ?? course.currentVersion, course.currentVersion])]
     /* من اختار اسما رأى الاقتراحاتِ كلَّها — فلا يعود ما لم يختره إلى «ما ينتظرك».
@@ -1031,6 +1031,7 @@ export class CatalogAdminService {
       before: { titleAr: latest?.titleAr ?? null }, after: { titleAr },
       meta: changeRequestId ? { changeRequestId } : undefined,
     })
+    return true
   }
 
   /** تقديم طلب تغيير (maker) — لا يُطبَّق شيء قبل الاعتماد */
@@ -1047,13 +1048,36 @@ export class CatalogAdminService {
     })
   }
 
+  /* وكلُّ طلبٍ يحمل اسمَ ما يطلبه وحالتَه الآن (٢٦ أكتوبر ٢٠٢٦، المرحلة الثامنة). كان الطابورُ يعرض «دورة ·
+     C-MKT-104» فلا يُعرف ما يُعتمَد إلّا بقراءة الحمولة. والحالةُ تقول ما يفعله الاعتماد: المسودّةُ تُجهَّز للنشر،
+     وغيرُها يبقى كما هو (`promoteEntity`). وما لا صفَّ له — مهارةٌ طُلب ميلادُها — يُسمّى من حمولته في الشاشة. */
   async listChangeRequests(status?: string) {
     const rows = await this.prisma.contentChangeRequest.findMany({
       where: status ? { status } : undefined,
       orderBy: { createdAt: 'desc' },
       include: { decisions: { orderBy: { createdAt: 'desc' } } },
     })
-    return rows
+    const idsOf = (t: string) => [...new Set(rows.filter((r) => r.entityType === t).map((r) => r.entityId))]
+    const [courses, pathways, skills] = await Promise.all([
+      this.prisma.course.findMany({
+        where: { id: { in: idsOf('course') } },
+        select: { id: true, status: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } },
+      }),
+      this.prisma.pathway.findMany({
+        where: { id: { in: idsOf('pathway') } },
+        select: { id: true, status: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { title: true } } },
+      }),
+      this.prisma.skill.findMany({ where: { id: { in: idsOf('skill') } }, select: { id: true, status: true, nameAr: true } }),
+    ])
+    const entities = new Map<string, { labelAr: string; status: string }>([
+      ...courses.map((c) => [`course:${c.id}`, { labelAr: c.versions[0]?.titleAr ?? c.id, status: c.status }] as const),
+      ...pathways.map((p) => [`pathway:${p.id}`, { labelAr: p.versions[0]?.title ?? p.id, status: p.status }] as const),
+      ...skills.map((k) => [`skill:${k.id}`, { labelAr: k.nameAr, status: k.status }] as const),
+    ])
+    return rows.map((r) => {
+      const e = entities.get(`${r.entityType}:${r.entityId}`)
+      return { ...r, entityLabelAr: e?.labelAr ?? null, entityStatus: e?.status ?? null }
+    })
   }
 
   /* ═══ قرارُ المراجعة (checker) — ومن يراجع نفسَه ═══
@@ -1082,7 +1106,7 @@ export class CatalogAdminService {
     }
     /* وما قُدّم بالمثال قبل أن يُردّ تقديمُه لا يُعتمَد — يُردّ أو يُطلب تعديلُه (`change-request-example.ts`) */
     if (decision === 'approve' && carriesExampleTitle(cr.payload)) {
-      throw new AuthError('example_title', 'هذا الطلب يسمي الكيان «الاسم الجديد»، وهو المثال. ارفضه أو اطلب تعديله.', 409)
+      throw new AuthError('example_title', 'هذا الطلب يسمي الكيان «الاسم الجديد»، وهو المثال. ارفضه.', 409)
     }
 
     const newStatus = decision === 'approve' ? 'approved' : decision === 'reject' ? 'rejected' : 'changes_requested'
@@ -1091,9 +1115,9 @@ export class CatalogAdminService {
       const updated = await tx.contentChangeRequest.update({ where: { id: changeRequestId }, data: { status: newStatus, reviewedBy: actorId, reviewedAt: new Date() } })
       /* والاسمُ في الحمولة يُكتب عند الاعتماد — وكان يُعتمد ولا يُكتب. وطلبُ الاسم
          وحدَه (`course_rename`) لا يمسّ حالةَ الدورة: منشورةٌ تبقى منشورة. */
-      const renameTo = cr.entityType === 'course' ? renameTitleOf(cr.payload) : null
-      if (decision === 'approve' && renameTo) await this.applyCourseRename(tx, cr.entityId, renameTo, actorId, changeRequestId)
-      /* الاعتماد يرفع الكيان المسودة إلى «approved» استعدادا للنشر */
+      const renameTo = decision === 'approve' && cr.entityType === 'course' ? renameTitleOf(cr.payload) : null
+      const renamed = renameTo !== null && await this.applyCourseRename(tx, cr.entityId, renameTo, actorId, changeRequestId)
+      /* الاعتماد يرفع الكيان المسودة إلى «approved» استعدادا للنشر — والمسودّةَ وحدَها: منشورٌ يبقى منشورا */
       if (decision === 'approve' && !isRenameOnly(cr.payload)) await this.promoteEntity(tx, cr.entityType, cr.entityId, 'draft', 'approved')
       /* ثمنُ الاستثناء: أن يُقال إنّه وقع.
 
@@ -1114,7 +1138,8 @@ export class CatalogAdminService {
           meta: { entityType: cr.entityType, entityId: cr.entityId },
         })
       }
-      return updated
+      /* و`renamed` يقول للمسار إنّ اسما كُتب — فينشره كما ينشر التغييرَ المباشر (`catalog.routes.ts`) */
+      return { ...updated, renamed }
     })
   }
 
@@ -1148,15 +1173,24 @@ export class CatalogAdminService {
     return false
   }
 
-  /** رفع حالة كيان وإصداره الحالي معا — داخل معاملة القرار أو النشر */
+  /** رفع حالة كيان وإصداره الحالي معا — داخل معاملة القرار أو النشر.
+
+      ويُرفَع **ما كان على الحالة السابقة (`from`) وحدَه** (٢٦ أكتوبر ٢٠٢٦، المرحلة الثامنة). كان يكتب `to` على الكيان
+      في كلّ حال: فاعتمادُ طلبٍ على دورةٍ منشورة — `{ "titleAr": … }` من صندوق JSON — يكتبها «معتمدة»، فتخرج من
+      الكتالوج العامّ حتى النشر التالي، ومؤرشفةٌ تعود «معتمدة» فيعيدها النشرُ إلى الموقع. والقرارُ يرفع المسودّةَ،
+      والنشرُ يرفع المعتمد؛ وما سواهما يبقى كما هو. */
   async promoteEntity(tx: Prisma.TransactionClient, entityType: string, entityId: string, from: string, to: string) {
     /* يُرفَع ما هو موجود — وما طُلب ميلادُه يُعتمد قرارا ويولد بعدُ */
     if (!(await this.entityExists(tx, entityType, entityId))) return
+    const at = { id: entityId, status: from }
+    const versionOf = { where: { id: entityId }, select: { currentVersion: true } } as const
     if (entityType === 'pathway') {
-      const e = await tx.pathway.update({ where: { id: entityId }, data: { status: to } })
+      if ((await tx.pathway.updateMany({ where: at, data: { status: to } })).count === 0) return
+      const e = await tx.pathway.findUniqueOrThrow(versionOf)
       await tx.pathwayVersion.updateMany({ where: { pathwayId: entityId, version: e.currentVersion, status: from }, data: { status: to } })
     } else if (entityType === 'course') {
-      const e = await tx.course.update({ where: { id: entityId }, data: { status: to } })
+      if ((await tx.course.updateMany({ where: at, data: { status: to } })).count === 0) return
+      const e = await tx.course.findUniqueOrThrow(versionOf)
       await tx.courseVersion.updateMany({ where: { courseId: entityId, version: e.currentVersion, status: from }, data: { status: to } })
       /* ── الوحدةُ تتبع دورتها، لكن ليس في كلّ حال ──
 
@@ -1181,13 +1215,16 @@ export class CatalogAdminService {
         await tx.courseModuleVersion.updateMany({ where: { module: { courseId: entityId }, status: { not: to } }, data: { status: to } })
       }
     } else if (entityType === 'skill') {
-      const e = await tx.skill.update({ where: { id: entityId }, data: { status: to } })
+      if ((await tx.skill.updateMany({ where: at, data: { status: to } })).count === 0) return
+      const e = await tx.skill.findUniqueOrThrow(versionOf)
       await tx.skillVersion.updateMany({ where: { skillId: entityId, version: e.currentVersion, status: from }, data: { status: to } })
     } else if (entityType === 'question') {
-      const e = await tx.question.update({ where: { id: entityId }, data: { status: to } })
+      if ((await tx.question.updateMany({ where: at, data: { status: to } })).count === 0) return
+      const e = await tx.question.findUniqueOrThrow(versionOf)
       await tx.questionVersion.updateMany({ where: { questionId: entityId, version: e.currentVersion, status: from }, data: { status: to } })
     } else if (entityType === 'template') {
-      const e = await tx.compositeTemplate.update({ where: { id: entityId }, data: { status: to } })
+      if ((await tx.compositeTemplate.updateMany({ where: at, data: { status: to } })).count === 0) return
+      const e = await tx.compositeTemplate.findUniqueOrThrow(versionOf)
       await tx.compositeTemplateVersion.updateMany({ where: { templateId: entityId, version: e.currentVersion, status: from }, data: { status: to } })
     }
   }

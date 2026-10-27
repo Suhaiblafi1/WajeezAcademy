@@ -22,7 +22,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { fmtDateTime } from "@/application/text/format-ar";
-import { tidyCourseTitleAr, type CourseNameSuggestion } from "@/application/catalog/course-name-suggest";
+import { renameDoneAr, tidyCourseTitleAr, type CourseNameSuggestion } from "@/application/catalog/course-name-suggest";
 
 type CourseNameRow = {
   id: string; status: string; titleAr: string; termEn: string | null; legacyTitleAr: string | null
@@ -119,11 +119,7 @@ export default function CourseNamesPanel({
     setBusyId(r.id); setError(null);
     try {
       const out = await apiPost<RenameResult>(`/api/admin/catalog/courses/${r.id}/rename`, { titleAr });
-      toast(!out.applied
-        ? "قدم الاسم للاعتماد — ينتظر مراجعا آخر"
-        : out.published
-          ? `صار اسمها «${out.titleAr}» — وفي الموقع الآن`
-          : `صار اسمها «${out.titleAr}» — ويصل الموقع مع النشر التالي`);
+      toast(renameDoneAr(out));
       setDrafts((d) => { const next = { ...d }; delete next[r.id]; return next; });
       await load();
       onRenamed?.();
