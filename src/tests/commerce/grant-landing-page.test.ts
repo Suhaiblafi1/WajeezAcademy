@@ -302,6 +302,18 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/تناسبك\{timedSuggested \? " ولا تتعارض مواعيدها" : ""\}\.\{suggested\.length > max && ` اختر منها حتى \$\{max\}\.`\}/)
   })
 
+  /* «عندما يقوم بالدفع لا يظهر نفس السعر… يجب أن يصلح من جهتك» — واختار صاحبُ المنصّة المطابقةَ بالبريد (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ من لا كود ظاهرا له يأخذه بحسابه حين يدخل — ولوح الدفع يعاد بالكود فيسعر بمنحته', () => {
+    expect(PAGE).toMatch(/const claimFor = session && stored && !stored\.code \? `\$\{session\.email\}\|\$\{stored\.ref\}` : null;/)
+    expect(PAGE).toMatch(/apiGet<\{ code: string \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{forInfluencer \? "influencer" : "member"\}`\)/)
+    expect(PAGE, 'لا يحفظ الكود على الجهاز').toMatch(/if \(kept && !kept\.code\) saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null \}, storeKey\);/)
+    expect(PAGE).toMatch(/setStored\(\(s\) => \(s && !s\.code \? \{ \.\.\.s, code, sentTo: null \} : s\)\);/)
+    /* ولوحُ الدفع يُبنى من جديدٍ حين يصل الكود — فلا يبقى على أوّل حالٍ بلا منحة */
+    expect(PAGE).toMatch(/<BuyPanel\s+key=\{stored\.code \?\? "no-code"\}[\s\S]{0,200}initialCoupon=\{stored\.code \?\? ""\}/)
+    expect(code('server/http/routes/public-grant.routes.ts')).toMatch(/app\.get\('\/api\/learner\/grant-code', \{\s*preHandler: requireAuth,/)
+    expect(auditActionAr('coupon.grant_claim')).not.toBe('coupon.grant_claim')
+  })
+
   it('⚠️ مسار رئيسي وبديل — كل دوراته في المنحة، والأنسب له، ولا رئيسي بلا ملاءمة', () => {
     const hr = courseDomain('C-HR-101'), mkt = courseDomain('C-MKT-101'), ai = courseDomain('C-AI-101'), cyb = courseDomain('C-CYB-101')
     const pool = [

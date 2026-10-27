@@ -233,6 +233,23 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     finally { setBusy(false); }
   };
 
+  /* ومن جاء بلا كودٍ ظاهر («أرسلناه إلى بريدك») يأخذه بحسابه حين يدخل — ببريد النموذج (`myCode` في الخادم). فيظهر في صندوقه،
+     ويفتح لوحُ الدفع بمنحته وبالسعر الذي رآه. قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «يجب أن يصلح ويتغيّر من جهتك» */
+  const claimFor = session && stored && !stored.code ? `${session.email}|${stored.ref}` : null;
+  useEffect(() => {
+    if (!claimFor) return;
+    let on = true;
+    apiGet<{ code: string | null }>(`/api/learner/grant-code?campaign=${forInfluencer ? "influencer" : "member"}`)
+      .then(({ code }) => {
+        if (!on || !code) return;
+        const kept = readStoredGrant(storeKey);
+        if (kept && !kept.code) saveStoredGrant({ ...kept, code, sentTo: null }, storeKey);
+        setStored((s) => (s && !s.code ? { ...s, code, sentTo: null } : s));
+      })
+      .catch(() => undefined);
+    return () => { on = false; };
+  }, [claimFor, forInfluencer, storeKey]);
+
   const pay = () => {
     if (chosen.length === 0) return;
     savePendingCheckout({
@@ -504,6 +521,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         <ResumeCheckout ready={resumed !== null && seeded && chosen.length > 0} onResume={() => (session ? setBuyOpen(true) : setAuthOpen(true))} />
         {buyOpen && (
           <BuyPanel
+            /* ويُعاد بنيانُه حين يصل الكودُ بعد فتحه — فيُسعَّر بمنحته لا بدونها */
+            key={stored.code ?? "no-code"}
             title={BUY_TITLE_AR}
             email={session?.email ?? stored.email}
             kind="courses"
