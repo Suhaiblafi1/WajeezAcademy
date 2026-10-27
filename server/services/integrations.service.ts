@@ -70,7 +70,8 @@ export const ACADEMY_EMAIL_DOMAIN = 'wajeezacademy.com'
 export const ACADEMY_EMAILS = {
   sender: `academy@${ACADEMY_EMAIL_DOMAIN}`,
   support: ACADEMY_CONTACT_EMAIL,
-  calendar: ACADEMY_CONTACT_EMAIL,
+  /* منظِّمُ الدعوات هو المُرسِلُ — وإلّا لم يطبّق التقويمُ رفعا ولا تحديثا وحده (العلّةُ في الأصل) */
+  calendar: `academy@${ACADEMY_EMAIL_DOMAIN}`,
 } as const
 
 /** المُرسِلُ الافتراضيُّ لكلّ رسالةٍ آليّة — والردُّ يُوجَّه إلى العنوان الواحد */
