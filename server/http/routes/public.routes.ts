@@ -10,6 +10,7 @@ import { TrainerPathService } from '../../services/trainer-path.service'
 import { getCalendlyConfig } from '../../services/integrations.service'
 import { ShortLinkService } from '../../services/short-link.service'
 import { deadLinkPage, previewPage } from '../../services/link-preview'
+import { recordOpen } from '../../services/link-opens'
 import { publicSiteUrl } from '../../services/site-url'
 import { readSeasonGate } from '../../services/registration-window'
 import { RegistrationInterestService, INTEREST_CONSENT_AR, INTEREST_SOURCES } from '../../services/registration-interest.service'
@@ -212,9 +213,12 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     const origin = publicSiteUrl()
     const target = await shortLinks.resolve(code).then((t) => t.target, () => null)
     if (!target) return reply.status(404).type('text/html; charset=utf-8').send(deadLinkPage(origin))
+    /* وتُعدّ الفتحةُ إن فتحه إنسان — كم فُتح ومن أيّ منصّة، يراه المدرّبُ تحت رابطه (`link-opens.ts`) */
+    await recordOpen(prisma, code, { ip: req.ip, userAgent: req.headers['user-agent'], via: (req.query as { p?: unknown }).p })
     const row = await prisma.shortLink.findUnique({ where: { code }, select: { previewSig: true, previewTitle: true, previewText: true } })
     if (!row?.previewSig || !row.previewTitle) return reply.redirect(`${origin}${target}`, 302)
-    return reply.header('cache-control', 'public, max-age=300').type('text/html; charset=utf-8')
+    /* ولا تُخزَّن الصفحة: فتحةٌ تُجاب من مخزنٍ في الطريق لا تبلغ الخادمَ فلا تُعدّ */
+    return reply.header('cache-control', 'no-store').type('text/html; charset=utf-8')
       .send(previewPage({ origin, code, target, title: row.previewTitle, text: row.previewText ?? '', sig: row.previewSig }))
   })
 

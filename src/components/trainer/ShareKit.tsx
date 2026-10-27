@@ -25,6 +25,7 @@ import TabBar from "@/components/ui/TabBar";
 import { fmtDayMonth } from "@/application/text/format-ar";
 import { emailSubject, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type SharePlatform } from "@/application/trainer/share-kit";
 import { artPlan, drawArt, toFile, type ArtData, type ArtKind } from "./share-art";
+import { withVia } from "@/application/links/share-via";
 
 export type Format = "post" | "story" | "carousel";
 const FORMATS: { id: Format; label: string }[] = [
@@ -66,7 +67,8 @@ export default function ShareKit({ face, courses, url, code, fileStem, content }
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const input = useMemo(() => ({ courses, url, code, dayAr: (iso: string) => fmtDayMonth(iso), signature: face.name }), [courses, url, code, face.name]);
+  /* والرابطُ يحمل منصّتَه (`?p=wa`) — فيُقال للمدرّب تحت رابطه من أيّ منصّةٍ فُتح (`share-via.ts`) */
+  const input = useMemo(() => ({ courses, url: withVia(url, platform), code, dayAr: (iso: string) => fmtDayMonth(iso), signature: face.name }), [courses, url, platform, code, face.name]);
   /* ═══ أيرفق جهازُه الصورةَ بنفسه؟ (٢٦ أكتوبر ٢٠٢٦) ═══
      «هل يمكن أن تُرفق الصورةُ تلقائيّا عند النشر؟» — نعم حيث يقبل الجهازُ مشاركةَ الصور (الهاتف): قائمةُ المشاركة
      تحملها مع النصّ إلى أيّ منصّة. ويُسأل الجهازُ مرّةً بصورةٍ صغيرة (`manualNoteAr`) */

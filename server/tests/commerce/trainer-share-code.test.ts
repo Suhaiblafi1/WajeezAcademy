@@ -19,6 +19,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { TrainerShareCodeService } from '../../services/trainer-share-code.service'
+import { TrainerMarketingService } from '../../services/trainer-marketing.service'
 import { SHARE_CODE_PERCENT, SHARE_CODE_PREFIX } from '../../../src/application/trainer/share-code'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 
@@ -218,5 +219,56 @@ describe('⑦ معاينة روابطه حين تلصق', () => {
 
     const dead = await app.inject({ method: 'GET', url: '/s/ZZZZZZ' })
     expect(dead.statusCode).toBe(404)
+  })
+})
+
+/* ⑧ كم فتح رابطَه ومن أين — اقترحه Claude فقال صاحبُ المنصّة: «كلّهم» (٢٧ أكتوبر ٢٠٢٦). والعلّةُ في
+   `server/services/link-opens.ts`: الإنسانُ وحدَه يُعدّ، ومن عاد في نصف ساعةٍ يُعدّ مرّة، والمنصّةُ من `?p=`. */
+describe('⑧ عداد روابطه', () => {
+  const HUMAN = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 [FBAN/FBIOS;FBAV/450.0]'
+  const codeOf = (url: string) => url.slice(url.lastIndexOf('/') + 1)
+  let app: FastifyInstance
+
+  beforeAll(async () => { app = await buildApp(prisma) }, 120_000)
+  afterAll(async () => { await app?.close() })
+
+  const open = (code: string, ua: string, ip: string, p?: string) => app.inject({
+    method: 'GET', url: `/s/${code}${p ? `?p=${p}` : ''}`, headers: { 'user-agent': ua }, remoteAddress: ip,
+  })
+
+  it('⚠️ يعد الإنسان مرة بمنصته، ولا يعد الزاحف، ولا من عاد في نصف ساعة', async () => {
+    const code = codeOf((await shares.kit(A.userId)).short.cohorts[cohort.A1])
+    const before = (await shares.kit(A.userId)).reach[code]
+    await open(code, HUMAN, '10.0.0.1', 'wa')
+    await open(code, HUMAN, '10.0.0.1', 'wa')
+    await open(code, 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)', '10.0.0.2', 'fb')
+    await open(code, 'WhatsApp/2.23.20.0 A', '10.0.0.3', 'wa')
+    await open(code, HUMAN, '10.0.0.4', 'li')
+    await open(code, HUMAN, '10.0.0.5', 'evil')
+    const after = (await shares.kit(A.userId)).reach[code]
+    expect(after.opens - before.opens, 'عد الزاحف أو من عاد').toBe(3)
+    expect((after.byVia.wa ?? 0) - (before.byVia.wa ?? 0)).toBe(1)
+    expect((after.byVia.li ?? 0) - (before.byVia.li ?? 0)).toBe(1)
+    expect(after.byVia.evil, 'منصة لا نعرفها كتبت في القاعدة').toBeUndefined()
+    expect(after.byVia.fb, 'عد زاحف فيسبوك فتحة').toBeUndefined()
+  })
+
+  it('⚠️ ومن سجل برمز إحالة الرابط يعد له — والانتظار ليس مقعدا', async () => {
+    const kit = await shares.kit(A.userId)
+    const code = codeOf(kit.short.cohorts[cohort.A1])
+    const link = await prisma.trainerReferralLink.findFirstOrThrow({ where: { profileId: A.profileId, cohortId: cohort.A1 } })
+    const before = kit.reach[code].registered
+    await prisma.enrollment.create({ data: { cohortId: cohort.A1, userId: await learner('reach1'), status: 'enrolled', referralCode: link.code } })
+    await prisma.enrollment.create({ data: { cohortId: cohort.A1, userId: await learner('reach2'), status: 'waitlisted', referralCode: link.code } })
+    expect((await shares.kit(A.userId)).reach[code].registered - before).toBe(1)
+  })
+
+  it('⚠️ وفي «تسويق المدربين» يرى المدير من ينشر فعلا — بمجموع روابطه نفسه', async () => {
+    const a = (await new TrainerMarketingService(prisma).adminList()).find((r) => r.profileId === A.profileId)
+    const reach = Object.values((await shares.kit(A.userId)).reach)
+    expect(a, 'المدرب النشط غاب عن القائمة').toBeDefined()
+    expect(a!.shares.opens, 'مجموع الإدارة غير مجموع روابطه').toBe(reach.reduce((s, r) => s + r.opens, 0))
+    expect(a!.shares.opens).toBeGreaterThanOrEqual(3)
+    expect(a!.shares.registered, 'من سجل عبره لا يبلغ الإدارة').toBeGreaterThanOrEqual(1)
   })
 })

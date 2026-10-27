@@ -4818,6 +4818,22 @@ model ShortLink {
   /// بصمةُ ما رُسمت منه الصورة — فلا تُرفع ثانيةً إلّا إن تغيّر
   previewSig   String?
   previewAt    DateTime?
+  opens        ShortLinkOpen[]
+}
+
+/// فتحةُ رابطٍ قصيرٍ فتحها إنسان (٢٧ أكتوبر ٢٠٢٦) — يُعدّ منها ما يراه المدرّبُ تحت كلّ رابط: كم فُتح ومن أيّ منصّة.
+/// والزاحفُ لا يُعدّ، ومن فتحه مرّتين في نصف ساعةٍ يُعدّ مرّة (`server/services/link-opens.ts`).
+model ShortLinkOpen {
+  id      String    @id @default(uuid()) @db.Uuid
+  linkId  String    @db.Uuid
+  /// المنصّةُ التي نُشر عليها — `?p=` في الرابط (`src/application/links/share-via.ts`)، وفارغٌ لما نُسخ بيده
+  via     String?
+  /// بصمةُ الزائر (عنوانُه ومتصفّحُه مجزَّآن) — لا يُحفظ عنوانُه، ويُعرف بها من عاد في نصف ساعة
+  visitor String
+  at      DateTime  @default(now())
+  link    ShortLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, at])
 }
 
 /// بريدُ من جاء ليشتري فوجد البابَ مغلقا (قرارُ صاحب المنصّة ١٨ سبتمبر ٢٠٢٦).
