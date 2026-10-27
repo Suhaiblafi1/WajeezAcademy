@@ -37,8 +37,7 @@ import { staffControlCls, StaffField } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 import { fmtDateAr } from "@/utils/format";
 import ShareKit from "@/components/trainer/ShareKit";
-import { syncLinkPreviews } from "@/components/trainer/link-preview";
-import { fmtDayMonth } from "@/application/text/format-ar";
+import { previewFaceOf, previewLinksOf, syncLinkPreviews } from "@/components/trainer/link-preview";
 import { bestCode } from "@/application/trainer/share-kit";
 import { VIA_AR } from "@/application/links/share-via";
 import {
@@ -555,17 +554,8 @@ export default function Referral() {
 
   /* ومعاينةُ روابطه حين تُلصق في واتساب وفيسبوك: تُرسم هنا وتُرفع إن تغيّر ما رُسمت منه (`link-preview.ts`) */
   useEffect(() => {
-    if (!kit || !cohortLinks || cohortLinks.length === 0) return;
-    const courses = (cs: CohortLink[]) => cs.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt }))
-      .sort((a, b) => (a.startsAt ?? "9").localeCompare(b.startsAt ?? "9"));
-    const links = [
-      ...(kit.short.wide ? [{ url: kit.short.wide, courses: courses(cohortLinks) }] : []),
-      ...cohortLinks.flatMap((c) => (kit.short.cohorts[c.cohortId] ? [{ url: kit.short.cohorts[c.cohortId], courses: courses([c]) }] : [])),
-    ];
-    void syncLinkPreviews({
-      name: kit.name, headline: kit.headline, photoUrl: kit.photoUrl, code: shareCodeOf(kit),
-      dayAr: (iso: string) => fmtDayMonth(iso),
-    }, links, kit.previews ?? {});
+    if (!kit || !cohortLinks) return;
+    void syncLinkPreviews(previewFaceOf(kit), previewLinksOf(kit, cohortLinks), kit.previews ?? {});
   }, [kit, cohortLinks]);
 
   return (

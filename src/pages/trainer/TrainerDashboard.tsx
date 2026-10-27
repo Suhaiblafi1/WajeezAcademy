@@ -73,6 +73,16 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
     return () => clearInterval(t);
   }, []);
 
+  /* ═══ ومعاينةُ روابطه تتجدّد من هنا أيضا (٢٧ أكتوبر ٢٠٢٦) ═══
+     لوحتُه هذه تُفتح كلَّ يوم، و«شارك دوراتك» قليلا — فإن تغيّر موعدٌ أو كودٌ بعد أن نشر رابطَه تجدّدت صورتُه هنا
+     (`refreshMyLinkPreviews`). وبعد أن تُحمَّل اللوحة، ومحمَّلةً عند الحاجة: رسمُ الصور لا يُبطئ ما يراه أوّلا. */
+  useEffect(() => {
+    const t = setTimeout(() => {
+      void import("@/components/trainer/link-preview").then((m) => m.refreshMyLinkPreviews()).catch(() => undefined);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     Promise.all([
       apiGet<RealCohort[]>("/api/trainer/my-cohorts"),

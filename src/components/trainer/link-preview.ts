@@ -8,7 +8,9 @@
    والكود ونسخةُ التصميم. فإن طابقت بصمةَ الخادم لم يُرسم شيء؛ وإن تغيّر شيءٌ منها رُسمت ورُفعت. والخادمُ يكتب
    العنوانَ والوصفَ بنفسه (`server/services/link-preview.ts`). */
 
-import { apiUpload } from "@/services/api";
+import { apiGet, apiUpload } from "@/services/api";
+import { fmtDayMonth } from "@/application/text/format-ar";
+import { bestCode } from "@/application/trainer/share-kit";
 import { drawArt, type ArtData } from "./share-art";
 
 /** نسخةُ تصميم المعاينة — تُرفع إذا تغيّرت فتتجدّد الصورُ القديمةُ كلُّها (٣: بلا عنوان الموقع، ٢٦ أكتوبر ٢٠٢٦) */
@@ -54,5 +56,59 @@ export async function syncLinkPreviews(
     } catch {
       /* معاينةٌ لم تُرفع لا تمنع شيئا: الرابطُ يعمل، ويقرأ الزاحفُ وسومَ وجهته */
     }
+  }
+}
+
+/* ═══ وتتجدّد من لوحته الرئيسة أيضا (٢٧ أكتوبر ٢٠٢٦) ═══
+   كانت المعاينةُ تُرسم حين يفتح «شارك دوراتك» وحدَها. فإن نشر رابطَه ثمّ تغيّر موعدُ شعبته أو جاءته دورةٌ أو تغيّر
+   الكود، بقيت صورتُه بالقديم حتّى يعود إليها. فسُئل صاحبُ المنصّة فقال: «الاثنتان» — وهذه الأولى: لوحتُه الرئيسةُ
+   التي يفتحها كثيرا تجدّدها أيضا (`TrainerDashboard`)، مرّةً في كلّ جلسة متصفّح، ولا يُرسم إلّا ما تغيّرت بصمتُه. */
+
+/** ما يُرسم منه: وجهُه وكودُه وروابطُه القصيرة — كما يرسله `/api/trainer/me/share-kit` */
+export interface PreviewKit {
+  name: string; headline: string | null; photoUrl: string | null
+  code: string; percentOff: number; hisCodes: { code: string; percentOff: number | null }[]
+  short: { wide: string | null; cohorts: Record<string, string> }
+  previews?: Record<string, string | null>
+}
+/** شعبةٌ له — كما يرسلها `/api/trainer/me/referral-links` */
+export interface PreviewCohort { cohortId: string; courseTitle: string; startsAt: string | null }
+
+/** وجهُه للرسم */
+export function previewFaceOf(kit: PreviewKit): Omit<ArtData, "courses"> {
+  return {
+    name: kit.name, headline: kit.headline, photoUrl: kit.photoUrl,
+    code: bestCode({ code: kit.code, percentOff: kit.percentOff }, kit.hisCodes),
+    dayAr: (iso: string) => fmtDayMonth(iso),
+  };
+}
+
+/** روابطُه وما يُرسم لكلٍّ: العامُّ بدوراته كلِّها بترتيب بدئها، ولكلّ شعبةٍ دورتُها */
+export function previewLinksOf(kit: PreviewKit, cohorts: PreviewCohort[]): LinkToPreview[] {
+  if (cohorts.length === 0) return [];
+  const courses = (cs: PreviewCohort[]) => cs.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt }))
+    .sort((a, b) => (a.startsAt ?? "9").localeCompare(b.startsAt ?? "9"));
+  return [
+    ...(kit.short.wide ? [{ url: kit.short.wide, courses: courses(cohorts) }] : []),
+    ...cohorts.flatMap((c) => (kit.short.cohorts[c.cohortId] ? [{ url: kit.short.cohorts[c.cohortId], courses: courses([c]) }] : [])),
+  ];
+}
+
+const REFRESHED_KEY = "wajeez:link-previews-refreshed";
+
+/** يجدّد معايناته من أيّ صفحةٍ في بوّابته — مرّةً في الجلسة، وما تعذّر يُترك للمرّة التالية */
+export async function refreshMyLinkPreviews(): Promise<void> {
+  try {
+    if (sessionStorage.getItem(REFRESHED_KEY)) return;
+    sessionStorage.setItem(REFRESHED_KEY, "1");
+  } catch { /* بلا تخزين: يجدّد في كلّ زيارة، وما لم يتغيّر لا يُرسم */ }
+  try {
+    const [kit, cohorts] = await Promise.all([
+      apiGet<PreviewKit>("/api/trainer/me/share-kit"),
+      apiGet<PreviewCohort[]>("/api/trainer/me/referral-links"),
+    ]);
+    await syncLinkPreviews(previewFaceOf(kit), previewLinksOf(kit, cohorts), kit.previews ?? {});
+  } catch {
+    /* من ليس له شعبةٌ أو كود — لا شيء يُرسم */
   }
 }
