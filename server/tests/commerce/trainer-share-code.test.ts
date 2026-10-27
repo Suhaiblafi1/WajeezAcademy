@@ -22,6 +22,8 @@ import { TrainerShareCodeService } from '../../services/trainer-share-code.servi
 import { TrainerMarketingService } from '../../services/trainer-marketing.service'
 import { ShareReminderService, shareReminderMail } from '../../services/share-reminder.service'
 import { renderMail } from '../../services/mail-template'
+import { FORGOTTEN_VISITOR, forgetVisitors, recordOpen } from '../../services/link-opens'
+import { createHash } from 'node:crypto'
 import { SHARE_CODE_PERCENT, SHARE_CODE_PREFIX } from '../../../src/application/trainer/share-code'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 
@@ -380,5 +382,32 @@ describe('⑨ أتمّ شعبةً من قبل', () => {
     await prisma.cohortTrainer.updateMany({ where: { cohortId: done.id, profileId: B.profileId }, data: { role: 'lead' } })
     expect((await shares.kit(B.userId)).taughtBefore).toBe(true)
     expect((await shares.kit(A.userId)).taughtBefore, 'عُدّت له شعبةُ غيره').toBe(false)
+  })
+})
+
+/* ⑪ بصمة زائر الرابط: بسر لا يخمن، وتمحى بعد يوم ويبقى العد (٢٧ أكتوبر ٢٠٢٦) — العلة في `link-opens.ts` */
+describe('⑪ بصمة الزائر', () => {
+  it('⚠️ ليست تجزئة بلا سر لعنوانه ومتصفحه — فلا تعكس بتجربة العناوين', async () => {
+    const code = (await shares.kit(A.userId)).short.cohorts[cohort.A1].split('/').pop()!
+    const ua = 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0 visitor-hash-test'
+    expect(await recordOpen(prisma, code, { ip: '203.0.113.9', userAgent: ua, via: 'wa' })).toBe(true)
+    const row = await prisma.shortLinkOpen.findFirstOrThrow({ where: { link: { code } }, orderBy: { at: 'desc' } })
+    const plain = createHash('sha256').update(`203.0.113.9|${ua}`).digest('base64url').slice(0, 22)
+    expect(row.visitor, 'البصمة تجزئة بلا سر').not.toBe(plain)
+  })
+
+  it('⚠️ وتمحى بعد يوم ويبقى العد والمنصة', async () => {
+    const kit = await shares.kit(A.userId)
+    const code = kit.short.cohorts[cohort.A1].split('/').pop()!
+    const before = kit.reach[code]
+    const link = await prisma.shortLink.findUniqueOrThrow({ where: { code } })
+    const old = await prisma.shortLinkOpen.create({ data: { linkId: link.id, visitor: 'old-visitor', via: 'li', at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) } })
+    const fresh = await prisma.shortLinkOpen.create({ data: { linkId: link.id, visitor: 'fresh-visitor', via: 'li' } })
+    await forgetVisitors(prisma)
+    expect((await prisma.shortLinkOpen.findUniqueOrThrow({ where: { id: old.id } })).visitor, 'بقيت بصمة عمرها يومان').toBe(FORGOTTEN_VISITOR)
+    expect((await prisma.shortLinkOpen.findUniqueOrThrow({ where: { id: fresh.id } })).visitor, 'محيت بصمة يحتاجها نصف الساعة').toBe('fresh-visitor')
+    const after = (await shares.kit(A.userId)).reach[code]
+    expect(after.opens - before.opens, 'المحو أنقص العد').toBe(2)
+    expect((after.byVia.li ?? 0) - (before.byVia.li ?? 0)).toBe(2)
   })
 })

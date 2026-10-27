@@ -9,12 +9,28 @@
 
    والمسجّلون من كلّ رابطٍ لا يُكتبون هنا: التسجيلُ يحمل رمزَ الإحالة أصلا (`Enrollment.referralCode`)، فيُعدّ به. */
 
-import { createHash } from 'node:crypto'
+import { createHmac } from 'node:crypto'
+import { derivedSecret } from './storage.service'
 import type { PrismaClient } from '@prisma/client'
 import { isCrawler, viaOf } from '../../src/application/links/share-via'
 
 /** من فتح الرابطَ ثانيةً في هذه المدّة يُعدّ مرّة */
 export const REOPEN_WINDOW_MS = 30 * 60 * 1000
+
+/* ═══ والبصمةُ تُمحى بعد يوم (٢٧ أكتوبر ٢٠٢٦) ═══
+   لا تلزم إلّا لنصف الساعة التي يُعرف فيها من عاد. فما جاوز يوما يُمحى منها (`forgetVisitors`، في تقليم العامل
+   اليوميّ `enforce_retention`)، ويبقى العدُّ والمنصّةُ والوقت — وهي ما يُعرض. */
+export const VISITOR_KEEP_MS = 24 * 60 * 60 * 1000
+export const FORGOTTEN_VISITOR = '-'
+
+/** يمحو بصمات الزوّار التي جاوزت يوما — ويعيد كم محا */
+export async function forgetVisitors(prisma: PrismaClient, now = new Date()): Promise<number> {
+  const { count } = await prisma.shortLinkOpen.updateMany({
+    where: { at: { lt: new Date(now.getTime() - VISITOR_KEEP_MS) }, visitor: { not: FORGOTTEN_VISITOR } },
+    data: { visitor: FORGOTTEN_VISITOR },
+  })
+  return count
+}
 
 /** يكتب فتحةً لرابطٍ إن فتحه إنسانٌ لم يفتحه في نصف الساعة الأخيرة — ولا يرمي: العدُّ لا يمنع أحدا من الوصول */
 export async function recordOpen(
@@ -24,7 +40,8 @@ export async function recordOpen(
   try {
     const link = await prisma.shortLink.findUnique({ where: { code }, select: { id: true } })
     if (!link) return false
-    const visitor = createHash('sha256').update(`${req.ip}|${req.userAgent ?? ''}`).digest('base64url').slice(0, 22)
+    /* بسرٍّ لا يُخمَّن: بصمةٌ بلا سرٍّ تُعكس بتجربة عناوين IPv4 كلِّها — وهي نحو أربعة مليارات، تُجرَّب في ساعات */
+    const visitor = createHmac('sha256', derivedSecret('link-open-visitor')).update(`${req.ip}|${req.userAgent ?? ''}`).digest('base64url').slice(0, 22)
     const recent = await prisma.shortLinkOpen.count({
       where: { linkId: link.id, visitor, at: { gte: new Date(Date.now() - REOPEN_WINDOW_MS) } },
     })
