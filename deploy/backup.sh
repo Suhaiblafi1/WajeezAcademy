@@ -195,8 +195,10 @@ prune_predeploy() {
       done
 }
 
+# الليليّةُ سبعُ ليالٍ لا ثلاثون — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «Keep 7 nights». فالليلةُ نحوُ ١٫٩
+# غيغابايتا (قاعدةٌ وتخزين)، وثلاثون منها على قرصٍ بخمسةٍ وسبعين تملؤه فيقف النشر (والوجهةُ اليومَ على القرص نفسِه).
 prune_all() {
-  local keep="${BACKUP_KEEP_DAYS:-30}"
+  local keep="${BACKUP_KEEP_DAYS:-7}"
   rclone delete "$BACKUP_REMOTE" --include 'wajeez-nightly-*.sql.gz' --min-age "${keep}d" || true
   rclone delete "$BACKUP_REMOTE" --include 'wajeez-nightly-*-storage.tar.gz' --min-age "${keep}d" || true
   echo "✓ حُذف ما تجاوز ${keep} يوما من النسخ الليلية (القاعدةُ والتخزينُ معا)"
