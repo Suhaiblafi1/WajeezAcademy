@@ -1,7 +1,7 @@
 /* دعوةُ اللقاء المباشر — الرسالةُ وموعدُ التقويم (٢٩ سبتمبر ٢٠٢٦).
 
    محضةٌ بلا قاعدةٍ ولا شبكة. ومن يُدعى ومتى في `learning/session-invites.test.ts`؛
-   وهنا ما تقوله الدعوةُ نفسُها، وما يجعل التقويمَ يحدّثها لا يكرّرها. */
+   وهنا ما تقوله الدعوةُ نفسُها، وما يجعل التقويمَ يحدّثها لا يكرّرها — وما تقوله للمدرّب (٢٧ أكتوبر ٢٠٢٦). */
 
 import { describe, expect as vexpect, it } from 'vitest'
 import { plainExpect } from '../helpers/plain-expect'
@@ -162,5 +162,43 @@ describe('جدولُ من التحق بعد الاعتماد — رسالةٌ و
   it('⚠️ ونوعُ المرفق يقول إنّه نشر — دعوةٌ بعشرة مواعيد يُقرأ منها الأوّل', () => {
     const [att] = attachmentsOf({ to: 'a@b.co', subject: 's', text: 't', icsContent: sched.ics, icsMethod: sched.icsMethod }) ?? []
     expect(att?.contentType).toBe('text/calendar; charset=utf-8; method=PUBLISH')
+  })
+})
+
+describe('والمدرّبُ لا رابطَ له — يبدأ اللقاءَ مضيفا من صفحة شعبته (٢٧ أكتوبر ٢٠٢٦)', () => {
+  const page = 'https://www.wajeezacademy.com/trainer/cohort/coh-1'
+  const trainer = { ...base, to: { email: 'trainer@x.co', name: 'مدرّب' }, pageUrl: page, join: null, audience: 'trainer' as const }
+
+  it('⚠️ الدعوةُ تدلّه على صفحة شعبته — لا على «صفحة رحلتك» — في الرسالة وفي التقويم', () => {
+    const m = sessionInviteMail({ ...trainer, kind: 'new' })
+    expect(m.text).toContain('تبدأ اللقاء مضيفا من صفحة شعبتك')
+    expect(m.html).toContain(page)
+    expect(m.text).not.toContain('صفحة رحلتك')
+    expect(unfold(m.ics)).toContain(`تبدأ اللقاء مضيفا من صفحة شعبتك: ${page}`)
+    expect(unfold(m.ics)).not.toContain('صفحة رحلتك')
+    expect(m.ics, 'رابطُ مشاركٍ يُدخله مشاركا لا مضيفا').not.toContain('LOCATION:')
+    expect(unfold(m.ics)).toContain(`URL:${page}`)
+  })
+
+  it('⚠️ والتحديثُ لا يقول له «بقي رابط الدخول نفسه» — لا رابطَ له', () => {
+    const u = sessionInviteMail({ ...trainer, kind: 'update' })
+    expect(u.subject).toMatch(/^تغيّر موعد/)
+    expect(u.text).not.toContain('رابط الدخول')
+    expect(u.text).toContain('صفحة شعبتك')
+  })
+
+  it('⚠️ وجدولُ ما بقي بلا روابط — وسطرٌ واحدٌ يقول أين يبدأ كلَّ لقاء', () => {
+    const second = { id: 'sess-2', title: 'لقاءُ المحور الثاني', startsAt: new Date(AT.getTime() + 7 * 24 * 3_600_000), endsAt: null, join: null }
+    const m = sessionScheduleMail({
+      cohortId: 'coh-1', cohortTitle: base.cohortTitle, to: trainer.to, pageUrl: page, audience: 'trainer', now: NOW,
+      sessions: [second, { ...base.session, join: null }],
+    })
+    expect(m.text).toContain(whenAr(AT))
+    expect(m.text).toContain(whenAr(second.startsAt))
+    expect(m.text).toContain('تبدأ كل لقاء مضيفا من صفحة شعبتك')
+    expect(m.html).toContain(page)
+    expect(m.text).not.toContain('صفحة رحلتك')
+    expect(unfold(m.ics)).not.toContain('صفحة رحلتك')
+    expect(uids(m.ics)).toEqual([sessionInviteUid('sess-1'), sessionInviteUid('sess-2')])
   })
 })

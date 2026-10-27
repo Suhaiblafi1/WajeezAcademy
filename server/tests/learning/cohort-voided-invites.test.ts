@@ -3,7 +3,7 @@
    بلاغُ صاحب المنصّة: «لماذا لا تحذف الجلسات من الكلندر للدورات التي تم تأجيلها أو إلغاؤها؟». كان الإلغاءُ
    يُبلغ بالجرس ويترك دعواتِ لقاءاتها في تقويم كلِّ مسجَّلٍ وفي تقويم الإدارة.
 
-   ① إلغاءُ الشعبة يرفع ما دُعي إليه من لقاءاتها الآتية — للمسجَّلين وللعنوانَين — لا ما مضى ولا ما لم يُدعَ إليه أحد.
+   ① إلغاءُ الشعبة يرفع ما دُعي إليه من لقاءاتها الآتية — للمسجَّلين ولمدرّبها وللعنوانَين — لا ما مضى ولا ما لم يُدعَ إليه أحد.
    ② ولا دعوةَ بعده إلى لقاءٍ منها، والعاملُ لا يكرّر الرفع.
    ③ وإعادةُ فتحها تُرجع ما رُفع بالمعرّف نفسِه.
    ④ وشعبةٌ أُلغيت بغير بابه (كتابةٌ مباشرة، أو قبل الإصلاح) يرفع العاملُ لقاءاتِها.
@@ -24,12 +24,15 @@ let cohorts: CohortService
 let invites: SessionInviteService
 let adminId = ''
 let trainerUserId = ''
+let trainerEmail = ''
 let profileId = ''
 let courseId = ''
 const STAMP = Date.now()
 const H = 3_600_000
 const DAY = 24 * H
 const GUESTS = SESSION_GUESTS.map((g) => g.email)
+/** من يُدعى إلى لقاءات كلّ شعبةٍ هنا: متعلّمُها ومدرّبُها والعنوانان */
+const INVITED = 2 + GUESTS.length
 
 const mails = (sessionId: string, purpose: string) =>
   prisma.outboxMail.findMany({ where: { batchId: sessionId, purpose }, select: { to: true } })
@@ -65,6 +68,7 @@ beforeAll(async () => {
   adminId = (await prisma.user.create({ data: { email: `void-admin-${STAMP}@wajeez.test`, displayName: 'الإدارة', passwordHash: 'x' } })).id
   const tUser = await prisma.user.create({ data: { email: `void-trainer-${STAMP}@wajeez.test`, displayName: 'المدرّب', passwordHash: 'x' } })
   trainerUserId = tUser.id
+  trainerEmail = tUser.email
   const application = await prisma.trainerApplication.create({
     data: { reference: `WJ-TR-VOID-${STAMP}`, fullName: 'المدرّب', email: tUser.email, status: 'active' },
   })
@@ -77,19 +81,19 @@ describe('إلغاءُ الشعبة وإعادةُ فتحها', () => {
     const c = await makeCohort()
     const upcoming = await session(c.id, 48)
     const silent = await session(c.id, 72, false)
-    expect((await mails(upcoming.id, 'session.invite.new')).length).toBe(1 + GUESTS.length)
+    expect((await mails(upcoming.id, 'session.invite.new')).length).toBe(INVITED)
 
     await cohorts.transition(c.id, 'cancelled', adminId, 'اختبار', { reasonAr: 'اختبار' })
     const cancelled = (await mails(upcoming.id, 'session.invite.cancel')).map((m) => m.to).sort()
-    expect(cancelled).toEqual([c.learnerEmail, ...GUESTS].sort())
+    expect(cancelled).toEqual([c.learnerEmail, trainerEmail, ...GUESTS].sort())
     expect((await mails(silent.id, 'session.invite.cancel')).length).toBe(0)
 
     expect(await invites.announce(upcoming.id, 'update')).toBe(0)
     await runVoidedSessionInvites(prisma)
-    expect((await mails(upcoming.id, 'session.invite.cancel')).length).toBe(1 + GUESTS.length)
+    expect((await mails(upcoming.id, 'session.invite.cancel')).length).toBe(INVITED)
 
     await cohorts.reopen(c.id, adminId)
-    expect((await mails(upcoming.id, 'session.invite.new')).length).toBe(2 * (1 + GUESTS.length))
+    expect((await mails(upcoming.id, 'session.invite.new')).length).toBe(2 * INVITED)
   })
 
   it('④ شعبةٌ أُلغيت بغير بابه يرفع العاملُ لقاءاتِها مرّةً واحدة', async () => {
@@ -99,9 +103,9 @@ describe('إلغاءُ الشعبة وإعادةُ فتحها', () => {
     expect((await mails(s.id, 'session.invite.cancel')).length).toBe(0)
 
     await runVoidedSessionInvites(prisma)
-    expect((await mails(s.id, 'session.invite.cancel')).length).toBe(1 + GUESTS.length)
+    expect((await mails(s.id, 'session.invite.cancel')).length).toBe(INVITED)
     await runVoidedSessionInvites(prisma)
-    expect((await mails(s.id, 'session.invite.cancel')).length).toBe(1 + GUESTS.length)
+    expect((await mails(s.id, 'session.invite.cancel')).length).toBe(INVITED)
   })
 })
 
@@ -118,7 +122,7 @@ describe('تأجيلُ الخطّة إلى موسمٍ قادم', () => {
     })
 
     await runVoidedSessionInvites(prisma)
-    expect((await mails(old.id, 'session.invite.cancel')).length).toBe(1 + GUESTS.length)
+    expect((await mails(old.id, 'session.invite.cancel')).length).toBe(INVITED)
     expect((await mails(next.id, 'session.invite.cancel')).length).toBe(0)
     expect(await invites.announce(old.id, 'update')).toBe(0)
 

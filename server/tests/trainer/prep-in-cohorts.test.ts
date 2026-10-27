@@ -116,6 +116,7 @@ describe('شعبةُ الإعداد', () => {
     expect(cohort.status).toBe('draft')
     expect(cohort.title).toMatch(/^دورةُ الإعداد — شعبة [١-٩][٠-٩]*$/)
     expect(cohort.trainers).toMatchObject([{ profileId: t.profileId, role: 'lead' }])
+    expect(cohort.trainers[0]!.calendarSentAt, 'شعبةٌ وُلدت الآن لا جدولَ لها — وما يُعتمَد بعدُ تصله دعوتُه، فلا يرسل العاملُ جدولا يكرّرها').not.toBeNull()
     const qual = await prisma.trainerCourseQualification.findFirstOrThrow({ where: { profileId: t.profileId, courseId: C1 } })
     expect(qual.status, 'القبولُ لا يؤهّل — الاعتمادُ يؤهّل').toBe('pending')
 

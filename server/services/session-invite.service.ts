@@ -11,6 +11,10 @@
      وAcademy@wajeez.co يُدعيان إلى كلّ لقاءٍ يُعتمَد، حاضرَين لا مضيفَين
      («Invited to attend»). ولكلٍّ منهما رابطُه في Zoom (`SessionGuestLink`):
      الاجتماعُ بتسجيلٍ مسبق، ورابطُه المشتركُ يفتح صفحةَ تسجيلٍ في كلّ مرّة.
+   · **ومدرّبو الشعبة** (٢٧ أكتوبر ٢٠٢٦) — قال صاحبُ المنصّة: «كل شعبه تغيرت مواعيدها يجب ان
+     يحدث التغيير في الكلندر عند الجميع». وكان المدرّبُ وحدَه لا تصله دعوة: لقاؤه في بوّابته ولا
+     شيءَ في تقويمه، فما نُقل لا يتحرّك عنده. فيُدعى مع الجميع بلا رابط: يبدأ اللقاءَ مضيفا من صفحة
+     شعبته، ورابطُ المشارك يُدخله مشاركا لا مضيفا. والموقوفُ لا يُدعى.
 
    ═══ اللحظات ═══
 
@@ -19,6 +23,8 @@
    · يُحذف، أو يعود لانتظار الإدارة — رفعٌ من التقويم (`withdraw`).
    · يصير لمتعلّمٍ مقعدٌ بعد أن اعتُمدت لقاءاتُ شعبته — رسالةٌ واحدةٌ بما بقي
      منها (`welcome`). ويتركه أو ينتقل منه — تُرفع من تقويمه وحدَه (`release`).
+   · ويدخلها مدرّبٌ — يُسنَد إليها أو يحلّ محلّ من رحل — رسالةٌ واحدةٌ بما بقي
+     (`trainerJoined`)، ويخرج منها — تُرفع من تقويمه وحدَه (`trainerLeft`).
 
    ولا يُدعى إلى ما مضى، ولا إلى المبدئيّ — مثالُ الإدارة يُرفع حين يضع المدرّبُ
    جدولَه، فدعوتُه موعدٌ في تقويم إنسانٍ يُمحى بعد أيّام.
@@ -41,7 +47,7 @@ import { enqueueMail } from './outbox.service'
 import { ACADEMY_CONTACT_EMAIL } from './integrations.service'
 import { publicSiteUrl } from './site-url'
 import { getZoomConfig, registerZoomParticipant, zoomReady } from './zoom.service'
-import { sessionInviteMail, sessionScheduleMail, type InviteKind } from './calendar/session-invite'
+import { sessionInviteMail, sessionScheduleMail, type InviteAudience, type InviteKind } from './calendar/session-invite'
 
 /** المدعوّان إلى كلّ لقاءٍ يُعتمَد — بقرار صاحب المنصّة (٢٩ سبتمبر ٢٠٢٦) */
 export const SESSION_GUESTS: readonly { email: string; name: string }[] = [
@@ -52,6 +58,11 @@ export const SESSION_GUESTS: readonly { email: string; name: string }[] = [
 /** ما يُقال في رسالة الرفع حين تُلغى الشعبةُ أو تُؤجَّل */
 export const COHORT_CANCELLED_AR = 'ألغيت الشعبة، فلن يعقد هذا اللقاء.'
 export const COHORT_POSTPONED_AR = 'تأجلت الشعبة إلى موسم قادم، فلن يعقد هذا اللقاء في موعده. تصلك مواعيدها الجديدة حين تعتمد.'
+/** وما يُقال للمدرّب حين تنتقل شعبتُه إلى غيره */
+export const TRAINER_LEFT_AR = 'انتقلت الشعبة إلى مدرب آخر، فلن تقدم هذا اللقاء.'
+
+/** سببُ الرفع — واحدٌ للجميع، أو للمدرّب غيرُ ما للمتعلّم: «نقله مدرّبك» لا تُقال للمدرّب */
+export type WithdrawWhy = string | { learnerAr: string; trainerAr: string }
 
 /** ما يُدعى إليه المسجَّل: مقعدٌ قائم — لا منتظرٌ في القائمة ولا من ترك */
 export const SEATED = ['enrolled', 'completed']
@@ -106,15 +117,15 @@ export class SessionInviteService {
     return latest?.postponedTo && latest.status !== 'approved' ? latest.postponedTo : null
   }
 
-  /** آخرُ ما كُتب عن اللقاء في التقاويم — دعوةٌ أو تحديثٌ أو رفع، أو `null` إن لم يُدعَ إليه أحد */
-  private async lastInvite(sessionId: string): Promise<InviteKind | null> {
-    const row = await this.prisma.outboxMail.findFirst({
-      where: { batchId: sessionId, purpose: { in: ['session.invite.new', 'session.invite.update', 'session.invite.cancel'] } },
-      orderBy: { createdAt: 'desc' },
-      select: { purpose: true },
-    })
-    return (row?.purpose?.slice('session.invite.'.length) as InviteKind | undefined) ?? null
-  }
+  /* ═══ أفي التقاويم هو؟ — على اللقاء لا في طابور البريد (٢٧ أكتوبر ٢٠٢٦) ═══
+
+     كان يُقرأ من آخر صفٍّ في طابور البريد عن اللقاء، فأخطأ مرّتين:
+     · ما خرج من الطابور يُحذف بعد أربعة عشر يوما (`RETENTION_DAYS.outboxSent`) — فلقاءٌ دُعي إليه قبل
+       أسبوعين لا أثرَ له، فلا يُرفع حين تُلغى شعبتُه أو تُؤجَّل، ويبقى في تقاويم الجميع.
+     · ورفعُه من تقويم من ترك الشعبة (`release`) صفٌّ عن اللقاء نفسِه — فيُقرأ رفعا للجميع: لا يُرفع بعده
+       من تقويم أحد، و«إعادةُ الفتح» تدعو إليه من لم يُرفع عنه.
+     فيكتب `send` على اللقاء متى دُعي إليه الجميعُ (`calendarAnnouncedAt`) ومتى رُفع (`calendarWithdrawnAt`)،
+     وما يُكتب لواحدٍ لا يمسّهما. */
 
   /** يرفع من التقاويم ما وقع من لقاءات الشعبة ممّا دُعي إليه ولم يُرفع. يعود بعدد اللقاءات */
   async withdrawCohort(cohortId: string, whyAr: string, now = new Date()): Promise<number> {
@@ -123,8 +134,7 @@ export class SessionInviteService {
     let withdrawn = 0
     for (const s of await this.upcoming(cohortId, now)) {
       if (s.startsAt.getTime() >= before.getTime()) continue
-      const last = await this.lastInvite(s.id)
-      if (last === null || last === 'cancel') continue
+      if (!s.calendarAnnouncedAt || s.calendarWithdrawnAt) continue
       await this.withdraw({
         id: s.id, cohortId, cohortTitle: s.cohort.title, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
       }, whyAr, now)
@@ -137,14 +147,14 @@ export class SessionInviteService {
   async reannounceCohort(cohortId: string, now = new Date()): Promise<number> {
     let restored = 0
     for (const s of await this.upcoming(cohortId, now)) {
-      if ((await this.lastInvite(s.id)) !== 'cancel') continue
+      if (!s.calendarWithdrawnAt) continue
       if ((await this.announce(s.id, 'new', now)) > 0) restored += 1
     }
     return restored
   }
 
   /* ومن العامل: ما فات الرفعَ — شعبٌ أُلغيت قبل هذا الإصلاح، أو بغير بابه (`retireOrphanPrepCohorts`
-     يكتب الإلغاءَ مباشرة). والرفعُ لا يتكرّر: ما رُفع آخرَ مرّةٍ يُتخطّى (`lastInvite`) */
+     يكتب الإلغاءَ مباشرة). والرفعُ لا يتكرّر: ما رُفع يُتخطّى (`calendarWithdrawnAt`) */
   async sweepVoided(now = new Date()): Promise<{ cohorts: number; sessions: number }> {
     const cohorts = await this.prisma.cohort.findMany({
       where: {
@@ -162,7 +172,7 @@ export class SessionInviteService {
     return { cohorts: touched, sessions }
   }
 
-  /** دعوةُ لقاءٍ معتمَد أو تحديثُها — لمسجَّليه وللعنوانَين. يعود بعدد ما كُتب */
+  /** دعوةُ لقاءٍ معتمَد أو تحديثُها — لمسجَّليه ومدرّبيه وللعنوانَين. يعود بعدد ما كُتب */
   async announce(sessionId: string, kind: Exclude<InviteKind, 'cancel'>, now = new Date()): Promise<number> {
     const s = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
@@ -184,9 +194,9 @@ export class SessionInviteService {
   }
 
   /** رفعُه من تقاويم من دُعي — يُنادى قبل حذف صفّه، فبعد الحذف لا مرجع */
-  async withdraw(snap: InvitedSession, whyAr: string, now = new Date()): Promise<number> {
+  async withdraw(snap: InvitedSession, why: WithdrawWhy, now = new Date()): Promise<number> {
     if (snap.startsAt.getTime() <= now.getTime()) return 0
-    return this.send(snap, 'cancel', null, whyAr, now)
+    return this.send(snap, 'cancel', null, why, now)
   }
 
   /* ═══ ومن التحق بعد الاعتماد — رسالةٌ واحدةٌ بما بقي (`sessionScheduleMail`) ═══
@@ -244,17 +254,94 @@ export class SessionInviteService {
      عن موعدٍ واحدٍ بمعرّفه كالدعوة — ولا يُكتب لأحدٍ سواه. */
   async release(
     to: { email: string; name?: string | null }, cohortId: string, whyAr: string, now = new Date(),
+    audience: InviteAudience = 'learner',
   ): Promise<number> {
-    const pageUrl = `${publicSiteUrl()}/student/learning`
+    const pageUrl = `${publicSiteUrl()}${audience === 'trainer' ? '/trainer' : '/student/learning'}`
     let queued = 0
     for (const s of await this.upcoming(cohortId, now)) {
       const snap: InvitedSession = {
         id: s.id, cohortId, cohortTitle: s.cohort.title, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
       }
-      await this.enqueueInvite(snap, 'cancel', to, null, pageUrl, whyAr, now)
+      await this.enqueueInvite(snap, 'cancel', to, null, pageUrl, whyAr, now, audience)
       queued += 1
     }
     return queued
+  }
+
+  /* ═══ ومدرّبٌ يدخل شعبةً اعتُمدت لقاءاتُها — رسالةٌ واحدةٌ بما بقي (٢٧ أكتوبر ٢٠٢٦) ═══
+
+     يُسنَد إليها (`CohortService.assignTrainer`)، أو يحلّ محلّ مدرّبٍ رحل (`TrainerDepartureService.substitute`).
+     وما يُعتمَد بعده تصله دعوتُه مع الجميع (`send`). ويُكتب على إسناده متى وصله جدولُها (`calendarSentAt`) —
+     برسالةٍ أو بلا شيءٍ يُرسَل — فلا يكرّره العامل. يعود بعدد ما كُتب: واحدٌ أو لا شيء. */
+  async trainerJoined(cohortId: string, profileId: string, now = new Date()): Promise<number> {
+    const link = await this.prisma.cohortTrainer.findUnique({
+      where: { cohortId_profileId: { cohortId, profileId } },
+      select: {
+        id: true,
+        cohort: { select: { title: true } },
+        profile: { select: { suspendedAt: true, user: { select: { email: true, displayName: true } } } },
+      },
+    })
+    const user = link?.profile.user
+    if (!link || link.profile.suspendedAt || !user?.email) return 0
+    const before = await this.voidBefore(cohortId)
+    const sessions = (await this.upcoming(cohortId, now))
+      .filter((s) => !before || s.startsAt.getTime() >= before.getTime())
+    let queued = 0
+    if (sessions.length > 0) {
+      const mail = sessionScheduleMail({
+        cohortId, cohortTitle: link.cohort.title,
+        to: { email: user.email, name: user.displayName },
+        sessions: sessions.map((s) => ({ id: s.id, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, join: null })),
+        pageUrl: this.trainerPage(cohortId), audience: 'trainer', now,
+      })
+      await enqueueMail(this.prisma, {
+        to: user.email, subject: mail.subject, text: mail.text, html: mail.html,
+        purpose: 'session.invite.schedule', batchId: link.id,
+        ics: { content: mail.ics, method: mail.icsMethod, filename: mail.icsFilename },
+      })
+      queued = 1
+    }
+    await this.prisma.cohortTrainer.update({ where: { id: link.id }, data: { calendarSentAt: now } })
+    return queued
+  }
+
+  /** ومدرّبٌ خرج من الشعبة — تُرفع لقاءاتُها المقبلة من تقويمه وحدَه */
+  async trainerLeft(cohortId: string, profileId: string, now = new Date()): Promise<number> {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: profileId }, select: { user: { select: { email: true, displayName: true } } },
+    })
+    if (!profile?.user?.email) return 0
+    return this.release({ email: profile.user.email, name: profile.user.displayName }, cohortId, TRAINER_LEFT_AR, now, 'trainer')
+  }
+
+  /* ومن العامل: مدرّبٌ لم يصله جدولُ شعبته — من سبق هذا اليوم ولم تصله دعوةٌ قطّ، أو فاته `trainerJoined`
+     بخطأٍ ابتُلع. مرّةً لكلّ إسناد، والموقوفُ يُترك حتّى يعود */
+  async sweepTrainerCalendars(now = new Date()): Promise<{ links: number; mails: number }> {
+    const links = await this.prisma.cohortTrainer.findMany({
+      where: { calendarSentAt: null, profile: { suspendedAt: null, user: { isNot: null } } },
+      select: { cohortId: true, profileId: true },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    })
+    let mails = 0
+    for (const l of links) mails += await this.trainerJoined(l.cohortId, l.profileId, now)
+    return { links: links.length, mails }
+  }
+
+  /** صفحةُ الشعبة في بوّابة المدرّب — منها يبدأ اللقاءَ مضيفا */
+  private trainerPage(cohortId: string): string {
+    return `${publicSiteUrl()}/trainer/cohort/${cohortId}`
+  }
+
+  /** مدرّبو الشعبة — من لم يُوقَف، ببريد حسابه */
+  private async trainersOf(cohortId: string): Promise<{ email: string; name: string | null }[]> {
+    const rows = await this.prisma.cohortTrainer.findMany({
+      where: { cohortId, profile: { suspendedAt: null } },
+      orderBy: { createdAt: 'asc' },
+      select: { profile: { select: { user: { select: { email: true, displayName: true } } } } },
+    })
+    return rows.flatMap((r) => (r.profile.user?.email ? [{ email: r.profile.user.email, name: r.profile.user.displayName }] : []))
   }
 
   /** ما بقي من لقاءات الشعبة ممّا يُدعى إليه — بقاعدة `invitable` نفسِها لا بنسخةٍ منها */
@@ -264,6 +351,7 @@ export class SessionInviteService {
       orderBy: { startsAt: 'asc' },
       select: {
         id: true, title: true, startsAt: true, endsAt: true, status: true, approvalState: true, placeholder: true,
+        calendarAnnouncedAt: true, calendarWithdrawnAt: true,
         cohort: { select: { title: true } },
         zoom: { select: { joinUrl: true } },
       },
@@ -274,9 +362,10 @@ export class SessionInviteService {
   private async enqueueInvite(
     snap: InvitedSession, kind: InviteKind, to: { email: string; name?: string | null },
     join: { url: string; personal: boolean } | null, pageUrl: string, whyAr: string | undefined, now: Date,
+    audience: InviteAudience = 'learner',
   ): Promise<void> {
     const mail = sessionInviteMail({
-      kind, session: snap, cohortTitle: snap.cohortTitle, to, join, pageUrl, cancelWhyAr: whyAr, now,
+      kind, session: snap, cohortTitle: snap.cohortTitle, to, join, pageUrl, cancelWhyAr: whyAr, audience, now,
     })
     await enqueueMail(this.prisma, {
       to: to.email, subject: mail.subject, text: mail.text, html: mail.html,
@@ -286,12 +375,16 @@ export class SessionInviteService {
   }
 
   private async send(
-    snap: InvitedSession, kind: InviteKind, zoom: MeetingRef | null, whyAr: string | undefined, now: Date,
+    snap: InvitedSession, kind: InviteKind, zoom: MeetingRef | null, why: WithdrawWhy | undefined, now: Date,
   ): Promise<number> {
     const site = publicSiteUrl()
     let queued = 0
-    const enqueue = async (to: { email: string; name?: string | null }, join: { url: string; personal: boolean } | null, pageUrl: string) => {
-      await this.enqueueInvite(snap, kind, to, join, pageUrl, whyAr, now)
+    const enqueue = async (
+      to: { email: string; name?: string | null }, join: { url: string; personal: boolean } | null, pageUrl: string,
+      audience: InviteAudience = 'learner',
+    ) => {
+      const whyAr = typeof why === 'object' ? (audience === 'trainer' ? why.trainerAr : why.learnerAr) : why
+      await this.enqueueInvite(snap, kind, to, join, pageUrl, whyAr, now, audience)
       queued += 1
     }
 
@@ -312,10 +405,22 @@ export class SessionInviteService {
       await enqueue({ email: seat.user.email, name: seat.user.displayName }, join, `${site}/student/learning`)
     }
 
+    /* ومدرّبو الشعبة بلا رابط: يبدأ اللقاءَ مضيفا من صفحة شعبته */
+    for (const trainer of await this.trainersOf(snap.cohortId)) {
+      await enqueue(trainer, null, this.trainerPage(snap.cohortId), 'trainer')
+    }
+
     for (const guest of SESSION_GUESTS) {
       const join = kind === 'cancel' ? null : await this.guestLink(snap.id, guest, zoom)
       await enqueue(guest, join, `${site}/admin`)
     }
+
+    /* وما كُتب للجميع يُكتب على اللقاء — به يُعرف أفي التقاويم هو (`withdrawCohort`). و`updateMany`: الرفعُ
+       قبل الحذف يجد صفَّه، ولا يُسقط الكتابةَ صفٌّ لم يعد */
+    await this.prisma.cohortSession.updateMany({
+      where: { id: snap.id },
+      data: kind === 'cancel' ? { calendarWithdrawnAt: now } : { calendarAnnouncedAt: now, calendarWithdrawnAt: null },
+    })
     return queued
   }
 
