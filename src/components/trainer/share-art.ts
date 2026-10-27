@@ -196,13 +196,16 @@ export function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | nu
   ctx.fillRect(0, 0, w, h)
   ctx.fillStyle = C.teal
   ctx.fillRect(0, 0, w, 14)
-  if (logo) ctx.drawImage(logo, w - 140, 56, 84, 84)
+  /* ═══ والرأسُ أصغر (٢٧ أكتوبر ٢٠٢٦) ═══
+     «أبعد اللوقو عن صورة المدرّب.. أو صغّر اللوقو وصغّر بث مباشر أيضا في كلّ الصور» (صاحب المنصّة). فالعلامةُ ٥٦
+     لا ٨٤، واسمُ الأكاديميّة ٢٨ لا ٣٨، و«بث مباشر» ٢٢ لا ٣٠ — والرأسُ كلُّه ينتهي قبل ١٠٠، فبين العلامة وصورته فسحة. */
+  if (logo) ctx.drawImage(logo, w - 100, 36, 56, 56)
   ctx.fillStyle = C.tealInk
-  ctx.font = font(700, 38)
+  ctx.font = font(700, 28)
   ctx.textAlign = 'right'
-  ctx.fillText('أكاديمية وجيز', w - 160, 112)
-  const live: PillStyle = { px: 30, bg: C.live, fg: C.white, dot: C.white }
-  pill(ctx, 'بث مباشر', 56 + pillWidth(ctx, 'بث مباشر', live), 70, live)
+  ctx.fillText('أكاديمية وجيز', w - 114, 74)
+  const live: PillStyle = { px: 22, bg: C.live, fg: C.white, dot: C.white }
+  pill(ctx, 'بث مباشر', 44 + pillWidth(ctx, 'بث مباشر', live), 43, live)
 }
 
 const startsAr = (c: ArtData['courses'][number], dayAr: ArtData['dayAr']) => (c.startsAt ? `تبدأ ${dayAr(c.startsAt)}` : 'موعدها قريبا')
