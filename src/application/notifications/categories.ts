@@ -175,6 +175,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       /* ورسالةُ «تواصل معنا» من الموقع (١٩ أكتوبر ٢٠٢٦) — زائرٌ ينتظر ردّا كصاحب التذكرة */
       'admin.contact_message',
       'admin.trainer_application', 'admin.learner_request', 'trainer.qualify.request',
+      /* وطلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦) — قرارٌ ينتظر من يملك النسبة */
+      'admin.advisor_application',
       /* وتوقيعُ العقد واعتذارُه: كلاهما قرارٌ ينتظر عملا — الموقَّعُ يُراجَع
          توقيعُه ويُفعَّل حسابُه، والمعتذَرُ عنه يُبحَث سببُه. ومن لم يعلم
          بالتوقيع تركَ مدرّبا وقّع ينتظر حسابا لا يُفتح. */

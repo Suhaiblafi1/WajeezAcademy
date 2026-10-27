@@ -62,6 +62,8 @@ const PAGES: PageSpec[] = [
   { path: '/auth', labelAr: 'الدخول والتسجيل' },
   /* أول احتكاك المدرب بوجيز، ونموذجُها الأطول: ثلاث خطوات وقوائم وحقول ملفّات */
   { path: '/join-trainer', labelAr: 'انضمام المدربين' },
+  /* ونموذجُ المستشار (٢٧ أكتوبر ٢٠٢٦): صفوفُ حساباتٍ ومجموعاتٍ تُضاف وتُحذف — وأزرارُ حذفها صغيرةٌ على الهاتف */
+  { path: '/join-advisor', labelAr: 'انضمام المستشارين' },
   { path: '/student', labelAr: 'لوحة المتعلم', as: 'learner' },
   { path: '/student/review', labelAr: 'مراجعتي', as: 'learner' },
   { path: '/admin/catalog', labelAr: 'إدارة الكتالوج', as: 'admin' },
@@ -161,6 +163,7 @@ const PAGES: PageSpec[] = [
   { path: '/admin/audit', labelAr: 'سجلُّ الأثر', as: 'admin' },
   { path: '/admin/reports', labelAr: 'التقارير', as: 'admin' },
   { path: '/admin/advisors', labelAr: 'المستشارون', as: 'superadmin' },
+  { path: '/admin/advisor-applications', labelAr: 'طلباتُ انضمام المستشارين', as: 'superadmin' },
 ]
 
 const CREDS = {

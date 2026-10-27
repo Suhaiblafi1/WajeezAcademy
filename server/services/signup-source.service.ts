@@ -10,8 +10,8 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { cleanTouch } from '../../src/application/marketing/signup-source'
 
-/** كيف أُنشئ الحساب: سجّل بنفسه · أضافه مدير · من نموذج التقدّم للتدريب */
-export type SignupVia = 'self' | 'admin' | 'trainer_application'
+/** كيف أُنشئ الحساب: سجّل بنفسه · أضافه مدير · من نموذج التقدّم للتدريب · قُبل طلبُه مستشارا */
+export type SignupVia = 'self' | 'admin' | 'trainer_application' | 'advisor_application'
 
 export async function recordSignupSource(
   db: PrismaClient | Prisma.TransactionClient,

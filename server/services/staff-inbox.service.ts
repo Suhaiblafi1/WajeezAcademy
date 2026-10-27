@@ -95,6 +95,23 @@ export class StaffInboxService {
       sample: myTasks.map((t) => `${t.title}${t.dueAt && t.dueAt < now ? ' (تأخّرت)' : ''}`),
     })
 
+    /* ── طلباتُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦، المرحلة السابعة) ──
+       المتقدّمُ ينتظر قبولا أو اعتذارا، والقبولُ خطوةٌ واحدة بنسبته — فالبندُ لمن يملك النسبة. */
+    if (can('advisor.manage')) {
+      const waiting = await this.prisma.advisorApplication.findMany({
+        where: { status: 'submitted' }, orderBy: { createdAt: 'asc' }, take: 5, select: { fullName: true },
+      })
+      push({
+        key: 'advisor_applications',
+        titleAr: 'طلبات انضمام مستشارين',
+        whyAr: 'من تقدم ليكون مستشارا ينتظر قبوله أو الاعتذار له',
+        count: await this.prisma.advisorApplication.count({ where: { status: 'submitted' } }),
+        href: '/admin/advisor-applications',
+        severity: 'attention',
+        sample: waiting.map((w) => w.fullName),
+      })
+    }
+
     /* «اقتراحاتُ تأجيلٍ تنتظر قرارك» ذهبت مع طابورها (٢٧ أكتوبر ٢٠٢٦، المرحلة السادسة — ج):
        لا يُقترح تأجيلُ لقاءٍ منذ ١٧ سبتمبر ٢٠٢٦ — المدرّبُ ينقله بنفسه. */
     if (can('cohort.manage')) {

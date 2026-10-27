@@ -35,6 +35,8 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
       { label: 'المنهجية', to: '/methodology' },
       { label: 'شركاؤنا', to: '/#partners' },
       { label: 'انضم كمدرب', to: '/join-trainer' },
+      /* ومستشارا (٢٧ أكتوبر ٢٠٢٦، المرحلة السابعة) — بابُ التقديم في التذييل كباب المدرّب */
+      { label: 'انضم كمستشار', to: '/join-advisor' },
     ],
   },
   {
