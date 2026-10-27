@@ -37,9 +37,11 @@ import { enqueueMail } from './outbox.service'
 import { renderMail } from './mail-template'
 import { mintShortLink } from './short-link.service'
 import { publicSiteUrl } from './site-url'
+import { PUBLIC_SESSIONS_CAP, PUBLIC_SESSION_WHERE } from './public-catalog.service'
 import { normalizePhone } from '../../src/application/advisor/guest-contact'
 import {
-  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, WORK_FIELDS, campaignTag, leadProfileAr,
+  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, WORK_FIELDS, campaignTag, grantCourseSummary, leadProfileAr,
+  type GrantCourseSummary,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
 import { INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
@@ -117,6 +119,9 @@ export class GrantLandingService {
   /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين */
   async view(now = new Date()) {
     const [s, open] = await Promise.all([this.grants.settings(now), this.courses.openCourses(now)])
+    const [summaries, sessions] = await Promise.all([
+      this.summaries(open.courses.map((c) => c.courseId)), this.sessions(open.courses.map((c) => c.cohortId)),
+    ])
     return {
       /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
       campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
@@ -127,8 +132,49 @@ export class GrantLandingService {
         domainAr: courseDomain(c.courseId),
         /* والمقاعدُ والمدرّبُ لـ«بقي X مقاعد» و«مع مدربك» في صفّ الدورة */
         seatsLeft: c.seatsLeft, trainer: c.trainer,
+        /* ونبذتُها تحت سهمٍ في صفّها — فلا ينتقل إلى الموقع ليعرف عمّ هي (`grantCourseSummary`) */
+        summary: summaries.get(c.courseId) ?? null,
+        /* ومواعيدُ لقاءاتها — يُقال بها فورا إن تعارضت مع ما اختاره قبلها، ولا يُقترح له دورتان تتعارضان */
+        sessions: sessions.get(c.cohortId) ?? [],
       })),
     }
+  }
+
+  /** لقاءاتُ كلِّ شعبةٍ بموعدها — ما يُعلَن في صفحة الدورة نفسِه (`PUBLIC_SESSION_WHERE`)، بالبداية والنهاية وحدهما */
+  private async sessions(cohortIds: string[]): Promise<Map<string, { startsAt: Date; endsAt: Date | null }[]>> {
+    if (cohortIds.length === 0) return new Map()
+    const rows = await this.prisma.cohortSession.findMany({
+      where: { cohortId: { in: cohortIds }, ...PUBLIC_SESSION_WHERE },
+      orderBy: { startsAt: 'asc' },
+      select: { cohortId: true, startsAt: true, endsAt: true },
+    })
+    const out = new Map<string, { startsAt: Date; endsAt: Date | null }[]>()
+    for (const r of rows) {
+      const list = out.get(r.cohortId) ?? []
+      if (list.length < PUBLIC_SESSIONS_CAP) list.push({ startsAt: r.startsAt, endsAt: r.endsAt })
+      out.set(r.cohortId, list)
+    }
+    return out
+  }
+
+  /** نبذةُ كلِّ دورةٍ من آخر نسخةٍ لها — كعنوانها في دورات المنحة (`grant-courses.service.ts`) */
+  private async summaries(courseIds: string[]): Promise<Map<string, GrantCourseSummary>> {
+    if (courseIds.length === 0) return new Map()
+    const rows = await this.prisma.courseVersion.findMany({
+      where: { courseId: { in: courseIds } },
+      orderBy: [{ courseId: 'asc' }, { version: 'desc' }],
+      distinct: ['courseId'],
+      select: {
+        courseId: true, shortPromiseAr: true, descriptionAr: true, audienceAr: true,
+        objectives: { orderBy: { sequence: 'asc' }, take: GRANT_SUMMARY_GOALS, select: { textAr: true } },
+      },
+    })
+    const out = new Map<string, GrantCourseSummary>()
+    for (const r of rows) {
+      const sum = grantCourseSummary(r)
+      if (sum) out.set(r.courseId, sum)
+    }
+    return out
   }
 
   /** النموذج: عميلٌ محتملٌ وكودُه — أو سببُ غيابه */
@@ -190,6 +236,32 @@ export class GrantLandingService {
     }
   }
 
+  /* ═══ كودُ منحته لصاحب الحساب — ببريد النموذج (٢٧ أكتوبر ٢٠٢٦) ═══
+     من عبّأ النموذجَ ثانيةً، أو فتح الصفحةَ من جهازٍ آخر، يُقال له «أرسلناه إلى بريدك» ولا يُعرض الكود — فكان لوحُ الدفع
+     يفتح بلا منحةٍ وبسعرٍ غير الذي رآه. وقرارُ صاحب المنصّة: «يجب أن يصلح ويتغيّر من جهتك»، وخُيّر فاختار **المطابقة
+     بالبريد**: حسابٌ بريدُه بريدُ نموذجٍ في هذه الحملة يأخذ كودَه، ولو لم يوثّق بريدَه بعدُ (الدفعُ لا ينتظر التوثيق).
+     وعُرض عليه أثرُها: من سبق صاحبَ بريدٍ إلى حسابٍ ببريده أخذ منحتَه، ويستعيد صاحبُ البريد حسابَه ببريده. فيُكتب الأثر.
+     ولا كودَ استُعمل في شراءٍ مدفوع. */
+  async myCode(userId: string, ip?: string): Promise<{ code: string | null }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+    if (!user?.email) return { code: null }
+    const lead = await this.prisma.lead.findFirst({
+      where: { campaign: this.slug, erasedAt: null, email: user.email.toLowerCase(), grantCode: { isNot: null } },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        grantCode: { select: { coupon: { select: { code: true, orders: { where: { status: { in: BOUGHT } }, select: { id: true } } } } } },
+      },
+    })
+    const coupon = lead?.grantCode?.coupon
+    if (!lead || !coupon || coupon.orders.length > 0) return { code: null }
+    await recordAudit(this.prisma, {
+      action: 'coupon.grant_claim', entityType: 'lead', entityId: lead.id, actorId: userId, ip,
+      meta: { campaign: this.slug },
+    })
+    return { code: coupon.code }
+  }
+
   /** «تواصل مع مستشار» — حالةٌ واحدةٌ لصاحب المرجع، تُسند تلقائيّا */
   /** الدوراتُ التي اختارها في صفحة المنحة — تُحفظ في ملفّه فيراها المستشار (٢٧ أكتوبر ٢٠٢٦).
 
@@ -230,7 +302,7 @@ export class GrantLandingService {
 
   /* ═══ بريدُ الكود — بقالب الأكاديمية لا نصّا خاما (٢٧ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة». فعنوانٌ وشكرٌ وكودٌ في جدولٍ وزرٌّ يفتح الدورات،
-     ولا «عضو»: «مستخدمُ وجيز». ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
+     ولا «عضو» ولا «مستخدم»: «قرّاءُ وجيز» (قرارُه في اليوم نفسِه). ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
   private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
     const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode) : `${publicSiteUrl()}/grant`
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
@@ -246,7 +318,7 @@ export class GrantLandingService {
         heading: 'منحتك جاهزة',
         blocks: [
           { kind: 'p', text: member
-            ? 'شكرا لأنك من مستخدمي تطبيق وجيز. يسعدنا أن نقدم لك منحة حصرية في منتجنا الجديد: أكاديمية وجيز.'
+            ? 'شكرا لأنك من قراء وجيز. يسعدنا أن نقدم لك منحة حصرية في منتجنا الجديد: أكاديمية وجيز.'
             : 'يسعدنا أن نقدم لك منحة في أكاديمية وجيز.' },
           { kind: 'facts', rows: [
             { label: 'كود منحتك', value: code },

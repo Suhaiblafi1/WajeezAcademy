@@ -26,6 +26,7 @@ import { CommerceService } from '../../services/commerce.service'
 import { grantRegistrants } from '../../services/grant-followup.service'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 import { courseDomain } from '../../../src/application/catalog/course-domain'
+import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 
 let prisma: PrismaClient
 let grants: GrantService
@@ -57,7 +58,7 @@ async function cohort(courseId: string, over: Record<string, unknown> = {}) {
 const person = (over: Partial<{
   fullName: string; phone: string; email: string; workField: string; channel: string; wave: string; careerLevel: string | null; interests: string[]
 }> = {}) => ({
-  fullName: `مستخدم وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
+  fullName: `قارئ وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
 
@@ -94,16 +95,16 @@ describe('① النموذج يعطي الكود فورا', () => {
 
 describe('①ب وبريد الكود ورابط الهدية (٢٧ أكتوبر ٢٠٢٦)', () => {
   /* قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة»، و«لا تستخدم كلمة عضو بل مستخدم وجيز»، و«الرابط قصير جدّا» */
-  it('⚠️ بريد الكود بقالب الأكاديمية — شكر لمستخدم وجيز وكوده وزر دوراته، ولا «عضو»', async () => {
+  it('⚠️ بريد الكود بقالب الأكاديمية — شكر لقارئ وجيز وكوده وزر دوراته، ولا «عضو» ولا «مستخدم»', async () => {
     const p = person({})
     const out = await landing.apply(p)
     const mail = await prisma.outboxMail.findFirstOrThrow({ where: { to: p.email, purpose: 'grant.code' }, orderBy: { createdAt: 'desc' } })
     expect(mail.subject).toBe('كود منحة وجيز الخاص بك')
     expect(mail.html, 'بلا قالب الأكاديمية').toBeTruthy()
-    for (const t of ['منحتك جاهزة', 'شكرا لأنك من مستخدمي تطبيق وجيز', `كود منحتك: ${out.grant!.code}`, 'اختر دوراتك:', '/grant']) {
+    for (const t of ['منحتك جاهزة', 'شكرا لأنك من قراء وجيز', `كود منحتك: ${out.grant!.code}`, 'اختر دوراتك:', '/grant']) {
       expect(mail.text, t).toContain(t)
     }
-    expect(`${mail.subject}\n${mail.text}`, 'عادت «عضو»').not.toMatch(/أعضاء|عضو/)
+    expect(`${mail.subject}\n${mail.text}`, 'عادت «عضو» أو «مستخدم»').not.toMatch(/أعضاء|عضو|مستخدم/)
   })
 
   it('⚠️ رابط الهدية القصير يصنع مرة لكل وجهة ويعاد — إلى صفحة المنحة بوسم الهدية', async () => {
@@ -176,6 +177,40 @@ describe('⑤ والدورات للزائر بلا أجور المدربين', (
     expect(v.openCourses.some((x) => x.courseId === b), 'عرض دورة أغلقت شعبتها').toBe(false)
     expect(v.termAr).toBe('موسم الربيع 2099')
   })
+
+  /* «"تفاصيل الدورة" أريد أن تبدلها بسهمٍ للأسفل، وينسدل نبذةٌ بسيطة: عنها وأهدافُها ولمن هي» — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ ونبذة كل دورة في الرد من آخر نسخة لها — وعدها وثلاثة أهداف بترتيبها ولمن هي', async () => {
+    const a = nextCourse()
+    await cohort(a)
+    const last = await prisma.courseVersion.findFirstOrThrow({ where: { courseId: a }, orderBy: { version: 'desc' } })
+    await prisma.courseVersion.create({
+      data: {
+        courseId: a, version: last.version + 1, titleAr: last.titleAr, totalHours: last.totalHours,
+        shortPromiseAr: 'تكتب خطتك في أسبوع.', audienceAr: 'لمن يبدأ عملا جديدا.',
+        objectives: { create: ['يحدد', 'يبني', 'يقيّم', 'ينفذ'].map((textAr, i) => ({ sequence: 4 - i, textAr })) },
+      },
+    })
+    const row = (await landing.view(NOW)).openCourses.find((x) => x.courseId === a)!
+    expect(row.summary, 'النبذة من غير آخر نسخة').toEqual({ aboutAr: 'تكتب خطتك في أسبوع.', goalsAr: ['ينفذ', 'يقيّم', 'يبني'], audienceAr: 'لمن يبدأ عملا جديدا.' })
+  })
+
+  /* «عندما تتعارض دوراتٌ يجب أن تظهر فورا» و«اقترح له دوراتٍ لا تتعارض» — قرارا صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ ومواعيد لقاءات كل شعبة في الرد — المعتمد وحده، لا الملغى ولا المبدئي ولا ما ينتظر الاعتماد', async () => {
+    const a = nextCourse()
+    const c = await cohort(a)
+    const at = (d: number) => new Date(NOW.getTime() + d * DAY)
+    const add = (d: number, over: Record<string, unknown> = {}) => prisma.cohortSession.create({
+      data: { cohortId: c.id, title: `لقاء ${d}`, startsAt: at(d), endsAt: new Date(at(d).getTime() + 7_200_000), ...over } as never,
+    })
+    await add(31)
+    await add(32, { status: 'cancelled' })
+    await add(33, { placeholder: true })
+    await add(34, { approvalState: 'pending' })
+    await add(35, { endsAt: null })
+    const row = (await landing.view(NOW)).openCourses.find((x) => x.courseId === a)!
+    expect(row.sessions.map((x) => x.startsAt.toISOString()), 'خرج لقاء لا يعلن').toEqual([at(31).toISOString(), at(35).toISOString()])
+    expect(Object.keys(row.sessions[0]).sort(), 'خرج من اللقاء غير موعده').toEqual(['endsAt', 'startsAt'])
+  })
 })
 
 describe('⑥ وتواصل مع مستشار حالة واحدة', () => {
@@ -222,6 +257,33 @@ describe('⑧ ونتائج الحملة بالقناة والدفعة', () => {
     expect(r.rows.find((x) => x.channel === ch && x.wave === '2')).toMatchObject({ leads: 1, codes: 1, bought: 0, revenue: 0 })
     expect(r.fields.find((f) => f.workField === 'الهندسة')!.leads).toBeGreaterThanOrEqual(2)
     expect(r.totals.leads).toBeGreaterThanOrEqual(3)
+  })
+})
+
+/* «عندما يقوم بالدفع لا يظهر نفس السعر… يجب أن يصلح ويتغيّر من جهتك» — واختار صاحبُ المنصّة المطابقةَ بالبريد (٢٧ أكتوبر ٢٠٢٦) */
+describe('⑧ب وكود منحته لصاحب الحساب ببريد النموذج', () => {
+  it('⚠️ بريد حسابه بريد نموذج في الحملة يأخذ كوده — بلا فرق حروف، ويكتب الأثر، ولا يأخذه غيره ولا من حملة أخرى', async () => {
+    const p = person()
+    const out = await landing.apply(p)
+    /* وعبّأه ثانيةً فلم يُعرض الكود — هذا من يحتاجه */
+    expect((await landing.apply(p)).grant?.code).toBeNull()
+    const owner = (await new AuthService(prisma).register(p.email.toUpperCase(), 'Owner#12345', p.fullName)).userId
+    expect(await landing.myCode(owner, '10.0.0.9')).toEqual({ code: out.grant!.code })
+    expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_claim', entityId: out.ref, actorId: owner } })).toBe(1)
+    const other = (await new AuthService(prisma).register(`gl-other-${STAMP}@test.local`, 'Other#12345', 'غيره')).userId
+    expect(await landing.myCode(other), 'أخذ كود غيره').toEqual({ code: null })
+    expect(await new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG).myCode(owner), 'أخذ كود حملة أخرى').toEqual({ code: null })
+  })
+
+  it('⚠️ وكود استعمل في شراء مدفوع لا يعاد — ولو أهداه فاشترى به صديقه', async () => {
+    const p = person()
+    const out = await landing.apply(p)
+    const friend = (await new AuthService(prisma).register(`gl-gift-${STAMP}@test.local`, 'Friend#12345', 'صديق')).userId
+    const commerce = new CommerceService(prisma)
+    const bought = await commerce.checkout(friend, [(await cohort(nextCourse())).id], out.grant!.code!)
+    await commerce.payOrder(bought.orderId, friend, `gl-gift-${bought.orderId}`)
+    const owner = (await new AuthService(prisma).register(p.email, 'Owner#12345', p.fullName)).userId
+    expect(await landing.myCode(owner)).toEqual({ code: null })
   })
 })
 

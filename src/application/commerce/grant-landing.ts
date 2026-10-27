@@ -17,6 +17,8 @@
 import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-domain'
 import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
 import { courseLinesAr } from '../text/course-lines'
+import { plainAr } from '../text/plain-ar'
+import { clashesOf, sessionsOverlap, type TimedSession } from '../learning/cohort-overlap'
 import { MEMBER_GRANT_NAME_AR } from './grant'
 import { ENDORSEMENT_MIN_ATTENDANCE } from '../learning/endorsement'
 
@@ -110,9 +112,10 @@ export const grantFollowupAr = (name: string) =>
 /* ═══ سطرُ الشكر أعلى صفحة المنحة (٢٧ أكتوبر ٢٠٢٦) ═══
    قرارُ صاحب المنصّة: «في الصفحات الخاصّة بالمنحة لا تستخدم كلمة عضو، بل مستخدم وجيز»، و«لا تقل لأنّك من مستخدمي
    وجيز منحتك تصل إلى ٦٠٪.. تطبيقُ وجيز يشكرك على وجودك كمستخدم، ويسعدنا أن نقدّم لك منحةً قد تصل إلى ٦٠٪ للاستفادة
-   من منتجنا الجديد أكاديمية وجيز، وهذه المنحة حصريّة». */
+   من منتجنا الجديد أكاديمية وجيز، وهذه المنحة حصريّة». ثمّ في اليوم نفسِه: «بدل عضو.. استخدم قرّاء وجيز بدلا من مستخدم» —
+   فوجيزُ تطبيقُ ملخّصات كتب، ومن فيه قرّاؤه. */
 export const grantThanksAr = (percentOff: number) =>
-  `تطبيق وجيز يشكرك لأنك من مستخدميه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى ${percentOff}% لتستفيد من منتجنا الجديد: أكاديمية وجيز.`
+  `تطبيق وجيز يشكرك لأنك من قرائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى ${percentOff}% لتستفيد من منتجنا الجديد: أكاديمية وجيز.`
 
 /** المستوى الوظيفيّ — سؤالٌ اختياريّ */
 export const CAREER_LEVELS: readonly string[] = [
@@ -172,8 +175,9 @@ export const GRANT_ACADEMY_LINE_AR = 'أكاديمية وجيز من وجيز، 
    للحدّ ٥ فقط». وخُيّر كيف تُختار، فاختار **حسب مجاله واهتمامه**: ما اختاره في «ما الذي تريد تطويره» أوّلا، ثمّ
    مجالاتُ مجال عمله، ثمّ الأقربُ موعدا يُكمل الأربع. فلكلٍّ اقتراحٌ يناسبه بلا أن يُعدّ صاحبُ المنصّة شيئا. */
 
-/** كم دورةً تُختار له سلفا — ويضيف حتّى حدّ المنحة (`maxCourses`) */
-export const GRANT_SUGGESTED_COURSES = 4
+/** كم دورةً نقترحها له — خمسٌ يختار منها حتّى حدّ المنحة (`maxCourses`). قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦):
+    «اقترح له ٤ دوراتٍ لا تتعارض ولا تكرّر المدرّبَ نفسَه، واجعلهم ٥ دوراتٍ على أن يختار هو أربعةً فقط» */
+export const GRANT_SUGGESTED_COURSES = 5
 
 /** مجالاتُ الدورات الأقربُ لكلّ مجال عمل — بعائلات المعرّفات (`course-domain.ts`)، فلا يفترق اسمٌ عن اسم */
 const WORK_FIELD_FAMILIES: Readonly<Record<string, readonly string[]>> = {
@@ -203,20 +207,49 @@ function courseFit(interests: readonly string[], workField: string): (domainAr: 
   return (d) => (d && want.has(d) ? 2 : d && near.has(d) ? 1 : 0)
 }
 
-/** الدوراتُ المختارةُ له سلفا — ما يريد تطويرَه، ثمّ مجالُ عمله، ثمّ الأقربُ موعدا، حتّى `n` */
+/** دورةٌ كما يقرؤها الاقتراح — مجالُها وموعدُها، ومدرّبُها ولقاءاتُها إن عُرفت */
+interface SuggestCourse {
+  courseId: string; domainAr?: string | null; startsAt: string | Date | null
+  trainer?: { id: string } | null; sessions?: readonly TimedSession[]
+}
+
+/** الدوراتُ المقترحةُ له — دوراتُ مساره الرئيسيّ إن كان (`first`)، ثمّ ما يريد تطويرَه، ثمّ مجالُ عمله، ثمّ الأقربُ موعدا،
+    حتّى `n`. **ولا تتعارض اثنتان منها ولا يتكرّر فيها مدرّب** (٢٧ أكتوبر ٢٠٢٦): تُتخطّى دورةٌ مدرّبُها في القائمة، أو تقع
+    لقاءاتُها على لقاءات دورةٍ فيها. وما لم يُعتمد جدولُه لا لقاءاتِ له تُقاس فلا يُتخطّى بها */
 export function suggestCourses(
-  courses: readonly { courseId: string; domainAr?: string | null; startsAt: string | Date | null }[],
+  courses: readonly SuggestCourse[],
   interests: readonly string[],
   workField: string,
   n: number,
+  first: readonly string[] = [],
 ): string[] {
   const score = courseFit(interests, workField)
   const at = (x: string | Date | null) => (x ? new Date(x).getTime() : Number.POSITIVE_INFINITY)
-  return courses
-    .map((c, i) => ({ id: c.courseId, s: score(c.domainAr), t: at(c.startsAt), i }))
-    .sort((a, b) => b.s - a.s || a.t - b.t || a.i - b.i)
-    .slice(0, Math.max(0, n))
-    .map((x) => x.id)
+  const lead = (id: string) => (first.includes(id) ? first.length - first.indexOf(id) : 0)
+  const ranked = courses
+    .map((c, i) => ({ c, p: lead(c.courseId), s: score(c.domainAr), t: at(c.startsAt), i }))
+    .sort((a, b) => b.p - a.p || b.s - a.s || a.t - b.t || a.i - b.i)
+  const out: SuggestCourse[] = []
+  for (const { c } of ranked) {
+    if (out.length >= n) break
+    if (c.trainer && out.some((o) => o.trainer?.id === c.trainer!.id)) continue
+    if (out.some((o) => sessionsOverlap(o.sessions ?? [], c.sessions ?? []))) continue
+    out.push(c)
+  }
+  return out.map((c) => c.courseId)
+}
+
+/** «تتعارض مع «X».» — لدورةٍ اختارها بعد دورةٍ تتعارض معها، فورَ اختيارها. قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «إذا كانت
+    تتعارض يقولها: تتعارض مع التي قبلها، واجعل الرسالةَ واضحةً وسهلةَ القراءة، ليست فيها معلوماتٌ مكرّرة». ثمّ في اليوم نفسِه:
+    «خفّف نصَّ التعارض.. قل تتعارض فقط بدون في كم لقاء» — فلا عددَ ولا أوّلَ لقاء. ومع أقربِ ما قبلها تعارضا، والقرارُ له */
+export function grantClashAr<T extends { courseId: string; cohortId: string; titleAr: string; sessions?: readonly TimedSession[] }>(
+  course: T, before: readonly T[],
+): string | null {
+  /* والاسمُ قصيرٌ يُعرف به: ما قبل النقطتين بلا «دورة» — «تحليلات الموارد البشرية» لا العنوانُ كلُّه بوعده */
+  const short = (t: string) => t.split(/[:：]/)[0].replace(/^دورة\s+/, '').trim() || t
+  const timed = (x: T) => ({ cohortId: x.cohortId, courseId: x.courseId, titleAr: short(x.titleAr), sessions: x.sessions ?? [] })
+  const hit = clashesOf(timed(course), before.map(timed))[0]
+  return hit ? `تتعارض مع «${hit.with.titleAr}».` : null
 }
 
 /* ═══ ومسارٌ رئيسيٌّ وبديلٌ من المسارات العامّة (٢١ أكتوبر ٢٠٢٦) ═══
@@ -331,7 +364,7 @@ export function grantRecordLink(host: string, key: string): string {
    وصفحةُ منحة المؤثّرين تُهدي برابط مؤثّرها (`/grant/i/<كوده>`) — فالصديقُ يأخذ منحتَها هي، ويُحسب للمؤثّر الذي جاء
    به صاحبُها (٢٦ أكتوبر ٢٠٢٦)، ولا يقول «لأنّي من مستخدمي تطبيق وجيز»: منحتُها من المؤثّر لا من التطبيق. */
 export function grantShareAr(link: string, percentOff: number, lastDay: string | null, fromWajeezApp = true): string {
-  const who = fromWajeezApp ? 'حصلت على منحة حصرية من تطبيق وجيز لأني من مستخدميه' : 'حصلت على منحة من أكاديمية وجيز'
+  const who = fromWajeezApp ? 'حصلت على منحة حصرية من تطبيق وجيز لأني من قرائه' : 'حصلت على منحة من أكاديمية وجيز'
   return [
     `${who}، ويحق لي أن أشاركها مع ${GRANT_GIFT_MAX} من أصدقائي، واخترتك منهم.`,
     '',
@@ -399,22 +432,70 @@ export function grantCallDueAt(formAt: Date, now: Date): Date {
   return zonedInstant(morning, [GRANT_CALL_WINDOW[0] + 1, 0, 0, 0])
 }
 
+/* ═══ نبذةُ الدورة تحت سهمٍ في صفّها — لا انتقالَ إلى الموقع (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «عند النقر على الدورات لشرائها لا يجب أن تأخذ النقرةُ العميلَ إلى الدورات في صفحة الموقع… "تفاصيل
+   الدورة" أريد أن تبدلها بسهمٍ للأسفل، وينسدل نبذةٌ بسيطةٌ عن الدورة: نبذةٌ عنها وأهدافُها ولمن هي، بشكلٍ مختصرٍ وجميل».
+   فمن آخر نسخةٍ للدورة كعنوانها: وعدُها سطرا (أو وصفُها إن لم يُكتب)، وثلاثةُ أهدافٍ بترتيبها، ولمن هي. والكتالوجُ كُتب قبل
+   قرار التشكيل فيمرّ بـ`plainAr`. وما لا شيءَ فيه لا سهمَ له. */
+
+/** أقصى ما يُعرض من أهداف الدورة في نبذتها */
+export const GRANT_SUMMARY_GOALS = 3
+
+export interface GrantCourseSummary { aboutAr: string | null; goalsAr: string[]; audienceAr: string | null }
+
+/** نبذةُ الدورة من نسختها — `null` إن لم يُكتب فيها شيء */
+export function grantCourseSummary(v: {
+  shortPromiseAr?: string | null; descriptionAr?: string | null; audienceAr?: string | null; objectives?: readonly { textAr: string }[]
+} | null | undefined): GrantCourseSummary | null {
+  if (!v) return null
+  const clean = (t: string | null | undefined) => (t ? plainAr(t).replace(/\s+/g, ' ').trim() : '') || null
+  const aboutAr = clean(v.shortPromiseAr) ?? clean(v.descriptionAr)
+  const goalsAr = (v.objectives ?? []).map((o) => clean(o.textAr)).filter((x): x is string => !!x).slice(0, GRANT_SUMMARY_GOALS)
+  const audienceAr = clean(v.audienceAr)
+  return aboutAr || goalsAr.length > 0 || audienceAr ? { aboutAr, goalsAr, audienceAr } : null
+}
+
 /* ═══ الدوراتُ: ما اخترناه له فوق، والباقي أقسامٌ مطويّةٌ بمجالها (٢٤ أكتوبر ٢٠٢٦) ═══
 
    قال صاحبُ المنصّة: «الدوراتُ كثيرةٌ وتحيّر الشخص». وخُيّر بين أربعة (مختاراتُه وأقسامٌ مطويّة، أو بطاقاتُ المسارات
    أوّلا، أو تصفيةٌ بالمجال، أو ثمانٍ وزرُّ «المزيد») — فاختار **مختاراتِه فوق، والباقي أقسامًا مطويّةً بمجالها**: يرى
    أربعَ بطاقاتٍ وستّةَ أسطرٍ بدلَ خمسٍ وعشرين بطاقة، ويبقى الاختيارُ له. */
 
-/** الدوراتُ الباقيةُ أقساما بمجالها — ما يريد تطويرَه أوّلا، ثمّ الأكثرُ دورات، و«أخرى» آخرا */
+/* ═══ وكلُّ مجالين قسمٌ واحد — في صفحتي المنحة وحدَهما (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «أشعر بأنّ التصميمَ سطحيٌّ نوعا ما، فهي عناوين… لا أن تكون أزرارا متكدّسةً وراء بعضها… فكرةٌ مثلا
+   أن تدمج كلَّ جزئين: المالُ الشخصيّ والمالية والمحاسبة، الموارد البشريّة والبحث عن عمل، ريادة الأعمال والقيادة، التسويق
+   والتواصل… فيزيد عددُ الدورات في كلّ خانة… ولكن هذا التغييرُ للمنح فقط، لا تغيّره في الموقع». فالأربعةُ بنصّه، والباقي
+   على قياسها: كلُّ عائلةٍ إلى أقرب قسم. والعائلةُ بلا قسمٍ تبقى باسمها، فلا تضيع دورة. والموقعُ يبقى بمجالاته (`course-domain.ts`). */
+
+/** أقسامُ المنحة بعائلات مجالاتها — والعنوانُ ما يراه */
+export const GRANT_SECTION_GROUPS: readonly { title: string; families: readonly string[] }[] = [
+  { title: 'المال والمحاسبة', families: ['FIN', 'FINM'] },
+  { title: 'الموارد البشرية والبحث عن عمل', families: ['HR', 'JOB', 'CAR'] },
+  { title: 'القيادة وريادة الأعمال', families: ['MGR', 'BIZ'] },
+  { title: 'التسويق والتواصل', families: ['MKT', 'COMX', 'SAL', 'SVC', 'NEG'] },
+  { title: 'التقنية والذكاء الاصطناعي', families: ['AI', 'DAT', 'AUT', 'CYB', 'WEB'] },
+  { title: 'علم النفس والتركيز', families: ['PSY', 'WEL'] },
+  { title: 'المشاريع والعمليات', families: ['PRD', 'PM', 'OPS', 'SCM'] },
+  { title: 'التصميم والهندسة', families: ['GRPH', 'INTR', 'ENGR'] },
+  { title: 'التعليم والأسرة', families: ['LND', 'EDU', 'FAM'] },
+]
+const GRANT_SECTION_OF = new Map(GRANT_SECTION_GROUPS.flatMap((g) => g.families.map((f) => [courseDomainByFamily(f), g.title] as const)))
+/** قسمُ المجال في صفحة المنحة — ومجالٌ بلا قسمٍ قسمُ نفسه */
+export const grantSectionOf = (domain: string): string => GRANT_SECTION_OF.get(domain) ?? domain
+
+/** الدوراتُ الباقيةُ أقساما بمجالها المدموج — ما يريد تطويرَه أوّلا، ثمّ الأكثرُ دورات، و«أخرى» آخرا */
 export function grantSections<T extends { domainAr?: string | null }>(
   courses: readonly T[], interests: readonly string[], other: string,
 ): { domain: string; items: T[] }[] {
   const by = new Map<string, T[]>()
   for (const c of courses) {
-    const d = c.domainAr || other
+    const d = c.domainAr ? grantSectionOf(c.domainAr) : other
     by.set(d, [...(by.get(d) ?? []), c])
   }
-  const rank = (d: string) => (d === other ? 2 : interests.includes(d) ? 0 : 1)
+  const wanted = new Set(interests.map(grantSectionOf))
+  const rank = (d: string) => (d === other ? 2 : wanted.has(d) ? 0 : 1)
   return [...by.entries()]
     .map(([domain, items]) => ({ domain, items }))
     .sort((a, b) => rank(a.domain) - rank(b.domain) || b.items.length - a.items.length || a.domain.localeCompare(b.domain, 'ar'))

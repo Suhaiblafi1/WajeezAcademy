@@ -322,3 +322,47 @@ describe('⑨ تذكيره بنشر شعبته قبل بدئها', () => {
     expect(m.doc.blocks.find((b) => b.kind === 'cta')).toMatchObject({ href: 'https://x/trainer/share?share=C1' })
   })
 })
+
+/* ⑩ صفحته العامة `/t/اسمه` لزاحف المعاينة — سئل صاحب المنصة عن الروابط الطويلة القديمة فقال: «الاثنتان» (٢٧ أكتوبر
+   ٢٠٢٦). والعلة في `trainerPagePreview` (`server/services/link-preview.ts`): صورته المصممة إن رسمت، وإلا صورته. */
+describe('⑩ معاينة صفحته العامة', () => {
+  const FB = { 'user-agent': 'facebookexternalhit/1.1' }
+  let app: FastifyInstance
+  let slug = ''
+
+  beforeAll(async () => {
+    app = await buildApp(prisma)
+    await prisma.trainerProfile.update({
+      where: { id: A.profileId }, data: { isVerified: true, publicVisibility: true, publishApprovedAt: new Date() },
+    })
+    await prisma.cohort.update({ where: { id: cohort.A1 }, data: { startsAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) } })
+    await shares.kit(A.userId)
+    slug = (await prisma.trainerProfile.findUniqueOrThrow({ where: { id: A.profileId }, select: { publicSlug: true } })).publicSlug!
+  }, 120_000)
+  afterAll(async () => { await app?.close() })
+
+  const page = (s: string) => app.inject({ method: 'GET', url: `/t/${encodeURIComponent(s)}`, headers: FB })
+
+  it('⚠️ يرى الزاحف اسمه لا عنوان الرئيسة — وبلا صورة مصممة صورة الأكاديمية', async () => {
+    const res = await page(slug)
+    expect(res.statusCode).toBe(200)
+    expect(res.body, 'عنوان الصفحة ليس اسمه').toMatch(/og:title" content="مدرّب A — أكاديمية وجيز"/)
+    expect(res.body).toMatch(/og:image" content="[^"]*\/og-image\.png"/)
+    expect(res.body, 'صفحة المدرب تحول الزاحف').not.toContain('location.replace')
+  })
+
+  it('⚠️ وإذا رسمت معاينة رابطه العام صارت هي معاينة صفحته', async () => {
+    const kit = await shares.kit(A.userId)
+    expect(kit.short.wide, 'لا رابط عام قصير لمدرب منشور').toBeTruthy()
+    const code = kit.short.wide!.slice(kit.short.wide!.lastIndexOf('/') + 1)
+    await shares.savePreview(A.userId, code, Buffer.from([0xff, 0xd8, 0xff, 0xe0, 9]), 'v3-wide')
+    const res = await page(slug)
+    expect(res.body).toMatch(new RegExp(`og:image" content="[^"]*/api/public/links/${code}/preview\\.jpg\\?v=v3-wide"`))
+    expect(res.body).toMatch(/og:title" content="دورات مدرّب A — بث مباشر في أكاديمية وجيز"/)
+  })
+
+  it('ومن لا تعرض صفحته لا تعرض معاينته', async () => {
+    const res = await page('لا-احد-بهذا-الاسم')
+    expect(res.statusCode).toBe(302)
+  })
+})

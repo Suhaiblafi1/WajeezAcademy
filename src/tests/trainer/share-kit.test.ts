@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { bestCode, emailSubject, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, type ShareInput } from '@/application/trainer/share-kit'
 import { artPlan } from '@/components/trainer/share-art'
-import { previewSig } from '@/components/trainer/link-preview'
+import { previewFaceOf, previewLinksOf, previewSig } from '@/components/trainer/link-preview'
 import { isCrawler, VIA_OF, viaOf, withVia } from '@/application/links/share-via'
 
 const URL_ONE = 'https://www.wajeezacademy.com/build/C-1?ref=WJ-AAAA'
@@ -218,7 +218,7 @@ describe('معاينة الرابط حين يلصق', () => {
 
   it('وصفحته ترسم المعاينة وترفعها لروابطه', () => {
     const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
-    expect(page).toMatch(/void syncLinkPreviews\(\{[\s\S]{0,300}\}, links, kit\.previews \?\? \{\}\)/)
+    expect(page).toMatch(/void syncLinkPreviews\(previewFaceOf\(kit\), previewLinksOf\(kit, cohortLinks\), kit\.previews \?\? \{\}\)/)
     expect(artPlan('post', 3).some((p) => p.kind === 'link'), 'المعاينة صارت تنزل مع المنشور').toBe(false)
   })
 })
@@ -305,5 +305,46 @@ describe('زر تذكير النشر', () => {
     expect(page).toMatch(/useState<string \| null>\(\(\) => params\.get\("share"\)\)/)
     expect(page).toMatch(/id=\{`share-\$\{c\.cohortId\}`\}/)
     expect(page).toMatch(/getElementById\(`share-\$\{id\}`\)\?\.scrollIntoView/)
+  })
+})
+
+/* «الاثنتان» (صاحب المنصة، ٢٧ أكتوبر ٢٠٢٦): المعاينة تتجدد من لوحته الرئيسة، وصفحته العامة لها معاينة لزاحفها */
+describe('المعاينة من لوحته وصفحته العامة', () => {
+  const kit = {
+    name: 'صهيب', headline: null, photoUrl: null, code: 'WJ30-AAAAAA', percentOff: 30,
+    hisCodes: [{ code: 'MINE40', percentOff: 40 }],
+    short: { wide: 'https://w/s/WIDE01', cohorts: { c1: 'https://w/s/ONE001', c2: 'https://w/s/TWO002' } },
+  }
+  const cohorts = [
+    { cohortId: 'c2', courseTitle: 'ب', startsAt: '2026-12-05T00:00:00Z' },
+    { cohortId: 'c1', courseTitle: 'أ', startsAt: '2026-12-01T00:00:00Z' },
+  ]
+
+  it('⚠️ روابطه: العام بدوراته بترتيب بدئها، ولكل شعبة دورتها — والكود أعلاها', () => {
+    const links = previewLinksOf(kit, cohorts)
+    expect(links.map((l) => l.url)).toEqual(['https://w/s/WIDE01', 'https://w/s/TWO002', 'https://w/s/ONE001'])
+    expect(links[0].courses.map((c) => c.courseTitle), 'العام ليس بترتيب البدء').toEqual(['أ', 'ب'])
+    expect(previewFaceOf(kit).code).toEqual({ code: 'MINE40', percentOff: 40 })
+    expect(previewLinksOf(kit, []), 'معاينة بلا دورة').toEqual([])
+  })
+
+  it('⚠️ لوحته الرئيسة تجددها', () => {
+    const dash = readFileSync(join(process.cwd(), 'src/pages/trainer/TrainerDashboard.tsx'), 'utf8')
+    expect(dash).toMatch(/import\("@\/components\/trainer\/link-preview"\)\.then\(\(m\) => m\.refreshMyLinkPreviews\(\)\)/)
+  })
+
+  it('⚠️ وCaddy يمرر صفحته لزاحف المعاينة وحده — لا لمحركات البحث ولا للناس', () => {
+    const caddy = readFileSync(join(process.cwd(), 'deploy/Caddyfile'), 'utf8')
+    const block = /@previewCrawler \{\s*path \/t\/\*\s*header_regexp User-Agent \(\?i\)\(([^)]*)\)\s*\}/.exec(caddy)
+    expect(block, 'لا مطابق لزاحف المعاينة على /t/').not.toBeNull()
+    const ua = new RegExp(block![1], 'i')
+    for (const bot of ['facebookexternalhit/1.1', 'WhatsApp/2.23.20.0 A', 'LinkedInBot/1.0', 'Twitterbot/1.0', 'TelegramBot (like TwitterBot)']) {
+      expect(ua.test(bot), `زاحف معاينة لا يبلغ الخادم: ${bot}`).toBe(true)
+    }
+    for (const other of ['Mozilla/5.0 (compatible; Googlebot/2.1)', 'Mozilla/5.0 (compatible; bingbot/2.0)', 'Mozilla/5.0 (iPhone) Mobile/15E148 [FBAN/FBIOS;FBAV/450.0]']) {
+      expect(ua.test(other), `صفحة غير صفحته لغير زاحف المعاينة: ${other}`).toBe(false)
+    }
+    expect(caddy.search(/handle @previewCrawler \{\s*reverse_proxy app:7101/), 'المطابق بلا تمرير').toBeGreaterThan(-1)
+    expect(caddy.search(/handle @previewCrawler/)).toBeLessThan(caddy.search(/try_files \{path\} \{path\}\.html \/index\.html/))
   })
 })

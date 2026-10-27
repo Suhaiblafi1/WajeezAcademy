@@ -176,6 +176,7 @@ const PHRASES: Record<string, string> = {
   'coupon.grant_pathway_save': 'حفظ مسار منحة',
   'coupon.grant_pathway_remove': 'حذف مسار منحة',
   'coupon.grant_apply': 'تعبئة زائر نموذج المنحة',
+  'coupon.grant_claim': 'أخذ صاحب حساب كود منحته ببريد النموذج',
   'influencer.create': 'إضافة مؤثر لمنحة المؤثرين',
   'influencer.update': 'تعديل مؤثر أو عمولته أو إيقافه',
   'influencer.account': 'ربط مؤثر بحساب أو إنشاء حساب له',

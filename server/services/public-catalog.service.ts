@@ -16,7 +16,9 @@ import { asAudience } from '../../src/application/trainer/cohort-audience'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 
 /** سقفُ ما يُعلَن من لقاءات الشعبة الواحدة — شعبةٌ تُجاوزه فصلٌ لا دورة */
-const PUBLIC_SESSIONS_CAP = 60
+export const PUBLIC_SESSIONS_CAP = 60
+/** ما يُعلَن من لقاءاتها لمن لم يشترِ — المعتمَدُ غيرُ الملغى ولا المبدئيّ (العلّةُ عند `cohorts`). وتقرؤه صفحةُ المنحة أيضا */
+export const PUBLIC_SESSION_WHERE = { ...LEARNER_SESSION_WHERE, status: { not: 'cancelled' }, placeholder: false } as const
 
 export class PublicCatalogService {
   private prisma: PrismaClient
@@ -135,7 +137,7 @@ export class PublicCatalogService {
            المبدئيُّ — مثالُ الإدارة «مثالٌ فقط» ويُرفع حين يضع المدرّبُ جدولَه
            (`clearPlaceholders`)، فعرضُه على المشتري وعدٌ بموعدٍ لم يَعِد به أحد. */
         sessions: {
-          where: { ...LEARNER_SESSION_WHERE, status: { not: 'cancelled' }, placeholder: false },
+          where: PUBLIC_SESSION_WHERE,
           orderBy: { startsAt: 'asc' },
           take: PUBLIC_SESSIONS_CAP,
           select: { startsAt: true, endsAt: true, title: true },

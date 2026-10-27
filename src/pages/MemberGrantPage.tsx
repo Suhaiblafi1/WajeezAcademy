@@ -34,7 +34,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { ChevronDown, Clock, Copy, Flame, Gift, Loader2, Mail, MessageCircle, Share2, Sparkles, UserRound } from "lucide-react";
+import { Award, Check, ChevronDown, Clock, Copy, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -50,11 +50,12 @@ import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
+import type { TimedSession } from "@/application/learning/cohort-overlap";
 import { grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -69,6 +70,10 @@ interface GrantCourse {
   courseId: string; titleAr: string; cohortId: string; startsAt: string | null; seatsLeft?: number | null; price: number; domainAr?: string;
   /** مدرّبُها المنشور — ببوّابة النشر في الخادم (`grant-courses.service.ts`) */
   trainer?: { id: string; name: string; photoUrl: string | null } | null;
+  /** نبذتُها تحت سهمٍ في صفّها (`grantCourseSummary`) — بلا شيءٍ لا سهمَ لها */
+  summary?: GrantCourseSummary | null;
+  /** مواعيدُ لقاءاتها المعتمَدة — بها يُقال التعارضُ فورَ الاختيار (`grantClashAr`) */
+  sessions?: TimedSession[];
 }
 interface View {
   campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
@@ -121,6 +126,10 @@ const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
   .map((x) => ({ id: x.id, title: x.title, courseIds: x.course_ids }));
 /** مجالُ دورةٍ لم تُسمَّ عائلتُها — لا يُعرض فيما يريد تطويرَه */
 const OTHER_DOMAIN = "أخرى";
+/** كم وجها في رأس كلِّ قسم */
+const SECTION_FACES = 3;
+/** أيقونةُ كلِّ بندٍ ممّا يحصل عليه — في سطر صندوق الكود */
+const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, certificate: Award };
 
 export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" }) {
   const forInfluencer = variant === "influencer";
@@ -152,9 +161,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [picked, setPicked] = useState<string[]>([]);
   /* ما اخترناه له سلفا — يبقى أعلى القائمة بشارته وإن حذفه، فلا تقفز الصفوفُ تحت يده */
   const [suggested, setSuggested] = useState<string[]>([]);
-  /* المسارُ الذي اخترنا دوراتِه له. وكان معه بديلٌ يبدّل إليه بضغطة، فحُذف بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لا داعي
-     لخيار بدّل للمسار لأنّه غير مفهوم» — ومن أراد غيرَ ما اقترحناه يجده في أقسام المجالات تحته */
-  const [mainPath, setMainPath] = useState<GrantPathOption | null>(null);
+  /* نبذةُ أيِّ دورةٍ مفتوحةٌ الآن — واحدةٌ في كلّ مرّة، فتبقى القائمةُ مرتّبة */
+  const [summaryOf, setSummaryOf] = useState<string | null>(null);
   const [seeded, setSeeded] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
@@ -170,19 +178,17 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 
   const [resumed] = useState(() => (pickPath ? resumedCheckoutFor(pickPath) : null));
 
-  /* ما نقترحه مرّةً واحدةً حين يصير له كود: دوراتُ المسار الرئيسيّ الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، أو
-     أربعُ دوراتٍ تناسبهما إن لم يناسبه مسار (`suggestCourses`) — تُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه**:
+  /* ما نقترحه مرّةً واحدةً حين يصير له كود: خمسُ دوراتٍ لا تتعارض ولا يتكرّر فيها مدرّب، أوّلُها دوراتُ المسار الرئيسيّ
+     الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، ثمّ ما يناسبهما (`suggestCourses`) — ويختار منها حتّى الحدّ. قرارُ صاحب
+     المنصّة (٢٧ أكتوبر ٢٠٢٦). وتُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه**:
      قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) «لا تختر عنه أنت، فقط اكتب له بخطٍّ صغير: نقترحها لك». ويعود ما تركه قبل أن
      يخرج ليوثّق بريده مختارا كما كان */
   useEffect(() => {
     if (!view || !stored || seeded) return;
     const max = view.campaign.maxCourses;
     const found = suggestPaths(GRANT_PATHS, view.openCourses, stored.interests, stored.workField);
-    const ours = found.main
-      ? found.main.courseIds.slice(0, max)
-      : suggestCourses(view.openCourses, stored.interests, stored.workField, Math.min(GRANT_SUGGESTED_COURSES, max));
+    const ours = suggestCourses(view.openCourses, stored.interests, stored.workField, GRANT_SUGGESTED_COURSES, found.main?.courseIds ?? []);
     const open = new Set(view.openCourses.map((x) => x.courseId));
-    setMainPath(found.main);
     setSuggested(ours);
     setPicked(resumed ? resumed.intent.courseIds.filter((id) => open.has(id)).slice(0, max) : []);
     setSeeded(true);
@@ -229,6 +235,23 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     finally { setBusy(false); }
   };
 
+  /* ومن جاء بلا كودٍ ظاهر («أرسلناه إلى بريدك») يأخذه بحسابه حين يدخل — ببريد النموذج (`myCode` في الخادم). فيظهر في صندوقه،
+     ويفتح لوحُ الدفع بمنحته وبالسعر الذي رآه. قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «يجب أن يصلح ويتغيّر من جهتك» */
+  const claimFor = session && stored && !stored.code ? `${session.email}|${stored.ref}` : null;
+  useEffect(() => {
+    if (!claimFor) return;
+    let on = true;
+    apiGet<{ code: string | null }>(`/api/learner/grant-code?campaign=${forInfluencer ? "influencer" : "member"}`)
+      .then(({ code }) => {
+        if (!on || !code) return;
+        const kept = readStoredGrant(storeKey);
+        if (kept && !kept.code) saveStoredGrant({ ...kept, code, sentTo: null }, storeKey);
+        setStored((s) => (s && !s.code ? { ...s, code, sentTo: null } : s));
+      })
+      .catch(() => undefined);
+    return () => { on = false; };
+  }, [claimFor, forInfluencer, storeKey]);
+
   const pay = () => {
     if (chosen.length === 0) return;
     savePendingCheckout({
@@ -269,6 +292,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const courses = rankByInterest(view.openCourses, (x) => (ours.has(x.courseId) ? 2 + suggested.length - suggested.indexOf(x.courseId) : fits(x)));
     /* ما اخترناه له فوقُ مفتوحا، والباقي أقسامٌ مطويّةٌ بمجالها — ما يريد تطويرَه أوّلا (`grantSections`) */
     const top = courses.filter((x) => ours.has(x.courseId));
+    const timedSuggested = top.length > 0 && top.every((x) => (x.sessions?.length ?? 0) > 0);
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
     const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr({
       name: stored.name, email: stored.email, code: stored.code, courses: chosen.map((x) => x.titleAr),
@@ -284,41 +308,76 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       const full = !on && picked.length >= max;
       const seats = seatsLeftAr(x.seatsLeft);
       const tag = ours.has(x.courseId) ? "نقترحها لك" : fits(x) > 0 ? "يناسب ما تريد تطويره" : null;
+      const sum = x.summary ?? null;
+      const open = sum !== null && summaryOf === x.courseId;
+      const sumId = `sum-${x.courseId}`;
+      /* وتعارضُها مع ما اختاره قبلها — يُقال فورَ اختيارها، ولا يمنعه */
+      const clash = on ? grantClashAr(x, chosen.slice(0, chosen.findIndex((c) => c.courseId === x.courseId))) : null;
+      /* الصفُّ كلُّه يختار — والسهمُ خارجَ وسمه، فنبذتُه تُفتح ولا تختار. ولا رابطَ فيه إلى الموقع: قرارُ صاحب المنصّة
+         (٢٧ أكتوبر ٢٠٢٦): «عند النقر على الدورات لشرائها لا يجب أن تأخذ النقرةُ العميلَ إلى صفحة الموقع» */
       return (
-        <Inset
-          as="label" key={x.courseId} tone={on ? "accent" : "default"} interactive={!full}
-          className={`flex cursor-pointer items-start gap-4 ${full ? "opacity-50" : ""}`}
-        >
-          {/* والاختيارُ على الصورة نفسِها — يُرى ويُضغط معها */}
-          <span className="relative shrink-0">
-            {x.trainer?.photoUrl
-              ? <img src={x.trainer.photoUrl} alt="" loading="lazy" className="h-24 w-24 rounded-2xl object-cover shadow-lg sm:h-28 sm:w-28" />
-              : <span className="grid h-24 w-24 place-items-center rounded-2xl bg-teal/10 text-teal-light-ink sm:h-28 sm:w-28"><UserRound className="h-10 w-10" aria-hidden="true" /></span>}
-            <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} aria-label={x.titleAr} className="absolute start-2 top-2 h-5 w-5 shadow" />
-          </span>
-          <span className="min-w-0 flex-1">
-            {(tag || seats) && (
-              <span className="mb-1 flex flex-wrap items-center gap-x-3 text-read font-bold">
-                {tag && <span className="inline-flex items-center gap-1 text-gold-ink"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{tag}</span>}
-                {seats && <span className="inline-flex items-center gap-1 text-red-300"><Flame className="h-3.5 w-3.5" aria-hidden="true" />{seats}</span>}
-              </span>
-            )}
-            <span className="block font-bold leading-6">{x.titleAr}</span>
-            {/* المدرّبُ ببوّابة النشر، وتفاصيلُ الدورة — في نافذةٍ جديدة فلا يضيع ما اختاره */}
-            {x.trainer && (
-              <a href={`/trainers#trainer-${encodeURIComponent(x.trainer.id)}`} target="_blank" rel="noreferrer" className="mt-0.5 block text-read font-bold text-teal-light-ink">
-                مع {x.trainer.name}
-              </a>
-            )}
-            <span className="mt-0.5 block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
-            <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <span className="flex items-baseline gap-2">
+        <Inset key={x.courseId} tone={on ? "accent" : "default"} interactive={!full} className={full ? "opacity-50" : ""}>
+          <label className="flex cursor-pointer items-start gap-4">
+            {/* والاختيارُ على الصورة نفسِها — يُرى ويُضغط معها */}
+            <span className="relative shrink-0">
+              {x.trainer?.photoUrl
+                ? <img src={x.trainer.photoUrl} alt="" loading="lazy" className="h-24 w-24 rounded-2xl object-cover shadow-lg sm:h-28 sm:w-28" />
+                : <span className="grid h-24 w-24 place-items-center rounded-2xl bg-teal/10 text-teal-light-ink sm:h-28 sm:w-28"><UserRound className="h-10 w-10" aria-hidden="true" /></span>}
+              <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} aria-label={x.titleAr} className="absolute start-2 top-2 h-5 w-5 shadow" />
+            </span>
+            <span className="min-w-0 flex-1">
+              {(tag || seats) && (
+                <span className="mb-1 flex flex-wrap items-center gap-x-3">
+                  {/* وسمُ «نقترحها لك» أصغرُ وأهدأ من العنوان — قرارُه (٢٧ أكتوبر ٢٠٢٦): «يجب أن تكون أصغر وبخطٍّ أقلّ أهميّةً للنظر» */}
+                  {tag && <span className="inline-flex items-center gap-1 text-fine text-muted-foreground"><Sparkles className="h-3 w-3 text-gold-ink" aria-hidden="true" />{tag}</span>}
+                  {seats && <span className="inline-flex items-center gap-1 text-read font-bold text-red-300"><Flame className="h-3.5 w-3.5" aria-hidden="true" />{seats}</span>}
+                </span>
+              )}
+              <span className="block font-bold leading-6">{x.titleAr}</span>
+              {x.trainer && <span className="mt-0.5 block text-read font-bold text-teal-light-ink">مع {x.trainer.name}</span>}
+              <span className="mt-0.5 block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
+              <span className="mt-2 flex items-baseline gap-2">
                 <bdi dir="ltr" className="text-lg font-black">{money(grantPrice(x.price, pct))}</bdi>
                 <bdi dir="ltr" className="text-read text-muted-foreground line-through">{money(x.price)}</bdi>
               </span>
-              <a href={`/build/${encodeURIComponent(x.courseId)}`} target="_blank" rel="noreferrer" className="text-read text-muted-foreground underline">تفاصيل الدورة</a>
+              {clash && (
+                <span role="status" className="mt-2 flex items-start gap-1.5 text-read font-bold leading-6 text-gold-ink">
+                  <TriangleAlert className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden="true" />{clash}
+                </span>
+              )}
             </span>
-          </span>
+          </label>
+          {sum && (
+            <>
+              <button
+                type="button" aria-expanded={open} aria-controls={sumId} onClick={() => setSummaryOf(open ? null : x.courseId)}
+                className="mt-2 flex min-h-9 w-full cursor-pointer items-center justify-center gap-1.5 border-t border-border pt-2 text-read text-muted-foreground"
+              >
+                {open ? "إخفاء النبذة" : "نبذة عن الدورة"}
+                <ChevronDown className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+              </button>
+              {open && (
+                <div id={sumId} className="mt-1 space-y-3 text-read leading-6">
+                  {sum.aboutAr && <p>{sum.aboutAr}</p>}
+                  {sum.goalsAr.length > 0 && (
+                    <div>
+                      <p className="font-bold">أهدافها</p>
+                      <ul className="mt-1 space-y-1">
+                        {sum.goalsAr.map((g) => (
+                          <li key={g} className="flex items-start gap-2"><Check className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />{g}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {sum.audienceAr && <p><span className="font-bold">لمن هي: </span>{sum.audienceAr}</p>}
+                  {/* و«المزيد» بطلبه وحدَه، في نافذةٍ جديدة — فلا يضيع ما اختاره */}
+                  <a href={`/build/${encodeURIComponent(x.courseId)}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground underline">
+                    المزيد عن الدورة<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
+                </div>
+              )}
+            </>
+          )}
         </Inset>
       );
     };
@@ -347,11 +406,17 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
           {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
           {c.open && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
-          {/* وما يحصل عليه سطرٌ صغيرٌ تحت خطٍّ رفيع — وكلُّ بندٍ لا ينقسم بين سطرين على الهاتف */}
-          <p className="mx-auto mt-3 flex max-w-md flex-wrap justify-center gap-x-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">
-            {GRANT_GAINS_AR.map((g, i) => (
-              <span key={g.id} className="whitespace-nowrap">{i > 0 && "+ "}{g.title}</span>
-            ))}
+          {/* وما يحصل عليه سطرٌ صغيرٌ تحت خطٍّ رفيع، بأيقونةٍ قبل كلّ بند — قرارُه (٢٧ أكتوبر ٢٠٢٦): «ضع أيقوناتٍ للمباشر وغيرها
+              في نفس السطر.. تكون عصريّة». وكلُّ بندٍ لا ينقسم بين سطرين على الهاتف */}
+          <p className="mx-auto mt-3 flex max-w-lg flex-wrap justify-center gap-x-4 gap-y-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">
+            {GRANT_GAINS_AR.map((g) => {
+              const Icon = GAIN_ICON[g.id];
+              return (
+                <span key={g.id} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <Icon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />{g.title}
+                </span>
+              );
+            })}
           </p>
         </Card>
 
@@ -359,7 +424,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           اختر دوراتك{view.termAr && <span className="text-read font-normal text-muted-foreground"> · {view.termAr}</span>}
         </h2>
         {suggested.length > 0 && (
-          <p className="mt-2 text-read">{mainPath ? `نقترح لك دورات مسار «${mainPath.title}».` : `نقترح لك ${coursesAr(suggested.length)} تناسبك.`}</p>
+          <p className="mt-2 text-read">
+            {/* «لا تتعارض» قولٌ يُقاس: يُقال حين لكلِّ مقترحةٍ لقاءاتٌ معتمَدة، وإلّا فـ«تناسبك» وحدَها */}
+            نقترح لك {coursesAr(suggested.length)} تناسبك{timedSuggested ? " ولا تتعارض مواعيدها" : ""}.{suggested.length > max && ` اختر منها حتى ${max}.`}
+          </p>
         )}
 
         {view.openCourses.length === 0 ? (
@@ -367,28 +435,38 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         ) : (
           <>
             {top.length > 0 && <div className="mt-5 space-y-3">{top.map((x) => row(x))}</div>}
-            {/* والباقي أقسامٌ مطويّةٌ بمجالها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «الدوراتُ كثيرةٌ وتحيّر الشخص» */}
+            {/* والباقي أقسامٌ مطويّةٌ بمجالها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «الدوراتُ كثيرةٌ وتحيّر الشخص».
+                ثمّ (٢٧ أكتوبر ٢٠٢٦): «التصميمُ سطحيٌّ… لا أزرارا متكدّسةً وراء بعضها… ادمج كلَّ جزئين». فبطاقةٌ واحدةٌ هادئة،
+                أقسامُها مدموجةٌ (`GRANT_SECTION_GROUPS`) بينها خطوطٌ رفيعة، وفي كلّ قسمٍ وجوهُ مدرّبيه وعددُ دوراته */}
             {sections.length > 0 && (
-              <>
-                {top.length > 0 && <p className="mt-6 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية</p>}
-                <div className="mt-2 space-y-2">
+              <Card className="mt-6">
+                {top.length > 0 && <p className="mb-1 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية</p>}
+                <div className="divide-y divide-border">
                   {sections.map((sec) => {
                     const mineHere = sec.items.filter((x) => picked.includes(x.courseId)).length;
+                    /* وجهُ كلِّ مدرّبٍ مرّةً — ومن درّس دورتين في القسم لا يتكرّر */
+                    const faces = [...new Map(sec.items.filter((x) => x.trainer?.photoUrl).map((x) => [x.trainer!.id, x])).values()].slice(0, SECTION_FACES);
                     return (
-                      <Inset as="details" key={sec.domain} className="group">
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-                          <span className="font-bold">{sec.domain}</span>
-                          <span className="flex shrink-0 items-center gap-2 text-read text-muted-foreground">
-                            {grantCountAr(sec.items.length)}{mineHere > 0 && <Chip tone="accent">اخترت {mineHere}</Chip>}
-                            <ChevronDown className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+                      <details key={sec.domain} className="group py-3 last:pb-0">
+                        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
+                          {faces.length > 0 && (
+                            <span className="flex shrink-0 -space-x-2 rtl:space-x-reverse" aria-hidden="true">
+                              {faces.map((x) => <img key={x.courseId} src={x.trainer!.photoUrl!} alt="" loading="lazy" className="h-8 w-8 rounded-full object-cover object-[50%_25%] ring-2 ring-paper" />)}
+                            </span>
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-bold leading-6">{sec.domain}</span>
+                            <span className="block text-read text-muted-foreground">{grantCountAr(sec.items.length)}</span>
                           </span>
+                          {mineHere > 0 && <Chip tone="accent">اخترت {mineHere}</Chip>}
+                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
                         </summary>
                         <div className="mt-3 space-y-3">{sec.items.map((x) => row(x, true))}</div>
-                      </Inset>
+                      </details>
                     );
                   })}
                 </div>
-              </>
+              </Card>
             )}
             {picked.length >= max && <p className="mt-2 text-read text-muted-foreground">وصلت الحد: {max} دورات. احذف دورة لتضيف غيرها.</p>}
           </>
@@ -452,6 +530,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         <ResumeCheckout ready={resumed !== null && seeded && chosen.length > 0} onResume={() => (session ? setBuyOpen(true) : setAuthOpen(true))} />
         {buyOpen && (
           <BuyPanel
+            /* ويُعاد بنيانُه حين يصل الكودُ بعد فتحه — فيُسعَّر بمنحته لا بدونها */
+            key={stored.code ?? "no-code"}
             title={BUY_TITLE_AR}
             email={session?.email ?? stored.email}
             kind="courses"
@@ -606,7 +686,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 }
 
 function Shell({
-  children, title = MEMBER_GRANT_NAME_AR, path = "/grant", description = "منحة حصرية لمستخدمي وجيز: دورات مباشرة على Zoom بخصم كبير، والمقاعد محدودة.",
+  children, title = MEMBER_GRANT_NAME_AR, path = "/grant", description = "منحة حصرية لقراء وجيز: دورات مباشرة على Zoom بخصم كبير، والمقاعد محدودة.",
 }: { children: React.ReactNode; title?: string; path?: string; description?: string }) {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
