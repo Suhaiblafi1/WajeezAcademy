@@ -41,7 +41,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, CalendarDays, ChevronDown, CreditCard, Info, Loader2, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronDown, CreditCard, Info, Loader2, ReceiptText, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
 import Modal from "@/components/Modal";
 import { couponFieldCls } from "@/components/FormKit";
 import RegistrationClosedNotice from "@/components/RegistrationClosedNotice";
@@ -299,6 +299,9 @@ export default function BuyPanel({
     return [...mine.filter((m) => !lines.some((l) => l.cohortId === m.cohortId)), ...lines];
   };
   const nothingLeft = !!quote && payableIds.length === 0;
+  /* وما بقي منه طلبٌ لم يكتمل دفعُه ليس «لك بالفعل»: من عاد من صفحة الدفع دون أن يدفع وجد «كلّ ما في هذا الطلب لك» وزرَّ
+     «تعلّمي»، وتحت كلّ دورةٍ «أكمل دفعه من الفواتير» (مراجعةُ رحلة المنحة، ٢٧ أكتوبر ٢٠٢٦). فيُقال ما بقي وبابُه */
+  const unpaidLeft = nothingLeft && !!quote?.excluded.some((x) => x.reason === "order_pending");
 
   const usd = quote?.currency === "USD";
   const shownTotal = quote
@@ -587,7 +590,7 @@ export default function BuyPanel({
                 من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}
             {/* ═══ وزرٌّ إلى «تعلّمي» لا اسمُها وحدَه (٢٦ أكتوبر ٢٠٢٦) ═══
                 «لماذا لا يوجد هنا زرّ يأخذه إلى تعلّمي مباشرة؟ بدلا من أن يسأل أين تعلّمي وما هي» (صاحب المنصّة). */}
-            {nothingLeft && (
+            {nothingLeft && (!unpaidLeft ? (
               <Card tone="accent" className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <p className="min-w-0 flex-1 text-read leading-6 text-teal-light-ink">
                   كلّ ما في هذا الطلب لك بالفعل — لا شيء يدفع ثمنه مرّة أخرى.
@@ -596,7 +599,16 @@ export default function BuyPanel({
                   افتح «تعلّمي»
                 </Button>
               </Card>
-            )}
+            ) : (
+              <Card tone="accent" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <p className="min-w-0 flex-1 text-read leading-6 text-teal-light-ink">
+                  لك طلب بهذه الدورات لم يكتمل دفعه. أكمله من «فواتيري».
+                </p>
+                <Button as={Link} to="/student/billing" tone="confirm" size="sm" icon={ReceiptText} onClick={onClose}>
+                  افتح «فواتيري»
+                </Button>
+              </Card>
+            ))}
 
             {/* ─── الحساب: المبلغُ ظاهرٌ، وتفصيلُه مطويٌّ (١٢ سبتمبر ٢٠٢٦) ───
 
