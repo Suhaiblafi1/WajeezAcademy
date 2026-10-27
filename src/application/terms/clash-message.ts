@@ -43,8 +43,10 @@ export function clashMailAr(m: ClashMessageInput) {
 /* ═══ وما يصل المتعلّمين حين يقبل مدرّبُهم الجدول — رسالةٌ واحدة (٢٤ أكتوبر ٢٠٢٦) ═══
    كان لكلّ لقاءٍ يُنقل جرسٌ وبريد. فصارت رسالةً تقول اليومَ والساعةَ الجديدين وأوّلَ لقاءٍ بهما، وأنّ رابطَ الانضمام
    كما هو. وما رجع منها إلى مراجعة الإدارة يُقال — فلا ينتظر أحدٌ موعدا لم يُعتمد بعد. */
-export function scheduleMovedBodyAr(input: { weekday: number; clock: string; firstAtAr: string | null; pending: number }): string {
-  const when = `${WEEKDAYS_AR[input.weekday] ?? ''} ${input.clock}`.trim()
+export function scheduleMovedBodyAr(input: { weekday: number; clock: string; days?: readonly number[]; firstAtAr: string | null; pending: number }): string {
+  /* وشعبةٌ تلتقي أكثرَ من مرّةٍ في الأسبوع تُذكر أيّامُها كلُّها — لا أوّلُها وحدَه (٢٧ أكتوبر ٢٠٢٦) */
+  const days = (input.days?.length ? input.days : [input.weekday]).map((d) => WEEKDAYS_AR[d] ?? '')
+  const when = `${days.length === 1 ? days[0] : `${days.slice(0, -1).join('، ')} و${days[days.length - 1]}`} ${input.clock}`.trim()
   const first = input.firstAtAr ? ` وأول لقاء بموعده الجديد ${input.firstAtAr}.` : '.'
   const pending = input.pending === 0 ? ''
     : input.pending === 1 ? ' ولقاء واحد منها يراجع عند الإدارة، ويصلك موعده حين يعتمد.'

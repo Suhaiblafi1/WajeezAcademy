@@ -78,8 +78,9 @@ export function linkWhyAr(a: ClashCourse, b: ClashCourse): string | null {
 
 export interface ClashInterval { startsAt: number; endsAt: number }
 
-/** يومٌ وساعةٌ أسبوعيّان — `weekday` بـ`getUTCDay` (٠ الأحد) */
-export interface WeeklySlot { weekday: number; clock: string }
+/** يومٌ وساعةٌ أسبوعيّان — `weekday` بـ`getUTCDay` (٠ الأحد).
+    و`days` لشعبةٍ تلتقي أكثرَ من مرّةٍ في الأسبوع: أيّامُها نفسُها، والساعةُ وحدَها تتغيّر (٢٧ أكتوبر ٢٠٢٦) */
+export interface WeeklySlot { weekday: number; clock: string; days?: readonly number[] }
 
 /** موعدٌ رفضه المدرّب: يومُه كلُّه، أو ساعتُه في كلّ يوم، أو هذا الموعدُ وحدَه */
 export interface RejectedSlot extends WeeklySlot { scope: 'day' | 'hour' | 'slot' }
@@ -200,6 +201,77 @@ export function candidateSlots(from: WeeklySlot, minutes: number, rejected: read
   return out.sort((x, y) => moveCost(from, x) - moveCost(from, y) || x.weekday - y.weekday || x.clock.localeCompare(y.clock))
 }
 
+/* ═══ وما يلتقي أكثرَ من مرّةٍ في الأسبوع: أيّامُه نفسُها بساعةٍ أخرى (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   سؤالُ صاحب المنصّة: «لماذا ثلاثٌ فقط وهي ثلاثون تعارضا؟». كانت الشعبةُ التي تلتقي يومين أو ثلاثةً في الأسبوع تعلق
+   كلُّها («لا موعدَ أسبوعيٌّ واحدٌ يحملها») — وأكثرُ شعب الفصل كذلك، فلا ينحلّ ما بين اثنتين منها. فاختار («a»):
+   **تبقى أيّامُها وتتغيّر الساعةُ وحدَها** — أخفُّ ما يقع على المدرّب وطلبته. */
+
+/** أيّامُ لقاءاتها في الأسبوع بتوقيت عمّان — مرتّبةً من الأحد */
+export function weekdaysOf(sessions: readonly ClashInterval[]): number[] {
+  return [...new Set(sessions.map((s) => new Date(`${zonedDay(new Date(s.startsAt))}T12:00:00Z`).getUTCDay()))].sort((a, b) => a - b)
+}
+
+/** الساعاتُ المرشَّحةُ في أيّامها نفسِها بترتيب قربها — ما يصلح في كلّ يومٍ منها، وما لم يرفضه مدرّبُها.
+    ومن رفض أيّامَها («هذا اليوم لا يناسبني») لا ساعةَ تحلّه هنا: الأيّامُ لا تتغيّر */
+export function hourSlots(from: WeeklySlot, days: readonly number[], minutes: number, rejected: readonly RejectedSlot[] = []): WeeklySlot[] {
+  if (rejected.some((r) => r.scope === 'day' && (r.days ?? [r.weekday]).some((d) => days.includes(d)))) return []
+  const out: WeeklySlot[] = []
+  for (let m = WEEKEND_EARLIEST; m <= 22 * 60; m += 30) {
+    const clock = clockOf(m)
+    if (!days.every((d) => fitsTime(d, clock, minutes))) continue
+    if (days.includes(FRIDAY) && m < FRIDAY_PRAYER.to && m + minutes > FRIDAY_PRAYER.from) continue
+    if (rejected.some((r) => r.clock === clock)) continue
+    out.push({ weekday: from.weekday, clock, days })
+  }
+  const shift = (s: WeeklySlot) => Math.abs(minutesOf(s.clock) - minutesOf(from.clock))
+  return out.sort((x, y) => shift(x) - shift(y) || x.clock.localeCompare(y.clock))
+}
+
+/* ═══ من ينتقل: أقلُّ عددٍ يحلّ الكلّ، وموزَّعٌ على المدرّبين (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «إن نقلتَ واحدةً حلّت غيرَها، فاحسب جيّدا أوّلا وانقل واحدة.. ولا تطلب من مدرّبٍ أن ينقل
+   شعبَه كلَّها — تغييرٌ من مدرّبٍ وآخرُ من غيره». فقبل أيّ بناء يُحسب من ينتقل على شبكة التعارضات:
+
+   ① **ما يتعارض مع ثابتٍ ينتقل** — لا حلَّ غيرُه، فتعارضُه يبقى قائما حتّى يُختار.
+   ② و**أكثرُها تعارضا** أوّلا: نقلةٌ واحدةٌ تحلّ ثلاثا خيرٌ من ثلاث. فإن تساوت: ما لا طلبةَ فيه، ثمّ **مدرّبٌ لم
+      يُطلب منه شيءٌ بعد**، ثمّ ما يلتقي مرّةً في الأسبوع (يتغيّر فيه أقلّ)، ثمّ أقلُّها طلبة.
+   ③ تُزال تعارضاتُه ويُعاد الحساب — حتّى لا يبقى تعارضٌ إلّا بين ثابتين.
+   ④ **ولا نقلةَ زائدة**: من اختير ثمّ لم يبق له حين يُوضع تعارضٌ — لأنّ من كان يتعارض معه انتقل — يبقى على موعده
+      (`planClashFree`: لا يُبنى جدولٌ لما لا يتعارض). */
+function chooseMovers(cohorts: readonly ClashCohort[], pairs: readonly ClashPair[], pinned: (c: ClashCohort) => boolean): string[] {
+  const byId = new Map(cohorts.map((c) => [c.cohortId, c]))
+  /** تعارضاتُ كلّ شعبةٍ التي لم تُحلّ بعد */
+  const live = new Map<string, Set<string>>()
+  const link = (a: string, b: string) => {
+    if (!live.has(a)) live.set(a, new Set())
+    live.get(a)!.add(b)
+  }
+  for (const p of pairs) { link(p.a, p.b); link(p.b, p.a) }
+  const load = new Map<string, number>()
+  const loadOf = (c: ClashCohort) => Math.max(0, ...c.trainerIds.map((t) => load.get(t) ?? 0))
+  const chosen: string[] = []
+  for (;;) {
+    const pool = [...live.keys()].filter((id) => live.get(id)!.size > 0 && !pinned(byId.get(id)!)).map((id) => byId.get(id)!)
+    if (pool.length === 0) break
+    const key = (c: ClashCohort) => [
+      -live.get(c.cohortId)!.size, Number(c.learners > 0), loadOf(c), Number(twiceWeekly(c.sessions)), c.learners,
+      c.sessions[0]?.startsAt ?? 0,
+    ]
+    const best = pool.sort((x, y) => {
+      const kx = key(x)
+      const ky = key(y)
+      const i = kx.findIndex((v, j) => v !== ky[j])
+      return i < 0 ? x.cohortId.localeCompare(y.cohortId) : kx[i]! - ky[i]!
+    })[0]!
+    chosen.push(best.cohortId)
+    for (const t of best.trainerIds) load.set(t, (load.get(t) ?? 0) + 1)
+    for (const n of live.get(best.cohortId)!) live.get(n)!.delete(best.cohortId)
+    live.get(best.cohortId)!.clear()
+  }
+  return chosen
+}
+
 /* ─────────── الحلّ ─────────── */
 
 /** لقاءان بينهما أقلُّ من ستّة أيّام — أي أكثرُ من لقاءٍ في الأسبوع */
@@ -240,24 +312,16 @@ export function planClashFree<T>(input: {
 }): ClashPlan<T> {
   const { cohorts, courses, build } = input
   const before = findClashes(cohorts, courses)
-  const degree = new Map<string, number>()
-  for (const p of before) {
-    degree.set(p.a, (degree.get(p.a) ?? 0) + 1)
-    degree.set(p.b, (degree.get(p.b) ?? 0) + 1)
-  }
   const pinned = (c: ClashCohort) => c.fixedAr !== null || Boolean(c.proposed)
-  /* ═══ وما لا يُنقل يوضع أوّلا — فيتحرّك غيرُه حوله (٢٤ أكتوبر ٢٠٢٦) ═══
-     سؤالُ صاحب المنصّة: «لماذا لم تحلّ المتعارضين؟» — ١٨ تعارضا ولا شعبةَ تُنقل. كانت الشعبةُ التي تلتقي أكثرَ من
-     مرّةٍ في الأسبوع تأتي في ترتيبها، فتجد قرينتَها قد ثبتت قبلها، فتعلق هي ولا تتحرّك قرينتُها وهي تقبل النقل.
-     فما لا يُنقل — ثابتٌ أو لقاءاتُه أكثرُ من مرّةٍ في الأسبوع — يُوضع قبل غيره */
-  const immovable = (c: ClashCohort) => pinned(c) || twiceWeekly(c.proposed ?? c.sessions)
-  const order = [...cohorts].sort((x, y) =>
-    Number(pinned(y)) - Number(pinned(x))
-    || Number(immovable(y)) - Number(immovable(x))
-    || y.learners - x.learners
-    || (degree.get(x.cohortId) ?? 0) - (degree.get(y.cohortId) ?? 0)
-    || (x.sessions[0]?.startsAt ?? 0) - (y.sessions[0]?.startsAt ?? 0)
-    || x.cohortId.localeCompare(y.cohortId))
+  /* من ينتقل يُحسب أوّلا على الشبكة كما ستكون — والشعبةُ التي عليها اقتراحٌ قائمٌ توضع على ما يقترحه */
+  const effective = cohorts.map((c) => (c.proposed ? { ...c, sessions: c.proposed } : c))
+  const movers = chooseMovers(effective, findClashes(effective, courses), pinned)
+  const moving = new Set(movers)
+  /* فيوضع الباقون على مواعيدهم أوّلا — الثابتُ قبل غيره — ثمّ ينتقل من اختير حولهم بترتيب اختياره */
+  const byStart = (x: ClashCohort, y: ClashCohort) =>
+    (x.sessions[0]?.startsAt ?? 0) - (y.sessions[0]?.startsAt ?? 0) || x.cohortId.localeCompare(y.cohortId)
+  const stays = cohorts.filter((c) => !moving.has(c.cohortId)).sort((x, y) => Number(pinned(y)) - Number(pinned(x)) || byStart(x, y))
+  const order = [...stays, ...movers.map((id) => cohorts.find((c) => c.cohortId === id)!)]
 
   const placed = new Map<string, readonly ClashInterval[]>()
   const byId = new Map(cohorts.map((c) => [c.cohortId, c]))
@@ -275,7 +339,8 @@ export function planClashFree<T>(input: {
   const rows: ClashRow<T>[] = []
   for (const c of order) {
     const now = c.proposed ?? c.sessions
-    const slot = mainSlot(now)
+    const main = mainSlot(now)
+    const slot = main && twiceWeekly(now) ? { ...main, days: weekdaysOf(now) } : main
     const clashes = clashesOf(c, now)
     if (clashes.length === 0 || pinned(c)) {
       placed.set(c.cohortId, now)
@@ -284,22 +349,18 @@ export function planClashFree<T>(input: {
         : { cohortId: c.cohortId, action: 'stuck', slot, clashes, whyAr: c.fixedAr ?? 'عليها اقتراح موعد لم يقرر فيه مدرّبها' })
       continue
     }
-    /* ═══ وما يلتقي أكثرَ من مرّةٍ في الأسبوع لا يُنقل إلى يومٍ واحد (٢٤ أكتوبر ٢٠٢٦) ═══
-       الجدولُ المقترحُ يومٌ وساعةٌ كلَّ أسبوع، فكان يضغط لقاءين أسبوعيّين إلى لقاءٍ ويؤخّر آخرَها. فيُقال سببُه
-       ويُرتَّب بيد مدرّبه */
-    if (twiceWeekly(now)) {
-      placed.set(c.cohortId, now)
-      rows.push({ cohortId: c.cohortId, action: 'stuck', slot, clashes, whyAr: 'لقاءاتها أكثر من مرة في الأسبوع — لا موعد أسبوعي واحد يحملها' })
-      continue
-    }
+    /* وما يلتقي أكثرَ من مرّةٍ في الأسبوع لا يُضغط إلى يومٍ واحد: أيّامُه نفسُها بساعةٍ أخرى (`hourSlots`) */
     const longest = Math.max(...now.map((s) => Math.round((s.endsAt - s.startsAt) / 60_000)))
     const why = clashWhyAr(clashes.map((x) => ({ courseTitleAr: titleOf(x.cohortId), whyAr: x.whyAr })))
     let chosen: { to: WeeklySlot; sessions: readonly ClashInterval[]; payload: T } | null = null
     let lastFail: string | null = null
     /* وإن صلح موعدٌ وتعارض لم يُقل سببُ آخرِ ما لم يصلح — فذاك أبعدُ المواعيد لا سببُ العلوق */
     let built = false
-    for (const to of slot ? candidateSlots(slot, longest, c.rejected ?? []) : []) {
-      if (slot && to.weekday === slot.weekday && to.clock === slot.clock) continue
+    const candidates = !slot ? []
+      : slot.days ? hourSlots(slot, slot.days, longest, c.rejected ?? [])
+      : candidateSlots(slot, longest, c.rejected ?? [])
+    for (const to of candidates) {
+      if (slot && to.clock === slot.clock && (slot.days || to.weekday === slot.weekday)) continue
       const r = build(c.cohortId, to, why)
       if (!r.ok) { lastFail = r.reasonAr; continue }
       built = true
@@ -311,7 +372,10 @@ export function planClashFree<T>(input: {
       placed.set(c.cohortId, now)
       rows.push({
         cohortId: c.cohortId, action: 'stuck', slot, clashes,
-        whyAr: lastFail && !built ? `لا موعد بلا تعارض يصلح لها — ${lastFail}` : 'لا موعد بلا تعارض يصلح لها',
+        whyAr: lastFail && !built ? `لا موعد بلا تعارض يصلح لها — ${lastFail}`
+          : slot?.days && candidates.length === 0 && (c.rejected ?? []).some((r) => r.scope === 'day') ? 'رفض مدربها أيامها، والنقل هنا يغير الساعة وحدها'
+          : slot?.days ? 'لا ساعة بلا تعارض في أيامها نفسها'
+          : 'لا موعد بلا تعارض يصلح لها',
       })
       continue
     }
@@ -325,7 +389,12 @@ export function planClashFree<T>(input: {
 }
 
 /** «الثلاثاء 19:00» */
-export const slotAr = (s: WeeklySlot | null): string => (s ? `${WEEKDAY_AR[s.weekday]} ${s.clock}` : '—')
+export const slotAr = (s: WeeklySlot | null): string => {
+  if (!s) return '—'
+  const days = (s.days?.length ? s.days : [s.weekday]).map((d) => WEEKDAY_AR[d] ?? '')
+  const and = days.length === 1 ? days[0]! : `${days.slice(0, -1).join('، ')} و${days[days.length - 1]}`
+  return `${and} ${s.clock}`
+}
 
 /* ─────────── سببُ الرفض — يختاره المدرّبُ بنقرة، فنعرف ما لا نقترحه ثانية ─────────── */
 

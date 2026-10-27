@@ -50,6 +50,8 @@ export interface ScheduleEdit {
   /** اليومُ (`getUTCDay`: ٠ الأحد) والساعةُ الثابتان */
   weekday: number
   clock: string
+  /** أيّامُ شعبةٍ تلتقي أكثرَ من مرّةٍ في الأسبوع — تبقى، والساعةُ وحدَها تتغيّر (`proposeHourShift`، ٢٧ أكتوبر ٢٠٢٦) */
+  days?: number[]
   moves: ScheduleMove[]
   tasks: ScheduleTaskMove[]
   /** وحدودُ الخطّة التي يحتاجها الجدول (١٣ أكتوبر ٢٠٢٦): آخرُ يومٍ في مدّة الشعبة، ومواعيدُ المحاور التي ينقلها —
@@ -83,6 +85,18 @@ export function fitsTime(weekday: number, clock: string, mins: number): boolean 
 
 const gapsOf = (items: readonly ScoreItem[], key: string) => items.find((i) => i.key === key)?.gaps.length ?? 0
 const labelOf = (items: readonly ScoreItem[], key: string) => items.find((i) => i.key === key)?.labelAr ?? key
+
+/** ما يُفسده جدولٌ مقترح — معيارُ توقيتٍ ساء، أو مُلزِمٌ سقط لم يكن ساقطا — أو `null` */
+function spoiledAr(before: readonly ScoreItem[], after: readonly ScoreItem[]): string | null {
+  for (const key of TIMING_KEYS) {
+    if (gapsOf(after, key) > gapsOf(before, key)) {
+      return `جدول ثابت هنا يسيء «${labelOf(after, key)}» — فلا يقترح. رتّبه بيدك أو اكتب ملاحظة`
+    }
+  }
+  const wasBlocked = new Set(before.filter((i) => i.status === 'blocked').map((i) => i.key))
+  const newlyBlocked = after.find((i) => i.status === 'blocked' && !wasBlocked.has(i.key))
+  return newlyBlocked ? `جدول ثابت هنا يسقط «${newlyBlocked.labelAr}» — فلا يقترح` : null
+}
 
 /* ─────────── الجدول ─────────── */
 
@@ -209,14 +223,8 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
       return m ? { ...t, dueAt: m.dueAt } : t
     }),
   )
-  for (const key of TIMING_KEYS) {
-    if (gapsOf(after, key) > gapsOf(before, key)) {
-      return { ok: false, reasonAr: `جدول ثابت هنا يسيء «${labelOf(after, key)}» — فلا يقترح. رتّبه بيدك أو اكتب ملاحظة` }
-    }
-  }
-  const wasBlocked = new Set(before.filter((i) => i.status === 'blocked').map((i) => i.key))
-  const newlyBlocked = after.find((i) => i.status === 'blocked' && !wasBlocked.has(i.key))
-  if (newlyBlocked) return { ok: false, reasonAr: `جدول ثابت هنا يسقط «${newlyBlocked.labelAr}» — فلا يقترح` }
+  const spoils = spoiledAr(before, after)
+  if (spoils) return { ok: false, reasonAr: spoils }
   if (!input.target && gapsOf(after, 'rhythm') + gapsOf(after, 'session_times') >= gapsOf(before, 'rhythm') + gapsOf(before, 'session_times')) {
     return { ok: false, reasonAr: 'لا جدول ثابت يحسّن الإيقاع داخل مواعيد المحاور — رتّبها أوّلا' }
   }
@@ -233,5 +241,54 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
     ok: true,
     edit: { kind: 'schedule', weekday: target.weekday, clock: target.clock, moves, tasks: taskMoves },
     reasonAr: `${nowAr} — نقترح ${WEEKDAY_AR[target.weekday]} ${target.clock} كلّ أسبوع: ينتقل ${movedAr} من ${live.length}${tasksAr}، داخل مواعيد محاورها وبلا عطل.`,
+  }
+}
+
+/* ═══ أيّامُها نفسُها بساعةٍ أخرى — لشعبةٍ تلتقي أكثرَ من مرّةٍ في الأسبوع (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة («a»): حين تتعارض شعبةٌ كهذه لا تُضغط إلى يومٍ واحد ولا تُنقل أيّامُها — **كلُّ لقاءٍ آتٍ يبقى
+   في يومه، وتصير ساعتُه الساعةَ المقترحة**. فلا يتغيّر تاريخٌ، ولا تتحرّك مهمّةٌ ولا مشروع. ويبقى «لا يُقترح ما يُفسد»
+   كما هو: تُقاس البطاقةُ قبله وبعده. */
+export function proposeHourShift(input: Omit<ScheduleInput, 'target'> & { clock: string }): ScheduleProposal {
+  const now = (input.now ?? new Date()).getTime()
+  const live = input.sessions
+    .filter((s) => !s.placeholder && s.status !== 'cancelled' && s.startsAt)
+    .map((s) => {
+      const at = new Date(s.startsAt).getTime()
+      const end = s.endsAt ? new Date(s.endsAt).getTime() : null
+      return { id: s.id, at, mins: end && end > at ? Math.round((end - at) / 60_000) : MIN_SESSION_MINUTES, day: zonedDay(new Date(at)) }
+    })
+    .sort((a, b) => a.at - b.at)
+  const future = live.filter((s) => s.at > now)
+  if (future.length === 0) return { ok: false, reasonAr: 'لا لقاء آت لينقل' }
+  const days = [...new Set(future.map((s) => weekdayOf(s.day)))].sort((a, b) => a - b)
+  const longest = Math.max(...future.map((s) => s.mins))
+  const bad = days.find((d) => !fitsTime(d, input.clock, longest))
+  if (bad !== undefined) return { ok: false, reasonAr: `${WEEKDAY_AR[bad]} ${input.clock} لا يصلح للقاء بطول ${longest} دقيقة` }
+
+  const moves: ScheduleMove[] = []
+  for (const s of future) {
+    const at = zonedAt(s.day, input.clock).getTime()
+    if (at <= now) return { ok: false, reasonAr: `لقاء ${s.day} يصير في وقت مضى` }
+    if (at !== s.at) moves.push({ sessionId: s.id, startsAt: new Date(at).toISOString(), endsAt: new Date(at + s.mins * 60_000).toISOString() })
+  }
+  if (moves.length === 0) return { ok: false, reasonAr: 'لقاءاته على هذه الساعة — لا جدول يقترح' }
+
+  const score = (sessions: ScheduleInput['sessions']) =>
+    planScorecard({ period: input.period, content: input.content, sessions, assessments: input.tasks, now: input.now })
+  const after = score(input.sessions.map((s) => {
+    const m = moves.find((x) => x.sessionId === s.id)
+    return m ? { ...s, startsAt: m.startsAt, endsAt: m.endsAt } : s
+  }))
+  const spoils = spoiledAr(score(input.sessions), after)
+  if (spoils) return { ok: false, reasonAr: spoils }
+
+  const daysAr = days.map((d) => WEEKDAY_AR[d]).join(' و')
+  const movedAr = moves.length === 1 ? 'لقاء واحد' : moves.length === 2 ? 'لقاءان' : moves.length <= 10 ? `${moves.length} لقاءات` : `${moves.length} لقاء`
+  const nowAr = input.whyAr ?? 'من لقاءاتك اليوم ما يقع في وقت غير مناسب'
+  return {
+    ok: true,
+    edit: { kind: 'schedule', weekday: days[0]!, clock: input.clock, days, moves, tasks: [] },
+    reasonAr: `${nowAr} — نقترح الساعة ${input.clock} في أيامها نفسها (${daysAr}): ينتقل ${movedAr} من ${live.length}، ولا يتغير يوم ولا موعد مهمة.`,
   }
 }

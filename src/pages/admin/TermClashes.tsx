@@ -50,10 +50,12 @@ export default function TermClashes() {
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState(false);
+  /* ═══ واحدةً واحدة (٢٧ أكتوبر ٢٠٢٦) ═══ قرارُ صاحب المنصّة: «أرني لمن سيُرسَل البريد، وأنا أرسل واحدا واحدا».
+     فلكلّ نقلٍ زرُّه باسم مدرّبه وبريده، ويُؤكَّد في مكانه — لا زرَّ يرسل الكلّ */
+  const [confirm, setConfirm] = useState<string | null>(null);
   /* ═══ ومعاينةُ ما يصل كلَّ مدرّب، وإبقاءُ من شاء خارج الإرسال (٢٤ أكتوبر ٢٠٢٦) ═══
      صاحبُ المنصّة: «هل أرى الإيميلاتِ التي ستصل كلَّ مدرّب؟ أم الإرسالُ يكون مباشرة؟» — واختار المعاينة.
-     فالبريدُ بنصّه كما يُرسَل تحت كلّ صفّ، ومن رفع علامتَه بقيت شعبتُه على موعدها، ويُعاد الحسابُ بها
+     فالبريدُ بنصّه كما يُرسَل تحت كلّ صفّ، ومن «أبقاها على موعدها» بقيت شعبتُه عليه، ويُعاد الحسابُ بها
      ثابتةً — فما يُرى هو ما يُرسَل. */
   const [hold, setHold] = useState<string[]>([]);
   const [openMail, setOpenMail] = useState<string | null>(null);
@@ -67,14 +69,14 @@ export default function TermClashes() {
   }, [id, hold]);
   useEffect(() => { void load(); }, [load]);
 
-  const send = async () => {
+  const send = async (row: Row) => {
     if (busy) return;
     setBusy(true);
     try {
-      const r = await apiPost<{ sent: number; skipped: { titleAr: string; whyAr: string }[]; view: View }>(`/api/admin/terms/${id}/clashes/send`, { hold });
+      const r = await apiPost<{ sent: number; skipped: { titleAr: string; whyAr: string }[]; view: View }>(`/api/admin/terms/${id}/clashes/send`, { cohortId: row.cohortId, hold });
       setView(r.view);
-      setConfirm(false);
-      toast(r.sent > 0 ? `أرسلت ${n(r.sent, "اقتراحا واحدا", "اقتراحين", "اقتراحات", "اقتراحا")} إلى المدربين` : "لم يرسل شيء");
+      setConfirm(null);
+      if (r.sent > 0) toast(`أرسلت إلى ${row.trainerAr}`);
       for (const s of r.skipped) toastError(`${s.titleAr}: ${s.whyAr}`);
     } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإرسال"); }
     finally { setBusy(false); }
@@ -85,7 +87,7 @@ export default function TermClashes() {
   /* وما أبقيتَه خارج الإرسال — في قائمته، يُعاد بنقرة. وقد ينتقل بدلَه ما كان يتعارض معه */
   const heldRows = view?.rows.filter((r) => r.held) ?? [];
   const toggleHold = (cohortId: string, on: boolean) => {
-    setConfirm(false);
+    setConfirm(null);
     setHold(on ? [...hold, cohortId] : hold.filter((x) => x !== cohortId));
   };
   const answered = view?.rows.filter((r) => r.sent && r.action !== "move") ?? [];
@@ -110,19 +112,7 @@ export default function TermClashes() {
               {" · "}{moves.length === 0 ? "لا شعبة تحتاج نقلا" : `${n(moves.length, "شعبة واحدة تنتقل", "شعبتان تنتقلان", "شعب تنتقل", "شعبة تنتقل")}`}
             </p>
             {moves.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                {confirm ? (
-                  <>
-                    <Button tone="confirm" icon={Send} disabled={busy} onClick={() => void send()}>
-                      أكد الإرسال — {n(moves.length, "مدرب واحد", "مدربان", "مدربين", "مدربا")}
-                    </Button>
-                    <Button tone="ghost" disabled={busy} onClick={() => setConfirm(false)}>تراجع</Button>
-                  </>
-                ) : (
-                  <Button tone="secondary" icon={Send} disabled={busy} onClick={() => setConfirm(true)}>أرسل المواعيد المقترحة إلى المدربين</Button>
-                )}
-                <span className="text-read text-muted-foreground">يصل كل مدرب بريد وإشعار، وبطاقة يقبلها أو يرفضها بسبب.</span>
-              </div>
+              <p className="mt-1 text-read text-muted-foreground">ترسل كل اقتراح وحده من «ما نقترحه». يصل مدربه بريد وإشعار، وبطاقة يقبلها أو يرفضها بسبب.</p>
             )}
           </Panel>
 
@@ -146,16 +136,28 @@ export default function TermClashes() {
               <ul className="mt-2 space-y-3">
                 {moves.map((r) => (
                   <li key={r.cohortId} className="border-b border-border pb-3 last:border-0 last:pb-0">
-                    <label className="flex cursor-pointer items-start gap-2">
-                      <input type="checkbox" checked disabled={busy} onChange={() => toggleHold(r.cohortId, true)}
-                        aria-label={`أرسل إلى مدرب «${r.title}»`} className="mt-1.5 h-4 w-4 accent-[var(--teal)]" />
-                      <span className="text-read font-bold text-foreground">{r.title} <span className="font-normal text-muted-foreground">· {r.trainerAr} · {r.learners} طالب</span></span>
-                    </label>
+                    <p className="text-read font-bold text-foreground">{r.title} <span className="font-normal text-muted-foreground">· {r.trainerAr} · {r.learners} طالب</span></p>
                     <p className="mt-1 text-read text-foreground">{r.fromAr} ← <span className="font-black text-teal-light-ink">{r.toAr}</span> كل أسبوع</p>
+                    <p className="mt-1 text-read text-muted-foreground">
+                      يصل إلى: <span className="font-bold text-foreground">{r.trainerAr}</span> · <span dir="ltr">{r.mail?.to ?? "لا بريد لمدربها"}</span>
+                    </p>
                     {r.whyAr && <p className="mt-1 text-read leading-6 text-muted-foreground">{r.whyAr}</p>}
                     {r.sent?.status === "rejected" && (
                       <p className="mt-1 text-read text-gold-ink">رفض قبله {r.sent.toAr}{r.sent.noteAr ? `: ${r.sent.noteAr}` : ""}</p>
                     )}
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {confirm === r.cohortId ? (
+                        <>
+                          <Button tone="confirm" size="sm" icon={Send} disabled={busy} onClick={() => void send(r)}>أكد الإرسال إلى {r.trainerAr}</Button>
+                          <Button tone="ghost" size="sm" disabled={busy} onClick={() => setConfirm(null)}>تراجع</Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button tone="secondary" size="sm" icon={Send} disabled={busy} onClick={() => setConfirm(r.cohortId)}>أرسل إلى {r.trainerAr}</Button>
+                          <Button tone="ghost" size="sm" disabled={busy} onClick={() => toggleHold(r.cohortId, true)}>أبقها على موعدها</Button>
+                        </>
+                      )}
+                    </div>
                     {r.mail && (
                       <div className="mt-2">
                         <Button tone="ghost" size="sm" icon={Mail} aria-expanded={openMail === r.cohortId}

@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { planScorecard, type ScorecardSession, type ScorecardTask } from '@/application/trainer/plan-scorecard'
-import { proposeSchedule, type ScheduleInput } from '@/application/trainer/schedule-proposal'
+import { proposeHourShift, proposeSchedule, type ScheduleInput } from '@/application/trainer/schedule-proposal'
 import { zonedClock, zonedDay } from '@/application/trainer/cohort-period'
 
 const MODS = ['M1', 'M2', 'M3', 'M4']
@@ -235,5 +235,30 @@ describe('④ موعد نختاره نحن', () => {
   it('وموعد لا يصلح للقاء — في ساعات العمل — لا يبنى', () => {
     const r = proposeSchedule({ ...steady(), target: { weekday: 1, clock: '10:00' } })
     expect(r.ok).toBe(false)
+  })
+})
+
+describe('أيّامها نفسها بساعة أخرى — لشعبة تلتقي أكثر من مرّة في الأسبوع (٢٧ أكتوبر ٢٠٢٦)', () => {
+  /* الاثنين والأربعاء ١٩:٠٠ — لقاءان في الأسبوع على أسبوعين */
+  const twice = () => shaped(
+    [['2026-12-07', '2026-12-13'], ['2026-12-07', '2026-12-13'], ['2026-12-14', '2026-12-20'], ['2026-12-14', '2026-12-20']],
+    [['2026-12-07', '19:00'], ['2026-12-09', '19:00'], ['2026-12-14', '19:00'], ['2026-12-16', '19:00']],
+  )
+
+  it('⚠️ كلّ لقاء في يومه والساعة وحدها تتغيّر — ولا مهمّة تتحرّك', () => {
+    const input = twice()
+    const r = proposeHourShift({ ...input, clock: '20:30', whyAr: 'موعدها الآن يتعارض مع «دورة X»' })
+    if (!r.ok) throw new Error(r.reasonAr)
+    const after = applied(input, r.edit)
+    expect(after.sessions.map((s) => zonedDay(s.startsAt))).toEqual(input.sessions.map((s) => zonedDay(s.startsAt)))
+    expect(after.sessions.every((s) => zonedClock(s.startsAt) === '20:30')).toBe(true)
+    expect([r.edit.days, r.edit.clock, r.edit.tasks]).toEqual([[1, 3], '20:30', []])
+    expect(r.reasonAr).toBe('موعدها الآن يتعارض مع «دورة X» — نقترح الساعة 20:30 في أيامها نفسها (الاثنين والأربعاء): ينتقل 4 لقاءات من 4، ولا يتغير يوم ولا موعد مهمة.')
+  })
+
+  it('وساعة لا تصلح في أحد أيامها — في ساعات العمل — لا تبنى', () => {
+    const r = proposeHourShift({ ...twice(), clock: '10:00' })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.reasonAr).toContain('الاثنين 10:00')
   })
 })

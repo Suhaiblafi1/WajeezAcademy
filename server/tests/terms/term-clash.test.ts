@@ -158,7 +158,12 @@ describe('مواعيد الفصل بلا تعارض', () => {
   })
 
   it('⚠️ ٢) الإرسال بطاقة عند مدرّبها معتمدة بإرسالها — وجرس يفتح «المراجعة»', async () => {
-    const r = await call('POST', `/api/admin/terms/${termId}/clashes/send`, 'admin', {})
+    /* واحدةً واحدة (٢٧ أكتوبر ٢٠٢٦): لا إرسالَ بلا شعبةٍ يسمّيها، ولا يصل من لا ينتقل شيء */
+    expect((await call('POST', `/api/admin/terms/${termId}/clashes/send`, 'admin', {})).statusCode, 'أرسل الكلّ بلا تسمية').toBe(422)
+    const stay = await call('POST', `/api/admin/terms/${termId}/clashes/send`, 'admin', { cohortId: y.cohortId })
+    expect((stay.json() as { sent: number }).sent).toBe(0)
+    expect(await prisma.planEditSuggestion.count({ where: { cohortId: { in: [x.cohortId, y.cohortId] } } }), 'أرسل لمن لا ينتقل').toBe(0)
+    const r = await call('POST', `/api/admin/terms/${termId}/clashes/send`, 'admin', { cohortId: x.cohortId })
     expect(r.statusCode, r.body).toBe(200)
     expect((r.json() as { sent: number }).sent).toBe(1)
     const card = await prisma.planEditSuggestion.findFirstOrThrow({ where: { cohortId: x.cohortId } })
@@ -168,7 +173,7 @@ describe('مواعيد الفصل بلا تعارض', () => {
     expect(bell.data).toMatchObject({ cohortId: x.cohortId, step: 'review' })
     expect(await prisma.notification.count({ where: { userId: users.b!.userId, templateKey: 'cohort.schedule.proposed' } }), 'وصل من لا ينتقل').toBe(0)
     /* وإرسالٌ ثانٍ لا يكرّرها — عليها اقتراحٌ لم يقرّر فيه */
-    const again = await call('POST', `/api/admin/terms/${termId}/clashes/send`, 'admin', {})
+    const again = await call('POST', `/api/admin/terms/${termId}/clashes/send`, 'admin', { cohortId: x.cohortId })
     expect((again.json() as { sent: number }).sent).toBe(0)
   })
 
@@ -183,7 +188,7 @@ describe('مواعيد الفصل بلا تعارض', () => {
   })
 
   it('⚠️ ٤) وقبوله يكتب في خطّته المعتمدة — فلا يبقى تعارض', async () => {
-    expect((await call('POST', `/api/admin/terms/${termId}/clashes/send`, 'admin', {})).statusCode).toBe(200)
+    expect((await call('POST', `/api/admin/terms/${termId}/clashes/send`, 'admin', { cohortId: x.cohortId })).statusCode).toBe(200)
     const card = await prisma.planEditSuggestion.findFirstOrThrow({ where: { cohortId: x.cohortId, status: 'pending' } })
     /* وطالبٌ في س — يُخبَر بالجدول كلِّه مرّةً واحدة، لا بكلّ لقاءٍ من الأربعة */
     const learner = await auth.register(`tc-learner-x-${STAMP}@test.local`, PASS, 'طالب س')
