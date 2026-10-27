@@ -60,7 +60,10 @@ describe('وحاجز الإرسال في الخادم يقرأ الملزم با
 
   it('⚠️ والإرسال يمرّر مواعيد المهامّ — وإلّا لم يحكم على موعد المشروع', () => {
     const submit = svc.slice(svc.indexOf('async submit('), svc.indexOf('stages_incomplete'))
-    expect(submit).toMatch(/select: \{ moduleId: true, type: true, dueAt: true \}/)
-    expect(submit).toMatch(/assessmentDues: gateCohort\.assessments\.map\(\(a\) => a\.dueAt\)/)
+    /* ومعها الطلبُ المنتظر — فموعدٌ صحّحه المدرّبُ في طلبٍ يُحاسَب به (`checklistTasks`، ٢٧ أكتوبر ٢٠٢٦) */
+    expect(submit).toMatch(/select: \{ moduleId: true, type: true, dueAt: true, pendingChange: true \}/)
+    expect(submit).toMatch(/\.\.\.checklistTasks\(gateCohort\.assessments\)/)
+    const helper = svc.slice(svc.indexOf('export function checklistTasks('), svc.indexOf('export function buildChecklist('))
+    expect(helper).toMatch(/assessmentDues: tasks\.map\(\(a\) => a\.dueAt\)/)
   })
 })

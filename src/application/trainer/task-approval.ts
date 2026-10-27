@@ -228,6 +228,30 @@ export function planApprovalApplies(review: TaskReview): boolean {
   return review === 'draft' || awaitsDecision(review)
 }
 
+/* ═══ المهامُّ كما تُحاسَب في تجهيز الخطّة (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   بلاغُ صاحب المنصّة: مدرّبةٌ في «المهامّ والمصادر» صفٌّ ناقصٌ لا يتمّ، ولا شيءَ عنده في الإدارة.
+   كانت قائمةُ التجهيز تقرأ المهمّةَ المعتمَدة وحدَها — والمدرّبُ بعد أوّل اعتمادٍ لا يكتب فيها، بل
+   يطلب (`pendingChange`). فمن صحّح موعدَ مشروع التخرّج ليقع داخل شعبته بقي الصفُّ ناقصا بالموعد
+   القديم، ولا يُرسل الخطّةَ لأنّه ناقص — والطلبُ لا يُعتمَد إلّا معها. حلقةٌ لا مخرجَ منها.
+
+   فالقائمةُ تحاسب المهامَّ كما ستكون إن اعتُمدت الخطّة: والاعتمادُ يعتمد معها ما ينتظر
+   (`planApprovalApplies`) — التعديلُ مطبَّقا، وما طُلب حذفُه خارجَها. */
+export function tasksAsProposed<T extends {
+  pendingChange?: unknown; moduleId: string | null; type: string; dueAt: Date | string | null
+}>(rows: readonly T[]): { moduleId: string | null; type: string; dueAt: Date | string | null }[] {
+  return rows.flatMap((r) => {
+    const change = readTaskChange(r.pendingChange)
+    if (change?.kind === 'remove') return []
+    const f = change?.kind === 'edit' ? change.fields : {}
+    return [{
+      moduleId: f.moduleId !== undefined ? f.moduleId : r.moduleId,
+      type: f.type ?? r.type,
+      dueAt: f.dueAt !== undefined ? f.dueAt : r.dueAt,
+    }]
+  })
+}
+
 /* ═══ ما يُقال — للمدرّب في مهمّته، وللمعتمِد في قائمته ═══ */
 
 export const TASK_REVIEW_TRAINER_AR: Partial<Record<TaskReview, string>> = {

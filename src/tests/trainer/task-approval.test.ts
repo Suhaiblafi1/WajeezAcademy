@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   TASK_FIELDS, TASK_FIELD_LABELS, applyTaskPatch, awaitsDecision, changeLines, diffTask, formatTaskValue,
-  nextEditChange, planApprovalApplies, proposedTask, readTaskChange, taskReview, taskValues, toTaskPatch,
+  nextEditChange, planApprovalApplies, proposedTask, readTaskChange, taskReview, taskValues, tasksAsProposed, toTaskPatch,
   type TaskChange, type TaskValueFormat,
 } from '@/application/trainer/task-approval'
 
@@ -142,5 +142,32 @@ describe('ما يقرؤه المعتمد — «العنوان: قديم ← جد
 
   it('ولكلّ حقل اسم عربيّ', () => {
     for (const f of TASK_FIELDS) expect(TASK_FIELD_LABELS[f], f).toMatch(/^[^a-z]+$/)
+  })
+})
+
+describe('المهامّ كما تحاسبها قائمة التجهيز — بطلباتها (٢٧ أكتوبر ٢٠٢٦)', () => {
+  const lateDue = '2027-01-30T20:59:59.999Z'
+  const fixedDue = '2027-01-10T20:59:59.999Z'
+  const project = { moduleId: 'm8', type: 'project', dueAt: lateDue }
+
+  it('⚠️ موعد صحّحه المدرّب في طلب يحاسَب به — لا بالمعتمد القديم', () => {
+    const change: TaskChange = { kind: 'edit', fields: { dueAt: fixedDue }, requestedAt: now.toISOString() }
+    expect(tasksAsProposed([{ ...project, pendingChange: change }])).toEqual([{ moduleId: 'm8', type: 'project', dueAt: fixedDue }])
+  })
+
+  it('وتعديل المرفقات وحدها لا يغيّر ما تحاسبه القائمة', () => {
+    const change: TaskChange = { kind: 'edit', fields: { attachments: [] }, requestedAt: now.toISOString() }
+    expect(tasksAsProposed([{ ...project, pendingChange: change }])).toEqual([{ moduleId: 'm8', type: 'project', dueAt: lateDue }])
+  })
+
+  it('وما طلب حذفه خارجها، والمحو المقصود للمحور يبقى محوا', () => {
+    const remove: TaskChange = { kind: 'remove', requestedAt: now.toISOString() }
+    const unlink: TaskChange = { kind: 'edit', fields: { moduleId: null }, requestedAt: now.toISOString() }
+    expect(tasksAsProposed([{ ...project, pendingChange: remove }])).toEqual([])
+    expect(tasksAsProposed([{ ...project, pendingChange: unlink }])[0].moduleId).toBe(null)
+  })
+
+  it('وبلا طلب: المعتمد كما هو', () => {
+    expect(tasksAsProposed([{ ...project, pendingChange: null }])).toEqual([project])
   })
 })
