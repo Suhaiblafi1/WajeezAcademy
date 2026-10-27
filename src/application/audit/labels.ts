@@ -182,6 +182,9 @@ const PHRASES: Record<string, string> = {
   'influencer.payout': 'تسجيل دفعة لمؤثر من عمولته',
   'advisor.case.grant_followup': 'فتح حالة متابعة لمن عبأ نموذج المنحة ولم يشتر',
   'coupon.grant_reminder': 'تذكير من أخذ كود المنحة ولم يشتر قبل انتهائها',
+  /* طلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦) — القبولُ يفعّل حسابَه بنسبته في خطوةٍ واحدة */
+  'advisor.application.approve': 'قبول طلب انضمام مستشار وتفعيل حسابه',
+  'advisor.application.reject': 'الاعتذار عن طلب انضمام مستشار',
   'advisor.bank.set': 'كتابة المستشار حسابه البنكي أو تبديله',
   'advisor.bank.remove': 'إلغاء المستشار حسابه البنكي',
   'advisor.bank.reveal': 'كشف رقم حساب مستشار لصرف كشف عمولته',
@@ -564,7 +567,7 @@ const WORDS: Record<string, string> = {
   term: 'فصل دراسيّ', accounts: 'حسابات', platform: 'المنصّة',
   content_change_request: 'طلب تغيير محتوى',
   version: 'إصدار', certificate: 'شهادة', trainer: 'مدرّب', trainer_compensation: 'تعويض مدرّب',
-  trainer_payout: 'مستحقّ مدرّب', advisor_payout: 'كشف عمولة مستشار', grant_campaign: 'حملة منحة', influencer: 'مؤثر', lead: 'عميل محتمل', application: 'طلب انضمام', contract: 'عقد', invitation: 'دعوة',
+  trainer_payout: 'مستحقّ مدرّب', advisor_payout: 'كشف عمولة مستشار', advisor_application: 'طلب انضمام مستشار', grant_campaign: 'حملة منحة', influencer: 'مؤثر', lead: 'عميل محتمل', application: 'طلب انضمام', contract: 'عقد', invitation: 'دعوة',
   profile: 'ملفّ', document: 'وثيقة', interview: 'مقابلة', demo: 'حصّة تجريبيّة', review: 'مراجعة',
   change: 'اقتراح تعديل', course_proposal: 'اقتراح دورة',
   trainer_course_decisions: 'ملفّ قرارات دورات المدرّبين', path: 'مسار', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلب تسجيل',

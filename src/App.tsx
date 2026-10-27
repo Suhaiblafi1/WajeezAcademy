@@ -80,6 +80,7 @@ const AdminPendingPlans = lazy(() => import('./pages/admin/PendingPlans'))
 const AdminPlanCurriculum = lazy(() => import('./pages/admin/PlanCurriculumPage'))
 const AdminTrainerAnnouncements = lazy(() => import('./pages/admin/TrainerAnnouncements'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
+const JoinAdvisor = lazy(() => import('./pages/JoinAdvisor'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
 const SharedDossier = lazy(() => import('./pages/SharedDossier'))
@@ -107,6 +108,7 @@ const AdminUsers = lazy(() => import('./pages/admin/Users'))
 const AdminLearners = lazy(() => import('./pages/admin/Learners'))
 const AdminTasks = lazy(() => import('./pages/admin/Tasks'))
 const AdminAdvisors = lazy(() => import("./pages/admin/Advisors"));
+const AdminAdvisorApplications = lazy(() => import("./pages/admin/AdvisorApplications"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AuditLog"));
 const AdminSystemHealth = lazy(() => import("./pages/admin/SystemHealth"));
 const TrainerMyLearners = lazy(() => import('./pages/trainer/MyLearners'))
@@ -222,6 +224,7 @@ export default function App() {
           {/* ملفُّ صاحب المنحة من رسالته إلى المستشار — `pages/GrantRecordLink.tsx` */}
           <Route path="/g/:key" element={<GrantRecordLinkPage />} />
           <Route path="/join-trainer" element={<JoinTrainer />} />
+          <Route path="/join-advisor" element={<JoinAdvisor />} />
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
           {/* رابطُ بريد التأكيد يوثّق العنوان — صفحةٌ عامّة بلا جلسة */}
           <Route path="/join-trainer/verify" element={<JoinTrainerVerify />} />
@@ -404,6 +407,7 @@ export default function App() {
             <Route path="/admin/learners" element={<AdminLearners />} />
             <Route path="/admin/tasks" element={<AdminTasks />} />
             <Route path="/admin/advisors" element={<AdminAdvisors />} />
+            <Route path="/admin/advisor-applications" element={<AdminAdvisorApplications />} />
             <Route path="/admin/advisor-payouts" element={<AdminAdvisorPayouts />} />
             <Route path="/admin/member-grant" element={<AdminMemberGrant />} />
             <Route path="/admin/influencer-grant" element={<AdminMemberGrant variant="influencer" />} />

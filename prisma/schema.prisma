@@ -194,6 +194,7 @@ model SignupSource {
   id           String    @id @default(uuid()) @db.Uuid
   userId       String    @unique @db.Uuid
   /// كيف أُنشئ الحساب: self (سجّل بنفسه) | admin (أضافه مدير) | trainer_application (نموذج التقدّم للتدريب)
+  /// | advisor_application (قُبل طلبُه مستشارا — ٢٧ أكتوبر ٢٠٢٦)
   via          String
   utmSource    String?
   utmMedium    String?
@@ -3947,6 +3948,57 @@ model AdvisorProfile {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// ═══ طلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦، خطة لوحة الإدارة — المرحلة السابعة) ═══
+///
+/// قرارُ صاحب المنصّة («b»): لا اتّفاقيّةَ للمستشار. يُقبَل الطلبُ بنسبة عمولةٍ — تُقترح ٥٪ — فيُفعَّل في خطوةٍ
+/// واحدة: يُنشأ حسابُه بدور «مستشار» (أو يُضاف الدورُ إلى حسابه القائم) ويصله رابطُ تفعيله. والشروطُ قبلها في
+/// النموذج (`termsAcceptedAt`). وما يُسأل عنه وما يُحسب منه في `src/application/advisor/application.ts`.
+model AdvisorApplication {
+  id               String    @id @default(uuid()) @db.Uuid
+  /// `WJ-AD-<سنة>-<أربعة أرقام>` — يصله في بريد الاستلام
+  reference        String    @unique
+  fullName         String
+  /// بحروفٍ صغيرة — به يُعرف الطلبُ القائم وحسابُه
+  email            String
+  phoneCountryCode String?
+  phone            String
+  country          String?
+  /// employed | freelance | student | other — قيمُ النموذج (`ADVISOR_EMPLOYMENT`)
+  employment       String
+  /// none | 1-2 | 3-5 | 6+
+  experienceYears  String
+  /// سطرٌ عن خبرته في الإرشاد أو المبيعات أو التعليم
+  experienceAr     String
+  /// lt5 | 5-10 | 10-20 | 20+
+  hoursPerWeek     String
+  /// من يصل إليهم — قيمُ `ADVISOR_AUDIENCES`
+  audiences        String[]  @default([])
+  /// حساباتُه: `[{ platform, url, followers }]`
+  accounts         Json      @default("[]")
+  /// مجموعاتُه: `[{ kind, name, members }]`
+  communities      Json      @default("[]")
+  /// متابعو حساباته وأعضاءُ مجموعاته — به يُرتَّب الطابور (`reachTotal`)
+  reachTotal       Int       @default(0)
+  promotedBefore   Boolean   @default(false)
+  promotedAr       String?
+  motivationAr     String
+  termsAcceptedAt  DateTime
+  status           String    @default("submitted") // submitted | approved | rejected
+  decidedBy        String?   @db.Uuid
+  decidedAt        DateTime?
+  /// نسبتُه يومَ قُبل — وما بعدها في `AdvisorProfile.commissionPct` وأثرِه
+  commissionPct    Decimal?  @db.Decimal(5, 2)
+  /// سببُ الاعتذار إن كُتب — يصله في رسالته
+  decisionNoteAr   String?
+  /// الحسابُ الذي أُنشئ له أو رُبط به يومَ قُبل
+  userId           String?   @db.Uuid
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
 }
 
 model AdvisorAssignment {

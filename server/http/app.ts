@@ -14,6 +14,7 @@ import { registerAuth } from './auth-plugin'
 import { registerAuthRoutes } from './routes/auth.routes'
 import { registerAdminUserRoutes } from './routes/admin-users.routes'
 import { registerAdminAdvisorRoutes } from './routes/admin-advisors.routes'
+import { registerAdvisorApplicationRoutes } from './routes/advisor-applications.routes'
 import { registerAdminAdvisorPayoutRoutes } from './routes/admin-advisor-payouts.routes'
 import { registerAdminGrantRoutes } from './routes/admin-grant.routes'
 import { registerPublicGrantRoutes } from './routes/public-grant.routes'
@@ -304,6 +305,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerAuthRoutes(app, auth, prisma)
   registerAdminUserRoutes(app, prisma, auth)
   registerAdminAdvisorRoutes(app, prisma)
+  registerAdvisorApplicationRoutes(app, prisma)
   registerAdminAdvisorPayoutRoutes(app, prisma)
   registerAdminGrantRoutes(app, prisma)
   registerPublicGrantRoutes(app, prisma)

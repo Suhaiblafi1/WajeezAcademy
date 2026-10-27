@@ -165,6 +165,8 @@ const STAFF: Table = {
   'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.contact_message': { path: '/admin/support', ctaAr: 'افتح رسائل الموقع' },
   'admin.trainer_application': { path: '/admin/trainers', ctaAr: 'افتح طلب الانضمام' },
+  /* وطلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦) — طابورُه حيث يُقبل بنسبته أو يُعتذر له */
+  'admin.advisor_application': { path: '/admin/advisor-applications', ctaAr: 'افتح طلبات الانضمام' },
   /* وملخّصُ من لم يحجز — الشاشةُ نفسُها، وفيها مرشّحُ «لم يحجز موعدا» وزرُّ
      التذكير. فالزرُّ يضع قارئَه حيث يعمل لا حيث يقرأ الخبرَ ثانيةً. */
   'admin.trainer_unbooked': { path: '/admin/trainers', ctaAr: 'افتح طابور الطلبات' },

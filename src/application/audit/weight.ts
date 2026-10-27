@@ -145,6 +145,9 @@ const HIGH: readonly string[] = [
      غيرَه، ويصله بريدا للعلّة نفسِها. */
   'trainer.bank.set', 'trainer.bank.remove',
   'advisor.bank.set', 'advisor.bank.remove',
+  /* ═══ وطلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦) ═══
+     القبولُ يفتح له حسابا بدورٍ ونسبةِ عمولة، والاعتذارُ يحسم طلبه — وكلاهما يصله بريدا من معالجه. */
+  'advisor.application.approve', 'advisor.application.reject',
   /* ═══ وعروضُ الإسناد ═══
 
      العرضُ يضع أمام المدرّب التزاما بوقتٍ ومال، والسحبُ يرفعه من تحته،

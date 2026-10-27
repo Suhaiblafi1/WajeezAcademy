@@ -200,6 +200,9 @@ export const allSections: AdminNavSection[] = [
     items: [
       { to: "/admin/advisors", label: "المستشارون والعمولة", tab: "المستشارون", icon: UserCheck, need: "advisor.manage",
         descAr: "من يستشير من، وقاعدةُ العمولة، وما استُحقّ منها" },
+      /* طلباتُ الانضمام (٢٧ أكتوبر ٢٠٢٦، المرحلة السابعة) — يُقبَل منها بنسبته فيُفعَّل في خطوةٍ واحدة */
+      { to: "/admin/advisor-applications", label: "طلبات انضمام المستشارين", tab: "الانضمام", icon: UserPlus, need: "advisor.manage",
+        descAr: "من تقدّم ليكون مستشارا — بوصوله ومتابعيه — يُقبَل بنسبته أو يُعتذَر له" },
       { to: "/admin/advisor-requests", label: "طلبات المستشارين", tab: "الطلبات", icon: BadgePercent, need: "advisor.request.review",
         descAr: "خصمٌ يطلبه مستشارٌ لعميله أو تعديلٌ على خطّته — بسببه كاملا" },
       /* «الاستثناءات» كان اسما لا يدلّ على شيء، وحارسا لا يحرس ما وراءه:

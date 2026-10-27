@@ -179,6 +179,12 @@ export const PUBLIC_PAGES: PublicPage[] = [
     priority: 0.5,
   },
   {
+    path: '/join-advisor',
+    title: 'انضم مستشارا',
+    description: 'كن مستشارا في أكاديمية وجيز — أرشد من تعرفهم إلى مسارهم وخذ عمولة مما يدفعون. نموذج واحد قصير.',
+    priority: 0.5,
+  },
+  {
     path: '/verify',
     title: 'التحقق من الشهادات',
     description:
