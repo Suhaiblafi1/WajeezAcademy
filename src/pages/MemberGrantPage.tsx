@@ -54,7 +54,7 @@ import { grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/ap
 import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -77,6 +77,8 @@ interface View {
   openCourses: GrantCourse[];
   /** مؤثّرُ الرابط في منحة المؤثّرين — إن كان كودُه صحيحا */
   influencer?: { nameAr: string; code: string } | null;
+  /** رابطُ الهديّة القصير (`/s/…`) يصنعه الخادم مرّةً لكلّ وجهة — وبدونه الطويلُ كما كان */
+  sharePath?: string | null;
 }
 interface ApplyResult extends View {
   ref: string;
@@ -271,8 +273,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   /* آخرُ يومٍ بتاريخه الطويل — في رسالة الهديّة («30 أكتوبر 2026») */
   const lastDayLong = c.closesAt ? fmtDateLong(new Date(new Date(c.closesAt).getTime() - 1)) : null;
   /* ومنحةُ المؤثّرين تُهدى برابط مؤثّرها — فالصديقُ يأخذ منحتَها، ويُحسب للمؤثّر */
-  const sharePath = forInfluencer && creditedCode ? `${INFLUENCER_GRANT_PATH}/${creditedCode}` : undefined;
-  const shareText = grantShareAr(window.location.origin, pct, lastDayLong, sharePath);
+  const sharePath = forInfluencer && creditedCode ? `${INFLUENCER_GRANT_PATH}/${creditedCode}` : GRANT_SHARE_PATH;
+  /* والرابطُ قصيرٌ من الخادم إن صنعه — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «الرابط يجب أن يكون قصيرا جدّا» */
+  const shareLink = view.sharePath ? `https://${BARE_HOST}${view.sharePath}` : `${window.location.origin}${sharePath}`;
+  const shareText = grantShareAr(shareLink, pct, lastDayLong, !forInfluencer);
 
   /* ─── الخطوة ٢: الكودُ واختيارُ الدورات ─── */
   if (stored) {
@@ -285,7 +289,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     /* ما اخترناه له فوقُ مفتوحا، والباقي أقسامٌ مطويّةٌ بمجالها — ما يريد تطويرَه أوّلا (`grantSections`) */
     const top = courses.filter((x) => ours.has(x.courseId));
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
-    const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr(stored.name, stored.code, chosen.map((x) => x.titleAr), grantRecordLink(BARE_HOST, stored.code ?? stored.ref), nameAr));
+    const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr({
+      name: stored.name, email: stored.email, code: stored.code, courses: chosen.map((x) => x.titleAr),
+      recordLink: grantRecordLink(BARE_HOST, stored.code ?? stored.ref), grantNameAr: nameAr,
+    }));
     /* سطرُ الصندوق حين لا كود ولا بريد — سببُ الخادم، أو أنّها مغلقة. ولا فقرةٌ فارغةٌ حين لا شيء يقال */
     const topNote = reasonAr ?? (c.open ? null : "المنحة مغلقة الآن");
     /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب
@@ -431,7 +438,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             </span>
             <span className="flex shrink-0 gap-2">
               <Button as="a" href={waShare(shareText)} target="_blank" rel="noreferrer" icon={Share2}>واتساب</Button>
-              <Button as="a" href={grantShareMailto(window.location.origin, pct, lastDayLong, sharePath)} icon={Mail}>البريد</Button>
+              <Button as="a" href={grantShareMailto(shareLink, pct, lastDayLong, !forInfluencer)} icon={Mail}>البريد</Button>
             </span>
           </Card>
         )}
@@ -495,7 +502,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
                   أنّك تدفع ٤٠٪». وكذلك في بريد الكود وبريد التذكير */}
               <p className="mt-3 text-lg font-bold">
                 {!forInfluencer
-                  ? `لأنك من أعضاء وجيز، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`
+                  ? grantThanksAr(c.percentOff)
                   : view.influencer
                     ? `بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`
                     : `منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`}
@@ -615,7 +622,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 }
 
 function Shell({
-  children, title = MEMBER_GRANT_NAME_AR, path = "/grant", description = "منحة لأعضاء وجيز: دورات تختارها بخصم كبير، والعدد محدود.",
+  children, title = MEMBER_GRANT_NAME_AR, path = "/grant", description = "منحة حصرية لمستخدمي وجيز: دورات مباشرة على Zoom بخصم كبير، والمقاعد محدودة.",
 }: { children: React.ReactNode; title?: string; path?: string; description?: string }) {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">

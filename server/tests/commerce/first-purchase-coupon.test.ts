@@ -58,6 +58,10 @@ beforeAll(async () => {
 describe('أوّلُ شراءٍ يُخصم، وما بعده لا', () => {
   it('حسابٌ لم يشترِ قطّ يُخصم له', async () => {
     const userId = await learner('new')
+    /* والتسعيرُ يسمّيه بنسبته — فيقول اللوحُ «خصم أول عملية شراء» لا «الكود WA2026» (٢٧ أكتوبر ٢٠٢٦) */
+    const priced = await cohort('شعبةُ تسعير أوّل شراء')
+    expect((await commerce.quote(userId, [priced], CODE)).firstPurchasePct).toBe(10)
+    expect((await commerce.quote(userId, [priced])).firstPurchasePct, 'سمّى بلا كود').toBeNull()
     const out = await commerce.checkout(userId, [await cohort('شعبةُ أوّل شراء')], CODE)
     const order = await prisma.order.findUniqueOrThrow({ where: { id: out.orderId } })
     expect(Number(order.discount)).toBeGreaterThan(0)

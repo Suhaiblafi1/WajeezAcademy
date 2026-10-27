@@ -34,14 +34,17 @@ import { AdvisorService } from './advisor.service'
 import { GrantService } from './grant.service'
 import { GrantCoursesService } from './grant-courses.service'
 import { enqueueMail } from './outbox.service'
+import { renderMail } from './mail-template'
+import { mintShortLink } from './short-link.service'
 import { publicSiteUrl } from './site-url'
 import { normalizePhone } from '../../src/application/advisor/guest-contact'
 import {
-  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, WORK_FIELDS, campaignTag, leadProfileAr,
+  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, WORK_FIELDS, campaignTag, leadProfileAr,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
-import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
-import { INFLUENCER_CODE_BAD_AR, influencerLink, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
+import { INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
+import { INFLUENCER_CODE_BAD_AR, INFLUENCER_GRANT_PATH, influencerLink, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
+import { shortLinkPath } from '../../src/application/links/short-link'
 import { fmtDate } from '../../src/application/text/format-ar'
 
 export interface GrantApplyInput {
@@ -61,6 +64,8 @@ const OPEN_CASE = { notIn: ['closed', 'enrolled', 'not_interested'] }
 
 /** الحملتان — بهما يُقبل طلبُ المستشار ممّن عبّأ أيَّهما */
 const GRANT_SLUGS: GrantSlug[] = [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG]
+/** غرضُ رابط الهديّة القصير — به يُعرف صفُّه فيُعاد ولا يُصنع ثانية */
+const GRANT_SHARE_PURPOSE = 'grant.share'
 
 export class GrantLandingService {
   private prisma: PrismaClient
@@ -88,7 +93,25 @@ export class GrantLandingService {
   /** صفحةُ منحة المؤثّرين: حالُها ودوراتُها، واسمُ المؤثّر إن كان كودُه في الرابط صحيحا */
   async influencerView(raw: string | null | undefined, now = new Date()) {
     const found = await this.influencerByCode(raw)
-    return { influencer: found ? { nameAr: found.nameAr, code: found.code } : null, ...(await this.view(now)) }
+    return {
+      influencer: found ? { nameAr: found.nameAr, code: found.code } : null, ...(await this.view(now)),
+      /* وهديّتُها برابط مؤثّرها — قصيرا كهديّة «منحة وجيز» */
+      sharePath: found ? await this.shareLink(`${INFLUENCER_GRANT_PATH}/${found.code}`) : null,
+    }
+  }
+
+  /* ═══ رابطُ الهديّة القصير (٢٧ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «الرابط يجب أن يكون قصيرا جدّا وليس بهذا الطول». فرابطٌ واحدٌ لكلّ وجهةٍ يُصنع أوّلَ مرّةٍ
+     ويُعاد بعدها — لا رابطٌ لكلّ زائر. ومن تعذّر صنعُه أخذ الطويلَ في الصفحة كما كان: الهديّةُ لا تقف على رابط. */
+  private async shareLink(target: string): Promise<string | null> {
+    try {
+      const had = await this.prisma.shortLink.findFirst({
+        where: { target, purpose: GRANT_SHARE_PURPOSE, revokedAt: null }, orderBy: { createdAt: 'asc' }, select: { code: true },
+      })
+      return shortLinkPath(had?.code ?? await mintShortLink(this.prisma, target, null, GRANT_SHARE_PURPOSE))
+    } catch {
+      return null
+    }
   }
 
   /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين */
@@ -97,6 +120,7 @@ export class GrantLandingService {
     return {
       /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
       campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
+      sharePath: this.slug === MEMBER_GRANT_SLUG ? await this.shareLink(GRANT_SHARE_PATH) : null,
       termAr: open.termAr,
       openCourses: open.courses.map((c) => ({
         courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: c.startsAt, price: c.price,
@@ -204,22 +228,36 @@ export class GrantLandingService {
     return { ok: true as const }
   }
 
+  /* ═══ بريدُ الكود — بقالب الأكاديمية لا نصّا خاما (٢٧ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة». فعنوانٌ وشكرٌ وكودٌ في جدولٍ وزرٌّ يفتح الدورات،
+     ولا «عضو»: «مستخدمُ وجيز». ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
   private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
-    /* ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها */
     const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode) : `${publicSiteUrl()}/grant`
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
+    const member = this.slug === MEMBER_GRANT_SLUG
+    const nameAr = member ? MEMBER_GRANT_NAME_AR : INFLUENCER_GRANT_NAME_AR
     await enqueueMail(this.prisma, {
       to, purpose: 'grant.code',
-      subject: 'كود منحتك من أكاديمية وجيز',
-      text: [
-        `مرحبا ${name}،`, '',
-        `كود منحتك: ${code}`,
+      subject: `كود ${nameAr} الخاص بك`,
+      ...renderMail({
+        greetingName: name,
         /* المنحةُ بنسبتها لا بما يبقى — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، كسطر الصفحة الأولى */
-        `منحتك تصل إلى ${percentOff}% من سعر الدورات.`,
-        ...(last ? [`آخر يوم لاستعماله: ${last}`] : []),
-        '', `اختر دوراتك: ${url}`, '',
-        'الكود يستعمل مرة واحدة، ويمكنك أن تهديه لغيرك.',
-      ].join('\n'),
+        preheader: `منحتك تصل إلى ${percentOff}% من سعر دورات أكاديمية وجيز.`,
+        heading: 'منحتك جاهزة',
+        blocks: [
+          { kind: 'p', text: member
+            ? 'شكرا لأنك من مستخدمي تطبيق وجيز. يسعدنا أن نقدم لك منحة حصرية في منتجنا الجديد: أكاديمية وجيز.'
+            : 'يسعدنا أن نقدم لك منحة في أكاديمية وجيز.' },
+          { kind: 'facts', rows: [
+            { label: 'كود منحتك', value: code },
+            { label: 'المنحة', value: `تصل إلى ${percentOff}% من سعر الدورات` },
+            ...(last ? [{ label: 'آخر يوم', value: last }] : []),
+          ] },
+          { kind: 'cta', label: 'اختر دوراتك', href: url },
+          { kind: 'p', text: 'لقاءات مباشرة على Zoom مع مدربين معتمدين، وتطبيقات عملية، وشهادة ورسالة توصية لمن يلتزم.' },
+          { kind: 'note', text: 'الكود يستعمل مرة واحدة، ويمكنك أن تهديه لغيرك.' },
+        ],
+      }),
     })
   }
 }

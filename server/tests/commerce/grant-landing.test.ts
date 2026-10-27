@@ -57,7 +57,7 @@ async function cohort(courseId: string, over: Record<string, unknown> = {}) {
 const person = (over: Partial<{
   fullName: string; phone: string; email: string; workField: string; channel: string; wave: string; careerLevel: string | null; interests: string[]
 }> = {}) => ({
-  fullName: `عضو وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
+  fullName: `مستخدم وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
 
@@ -89,6 +89,31 @@ describe('① النموذج يعطي الكود فورا', () => {
     expect(lead.consentAr).toContain('كود المنحة')
     const mail = await prisma.outboxMail.findFirst({ where: { to: p.email, purpose: 'grant.code' }, orderBy: { createdAt: 'desc' } })
     expect(mail?.text, 'لم يصل الكود بريده').toContain(out.grant!.code!)
+  })
+})
+
+describe('①ب وبريد الكود ورابط الهدية (٢٧ أكتوبر ٢٠٢٦)', () => {
+  /* قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة»، و«لا تستخدم كلمة عضو بل مستخدم وجيز»، و«الرابط قصير جدّا» */
+  it('⚠️ بريد الكود بقالب الأكاديمية — شكر لمستخدم وجيز وكوده وزر دوراته، ولا «عضو»', async () => {
+    const p = person({})
+    const out = await landing.apply(p)
+    const mail = await prisma.outboxMail.findFirstOrThrow({ where: { to: p.email, purpose: 'grant.code' }, orderBy: { createdAt: 'desc' } })
+    expect(mail.subject).toBe('كود منحة وجيز الخاص بك')
+    expect(mail.html, 'بلا قالب الأكاديمية').toBeTruthy()
+    for (const t of ['منحتك جاهزة', 'شكرا لأنك من مستخدمي تطبيق وجيز', `كود منحتك: ${out.grant!.code}`, 'اختر دوراتك:', '/grant']) {
+      expect(mail.text, t).toContain(t)
+    }
+    expect(`${mail.subject}\n${mail.text}`, 'عادت «عضو»').not.toMatch(/أعضاء|عضو/)
+  })
+
+  it('⚠️ رابط الهدية القصير يصنع مرة لكل وجهة ويعاد — إلى صفحة المنحة بوسم الهدية', async () => {
+    const a = await landing.view()
+    const b = await landing.view()
+    expect(a.sharePath).toMatch(/^\/s\/[A-Za-z0-9]+$/)
+    expect(b.sharePath, 'صنع رابطا ثانيا للوجهة نفسها').toBe(a.sharePath)
+    const row = await prisma.shortLink.findUniqueOrThrow({ where: { code: a.sharePath!.slice('/s/'.length) } })
+    expect(row).toMatchObject({ target: '/grant?ch=share', purpose: 'grant.share', revokedAt: null })
+    expect(await prisma.shortLink.count({ where: { target: '/grant?ch=share', purpose: 'grant.share' } })).toBe(1)
   })
 })
 
@@ -140,7 +165,7 @@ describe('⑤ والدورات للزائر بلا أجور المدربين', (
     const v = await landing.view(NOW)
     const json = JSON.stringify(v)
     expect(json, 'خرج أجر المدرب إلى الزائر').not.toMatch(/seatCost|margin|ruleRate|ruleType/)
-    expect(Object.keys(v).sort(), 'عاد في الرد غير الدورات').toEqual(['campaign', 'openCourses', 'termAr'])
+    expect(Object.keys(v).sort(), 'عاد في الرد غير الدورات').toEqual(['campaign', 'openCourses', 'sharePath', 'termAr'])
     /* ولا عددَ للمنح الباقية — «العددُ الكبير قد يقلّل من قيمتها» (٢١ أكتوبر ٢٠٢٦) */
     expect(Object.keys(v.campaign).sort(), 'خرج عدد المنح إلى الزائر').toEqual(['closesAt', 'maxCourses', 'open', 'percentOff'])
     const row = v.openCourses.find((x) => x.courseId === a)!

@@ -105,7 +105,14 @@ export function grantTrainerFaces<T extends { trainer?: { id: string; name: stri
 
 /** رسالةُ متابعة من عبّأ النموذج ولم يشترِ — تُفتح في واتساب جاهزةً ويرسلها فريقُ الأكاديميّة */
 export const grantFollowupAr = (name: string) =>
-  `مرحبا ${name}، معك أكاديمية وجيز. أخذت كود منحة أعضاء وجيز، هل تحتاج مساعدة في اختيار دوراتك؟`
+  `مرحبا ${name}، معك فريق أكاديمية وجيز. سجلت في منحة وجيز، ويسعدنا أن نساعدك في اختيار دوراتك قبل انتهائها.`
+
+/* ═══ سطرُ الشكر أعلى صفحة المنحة (٢٧ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «في الصفحات الخاصّة بالمنحة لا تستخدم كلمة عضو، بل مستخدم وجيز»، و«لا تقل لأنّك من مستخدمي
+   وجيز منحتك تصل إلى ٦٠٪.. تطبيقُ وجيز يشكرك على وجودك كمستخدم، ويسعدنا أن نقدّم لك منحةً قد تصل إلى ٦٠٪ للاستفادة
+   من منتجنا الجديد أكاديمية وجيز، وهذه المنحة حصريّة». */
+export const grantThanksAr = (percentOff: number) =>
+  `تطبيق وجيز يشكرك لأنك من مستخدميه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى ${percentOff}% لتستفيد من منتجنا الجديد: أكاديمية وجيز.`
 
 /** المستوى الوظيفيّ — سؤالٌ اختياريّ */
 export const CAREER_LEVELS: readonly string[] = [
@@ -273,6 +280,8 @@ export function seatsLeftAr(n: number | null | undefined): string | null {
 
 /** كم صديقا يهديهم — يُقال حدّا أعلى ولا يُحصى */
 export const GRANT_GIFT_MAX = 3
+/** وجهةُ هديّة «منحة وجيز» — ووسمُ قناتها `share` يقرؤه سجلُّ الحملة (`campaignParams`) */
+export const GRANT_SHARE_PATH = '/grant?ch=share'
 /** عنوانُ صندوق الإهداء وحدُّه */
 export const GRANT_GIFT_AR = { title: 'يحق لك أن تهدي هذه المنحة لأصدقائك', limit: `بحد أعلى ${GRANT_GIFT_MAX} أصدقاء` } as const
 
@@ -283,16 +292,22 @@ export const GRANT_GIFT_AR = { title: 'يحق لك أن تهدي هذه المن
     ومن لم يختر شيئا بعدُ تبقى رسالتُه كما كانت.
 
     ورابطُ ملفّه عندنا آخرَها (٢٦ أكتوبر ٢٠٢٦) — كان رابطَ صفحة المنحة العامّة، وهي واحدةٌ للجميع لا تفيد المستشار.
-    فقرارُ صاحب المنصّة: «٢ — make the link shorter»: رابطٌ قصيرٌ يفتح صفَّه في قائمة المنحة (`grantRecordLink`). */
-export function grantAdvisorTextAr(
-  name: string, code: string | null, courses: string[] = [], recordLink: string | null = null, grantNameAr: string = MEMBER_GRANT_NAME_AR,
-): string {
-  const who = name.trim() ? `مرحبا، أنا ${name.trim()}.` : 'مرحبا،'
-  const ask = `${who} عندي سؤال عن ${grantNameAr}.${code ? ` كود منحتي: ${code}` : ''}`
+    فقرارُ صاحب المنصّة: «٢ — make the link shorter»: رابطٌ قصيرٌ يفتح صفَّه في قائمة المنحة (`grantRecordLink`).
+
+    وقال (٢٧ أكتوبر ٢٠٢٦): «الرسالةُ الحاليّة تقول مرحبا أنا صهيب عندي سؤال عن منحة وجيز.. على الأقلّ مرحبا أنا اسمي كذا
+    وإيميلي كذا — المعلوماتُ التي تستطيع أخذها من الموقع أضفها». فصارت: من هو وبريدُه، وما يريد، ودوراتُه، وكودُه وملفُّه. */
+export function grantAdvisorTextAr(m: {
+  name: string; email?: string | null; code?: string | null; courses?: readonly string[]
+  recordLink?: string | null; grantNameAr?: string
+}): string {
+  const name = m.name.trim(), email = m.email?.trim() ?? ''
+  const who = name ? `مرحبا، أنا ${name}${email ? ` (${email})` : ''}.` : email ? `مرحبا، بريدي ${email}.` : 'مرحبا،'
+  const courses = m.courses ?? []
+  const refs = [m.code ? `كود منحتي: ${m.code}` : null, m.recordLink ? `ملفي: ${m.recordLink}` : null].filter(Boolean)
   return [
-    ask,
-    ...(courses.length > 0 ? [`الدورات التي اخترتها:\n${courseLinesAr(courses)}`] : []),
-    ...(recordLink ? [`رابط ملفي: ${recordLink}`] : []),
+    `${who}\nسجلت في ${m.grantNameAr ?? MEMBER_GRANT_NAME_AR}، وأحتاج مساعدة في اختيار دوراتي.`,
+    ...(courses.length > 0 ? [`الدورات التي اخترتها:\n${courseLinesAr([...courses])}`] : []),
+    ...(refs.length > 0 ? [refs.join('\n')] : []),
   ].join('\n\n')
 }
 
@@ -307,22 +322,29 @@ export function grantRecordLink(host: string, key: string): string {
   return `${host}${GRANT_RECORD_PATH}/${key}`
 }
 
-/** نصُّ الهديّة — سطورٌ قصيرة: ما هي، وما فيها، وآخرُ يوم، والرابط */
-/* وصفحةُ منحة المؤثّرين تُهدي برابط مؤثّرها (`/grant/i/<كوده>`) لا بـ`/grant` — فالصديقُ يأخذ منحتَها هي، ويُحسب
-   للمؤثّر الذي جاء به صاحبُها (٢٦ أكتوبر ٢٠٢٦) */
-export function grantShareAr(siteUrl: string, percentOff: number, lastDay: string | null, path = '/grant?ch=share'): string {
+/* ═══ نصُّ الهديّة — يتباهى صاحبُه بمنحته ويختار صديقَه (٢٧ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «الأيقونات غيرُ فعّالة، والرسالة غيرُ احترافيّة ولا تعكس روحَ وجيز. يجب أن تكون: تمّ منحي من
+   وجيز منحة، ويحقّ لي أن أشاركها مع ٣ من أصدقائي، واخترتك أحدَهم». فلا رمزَ تعبيريّ (كان 🎁 يصل مربّعا في واتساب
+   الحاسوب)، والرابطُ قصيرٌ يصنعه الخادم (`/s/…`، `grant-landing.service.ts` · `shareLink`).
+   وصفحةُ منحة المؤثّرين تُهدي برابط مؤثّرها (`/grant/i/<كوده>`) — فالصديقُ يأخذ منحتَها هي، ويُحسب للمؤثّر الذي جاء
+   به صاحبُها (٢٦ أكتوبر ٢٠٢٦)، ولا يقول «لأنّي من مستخدمي تطبيق وجيز»: منحتُها من المؤثّر لا من التطبيق. */
+export function grantShareAr(link: string, percentOff: number, lastDay: string | null, fromWajeezApp = true): string {
+  const who = fromWajeezApp ? 'حصلت على منحة حصرية من تطبيق وجيز لأني من مستخدميه' : 'حصلت على منحة من أكاديمية وجيز'
   return [
-    'أهديك منحة من أكاديمية وجيز 🎁',
-    `تغطي ${percentOff}% من سعر دورات مباشرة على Zoom، مع مدربين وشهادة لكل دورة.`,
-    ...(lastDay ? [`آخر يوم لها: ${lastDay}`] : []),
-    `احجز منحتك من هنا: ${siteUrl}${path}`,
+    `${who}، ويحق لي أن أشاركها مع ${GRANT_GIFT_MAX} من أصدقائي، واخترتك منهم.`,
+    '',
+    `المنحة تصل إلى ${percentOff}% من سعر دورات مباشرة على Zoom مع مدربين معتمدين${lastDay ? `، وآخر يوم لها ${lastDay}` : ''}.`,
+    '',
+    'اطلع على الدورات واختر ما يناسبك:',
+    link,
   ].join('\n')
 }
 
-/** الهديّةُ بالبريد — رابطٌ يفتح بريدَه برسالةٍ جاهزةٍ يختار لمن يرسلها */
-export function grantShareMailto(siteUrl: string, percentOff: number, lastDay: string | null, path?: string): string {
-  const body = ['مرحبا،', '', grantShareAr(siteUrl, percentOff, lastDay, path), '', 'أتمنى أن تفيدك.'].join('\n')
-  return `mailto:?subject=${encodeURIComponent('أهديك منحة من أكاديمية وجيز')}&body=${encodeURIComponent(body)}`
+/** الهديّةُ بالبريد — رابطٌ يفتح بريدَه برسالةٍ جاهزةٍ يختار لمن يرسلها، بالنبرة نفسِها */
+export function grantShareMailto(link: string, percentOff: number, lastDay: string | null, fromWajeezApp = true): string {
+  const subject = fromWajeezApp ? 'اخترتك لتشاركني منحة وجيز' : 'اخترتك لتشاركني منحة أكاديمية وجيز'
+  const body = ['مرحبا،', '', grantShareAr(link, percentOff, lastDay, fromWajeezApp), '', 'تحياتي،'].join('\n')
+  return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }
 
 /** ما يريد تطويرَه أوّلا — ترتيبٌ ثابت: ما في اهتمامه قبل غيره، وكلٌّ على ترتيبه */

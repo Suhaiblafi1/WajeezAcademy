@@ -19,7 +19,7 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.get('/api/admin/member-grant', {
     preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'إعدادات منحة أعضاء وجيز وما جرى بها' },
+    schema: { tags: ['admin-commerce'], summary: 'إعدادات منحة وجيز وما جرى بها' },
   }, async () => grants.settings())
 
   app.put('/api/admin/member-grant', {
