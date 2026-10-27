@@ -242,6 +242,24 @@ describe('⑧ الرصيد وحساب المؤثر', () => {
   })
 })
 
+/* «b» (صاحب المنصة، ٢٧ أكتوبر ٢٠٢٦): يأخذ المنحة بكوده كأي متابع، ولا عمولة له على شرائه هو */
+describe('⑧ب شراؤه هو بكوده', () => {
+  it('⚠️ منحته له وعمولته صفر — ولا يعد في من اشترى ولا في المبيعات، ومتابعه بعمولته', async () => {
+    const id = await addInfluencer('SELFBUY')
+    const email = `selfbuy-${STAMP}@test.local`
+    const acc = await influencers.attachAccount(id, email, ownerId)
+    const mine = await landing.apply(person({ influencerCode: 'SELFBUY', email }))
+    await pay(acc.userId, [await openCohort(100)], mine.grant!.code!)
+    const theirs = await landing.apply(person({ influencerCode: 'SELFBUY' }))
+    await pay(await learner(), [await openCohort(100)], theirs.grant!.code!)
+    const st = await influencers.statement(id)
+    expect(st.totals).toMatchObject({ earned: 15, buyers: 1, sales: 100 })
+    const own = st.rows.find((r) => r.own)!
+    expect(own).toMatchObject({ commission: 0, percent: 0, listTotal: 100, stateAr: 'شراء صاحب الكود — بلا عمولة' })
+    expect(st.rows.filter((r) => !r.own).map((r) => r.commission)).toEqual([15])
+  })
+})
+
 describe('⑨ حسابه بدعوة', () => {
   it('⚠️ بريد جديد: حساب مدعو بدور المؤثر ودعوة — وقائم: يربط ويضاف الدور، ولا يربط بمؤثرين', async () => {
     const a = await addInfluencer('NEWACC')
