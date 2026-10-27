@@ -7,6 +7,7 @@ import { adoptCohortFiles } from './cohort-file-adopt'
 import type { TypedLink } from '../../src/application/trainer/plan-overlay'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
+import { ProgressService } from './progress.service'
 import { assertFileUploadsEnabled, newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
 import { notifyRole, safeNotify } from './notification.service'
 import { PLAN_GATE_SELECT, planApprovedOnce } from './registration-window'
@@ -41,6 +42,7 @@ function submissionUploadUrl(storageKey: string): string {
   return `/api/v1/uploads/${storageKey}/stream?exp=${exp}&sig=${signKey(storageKey, exp, 'write')}`
 }
 
+/* حكمُ المدرّب يحرّك التقدّمَ في ساعته — انظر `refreshProgress` أدناه */
 export class AssessmentService {
   private prisma: PrismaClient
   private enrollments: EnrollmentService
@@ -685,8 +687,21 @@ export class AssessmentService {
        يُفقدها أثرها. أمّا `start_review` فحالةٌ داخلية لا تعني المتعلّم شيئا. */
     if (action !== 'start_review') {
       await this.notifyLearnerOfReview(submission.enrollmentId, submissionId, action, note)
+      await this.refreshProgress(submission.enrollmentId)
     }
     return updated
+  }
+
+  /* ═══ والحكمُ يحرّك التقدّمَ في ساعته (٢٧ أكتوبر ٢٠٢٦) ═══
+
+     كان قبولُ العمل ودرجةُ الاختبار لا يعيدان حسابَ التقدّم: يبقى المحورُ غيرَ مكتملٍ
+     ونجومُ محطّته ونسبتُه على حالها حتّى ينتهي لقاءٌ أو يُسجَّل حضور — أيّاما أحيانا.
+     فيرى المتعلّمُ «قُبل عملك» ومحطّتَه لم تتحرّك. ولا يُسقط تعثّرُ الحساب حكمَ المدرّب:
+     العاملُ يلحقه في دورته. */
+  private async refreshProgress(enrollmentId: string) {
+    try {
+      await new ProgressService(this.prisma).recomputeProgress(enrollmentId)
+    } catch { /* يلحقه العامل — ولا يُردّ حكمُ المدرّب لأجله */ }
   }
 
   /** نصّ الإشعار يقول ما حدث وما يُفعل الآن — لا «تغيّرت حالة تسليمك» */
@@ -732,10 +747,12 @@ export class AssessmentService {
     if (input.score < 0 || input.score > input.maxScore) throw new AuthError('bad_score', 'الدرجة خارج النطاق')
 
     let cohortId: string
+    let enrollmentId: string
     let rubricId: string | null = null
     if (input.submissionId) {
       const s = await this.assertTrainerOfSubmission(trainerUserId, input.submissionId)
       cohortId = s.assessment.cohortId
+      enrollmentId = s.enrollmentId
       rubricId = s.assessment.rubricId ?? null
       /* الدرجة تتطلب قبولا أو مراجعة قائمة */
       if (!['under_review', 'accepted'].includes(s.status)) {
@@ -746,6 +763,7 @@ export class AssessmentService {
       if (!attempt) throw new AuthError('not_found', 'المحاولة غير موجودة', 404)
       await this.enrollments.assertCohortTrainer(trainerUserId, attempt.assessment.cohortId)
       cohortId = attempt.assessment.cohortId
+      enrollmentId = attempt.enrollmentId
       rubricId = attempt.assessment.rubricId ?? null
     }
     /* ═══ ودرجةُ كلّ معيارٍ في حدّه (٢٠ أكتوبر ٢٠٢٦) ═══
@@ -778,6 +796,7 @@ export class AssessmentService {
       })
       await recordAudit(this.prisma, { actorId: trainerUserId, action: 'grade.update', entityType: 'grade', entityId: existing.id, meta: { old: Number(existing.score), new: input.score } })
       await this.notifyLearnerOfGrade(input, 'update')
+      await this.refreshProgress(enrollmentId)
       return updated
     }
 
@@ -794,6 +813,7 @@ export class AssessmentService {
     }
     await recordAudit(this.prisma, { actorId: trainerUserId, action: 'grade.create', entityType: 'grade', entityId: grade.id, meta: { cohortId, score: input.score } })
     await this.notifyLearnerOfGrade(input, 'create')
+    await this.refreshProgress(enrollmentId)
     return grade
   }
 

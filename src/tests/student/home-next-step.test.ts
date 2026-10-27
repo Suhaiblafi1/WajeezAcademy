@@ -3,7 +3,9 @@
      ① أيُّ دورةٍ تُقدَّم: الأشدُّ إلحاحا، وفي النوع الواحد الأقربُ موعدا
      ② والخطوةُ من حساب صفحة الدورة نفسِه — لا تحسبها الرئيسيّةُ لنفسها
      ③ وما تقوله البطاقةُ لا يُعاد في «ما عليك الآن» تحتها
-     ④ وزرُّها في الرئيسيّة يقود إلى صفحة الدورة — لا زرَّ ميّتا ينتظر محطّاتٍ ليست هنا */
+     ④ وزرُّها في الرئيسيّة يقود إلى صفحة الدورة — لا زرَّ ميّتا ينتظر محطّاتٍ ليست هنا
+     ⑤ وما وجدته المراجعةُ بعد النشر (٢٧ أكتوبر ٢٠٢٦): الأحدثُ القائمُ أوّلا، وما انتهى لا يُقدَّم،
+        والجلسةُ القادمةُ لا تُكرَّر، والشارةُ تعدّ ما يُرى، والبطاقةُ تتبع الساعة */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -75,5 +77,28 @@ describe('④ زرّ البطاقة في الرئيسيّة', () => {
     const html = render(() => undefined)
     expect(html).toContain('<button')
     expect(html).not.toContain('/student/learning?stage=')
+  })
+})
+
+describe('⑤ ما وجدته المراجعة في الرئيسيّة', () => {
+  const home = code('src/pages/student/Dashboard.tsx')
+  it('⚠️ الأحدث القائم أوّلا — لا أقدم أربع', () => {
+    expect(home, 'عادت الأربع الأولى بترتيب الالتحاق').not.toMatch(/rows\.slice\(0, 4\)\.map/)
+    expect(home).toMatch(/Number\(b\.status === "enrolled"\) - Number\(a\.status === "enrolled"\) \|\| b\.createdAt\.localeCompare\(a\.createdAt\)/)
+  })
+  it('⚠️ وما انتهى لا يقدّم خطوة', () => {
+    expect(home).toMatch(/\.filter\(\(d\) => d\.status === "enrolled" && d\.access\?\.state !== "ended"\)/)
+  })
+  it('⚠️ والجلسة القادمة في البطاقة لا تعاد تحتها', () => {
+    expect(home).toMatch(/heroStep\?\.kind === "live" \|\| heroStep\?\.kind === "session" \? heroStep\.sessionId/)
+    expect(home).toMatch(/Date\.parse\(s\.startsAt\) > now \+ DAY_MS && s\.id !== heroSessionId/)
+  })
+  it('⚠️ والبطاقة تتبع الساعة', () => {
+    expect(home).toMatch(/setInterval\(\(\) => setNow\(Date\.now\(\)\), 60_000\)/)
+  })
+  it('⚠️ وشارة «فات موعده» تعدّ ما يرى', () => {
+    const list = code('src/components/MyDeadlines.tsx')
+    expect(list).toMatch(/const overdue = Math\.max\(0, \(data\?\.overdue \?\? 0\) - hiddenOverdue\)/)
+    expect(list, 'الشارة تقرأ عدّ الخادم كما هو').not.toMatch(/\{data\.overdue\} فات موعده/)
   })
 })

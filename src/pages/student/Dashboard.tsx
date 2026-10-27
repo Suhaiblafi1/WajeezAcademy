@@ -200,8 +200,12 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
 type CourseStep = EnrollmentStep & { detail: FullEnrollmentDetail; courseId: string; titleAr: string };
 
 function courseSteps(details: readonly EnrollmentDetail[], now: number): CourseStep[] {
-  return details.map((d) => {
-    const full = d as unknown as FullEnrollmentDetail;
+  /* وما انتهى لا يقدّم خطوة: دورةٌ أتمّها، أو شعبةٌ انتهى الوصولُ إليها — وإلّا قالت
+     البطاقةُ «المحطة التالية» عن دورةٍ لا يتقدّم فيها بعد */
+  const live = details
+    .map((d) => d as unknown as FullEnrollmentDetail)
+    .filter((d) => d.status === "enrolled" && d.access?.state !== "ended");
+  return live.map((full) => {
     const courseId = full.cohort.course.id;
     const course = courseFullById(courseId);
     const r = enrollmentStep(full, cohortModules(course?.modules ?? [], full), now);
@@ -235,7 +239,12 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
   useEffect(() => {
     let on = true;
-    Promise.all(rows.slice(0, 4).map((r) => apiGet<EnrollmentDetail>(`/api/learner/enrollments/${r.id}`).catch(() => null)))
+    /* القائمُ أوّلا والأحدثُ أوّلا — والردُّ بترتيب الالتحاق الأقدم، فكانت الأربعُ الأولى
+       أقدمَ دوراته، وتغيب عن «خطوتك التالية» دورتُه الجديدة (٢٧ أكتوبر ٢٠٢٦) */
+    const picked = [...rows]
+      .sort((a, b) => Number(b.status === "enrolled") - Number(a.status === "enrolled") || b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 4);
+    Promise.all(picked.map((r) => apiGet<EnrollmentDetail>(`/api/learner/enrollments/${r.id}`).catch(() => null)))
       .then((ds) => { if (on) setDetails(ds.filter((d): d is EnrollmentDetail => d !== null)); });
     apiGet<RealNotif[]>("/api/learner/notifications?audience=learner").then((n) => on && setNotifs(n)).catch(() => undefined);
     /* طلبٌ لم يكتمل دفعُه — ومهلتُه من الخادم (`payBy`)، فما يُقال هو ما يقع */
@@ -265,9 +274,14 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
     return buildMomentum(facts, extra ? new Date(extra.at) : new Date());
   }, [details, extra]);
 
-  /* «الآن» يُلتقط مرّةً عند التركيب: قراءةُ `Date.now()` أثناء التصيير استدعاءٌ غيرُ نقيّ
-     يمنعه مصرّفُ React، والذاكرةُ لا تُعاد إلّا بتغيّر details فالوقتُ مجمّدٌ عمليّا على أيّ حال. */
-  const [now] = useState(() => Date.now());
+  /* «الآن» في حالةٍ لا في الرسم — `Date.now()` في الرسم غيرُ نقيّ. ونبضةٌ كلَّ دقيقةٍ كصفحة
+     الدورة (٢٧ أكتوبر ٢٠٢٦): كان مجمّدا عند التركيب، فمن ترك الرئيسيّةَ مفتوحةً لا تصير
+     بطاقتُه «الجلسة الآن» حين تبدأ جلستُه — وصفحةُ الدورة تقولها. */
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
   const catalogVersion = usePublishedContent();
 
   /* ⓪ «خطوتك التالية» — الأشدُّ إلحاحا من خطوات دوراته (`pickNextStep`) */
@@ -278,7 +292,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
   const hero = pickNextStep(steps);
   const heroStep = hero?.step ?? null;
   /* وما تقوله البطاقةُ لا يُعاد تحتها: لقاؤها الجاري، ومهمّتُها */
-  const heroSessionId = heroStep?.kind === "live" ? heroStep.sessionId : null;
+  const heroSessionId = heroStep?.kind === "live" || heroStep?.kind === "session" ? heroStep.sessionId : null;
   const heroTaskIds = heroStep?.kind === "submit" || heroStep?.kind === "resubmit" ? [heroStep.assessmentId] : [];
 
   /* لقاءاتُ شعبه التي لم تنته — ولقاءٌ بلا آخرَ يُعدّ منتهيا بعد ساعتين من بدئه */
@@ -289,7 +303,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
       .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
   [details, now]);
   const todaySessions = sessions.filter((s) => Date.parse(s.startsAt) <= now + DAY_MS);
-  const nextSessions = sessions.filter((s) => Date.parse(s.startsAt) > now + DAY_MS).slice(0, 3);
+  const nextSessions = sessions.filter((s) => Date.parse(s.startsAt) > now + DAY_MS && s.id !== heroSessionId).slice(0, 3);
 
   /* ما عليه الآن من خارج التسليمات: المالُ أوّلا (مقعدٌ يُفرَج عنه بعد مهلته)، ثمّ لقاءٌ في يومه */
   const before: NowItem[] = [

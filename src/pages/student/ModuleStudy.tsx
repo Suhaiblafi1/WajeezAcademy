@@ -41,9 +41,8 @@ import { courseFullById } from "@/data/courses";
 import { overlayModule, overlayModules } from "@/application/trainer/plan-overlay";
 import { fetchEnrollmentDetail, type EnrollmentDetail } from "@/services/enrollment-detail";
 import { whenAr } from "@/application/learning/cohort-gate";
-import {
-  afterModule, buildStagePath, evidenceOf, inPlanOnly, readableModules, stopOfModule, type AfterModule,
-} from "@/application/student/stage-path";
+import { afterModule, buildStagePath, readableModules, stopOfModule, type AfterModule } from "@/application/student/stage-path";
+import { cohortModules, cohortPath } from "@/application/student/enrollment-step";
 import { dayLabelAr } from "@/application/trainer/axis-timeline";
 import { fmtSession } from "@/application/text/format-ar";
 import StopStars from "@/components/journey/StopStars";
@@ -104,7 +103,10 @@ export default function ModuleStudy() {
   const planPending = enrollmentId !== "" && planFor !== enrollmentId;
 
   /* وما ليس في خطّة الشعبة لا يُعرض — كما في صفحة الدورة («a, hide them») */
-  const modules = useMemo(() => inPlanOnly(overlayModules(full?.modules ?? [], plan), plan), [full?.modules, plan]);
+  const modules = useMemo(
+    () => (detail ? cohortModules(full?.modules ?? [], detail) : overlayModules(full?.modules ?? [], null)),
+    [full?.modules, detail],
+  );
   const mod = useMemo(
     () => overlayModule(full?.modules.find((m) => m.id === moduleId) ?? null, plan, moduleId),
     [full?.modules, plan, moduleId],
@@ -118,20 +120,24 @@ export default function ModuleStudy() {
      المدرّبُ أو لم يُكتب. فصار الموضعُ محطّةً من طريق صفحة الدورة نفسِه، والتالي
      أوّلَ مقروءٍ بعده في الطريق (`afterModule`). وبلا تسجيلٍ في العنوان: كلُّ
      محورٍ محطّة، بلا نجوم. */
-  const path = useMemo(() => buildStagePath({
-    modules,
-    slots: plan?.slots ?? [],
-    sessions: detail?.cohort.sessions ?? [],
-    assessments: detail?.cohort.assessments ?? [],
-    ...(detail ? evidenceOf(detail) : { doneModules: new Set<string>(), attended: new Set<string>(), accepted: new Set<string>() }),
-  }), [modules, plan, detail]);
+  /* وبحساب صفحة الدورة نفسِه (`cohortPath`) — لا طريقٌ ثالثٌ يُبنى هنا */
+  const path = useMemo(() => (detail
+    ? cohortPath(detail, modules).path
+    : buildStagePath({ modules, slots: [], sessions: [], assessments: [], doneModules: new Set(), attended: new Set(), accepted: new Set() })
+  ), [modules, detail]);
   const stop = stopOfModule(path, moduleId);
   const after: AfterModule = useMemo(() => afterModule(path, moduleId, readableModules(modules)), [path, moduleId, modules]);
   const next = after.kind === "read" ? modules.find((m) => m.id === after.moduleId) ?? null : null;
-  /* جلستُه المباشرة القادمة — بها يُقال متى يصله ما لم يُكتب بعد */
+  /* جلستُه المباشرة القادمة — بها يُقال متى يصله ما لم يُكتب بعد. **القادمة**: لا ملغاةٌ
+     ولا ما مضى موعدُه ولم تُغلق حالتُه بعد، وإلّا قيل له «يصلك» بتاريخٍ فات */
+  const [now] = useState(() => Date.now());
   const stopSession = stop
-    ? detail?.cohort.sessions.find((s) => stop.sessionIds.includes(s.id) && s.status !== "done") ?? null
+    ? detail?.cohort.sessions.find((s) =>
+        stop.sessionIds.includes(s.id) && s.status !== "done" && s.status !== "cancelled" && Date.parse(s.startsAt) > now,
+      ) ?? null
     : null;
+  /* محورٌ تركه المدرّبُ من خطّة الشعبة ويُفتح برابطٍ قديم — لا موضعَ له في الطريق */
+  const outOfPlan = detail !== null && modIndex < 0;
 
   /* الأسئلة تُوزَّع على الدروس بالترتيب: سؤالٌ (أو اثنان) بعد كلّ درس بدل
      أن تنهال خمسةً في آخر الوحدة. والباقي — إن زاد عن قسمة الدروس — يُعرض
@@ -188,6 +194,26 @@ export default function ModuleStudy() {
           <Link to={`/student/course/${courseId}`} className="mt-6 rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40">
             عد إلى الطريق
           </Link>
+        </Panel>
+      </PortalLayout>
+    );
+  }
+
+  /* ═══ وما ليس في خطّة شعبته (٢٧ أكتوبر ٢٠٢٦) ═══
+     رابطٌ قديمٌ إلى محورٍ تركه المدرّب كان يفتحه بمتن الكتالوج، وشريطُه «الوحدة ٠ من ن»،
+     و«التالي» يعيده إلى أوّل الدورة. فيُقال ما هو، ويُعاد إلى طريقه. */
+  if (outOfPlan) {
+    return (
+      <PortalLayout title={mod.title}>
+        <Panel as="section" className="py-14 text-center">
+          <BookOpen className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden="true" />
+          <p className="mt-5 text-sm font-black text-foreground">هذه الوحدة ليست في خطة شعبتك</p>
+          <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
+            محطاتك كلها في الطريق، بترتيبها ومواعيدها.
+          </p>
+          <div className="mt-6 flex justify-center">
+            <BackToPath courseId={courseId} />
+          </div>
         </Panel>
       </PortalLayout>
     );

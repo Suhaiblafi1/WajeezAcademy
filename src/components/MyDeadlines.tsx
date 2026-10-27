@@ -100,6 +100,10 @@ export default function MyDeadlines({ className = "", before = [], after = [], h
   if (!settled) return null;
 
   const tasks = (data?.items ?? []).filter((d) => !hideAssessmentIds.includes(d.assessmentId));
+  /* والفائتُ بما يُرى: مهمّةُ البطاقة فوقها لا تُعدّ هنا، وإلّا قالت الشارةُ «١ فات موعده»
+     تحت «لا شيء غيرها الآن» */
+  const hiddenOverdue = (data?.items ?? []).filter((d) => hideAssessmentIds.includes(d.assessmentId) && d.urgency === "overdue").length;
+  const overdue = Math.max(0, (data?.overdue ?? 0) - hiddenOverdue);
   const now = tasks.filter((d) => d.urgency !== "later");
   const later = tasks.filter((d) => d.urgency === "later");
   const nothingNow = before.length + now.length + after.length === 0;
@@ -113,9 +117,9 @@ export default function MyDeadlines({ className = "", before = [], after = [], h
             ? nothingNow ? "لا شيء غيرها الآن" : "وما عليك غيرها"
             : nothingNow ? "لا شيء عليك الآن" : "ما عليك الآن"}
         </h2>
-        {data && data.overdue > 0 && (
+        {overdue > 0 && (
           <span className="rounded-full border border-rose-400/40 bg-rose-500/[0.08] px-3 py-1 text-fine font-black text-danger-ink">
-            {data.overdue} فات موعده
+            {overdue} فات موعده
           </span>
         )}
       </div>

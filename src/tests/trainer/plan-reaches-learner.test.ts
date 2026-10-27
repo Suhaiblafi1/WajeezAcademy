@@ -38,8 +38,11 @@ describe('① الخادم يحمل الخطّة مشروعة ولا يحمل ص
 
 describe('② شاشتا المتعلّم تقرآن العلوّ لا الكتالوج وحده', () => {
   it('قائمة الدروس تعلو — ولا تمرّ `full.modules` كما هي', () => {
+    /* والعلوُّ في `cohortModules` منذ صار حسابا تتقاسمه الشاشاتُ الثلاث (٢٧ أكتوبر ٢٠٢٦) */
     const sw = code('src/components/journey/StageWork.tsx')
-    expect(sw).toMatch(/overlayModules\(full\?\.modules \?\? \[\], detail\.cohort\.trainerPlan\)/)
+    expect(sw).toMatch(/cohortModules\(full\?\.modules \?\? \[\], detail\)/)
+    const shared = code('src/application/student/enrollment-step.ts')
+    expect(shared, 'الحساب المشترك لا يعلو بخطّة الشعبة').toMatch(/overlayModules\(catalog, detail\.cohort\.trainerPlan\)/)
     expect(sw, 'الوحدات ما زالت من الكتالوج مباشرة').not.toMatch(/const modules = full\?\.modules \?\? \[\]/)
   })
 

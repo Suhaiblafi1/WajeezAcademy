@@ -143,7 +143,8 @@ export class ProgressService {
     /* ═══ محاورُ الخطّة لا محاورُ الكتالوج (٢٦ أكتوبر ٢٠٢٦) ═══
        قرارُ صاحب المنصّة: «count only plan units». فالتقدّمُ يُقاس على ما في خطّة
        الشعبة المعتمَدة — ما يراه المتعلّمُ في طريقه — وبلا خطّةٍ على الكتالوج. */
-    const axes = planModuleIds(e.cohort.plans[0]) ?? e.cohort.course.modules.map((m) => m.id)
+    const planAxes = planModuleIds(e.cohort.plans[0])
+    const axes = planAxes ?? e.cohort.course.modules.map((m) => m.id)
     const publishedFor = (moduleId: string) =>
       e.cohort.assessments.some((a) => a.moduleId === moduleId && a.status !== 'draft')
     for (const moduleId of axes) {
@@ -189,12 +190,36 @@ export class ProgressService {
     const assignPct = assignmentsTotal ? Math.round((assignmentsAccepted / assignmentsTotal) * 100) : 100
 
     const percent = Math.round(modulePct * 0.4 + attendancePct * 0.3 + ((assessPct + assignPct) / 2) * 0.3)
-    const evidence = { attendancePct, modulesCompleted, totalModules, assignmentsAccepted, assignmentsTotal, assessmentsPassed, assessmentsTotal }
+    /* `axes` يقول على أيّ محاورَ حُسب الصفّ — وغيابُه علامةُ صفٍّ حُسب قبل محاور الخطّة،
+       يلحقه `refreshStale` في العامل (٢٧ أكتوبر ٢٠٢٦) */
+    const evidence = { attendancePct, modulesCompleted, totalModules, assignmentsAccepted, assignmentsTotal, assessmentsPassed, assessmentsTotal, axes: planAxes ? 'plan' : 'catalog' }
     return this.prisma.courseProgress.upsert({
       where: { enrollmentId },
       update: { percent, evidence },
       create: { enrollmentId, percent, evidence },
     })
+  }
+
+  /* ═══ ما حُسب قبل محاور الخطّة يُعاد حسابُه (٢٧ أكتوبر ٢٠٢٦) ═══
+
+     صار المقامُ محاورَ الخطّة («count only plan units»)، لكنّ النسبةَ المحفوظةَ لا
+     تُعاد إلّا حين يتحرّك شيءٌ في التسجيل — حضورٌ يُسجَّل أو لقاءٌ ينتهي أو عملٌ يُحكم.
+     فيبقى من لم يتحرّك تسجيلُه يقرأ نسبتَه القديمة، وشرطُ شهادته يُحكم بها. فيلحقه
+     العاملُ دفعةً دفعة: كلُّ تسجيلٍ قائمٍ صفُّه بلا `axes`، أو لا صفَّ له بعد. */
+  async refreshStale(limit: number): Promise<{ recomputed: number; failed: number }> {
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT e.id FROM "Enrollment" e
+      LEFT JOIN "CourseProgress" cp ON cp."enrollmentId" = e.id
+      WHERE e.status IN ('enrolled', 'completed')
+        AND (cp.id IS NULL OR NOT (cp.evidence ? 'axes'))
+      ORDER BY e."createdAt" DESC
+      LIMIT ${limit}`
+    let recomputed = 0
+    let failed = 0
+    for (const r of rows) {
+      try { await this.recomputeProgress(r.id); recomputed += 1 } catch { failed += 1 }
+    }
+    return { recomputed, failed }
   }
 
   /* ── قواعد الإكمال ── */
