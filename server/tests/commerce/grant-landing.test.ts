@@ -268,7 +268,7 @@ describe('⑧ب وكود منحته لصاحب الحساب ببريد النم�
     /* وعبّأه ثانيةً فلم يُعرض الكود — هذا من يحتاجه */
     expect((await landing.apply(p)).grant?.code).toBeNull()
     const owner = (await new AuthService(prisma).register(p.email.toUpperCase(), 'Owner#12345', p.fullName)).userId
-    expect(await landing.myCode(owner, '10.0.0.9')).toEqual({ code: out.grant!.code })
+    expect(await landing.myCode(owner, '10.0.0.9')).toEqual({ code: out.grant!.code, percentOff: out.grant!.percentOff })
     expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_claim', entityId: out.ref, actorId: owner } })).toBe(1)
     const other = (await new AuthService(prisma).register(`gl-other-${STAMP}@test.local`, 'Other#12345', 'غيره')).userId
     expect(await landing.myCode(other), 'أخذ كود غيره').toEqual({ code: null })
@@ -284,6 +284,22 @@ describe('⑧ب وكود منحته لصاحب الحساب ببريد النم�
     await commerce.payOrder(bought.orderId, friend, `gl-gift-${bought.orderId}`)
     const owner = (await new AuthService(prisma).register(p.email, 'Owner#12345', p.fullName)).userId
     expect(await landing.myCode(owner)).toEqual({ code: null })
+  })
+
+  /* كلُّ كودٍ يحمل نسبتَه يومَ أُعطي — فإن غيّر صاحبُ المنصّة نسبةَ الحملة بعده سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة */
+  it('⚠️ ونسبة كوده يوم أعطي — لا نسبة الحملة اليوم', async () => {
+    const p = person()
+    const out = await landing.apply(p)
+    expect(out.grant!.percentOff).toBe(60)
+    await grants.update({ percentOff: 50 }, ownerId)
+    try {
+      const owner = (await new AuthService(prisma).register(p.email, 'Owner#12345', p.fullName)).userId
+      expect((await landing.myCode(owner)).percentOff, 'قيلت نسبة الحملة اليوم').toBe(60)
+      /* ومن عبّأه ثانيةً يقال له نسبةُ كوده لا نسبةُ اليوم */
+      expect((await landing.apply(p)).grant!.percentOff).toBe(60)
+    } finally {
+      await grants.update({ percentOff: 60 }, ownerId)
+    }
   })
 })
 

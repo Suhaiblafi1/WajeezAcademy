@@ -5,6 +5,7 @@
    والحسابُ في `cart-pricing.ts`. وهنا النصوصُ والسعرُ بعد المنحة، فلا تقول شاشةٌ رقما يخالف الفاتورة. */
 
 import { money } from './discount-policy'
+import { ACADEMY_ZONE, zonedDay, zonedInstant } from '../trainer/cohort-period'
 
 /** الحملةُ الأولى — وبها يُقرأ صفُّها، ويُنشأ أوّلَ مرّة بإعداداتٍ افتراضيّة. واسمُها «منحة وجيز» بقرار صاحب
     المنصّة (٢٦ أكتوبر ٢٠٢٦)، وكان «منحة أعضاء وجيز» — والمعرّفُ باقٍ: به حُفظ كلُّ من عبّأ نموذجها */
@@ -50,16 +51,16 @@ export const GRANT_CHECKOUT_ONLY_AR = 'كود المنحة يستعمل عند �
 /** أسبابُ ردّ كود المنحة — يُقال سببُها تحت خانة الكود ويُسعَّر الطلبُ بلا كود (`BuyPanel`) */
 export const GRANT_ERROR_CODES = ['grant_closed', 'grant_used', 'grant_once', 'grant_pending', 'grant_not_better', 'grant_max_courses'] as const
 
-/** «آخر يوم» من خانة تاريخ → أوّلُ اليوم الذي بعده بتوقيت الجهاز، فيبقى الكودُ صالحا يومَه كلَّه */
+/** «آخر يوم» من خانة تاريخ → أوّلُ اليوم الذي بعده بتوقيت عمّان، فيبقى الكودُ صالحا يومَه كلَّه.
+    وكان بتوقيت الجهاز: من حفظ أيَّ إعدادٍ من جهازٍ بتوقيتٍ غيره (الخليج مثلا) نقل النهايةَ ساعاتٍ — فالحفظُ يرسلها
+    كلَّ مرّة ولو لم يغيّر التاريخ (٢٧ أكتوبر ٢٠٢٦) */
 export function grantClosesAt(lastDay: string): string {
-  const d = new Date(`${lastDay}T00:00:00`)
-  d.setDate(d.getDate() + 1)
-  return d.toISOString()
+  const [y, m, d] = lastDay.split('-').map(Number)
+  const next = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
+  return zonedInstant(next, [0, 0, 0, 0], ACADEMY_ZONE).toISOString()
 }
 
-/** آخرُ يومٍ للمنحة — النهايةُ تُحفظ أوّلَ اليوم الذي بعده، فيُقال اليومُ الذي قبلها بصيغة الخانة */
+/** آخرُ يومٍ للمنحة — النهايةُ تُحفظ أوّلَ اليوم الذي بعده، فيُقال اليومُ الذي قبلها بصيغة الخانة، بتوقيت عمّان */
 export function grantLastDay(closesAt: string | Date): string {
-  const d = new Date(new Date(closesAt).getTime() - 1)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return zonedDay(new Date(new Date(closesAt).getTime() - 1), ACADEMY_ZONE)
 }

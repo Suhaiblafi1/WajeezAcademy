@@ -36,9 +36,25 @@
 	# ── واجهة البرمجة ──
 	# بلا أيّ تعديلٍ على الجسم. توقيع سترايب يُحسب على البايتات كما أرسلها،
 	# فأيّ إعادة ترميزٍ أو ضغطٍ هنا تُسقط كل webhook.
+	#
+	# ── ويُمسَك الطلبُ ما دام التطبيقُ يُبدَّل (٢٧ أكتوبر ٢٠٢٦) ──
+	# كلُّ نشرٍ يُعيد إنشاءَ حاوية التطبيق، وفي تلك الثواني لا يجيب أحدٌ على
+	# 7101 — فكان Caddy يردّ 502 فورا. وقيس في نشر ١٧:٢٣ (UTC) يومَها: نحوُ عشر
+	# ثوانٍ من 502. ومن ضغط «ادفع» فيها رأى «تعذّر إتمام الشراء — أعد المحاولة»
+	# (بلاغُ صاحب المنصّة). والنشرُ تلقائيٌّ بعد كلّ دمج، فيقع مرارا في اليوم.
+	#
+	# فصار Caddy ينتظر التطبيقَ حتّى ثلاثين ثانيةً ويحاول كلَّ ربع ثانية، فيتأخّر
+	# الطلبُ ولا يسقط. والإعادةُ لا تقع إلّا حيث **لم يصل الطلبُ التطبيقَ أصلا**
+	# (تعذّر الاتّصال): «If the connection to the upstream failed, a retry is
+	# always allowed» — أمّا ما وصله ثمّ سقط فلا يُعاد إلّا GET (`lb_retry_match`
+	# الافتراضيّ). فلا يُرسَل دفعٌ مرّتين.
+	#
+	# والحارس: `src/tests/deploy/proxy-waits-for-app.test.ts`
 	handle /api/* {
 		reverse_proxy app:7101 {
 			header_up X-Real-IP {remote_host}
+			lb_try_duration 30s
+			lb_try_interval 250ms
 		}
 	}
 
@@ -49,6 +65,8 @@
 	handle /s/* {
 		reverse_proxy app:7101 {
 			header_up X-Real-IP {remote_host}
+			lb_try_duration 30s
+			lb_try_interval 250ms
 		}
 	}
 
@@ -63,6 +81,8 @@
 	handle @previewCrawler {
 		reverse_proxy app:7101 {
 			header_up X-Real-IP {remote_host}
+			lb_try_duration 30s
+			lb_try_interval 250ms
 		}
 	}
 

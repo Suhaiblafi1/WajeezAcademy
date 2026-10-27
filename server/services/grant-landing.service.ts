@@ -242,7 +242,7 @@ export class GrantLandingService {
      بالبريد**: حسابٌ بريدُه بريدُ نموذجٍ في هذه الحملة يأخذ كودَه، ولو لم يوثّق بريدَه بعدُ (الدفعُ لا ينتظر التوثيق).
      وعُرض عليه أثرُها: من سبق صاحبَ بريدٍ إلى حسابٍ ببريده أخذ منحتَه، ويستعيد صاحبُ البريد حسابَه ببريده. فيُكتب الأثر.
      ولا كودَ استُعمل في شراءٍ مدفوع. */
-  async myCode(userId: string, ip?: string): Promise<{ code: string | null }> {
+  async myCode(userId: string, ip?: string): Promise<{ code: string | null; percentOff?: number | null }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
     if (!user?.email) return { code: null }
     const lead = await this.prisma.lead.findFirst({
@@ -250,7 +250,7 @@ export class GrantLandingService {
       orderBy: { createdAt: 'asc' },
       select: {
         id: true,
-        grantCode: { select: { coupon: { select: { code: true, orders: { where: { status: { in: BOUGHT } }, select: { id: true } } } } } },
+        grantCode: { select: { coupon: { select: { code: true, percentOff: true, orders: { where: { status: { in: BOUGHT } }, select: { id: true } } } } } },
       },
     })
     const coupon = lead?.grantCode?.coupon
@@ -259,7 +259,8 @@ export class GrantLandingService {
       action: 'coupon.grant_claim', entityType: 'lead', entityId: lead.id, actorId: userId, ip,
       meta: { campaign: this.slug },
     })
-    return { code: coupon.code }
+    /* ونسبتُه يومَ أُعطي — فتُسعَّر الصفحةُ بما يُدفع */
+    return { code: coupon.code, percentOff: coupon.percentOff }
   }
 
   /** «تواصل مع مستشار» — حالةٌ واحدةٌ لصاحب المرجع، تُسند تلقائيّا */

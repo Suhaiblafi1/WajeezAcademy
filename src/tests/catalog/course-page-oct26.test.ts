@@ -53,6 +53,15 @@ describe('③ زر إلى «تعلمي»', () => {
     const box = buy.slice(buy.indexOf('{nothingLeft && ('), buy.indexOf('{nothingLeft && (') + 700)
     expect(box).toMatch(/<Button as=\{Link\} to="\/student\/learning"/)
   })
+
+  /* ومن عاد من صفحة الدفع دون أن يدفع لا يقال له «لك بالفعل» — بل ما بقي، وبابُه (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ وطلب لم يكتمل دفعه: «فواتيري» لا «تعلّمي»', () => {
+    const buy = code('src/components/BuyPanel.tsx')
+    expect(buy).toMatch(/const unpaidLeft = nothingLeft && !!quote\?\.excluded\.some\(\(x\) => x\.reason === "order_pending"\);/)
+    const box = buy.slice(buy.indexOf('{nothingLeft && ('), buy.indexOf('{nothingLeft && (') + 1400)
+    expect(box).toMatch(/^\{nothingLeft && \(!unpaidLeft \? \(/)
+    expect(box).toMatch(/\) : \([\s\S]*لك طلب بهذه الدورات لم يكتمل دفعه\. أكمله من «فواتيري»\.[\s\S]*<Button as=\{Link\} to="\/student\/billing"/)
+  })
 })
 
 describe('④ مشتري المسار: ثلاثة مقترحات', () => {

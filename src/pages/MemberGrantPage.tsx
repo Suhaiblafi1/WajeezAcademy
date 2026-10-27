@@ -202,7 +202,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     setSeeded(true);
   }, [view, stored, seeded, resumed]);
 
-  const pct = view?.campaign.percentOff ?? 0;
+  /* ونسبةُ كوده إن كان له — كلُّ كودٍ يحمل نسبتَه يومَ أُعطي (`grant.service.ts`)، فإن غيّر صاحبُ المنصّة نسبةَ الحملة بعده
+     سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة. ومن لا كودَ له بعدُ يرى نسبةَ الحملة اليوم */
+  const pct = stored?.percentOff ?? view?.campaign.percentOff ?? 0;
   const max = view?.campaign.maxCourses ?? 4;
   const chosen = useMemo(
     () => picked.map((id) => view?.openCourses.find((x) => x.courseId === id)).filter((x): x is GrantCourse => !!x),
@@ -238,7 +240,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       const g = {
         ref: out.ref, code: out.grant?.code ?? null, sentTo: out.grant?.sentTo ?? null,
         name: form.fullName.trim(), email: form.email.trim(), interests, workField: form.workField,
-        influencer: out.influencer?.code ?? null,
+        influencer: out.influencer?.code ?? null, percentOff: out.grant?.percentOff ?? null,
       };
       saveStoredGrant(g, storeKey);
       setStored({ ...g, at: Date.now() });
@@ -260,12 +262,12 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   useEffect(() => {
     if (!claimFor) return;
     let on = true;
-    apiGet<{ code: string | null }>(`/api/learner/grant-code?campaign=${forInfluencer ? "influencer" : "member"}`)
-      .then(({ code }) => {
+    apiGet<{ code: string | null; percentOff?: number | null }>(`/api/learner/grant-code?campaign=${forInfluencer ? "influencer" : "member"}`)
+      .then(({ code, percentOff = null }) => {
         if (!on || !code) return;
         const kept = readStoredGrant(storeKey);
-        if (kept && !kept.code) saveStoredGrant({ ...kept, code, sentTo: null }, storeKey);
-        setStored((s) => (s && !s.code ? { ...s, code, sentTo: null } : s));
+        if (kept && !kept.code) saveStoredGrant({ ...kept, code, sentTo: null, percentOff: percentOff ?? kept.percentOff }, storeKey);
+        setStored((s) => (s && !s.code ? { ...s, code, sentTo: null, percentOff: percentOff ?? s.percentOff } : s));
       })
       .catch(() => undefined);
     return () => { on = false; };
