@@ -1512,7 +1512,7 @@ export class CohortService {
   /* ═══ جدولٌ كاملٌ انتقل — يُخبَر به المتعلّمون مرّةً واحدة (٢٤ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: رسالةٌ واحدةٌ بدلَ رسالةٍ لكلّ لقاء. كان قبولُ جدولٍ ينقل أربعةَ لقاءاتٍ يرسل أربعةَ
      أجراسٍ وأربعةَ بُرُد. فالجدولُ يُنقل بهدوء (`quiet`)، ثمّ يقال لهم: اليومُ والساعةُ الجديدان، وأوّلُ لقاءٍ بهما. */
-  async tellLearnersScheduleMoved(cohortId: string, input: { weekday: number; clock: string; firstAt: Date | null; pending: number }) {
+  async tellLearnersScheduleMoved(cohortId: string, input: { weekday: number; clock: string; days?: readonly number[]; firstAt: Date | null; pending: number }) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true } })
     const recipients = await this.prisma.enrollment.findMany({ where: { cohortId, status: { not: 'dropped' } }, select: { userId: true } })
     const title = `تغير موعد شعبتك «${cohort?.title ?? ''}»`

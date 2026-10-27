@@ -665,7 +665,7 @@ export class PlanEditService {
         }, { preApproved, quiet: true }))
       }
       tell = edit.moves.length === 0 ? null : {
-        weekday: edit.weekday, clock: edit.clock, pending,
+        weekday: edit.weekday, clock: edit.clock, ...(edit.days ? { days: edit.days } : {}), pending,
         firstAt: new Date(Math.min(...edit.moves.map((m) => Date.parse(m.startsAt)))),
       }
       for (const t of edit.tasks) {

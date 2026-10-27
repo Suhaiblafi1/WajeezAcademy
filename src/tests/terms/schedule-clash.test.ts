@@ -6,8 +6,8 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  candidateSlots, clashWhyAr, findClashes, levelRank, linkWhyAr, mainSlot, nearbyAt, nearbyOnDay, nearbySpanAr, nearbyWarnAr, planClashFree,
-  rejectedScope, withRejectReason, type NearbyTime,
+  candidateSlots, clashWhyAr, findClashes, hourSlots, levelRank, linkWhyAr, mainSlot, nearbyAt, nearbyOnDay, nearbySpanAr, nearbyWarnAr, planClashFree,
+  rejectedScope, slotAr, weekdaysOf, withRejectReason, type NearbyTime,
   SCHEDULE_REJECT_REASONS, type BuildSchedule, type ClashCohort, type ClashCourse, type WeeklySlot,
 } from '@/application/terms/schedule-clash'
 import { clashBellBodyAr, clashBellTitleAr, clashMailAr, scheduleMovedBodyAr } from '@/application/terms/clash-message'
@@ -38,7 +38,8 @@ function fakeBuild(cohorts: readonly ClashCohort[]): BuildSchedule<WeeklySlot> &
     const sessions = c.sessions.map((s) => {
       const day = zonedDay(new Date(s.startsAt))
       const wd = new Date(`${day}T12:00:00Z`).getUTCDay()
-      const target = new Date(Date.parse(`${day}T12:00:00Z`) + (slot.weekday - wd) * 24 * HOUR).toISOString().slice(0, 10)
+      /* وساعةٌ في أيّامها نفسِها (`days`): اليومُ يبقى */
+      const target = slot.days ? day : new Date(Date.parse(`${day}T12:00:00Z`) + (slot.weekday - wd) * 24 * HOUR).toISOString().slice(0, 10)
       const at = zonedAt(target, slot.clock).getTime()
       return { startsAt: at, endsAt: at + (s.endsAt - s.startsAt) }
     })
@@ -126,12 +127,12 @@ describe('الحلّ: أقلّ ما يمكن من تغيير', () => {
       cohort('2', 'B', weekly('2026-12-07', '19:00')),
       cohort('3', 'C', weekly('2026-12-08', '19:00')),
       /* لقاءٌ في كلّ أسبوع على يومٍ من أيّام الثلاث — فيقع على كلٍّ منها مرّة.
-         ومعرّفُها أسبقُ وأوّلُ لقاءاتها أسبق — فلا يرتّبها شيءٌ بعد غيرها إلّا كثرةُ تعارضها */
-      cohort('0', 'D', [...weekly('2026-12-06', '19:00', 1), ...weekly('2026-12-14', '19:00', 1), ...weekly('2026-12-22', '19:00', 1)]),
+         ومعرّفُها آخرُ وأوّلُ لقاءاتها آخر — فلا يختارها للنقل شيءٌ قبل غيرها إلّا كثرةُ تعارضها */
+      cohort('9', 'D', [...weekly('2026-12-13', '19:00', 1), ...weekly('2026-12-21', '19:00', 1), ...weekly('2026-12-29', '19:00', 1)]),
     ]
     const p = planClashFree({ cohorts, courses, build: fakeBuild(cohorts) })
     expect(p.before).toHaveLength(3)
-    expect(p.rows.filter((r) => r.action === 'move').map((r) => r.cohortId)).toEqual(['0'])
+    expect(p.rows.filter((r) => r.action === 'move').map((r) => r.cohortId)).toEqual(['9'])
   })
 
   it('والثابت لا ينتقل — يقال سببه، وينتقل غيره', () => {
@@ -176,27 +177,67 @@ describe('الحلّ: أقلّ ما يمكن من تغيير', () => {
     if (moved.action === 'move') expect(moved.to.weekday).not.toBe(0)
   })
 
-  it('⚠️ وما يلتقي أكثر من مرّة في الأسبوع لا يضغط إلى يوم واحد — يبقى، وتنتقل قرينته ولو كان فيها طلبة', () => {
-    /* «لماذا لم تحلّ المتعارضين؟» (٢٤ أكتوبر ٢٠٢٦): كانت تعلق هي وتبقى قرينتُها — فلا يحلّ شيء */
+  it('⚠️ وما يلتقي أكثر من مرّة في الأسبوع لا يضغط إلى يوم واحد — أيامه نفسها بساعة أخرى، وما فيه طلبة يبقى', () => {
+    /* «لماذا ثلاث فقط وهي ثلاثون تعارضا؟» (٢٧ أكتوبر ٢٠٢٦): كان يعلق كلّه — واختار صاحب المنصّة «a» */
     const cohorts = [
       cohort('1', 'A', [...weekly('2026-12-06', '19:00'), ...weekly('2026-12-08', '19:00')]),
       cohort('2', 'B', weekly('2026-12-06', '19:00'), { learners: 3 }),
     ]
     const build = fakeBuild(cohorts)
     const rows = planClashFree({ cohorts, courses, build }).rows
-    expect(rows.find((r) => r.cohortId === '1')!.action).toBe('keep')
-    expect(rows.find((r) => r.cohortId === '2')!.action).toBe('move')
-    expect(build.calls.map((c) => c.id), 'بني لها جدول أسبوعيّ واحد').not.toContain('1')
+    const moved = rows.find((r) => r.cohortId === '1')!
+    expect(rows.find((r) => r.cohortId === '2')!.action).toBe('keep')
+    expect(moved.action).toBe('move')
+    if (moved.action !== 'move') return
+    expect(moved.to.days, 'ضغط إلى يوم واحد').toEqual([0, 2])
+    expect(moved.to.clock).toBe('17:00')
+    expect([slotAr(moved.from), slotAr(moved.to)]).toEqual(['الأحد والثلاثاء 19:00', 'الأحد والثلاثاء 17:00'])
   })
 
-  it('⚠️ وشعبتان كلتاهما أكثر من مرّة في الأسبوع — تعلق الثانية ويقال سببه', () => {
+  it('⚠️ وشعبتان كلتاهما أكثر من مرّة في الأسبوع — تنتقل واحدة بساعتها، لا تعلقان', () => {
     const twice = (a: string, b: string) => [...weekly(a, '19:00'), ...weekly(b, '19:00')]
     const cohorts = [cohort('1', 'A', twice('2026-12-06', '2026-12-08')), cohort('2', 'B', twice('2026-12-06', '2026-12-09'))]
-    const build = fakeBuild(cohorts)
-    const stuck = planClashFree({ cohorts, courses, build }).rows.filter((r) => r.action === 'stuck')
-    expect(stuck).toHaveLength(1)
-    if (stuck[0]!.action === 'stuck') expect(stuck[0]!.whyAr).toContain('أكثر من مرة في الأسبوع')
-    expect(build.calls).toEqual([])
+    const rows = planClashFree({ cohorts, courses, build: fakeBuild(cohorts) }).rows
+    expect(rows.filter((r) => r.action === 'stuck')).toEqual([])
+    const moves = rows.filter((r) => r.action === 'move')
+    expect(moves).toHaveLength(1)
+    if (moves[0]!.action === 'move') expect(moves[0]!.to.days).toEqual(moves[0]!.cohortId === '1' ? [0, 2] : [0, 3])
+  })
+
+  it('وإن تساوتا فالتي تلتقي مرّة في الأسبوع تنتقل — يتغيّر فيها أقلّ', () => {
+    const cohorts = [
+      cohort('1', 'A', [...weekly('2026-12-06', '19:00'), ...weekly('2026-12-08', '19:00')]),
+      cohort('2', 'B', weekly('2026-12-06', '19:00')),
+    ]
+    const rows = planClashFree({ cohorts, courses, build: fakeBuild(cohorts) }).rows
+    expect(rows.filter((r) => r.action === 'move').map((r) => r.cohortId)).toEqual(['2'])
+  })
+
+  it('⚠️ ونقلة واحدة تحلّ اثنتين خير من نقلتين — لا نقلة زائدة', () => {
+    /* ٢ و٣ تلتقيان الأحد والاثنين، و١ تقع على أحدهما ثمّ على الآخر. واختيارُ الأقلّ طلبةً يبدأ بـ١،
+       ثمّ لا يحلّ ٢–٤ و٣–٥ إلّا نقلُ ٢ و٣ — فيصير نقلُ ١ زائدا: لا يبقى له تعارضٌ حين يوضع */
+    const cohorts = [
+      cohort('1', 'A', [...weekly('2026-12-06', '19:00', 1), ...weekly('2026-12-14', '19:00', 1)]),
+      cohort('2', 'B', weekly('2026-12-06', '19:00'), { learners: 1 }),
+      cohort('3', 'C', weekly('2026-12-07', '19:00'), { learners: 1 }),
+      cohort('4', 'D', weekly('2026-12-13', '20:00', 3), { learners: 5 }),
+      cohort('5', 'A', weekly('2026-12-21', '20:00', 2), { learners: 5 }),
+    ]
+    const p = planClashFree({ cohorts, courses, build: fakeBuild(cohorts) })
+    expect(p.before.map((x) => `${x.a}-${x.b}`).sort()).toEqual(['1-2', '1-3', '2-4', '3-5'])
+    expect(p.rows.filter((r) => r.action === 'move').map((r) => r.cohortId)).toEqual(['2', '3'])
+  })
+
+  it('⚠️ ولا يطلب من مدرّب واحد أن ينقل شعبه — تغيير منه وآخر من غيره', () => {
+    /* م مدرّبُ ١ و٣، و١ تتعارض مع ٢، و٣ مع ٤ — كلّها بلا طلبة. بالترتيب وحدَه ينتقل ١ و٣ كلاهما لمدرّبٍ واحد */
+    const cohorts = [
+      cohort('1', 'A', weekly('2026-12-06', '19:00'), { trainerIds: ['م'] }),
+      cohort('2', 'B', weekly('2026-12-06', '19:00')),
+      cohort('3', 'C', weekly('2026-12-08', '19:00'), { trainerIds: ['م'] }),
+      cohort('4', 'D', weekly('2026-12-08', '19:00')),
+    ]
+    const moves = planClashFree({ cohorts, courses, build: fakeBuild(cohorts) }).rows.filter((r) => r.action === 'move').map((r) => r.cohortId)
+    expect(moves).toEqual(['1', '4'])
   })
 
   it('⚠️ وإن صلحت مواعيد وتعارضت كلّها لا يقال سبب آخر ما لم يصلح', () => {
@@ -231,6 +272,17 @@ describe('المواعيد المرشّحة', () => {
   it('والساعة المرفوضة تسقط من كلّ يوم', () => {
     const slots = candidateSlots({ weekday: 0, clock: '19:00' }, 120, [{ weekday: 0, clock: '19:00', scope: 'hour' }])
     expect(slots.some((s) => s.clock === '19:00')).toBe(false)
+  })
+
+  it('وفي أيامها نفسها: الساعات الأقرب، وما يصلح في كلّ يوم منها — والمرفوض يسقط', () => {
+    const slots = hourSlots({ weekday: 1, clock: '19:00' }, [1, 3], 120, [{ weekday: 1, clock: '19:30', days: [1, 3], scope: 'slot' }])
+    expect(slots.slice(0, 4).map((s) => s.clock)).toEqual(['19:00', '18:30', '18:00', '20:00'])
+    expect(slots.some((s) => s.clock === '19:30'), 'اقترح ما رفضه').toBe(false)
+    expect(slots.every((s) => s.clock >= '17:00' && s.clock <= '20:30')).toBe(true)
+    expect(slots.every((s) => s.days?.join() === '1,3')).toBe(true)
+    /* ومن رفض أيامها لا ساعة تحلّه — الأيام لا تتغيّر */
+    expect(hourSlots({ weekday: 1, clock: '19:00' }, [1, 3], 120, [{ weekday: 1, clock: '19:00', days: [1, 3], scope: 'day' }])).toEqual([])
+    expect(weekdaysOf([...weekly('2026-12-09', '19:00', 2), ...weekly('2026-12-07', '19:00', 2)])).toEqual([1, 3])
   })
 
   it('والموعد الغالب أكثر لقاءاتها تكرارا', () => {
@@ -305,6 +357,11 @@ describe('رسالة المتعلّمين حين ينتقل الجدول — و�
     const t = scheduleMovedBodyAr({ weekday: 2, clock: '19:00', firstAtAr: 'الثلاثاء 8 ديسمبر 19:00', pending: 0 })
     expect(t).toBe('صارت لقاءات شعبتك الثلاثاء 19:00 كل أسبوع وأول لقاء بموعده الجديد الثلاثاء 8 ديسمبر 19:00. ورابط الانضمام نفسه.')
     expect(t).not.toMatch(/[\u064B-\u0650\u0652]/)
+  })
+
+  it('وشعبة تلتقي أكثر من مرّة في الأسبوع تذكر أيامها كلّها', () => {
+    expect(scheduleMovedBodyAr({ weekday: 1, clock: '20:30', days: [1, 3, 6], firstAtAr: null, pending: 0 }))
+      .toBe('صارت لقاءات شعبتك الاثنين، الأربعاء والسبت 20:30 كل أسبوع. ورابط الانضمام نفسه.')
   })
 
   it('وما رجع إلى مراجعة الإدارة يقال', () => {

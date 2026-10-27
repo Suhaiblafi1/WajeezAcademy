@@ -250,11 +250,11 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
 
   app.post('/api/admin/terms/:id/clashes/send', {
     preHandler: requirePermission('cohort.plan.edits.review'),
-    schema: { tags: ['admin-terms'], summary: 'إرسال المواعيد المقترحة إلى المدربين بطاقات قبول أو رفض' },
+    schema: { tags: ['admin-terms'], summary: 'إرسال الموعد المقترح لشعبة واحدة إلى مدربها بطاقة قبول أو رفض' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const { hold } = z.object({ hold: z.array(z.string().uuid()).max(500).optional() }).parse(req.body ?? {})
-    return clashes.send(req.auth!.userId, id, holdSet(hold))
+    const { cohortId, hold } = z.object({ cohortId: z.string().uuid(), hold: z.array(z.string().uuid()).max(500).optional() }).parse(req.body ?? {})
+    return clashes.send(req.auth!.userId, id, cohortId, holdSet(hold))
   })
 }
 
