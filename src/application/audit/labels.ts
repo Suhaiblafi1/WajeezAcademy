@@ -472,6 +472,7 @@ const PHRASES: Record<string, string> = {
      يقولها تركيبٌ من المقاطع. */
   'trainer_code.create': 'إصدار مدرّب كود خصم بنسبة من حسابه',
   'referral.share_code.create': 'إنشاء كود الأكاديمية على دورات المدرّب — «شارك دوراتك»',
+  'referral.share.remind': 'تذكير المدرّب بنشر شعبته قبل بدئها بأسبوع — «انشر دورتك الآن»',
   'trainer_code.pause': 'إيقاف مدرّب كود خصم أصدره',
   'trainer_code.resume': 'استئناف مدرّب كود خصم أوقفه',
   'trainer_code.revoke': 'إلغاء مدرّب كود خصم أصدره',

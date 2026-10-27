@@ -21,8 +21,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  ArrowLeft, Award, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, CheckCircle2, ChevronDown, Circle,
-  Clock3, ExternalLink, FileText, Hourglass, Library, Loader2, Lock, PenLine, Play, PlayCircle, Ruler, Send, Star, Video,
+  Award, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, CheckCircle2, ChevronDown, Circle,
+  Clock3, ExternalLink, FileText, Library, Loader2, Lock, Play, PlayCircle, Ruler, Send, Star, Video,
 } from "lucide-react";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
 import { SubmissionFilePick, SubmittedWork, UploadProgress } from "@/components/journey/SubmissionFile";
@@ -42,8 +42,11 @@ import { overlayModules, readTypedLinks, resourceKind, type LearnerCohortWorkboo
 import { groupLabelAr } from "@/application/trainer/cohort-workbooks";
 import { dayLabelAr } from "@/application/trainer/axis-timeline";
 import { whenAr } from "@/application/learning/cohort-gate";
-import { buildStagePath, inPlanOnly, nextStep, type NextStep, type PathStop, type StagePath } from "@/application/student/stage-path";
+import { inPlanOnly, type PathStop, type StagePath } from "@/application/student/stage-path";
+import { enrollmentStep } from "@/application/student/enrollment-step";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
+import StopStars from "@/components/journey/StopStars";
+import NextStepCard from "@/components/journey/NextStepCard";
 import type { CourseFull } from "@/data/courses";
 import type { JourneyStage } from "@/application/student/journey";
 import type { LearnerRequest } from "@/services/learner-requests";
@@ -104,10 +107,6 @@ export default function StageWork({
     return () => clearInterval(t);
   }, []);
 
-  const doneModules = useMemo(
-    () => new Set(detail.moduleProgress.filter((m) => m.status === "completed").map((m) => m.moduleId)),
-    [detail.moduleProgress],
-  );
   /* ═══ خطّةُ المدرّب تعلو الكتالوج ═══
 
      كان `full.modules` وحدَها — وحداتُ الكتالوج — فما يؤلّفه مدرّبُ الشعبة
@@ -137,44 +136,9 @@ export default function StageWork({
     () => new Map(detail.cohort.assessments.map((a) => [a.id, latestSubmission(detail, a.id)])),
     [detail],
   );
-  const attended = useMemo(
-    () => new Set(detail.attendance.filter((a) => a.status === "present" || a.status === "late").map((a) => a.sessionId)),
-    [detail.attendance],
-  );
-  const accepted = useMemo(
-    () => new Set([...latest].filter(([, s]) => s?.status === "accepted").map(([id]) => id)),
-    [latest],
-  );
-  /* المقروءُ: مفتوحٌ له متنٌ أو ملفّ — وما «يُكتب الآن» لا يُدعى إليه */
-  const readable = useMemo(
-    () => new Set(
-      modules
-        .filter((m) => !m.locked && (splitLessons(m.body).length > 0 || Boolean((m.bodyFileKey ?? "").trim())))
-        .map((m) => m.id),
-    ),
-    [modules],
-  );
-  const path = useMemo(
-    () => buildStagePath({
-      modules, slots, sessions: detail.cohort.sessions, assessments: detail.cohort.assessments,
-      doneModules, attended, accepted,
-    }),
-    [modules, slots, detail.cohort.sessions, detail.cohort.assessments, doneModules, attended, accepted],
-  );
-  const at = new Date(now);
-  const submittable = new Set(detail.cohort.assessments.filter((a) => canSubmitNow(detail, a, at)).map((a) => a.id));
-  const step = nextStep({
-    path,
-    modules,
-    sessions: detail.cohort.sessions,
-    assessments: detail.cohort.assessments,
-    submittable,
-    resubmit: new Set([...submittable].filter((id) => latest.get(id)?.status === "resubmit_requested")),
-    inReview: new Set([...latest].filter(([, s]) => s?.status === "submitted" || s?.status === "under_review").map(([id]) => id)),
-    readable,
-    doneModules,
-    now,
-  });
+  /* الطريقُ والخطوةُ والأثرُ من حسابٍ واحدٍ تقرؤه الرئيسيّةُ أيضا (`enrollment-step.ts`) —
+     فلا تقول الرئيسيّةُ «سلّم كذا» والدورةُ «اقرأ كذا» */
+  const { path, step, doneModules } = useMemo(() => enrollmentStep(detail, modules, now), [detail, modules, now]);
   /* «ابدأ من هنا» على المحور الذي تدعو إليه البطاقةُ نفسُه — حقيقةٌ واحدة لا اثنتان */
   const nextModuleId = step?.kind === "read" ? step.moduleId : null;
 
@@ -523,7 +487,6 @@ function LessonRow({
             {!m.locked && lessons.length === 0 && hasFile && " · محتواها ملفّ من مدرّبك"}
             {!m.locked && checks > 0 && ` · ${checks} تمرين استرجاع`}
             {!m.locked && m.scenario && " · سيناريو قرار"}
-            {!m.locked && lessons.length === 0 && !hasFile && " · محتواها يكتب الآن"}
           </span>
         </span>
         {/* وحدةٌ بلا متن لا تُوسَم «ابدأ من هنا» ولا «لم تبدأ»:
@@ -536,7 +499,9 @@ function LessonRow({
           </span>
         ) : !readable ? (
           <span className="flex shrink-0 items-center gap-1 rounded-full border border-gold/40 bg-gold/[0.07] px-2.5 py-0.5 text-fine font-bold text-gold-ink">
-            <PenLine className="h-2.5 w-2.5" /> قيد التأليف
+            {/* «قيد التأليف» كانت تُقرأ «الدورة لم تكتمل» — فقرّر صاحبُ المنصّة (٢٧ أكتوبر ٢٠٢٦)
+                أن يُقال ما يعني المتعلّمَ: متى يصله، لا أنّ أحدا يكتبه */}
+            <Clock3 className="h-2.5 w-2.5" aria-hidden="true" /> يصلك قبل جلسته
           </span>
         ) : done ? (
           <span className="shrink-0 rounded-full border border-teal/50 px-2.5 py-0.5 text-fine font-bold text-teal-ink">
@@ -712,117 +677,6 @@ function PathProgress({ path, percent }: { path: StagePath; percent: number }) {
   );
 }
 
-/* ─────────── «خطوتك التالية» ───────────
-
-   فعلٌ واحدٌ بزرٍّ واحد، والحكمُ في `nextStep`. والزرُّ فيروزيّ لا ذهبيّ:
-   الذهبيُّ في هذه الشاشة لنموذج الاختبار (`one-primary-per-screen.test.ts`). */
-/* عنوانٌ فيه «» لا يُلفّ بها ثانية — «بطاقة «فكرة»» قراءةٌ متعثّرة */
-const quoted = (s: string) => (s.includes("«") ? s : `«${s}»`);
-
-const STEP_BTN =
-  "flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light";
-
-function NextStepCard({
-  step,
-  sessions,
-  courseId,
-  enrollmentId,
-  onReveal,
-}: {
-  step: NextStep | null;
-  sessions: CohortSession[];
-  courseId: string;
-  enrollmentId: string;
-  onReveal: (stopKey: string | null, targetId: string) => void;
-}) {
-  if (!step) return null;
-  let icon = Play;
-  let title = "";
-  let meta: string | null = null;
-  let action: React.ReactNode = null;
-  const reveal = (stopKey: string | null, target: string, label: string) => (
-    <button type="button" onClick={() => onReveal(stopKey, target)} className={`${STEP_BTN} cursor-pointer`}>
-      {label} <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-    </button>
-  );
-
-  switch (step.kind) {
-    case "live": {
-      const s = sessions.find((x) => x.id === step.sessionId);
-      icon = Video;
-      title = `الجلسة الآن: ${step.title}`;
-      meta = s ? fmtSession(s.startsAt) : null;
-      action = s?.zoom ? (
-        <a href={s.zoom.learnerUrl ?? s.zoom.joinUrl} target="_blank" rel="noreferrer" className={STEP_BTN}>
-          <Video className="h-3.5 w-3.5" aria-hidden="true" /> ادخل الجلسة
-        </a>
-      ) : null;
-      break;
-    }
-    case "resubmit":
-      icon = Send;
-      title = `أعد تسليم ${quoted(step.title)}`;
-      meta = "طلب مدرّبك تعديله";
-      action = reveal(step.stopKey, `task-${step.assessmentId}`, "افتح المهمة");
-      break;
-    case "submit":
-      icon = Send;
-      title = `سلّم ${quoted(step.title)}`;
-      meta = step.dueAt ? `آخر موعد ${fmtDate(step.dueAt)}` : null;
-      action = reveal(step.stopKey, `task-${step.assessmentId}`, "افتح المهمة");
-      break;
-    case "read":
-      icon = BookOpen;
-      title = `اقرأ ${quoted(step.title)}`;
-      action = (
-        <Link to={`/student/course/${courseId}/module/${step.moduleId}?e=${encodeURIComponent(enrollmentId)}`} className={STEP_BTN}>
-          ابدأ القراءة <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
-      );
-      break;
-    case "session":
-      icon = CalendarDays;
-      title = `جلستك القادمة: ${step.title}`;
-      meta = fmtSession(step.startsAt);
-      action = (
-        <a href={`/api/calendar/cohort-sessions/${step.sessionId}.ics`} className={STEP_BTN}>
-          <CalendarPlus className="h-3.5 w-3.5" aria-hidden="true" /> أضفها لتقويمك
-        </a>
-      );
-      break;
-    case "review":
-      icon = Hourglass;
-      title = `عملك ${quoted(step.title)} عند مدرّبك`;
-      meta = "يصلك رده هنا.";
-      break;
-    case "wait":
-      icon = Clock3;
-      title = `المحطة التالية: ${step.title}`;
-      meta = step.opensAt ? `تفتح ${whenAr(step.opensAt)}` : null;
-      break;
-    case "finish":
-      icon = Award;
-      title = "أتممت محطات الدورة";
-      meta = "شهادتك في آخر الطريق.";
-      action = reveal(null, "certificate", "إلى الشهادة");
-      break;
-  }
-  const Icon = icon;
-  return (
-    <Card as="section" tone="accent" aria-label="خطوتك التالية" className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal text-on-teal">
-        <Icon className="h-5 w-5" aria-hidden="true" />
-      </span>
-      <div className="min-w-0 flex-1 basis-[12rem]">
-        <span className="block text-fine font-bold text-teal-light-ink">خطوتك التالية</span>
-        <p className="mt-0.5 text-sm font-black leading-snug text-foreground">{title}</p>
-        {meta && <p className="mt-0.5 text-read text-muted-foreground">{meta}</p>}
-      </div>
-      {action}
-    </Card>
-  );
-}
-
 /* ─────────── المحطّة ───────────
 
    عقدةٌ على الخطّ تقول حالَها بشكلها لا بلونها وحدَه — علامةٌ لما أُنجز، ورقمٌ
@@ -857,27 +711,6 @@ function StopChip({ stop }: { stop: PathStop }) {
     );
   }
   return <span className="shrink-0 rounded-full border border-foreground/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">مفتوحة</span>;
-}
-
-/* نجمةٌ لكلّ نوعٍ في المحطّة: قرأ · حضر · قُبل عملُه — `stage-path.ts` */
-function Stars({ stars }: { stars: { earned: number; total: number } }) {
-  if (stars.total === 0) return null;
-  return (
-    <span
-      className="flex shrink-0 items-center gap-0.5"
-      role="img"
-      aria-label={`${stars.earned} من ${stars.total} نجوم`}
-      title="نجمة للقراءة، ونجمة للحضور، ونجمة حين يقبل عملك"
-    >
-      {Array.from({ length: stars.total }, (_, i) => (
-        <Star
-          key={i}
-          aria-hidden="true"
-          className={`h-3.5 w-3.5 ${i < stars.earned ? "fill-gold text-gold" : "text-muted-foreground/40"}`}
-        />
-      ))}
-    </span>
-  );
 }
 
 function StopPart({
@@ -962,7 +795,7 @@ function StopItem({
             </span>
           </span>
           <span className="flex shrink-0 items-center gap-2">
-            <Stars stars={s.stars} />
+            <StopStars stars={s.stars} />
             <StopChip stop={s} />
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />

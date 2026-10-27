@@ -27,7 +27,7 @@
    ــ وما زال قائما: **لا يُبنى مسارٌ هنا**. صفحتان تبنيان مسارا تفترقان
    يوما، والمسارُ عقدٌ على متعلّمٍ لا شاشةُ عرض. */
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Copy, ExternalLink, Gift, Link2, Loader2, Share2, TicketPercent, UserPlus, Wallet } from "lucide-react";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -40,6 +40,7 @@ import ShareKit from "@/components/trainer/ShareKit";
 import { syncLinkPreviews } from "@/components/trainer/link-preview";
 import { fmtDayMonth } from "@/application/text/format-ar";
 import { bestCode } from "@/application/trainer/share-kit";
+import { VIA_AR } from "@/application/links/share-via";
 import {
   MAX_TRAINER_CODE_AMOUNT, MAX_TRAINER_CODE_PERCENT, MIN_TRAINER_CODE_PERCENT, codeBlockerAr, codeFaceAr,
   codeQuoteFor, codeValueRows, type CodePricingCourse,
@@ -82,6 +83,8 @@ interface ShareKitData {
   short: { wide: string | null; cohorts: Record<string, string> }
   /** بصمةُ معاينة كلّ رابطٍ قصيرٍ برمزه — وما تغيّر يُرسم ويُرفع (`link-preview.ts`) */
   previews?: Record<string, string | null>
+  /** ما بلغه كلُّ رابطٍ قصيرٍ برمزه — كم فتحه ومن أيّ منصّة، وكم سجّل منه (`link-opens.ts`) */
+  reach?: Record<string, { opens: number; byVia: Record<string, number>; registered: number }>
 }
 
 /** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
@@ -470,6 +473,30 @@ function LegacyDiscounts() {
 /** الرابطُ كما يُعرض في خانته: بلا «https://» — فيسع آخرُه، وهو ما يميّزه، خانةَ الهاتف. وما يُنسخ بالزرّ الرابطُ كاملا */
 const bare = (url: string) => url.replace(/^https?:\/\//, "");
 
+const PEOPLE_FORMS = { one: "شخص", two: "شخصان", few: "أشخاص", many: "شخصا" } as const;
+
+/* ═══ كم فتح رابطَه، ومن أين (٢٧ أكتوبر ٢٠٢٦) ═══
+   «يرى المدرّبُ كم فتح رابطَه وكم سجّل منه، وأيُّ منصّةٍ تجلب» — اقترحه Claude فقال صاحبُ المنصّة: «كلّهم».
+   سطرٌ تحت الرابط القصير: «فتحه 12 شخصا · سجل منه 2 — واتساب 8 · لينكدإن 4». والزاحفُ لا يُعدّ (`link-opens.ts`). */
+function LinkReachLine({ url, reach, registered = true }: {
+  url: string; reach: ShareKitData["reach"];
+  /** ورابطُه العامُّ يقول مسجّليه في رأس بطاقته — فلا يُكرَّر بعددٍ آخر */
+  registered?: boolean;
+}) {
+  const r = reach?.[url.split("/").pop() ?? ""];
+  if (!r) return null;
+  if (r.opens === 0) return <p className="mt-1.5 text-read text-muted-foreground">لم يفتحه أحد بعد.</p>;
+  const vias = Object.entries(r.byVia).sort((a, b) => b[1] - a[1])
+    .map(([v, n]) => `${v === "direct" ? "نسخ مباشر" : VIA_AR[v] ?? v} ${n}`);
+  return (
+    <p className="mt-1.5 text-read text-muted-foreground">
+      <b className="text-foreground">فتحه {countAr(r.opens, PEOPLE_FORMS)}</b>
+      {registered && ` · سجل منه ${r.registered}`}
+      {vias.length > 0 && ` — ${vias.join(" · ")}`}
+    </p>
+  );
+}
+
 /** الكودُ الذي يظهر في منشوره: أعلى الخصمين، وكودُه إن ساوى خصمَنا (`bestCode`) */
 const shareCodeOf = (k: ShareKitData) => bestCode({ code: k.code, percentOff: k.percentOff }, k.hisCodes);
 
@@ -489,7 +516,11 @@ export default function Referral() {
       .then((r) => { setKit(r); return true; })
       .catch((e) => { setKitErr(permissionMessage(e, "تعذّر تحميل منشورك")); return false; }), []);
   /* لوحةُ مشاركة الشعبة المفتوحة: معرّفُها — ولوحةُ دوراته كلِّها مفتوحةٌ دائما */
-  const [sharing, setSharing] = useState<string | null>(null);
+  /* ═══ والبريدُ يفتح لوحةَ الشعبة نفسِها (٢٧ أكتوبر ٢٠٢٦) ═══
+     «انشر دورتك الآن» قبل البدء بأسبوع (`share-reminder.service.ts`) زرُّه `?share=<الشعبة>` — فيصل المدرّبُ إلى منشورها
+     الجاهز لا إلى رأس الصفحة يبحث عنه */
+  const [params] = useSearchParams();
+  const [sharing, setSharing] = useState<string | null>(() => params.get("share"));
   /* المنسوخُ يُعلَّم بمفتاحه لا برايةٍ واحدة: رايةٌ واحدةٌ لروابطَ كثيرةٍ
      تُضيء «نُسخ» تحت كلّ زرٍّ معا، فلا يدري أيَّها نسخ. */
   const [copied, setCopied] = useState<string | null>(null);
@@ -513,6 +544,14 @@ export default function Referral() {
     void loadKit();
     return () => { alive = false };
   }, [loadKit]);
+
+  /* وتُنزل الصفحةُ إلى الشعبة التي جاء البريدُ بها حين تظهر */
+  useEffect(() => {
+    const id = params.get("share");
+    if (id && kit && cohortLinks?.some((c) => c.cohortId === id)) {
+      document.getElementById(`share-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [params, kit, cohortLinks]);
 
   /* ومعاينةُ روابطه حين تُلصق في واتساب وفيسبوك: تُرسم هنا وتُرفع إن تغيّر ما رُسمت منه (`link-preview.ts`) */
   useEffect(() => {
@@ -660,6 +699,7 @@ export default function Referral() {
                   <ExternalLink className="h-4 w-4" aria-hidden="true" /> عاينها
                 </a>
               </div>
+              {kit?.short.wide && <LinkReachLine url={kit.short.wide} reach={kit.reach} registered={false} />}
               {/* البوّابةُ تُقال لا تُخفى: من لم يُعتمد نشرُ ملفّه رابطُه لا يفتح
                   بعد — فيُقال له لمَ ومَن يرفعه، لا يُعطى رابطا يردّ ٤٠٤. */}
               {!referral.publicReady && (
@@ -707,7 +747,7 @@ export default function Referral() {
               ) : (
                 <ul className="mt-2 divide-y divide-white/8">
                   {cohortLinks.map((c) => (
-                    <li key={c.cohortId} className="py-3 last:pb-0">
+                    <li key={c.cohortId} id={`share-${c.cohortId}`} className="scroll-mt-24 py-3 last:pb-0">
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
                         <span className="text-read font-bold text-foreground">{c.courseTitle}</span>
                         <span className="text-read text-muted-foreground">
@@ -740,6 +780,7 @@ export default function Referral() {
                           </Button>
                         )}
                       </div>
+                      {kit?.short.cohorts[c.cohortId] && <LinkReachLine url={kit.short.cohorts[c.cohortId]} reach={kit.reach} />}
                       {kit && sharing === c.cohortId && (
                         <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={kit.short.cohorts[c.cohortId] ?? c.url} code={shareCodeOf(kit)}
                           courses={[{ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }]} />

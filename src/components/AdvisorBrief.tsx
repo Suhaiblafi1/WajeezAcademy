@@ -34,15 +34,14 @@ import { CONTACT } from "@/data/stories";
 import { fmtDateLong } from "@/application/text/format-ar";
 import { waHref as buildWaHref } from "@/application/site/whatsapp";
 import { useWhatsAppNumbers } from "@/services/whatsapp";
-import { advisorBriefTextAr } from "@/application/advisor/brief-message";
+import { BRIEF_ATTACH_MSG_AR, advisorBriefTextAr } from "@/application/advisor/brief-message";
 
 /** ما يُطلب من المرسِل — في الورقة وحدَها، والرسالةُ تقوله بلسانه (`BRIEF_ATTACH_MSG_AR`) */
 export const BRIEF_ATTACH_NOTE_AR =
   "أرجو إرفاق سيرتك الذاتية أو رابط حسابك على لينكدإن ليعرف مستشار المسار المهني عنك أكثر.";
 
-/** وفي الرسالة يقوله صاحبُها لا الورقة — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): «1». كان سطرُ الورقة نفسُه آخرَ الرسالة،
-    فيقرؤه المستشارُ طلبا منه هو أن يُرفق سيرتَه. فصار وعدا بلسان المرسِل يذكّره أن يرسلها في المحادثة. */
-export const BRIEF_ATTACH_MSG_AR = "سأرسل سيرتي الذاتية أو رابط حسابي على لينكدإن في هذه المحادثة.";
+/* وسطرُ الرسالة بلسان مرسلها في `application/advisor/brief-message.ts` (`BRIEF_ATTACH_MSG_AR`) */
+export { BRIEF_ATTACH_MSG_AR };
 
 export interface AdvisorBriefProps {
   /** اسمُ المسار المرشَّح — كما يُعرض في صفحته */

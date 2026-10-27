@@ -17,8 +17,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, FileText,
-  Loader2, Lock, PenLine, Sparkles, Target,
+  ArrowLeft, ArrowRight, BookOpen, CalendarClock, CheckCircle2, Clock, FileText,
+  Loader2, Lock, Sparkles, Target,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import LessonBody from "@/components/LessonBody";
@@ -39,9 +39,14 @@ import { track } from "@/services/analytics";
 import { countAr } from "@/application/text/count-ar";
 import { courseFullById } from "@/data/courses";
 import { overlayModule, overlayModules } from "@/application/trainer/plan-overlay";
-import { fetchEnrollmentDetail } from "@/services/enrollment-detail";
-import type { LearnerPlanView } from "@/application/trainer/plan-overlay";
+import { fetchEnrollmentDetail, type EnrollmentDetail } from "@/services/enrollment-detail";
 import { whenAr } from "@/application/learning/cohort-gate";
+import {
+  afterModule, buildStagePath, evidenceOf, inPlanOnly, readableModules, stopOfModule, type AfterModule,
+} from "@/application/student/stage-path";
+import { dayLabelAr } from "@/application/trainer/axis-timeline";
+import { fmtSession } from "@/application/text/format-ar";
+import StopStars from "@/components/journey/StopStars";
 
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -80,7 +85,10 @@ export default function ModuleStudy() {
 
      وبلا `?e=` — رابطٌ نُسخ أو حُفظ — يُقرأ متنُ الكتالوج كما كان. */
   const enrollmentId = params.get("e")?.trim() ?? "";
-  const [plan, setPlan] = useState<LearnerPlanView | null>(null);
+  /* التسجيلُ كلُّه لا خطّتُه وحدَها (٢٧ أكتوبر ٢٠٢٦): به تُبنى محطّاتُ الطريق كما
+     في صفحة الدورة — رقمُ المحطّة ونجومُها وما بعد هذا المحور — بالحساب نفسِه */
+  const [detail, setDetail] = useState<EnrollmentDetail | null>(null);
+  const plan = detail?.cohort.trainerPlan ?? null;
   /* ٢(ب-٢): ولا يُعرض متنُ الكتالوج قبل أن تصل الخطّة — فقد تقول إنّ المحورَ
      محجوبٌ حتّى موعده، فيومض للمتعلّم متنٌ ثمّ يُطوى. */
   const [planFor, setPlanFor] = useState<string | null>(null);
@@ -88,20 +96,42 @@ export default function ModuleStudy() {
     if (!enrollmentId) return;
     let alive = true;
     fetchEnrollmentDetail(enrollmentId)
-      .then((d) => { if (alive) setPlan(d.cohort.trainerPlan); })
+      .then((d) => { if (alive) setDetail(d); })
       .catch(() => { /* تعذّرت الخطّةُ — يُقرأ الكتالوجُ ولا تسقط الشاشة */ })
       .finally(() => { if (alive) setPlanFor(enrollmentId); });
     return () => { alive = false; };
   }, [enrollmentId]);
   const planPending = enrollmentId !== "" && planFor !== enrollmentId;
 
-  const modules = useMemo(() => overlayModules(full?.modules ?? [], plan), [full?.modules, plan]);
+  /* وما ليس في خطّة الشعبة لا يُعرض — كما في صفحة الدورة («a, hide them») */
+  const modules = useMemo(() => inPlanOnly(overlayModules(full?.modules ?? [], plan), plan), [full?.modules, plan]);
   const mod = useMemo(
     () => overlayModule(full?.modules.find((m) => m.id === moduleId) ?? null, plan, moduleId),
     [full?.modules, plan, moduleId],
   );
   const modIndex = modules.findIndex((m) => m.id === moduleId);
-  const next = modIndex >= 0 ? modules[modIndex + 1] ?? null : null;
+
+  /* ═══ موضعُ المحور من الطريق (٢٧ أكتوبر ٢٠٢٦) ═══
+
+     كان الشريطُ يقول «الوحدة ٩ من ٨»: الترتيبُ من قائمةٍ تعلوها محاورُ المدرّب
+     والعددُ من الكتالوج. و«الوحدة التالية» ما يلي في الكتالوج — محورٌ تركه
+     المدرّبُ أو لم يُكتب. فصار الموضعُ محطّةً من طريق صفحة الدورة نفسِه، والتالي
+     أوّلَ مقروءٍ بعده في الطريق (`afterModule`). وبلا تسجيلٍ في العنوان: كلُّ
+     محورٍ محطّة، بلا نجوم. */
+  const path = useMemo(() => buildStagePath({
+    modules,
+    slots: plan?.slots ?? [],
+    sessions: detail?.cohort.sessions ?? [],
+    assessments: detail?.cohort.assessments ?? [],
+    ...(detail ? evidenceOf(detail) : { doneModules: new Set<string>(), attended: new Set<string>(), accepted: new Set<string>() }),
+  }), [modules, plan, detail]);
+  const stop = stopOfModule(path, moduleId);
+  const after: AfterModule = useMemo(() => afterModule(path, moduleId, readableModules(modules)), [path, moduleId, modules]);
+  const next = after.kind === "read" ? modules.find((m) => m.id === after.moduleId) ?? null : null;
+  /* جلستُه المباشرة القادمة — بها يُقال متى يصله ما لم يُكتب بعد */
+  const stopSession = stop
+    ? detail?.cohort.sessions.find((s) => stop.sessionIds.includes(s.id) && s.status !== "done") ?? null
+    : null;
 
   /* الأسئلة تُوزَّع على الدروس بالترتيب: سؤالٌ (أو اثنان) بعد كلّ درس بدل
      أن تنهال خمسةً في آخر الوحدة. والباقي — إن زاد عن قسمة الدروس — يُعرض
@@ -156,7 +186,7 @@ export default function ModuleStudy() {
           <BookOpen className="h-12 w-12 text-muted-foreground" />
           <p className="mt-5 text-sm text-muted-foreground">لم نجد هذه الوحدة في هذه الدورة.</p>
           <Link to={`/student/course/${courseId}`} className="mt-6 rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40">
-            عد إلى محطّات الدورة
+            عد إلى الطريق
           </Link>
         </Panel>
       </PortalLayout>
@@ -190,7 +220,7 @@ export default function ModuleStudy() {
             to={`/student/course/${courseId}`}
             className="mt-6 inline-flex rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40"
           >
-            عد إلى محطّات الدورة
+            عد إلى الطريق
           </Link>
         </Panel>
       </PortalLayout>
@@ -204,12 +234,9 @@ export default function ModuleStudy() {
      فارغة**: شريطَ تقدّمٍ يقول «خطوة ١ من ١» وخطوةً واحدةً اسمها «التطبيق»
      لا شيءَ فيها — أي وحدةً تبدو قابلةً للإنهاء وهي خاوية.
 
-     فتُقال الحقيقة: قيد التأليف، وموعدُها موعدُ جلستها في جدولك. ولا يُوعَد
-     بإشعارٍ لا مُرسِلَ له. */
-  /* ═══ ع-٢: والمحتوى النظريُّ قد يكون ملفّا ═══
-
-     «قيد التأليف» تُقال لمن لا متنَ له **ولا ملفّ**. ومن أرفق مدرّبُه وثيقةً
-     فوحدتُه جاهزةٌ — وعرضُ «قيد التأليف» عليها يخفي ما رُفع لأجله. */
+     فتُقال الحقيقة. وكانت «قيد التأليف»، فقرّر صاحبُ المنصّة (٢٧ أكتوبر ٢٠٢٦)
+     أن يُقال ما يعني المتعلّمَ: **متى يصله** — موعدُ جلستها إن جُدولت، وإلّا
+     موعدُ محطّتها. ولا يُوعَد بإشعارٍ لا مُرسِلَ له. */
   if (!mod.body?.trim() && mod.bodyFileKey) {
     return (
       <PortalLayout title={mod.title}>
@@ -235,22 +262,24 @@ export default function ModuleStudy() {
     return (
       <PortalLayout title={mod.title}>
         <Panel as="section" className="py-14 text-center">
-          <PenLine className="mx-auto h-10 w-10 text-gold-ink" />
-          <p className="mt-5 text-sm font-black text-foreground">هذه الوحدة قيد التأليف</p>
+          <CalendarClock className="mx-auto h-10 w-10 text-teal-light-ink" aria-hidden="true" />
+          <p className="mt-5 text-sm font-black text-foreground">{ARRIVES}</p>
           <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
-            تظهر هنا قبل موعد جلستها، وباقي الوحدات مفتوحة.
+            {stopSession
+              ? `جلستها ${fmtSession(stopSession.startsAt)}، وتدرسها مع مدرّبك فيها.`
+              : stop?.slot
+                ? `موعدها ${dayLabelAr(stop.slot.startsOn)} – ${dayLabelAr(stop.slot.endsOn)}، وتدرسها مع مدرّبك في جلستها.`
+                : "تدرسها مع مدرّبك في جلستها."}
           </p>
           {mod.outcome && (
             <Card as="p" className="mx-auto mt-4 max-w-md px-4 py-3 text-read leading-6 text-muted-foreground">
               <span className="font-bold text-foreground">ما ستخرج به منها: </span>{mod.outcome}
             </Card>
           )}
-          <Link
-            to={`/student/course/${courseId}`}
-            className="mt-6 inline-flex rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40"
-          >
-            عد إلى محطّات الدورة
-          </Link>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <NextInPath after={after} next={next} courseId={courseId} enrollmentId={enrollmentId} />
+            <BackToPath courseId={courseId} />
+          </div>
         </Panel>
       </PortalLayout>
     );
@@ -280,11 +309,15 @@ export default function ModuleStudy() {
       <nav aria-label="خطوات الوحدة" className="sticky top-16 z-20 -mx-5 mb-6 border-b border-white/10 bg-paper/95 px-5 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <Link to={`/student/course/${courseId}`} className="flex shrink-0 items-center gap-1.5 text-fine font-bold text-muted-foreground transition hover:text-foreground">
-            <ArrowRight className="h-3.5 w-3.5" /> محطّات الدورة
+            <ArrowRight className="h-3.5 w-3.5" /> الطريق
           </Link>
-          <span className="truncate text-fine text-muted-foreground">
-            الوحدة {modIndex + 1} من {full.modules.length} · خطوة {pos + 1} من {steps.length}
-            {totalMinutes > 0 && <> · <Clock className="mb-0.5 inline h-3 w-3" /> {countAr(totalMinutes, MIN_FORMS)}</>}
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-fine text-muted-foreground">
+              {stop ? `المحطة ${stop.seq} من ${path.stops.length}` : `الوحدة ${modIndex + 1} من ${modules.length}`} · خطوة {pos + 1} من {steps.length}
+              {totalMinutes > 0 && <> · <Clock className="mb-0.5 inline h-3 w-3" /> {countAr(totalMinutes, MIN_FORMS)}</>}
+            </span>
+            {/* نجومُ محطّته كما في صفحة الدورة — وبلا تسجيلٍ في العنوان لا أثرَ يُعدّ */}
+            {detail && stop && <StopStars stars={stop.stars} />}
           </span>
         </div>
         <ol className="mt-2.5 flex gap-1.5" aria-hidden="true">
@@ -314,7 +347,7 @@ export default function ModuleStudy() {
         <Card as="p" tone="warn" className="mb-6 flex items-start gap-2 p-4 text-read leading-7 text-gold-ink">
           <BookOpen className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
-            متن هذه الوحدة <b>قيد التأليف</b>، وتدرّس مع مدرّبك في جلستها. نشاطها ومخرجها أدناه.
+            <b>{ARRIVES}</b>، وتدرّس مع مدرّبك فيها. نشاطها ومخرجها أدناه.
           </span>
         </Card>
       )}
@@ -427,15 +460,9 @@ export default function ModuleStudy() {
             <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
               تكتمل بتسليم مقبول، أو تقييم مجتاز، أو حضور جلستها.
             </p>
-            {next && (
-              <Link
-                to={`/student/course/${courseId}/module/${next.id}${enrollmentId ? `?e=${encodeURIComponent(enrollmentId)}` : ""}`}
-                className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-3 text-sm font-black text-on-teal transition hover:bg-teal-light"
-              >
-                الوحدة التالية: {next.title}
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            )}
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+              <NextInPath after={after} next={next} courseId={courseId} enrollmentId={enrollmentId} />
+            </div>
           </Panel>
         </article>
       )}
@@ -457,10 +484,61 @@ export default function ModuleStudy() {
             to={`/student/course/${courseId}`}
             className="flex items-center gap-2 rounded-full border border-teal/50 px-7 py-2.5 text-xs font-black text-teal-light-ink transition hover:bg-teal/10"
           >
-            محطّات الدورة <ArrowLeft className="h-4 w-4" />
+            الطريق <ArrowLeft className="h-4 w-4" />
           </Link>
         )}
       </div>
     </PortalLayout>
   );
+}
+
+/* ما لم يُكتب بعد يُقال بموعده لا بكاتبه — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+const ARRIVES = "محتوى هذه الوحدة يصلك قبل جلستها";
+
+/** العودةُ إلى الطريق — صفحةُ الدورة تفتح على مرحلتها */
+function BackToPath({ courseId }: { courseId: string }) {
+  return (
+    <Link
+      to={`/student/course/${courseId}`}
+      className="inline-flex rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40"
+    >
+      عد إلى الطريق
+    </Link>
+  );
+}
+
+/* ═══ ما بعد هذا المحور — بترتيب الطريق (`afterModule`) ═══
+   مقروءٌ بعده يُفتح، وإلّا محطّةٌ مقفلةٌ يُقال متى تفتح، وإلّا لا شيء: آخرُ الطريق
+   تقوله صفحةُ الدورة بشهادتها. */
+function NextInPath({
+  after,
+  next,
+  courseId,
+  enrollmentId,
+}: {
+  after: AfterModule;
+  next: { id: string; title: string } | null;
+  courseId: string;
+  enrollmentId: string;
+}) {
+  if (next) {
+    return (
+      <Link
+        to={`/student/course/${courseId}/module/${next.id}${enrollmentId ? `?e=${encodeURIComponent(enrollmentId)}` : ""}`}
+        className="inline-flex items-center gap-2 rounded-full bg-teal px-6 py-3 text-sm font-black text-on-teal transition hover:bg-teal-light"
+      >
+        التالي: {next.title}
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+      </Link>
+    );
+  }
+  if (after.kind === "wait") {
+    return (
+      <p className="flex items-center gap-1.5 text-read text-muted-foreground">
+        <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+        المحطة التالية «{after.title}»{after.opensAt ? ` تفتح ${whenAr(after.opensAt)}` : " لم تفتح بعد"}
+      </p>
+    );
+  }
+  return null;
 }

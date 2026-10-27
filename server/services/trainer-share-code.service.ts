@@ -10,6 +10,7 @@ import { photoPublicUrl } from './storage.service'
 import { ReferralService } from './referral.service'
 import { ShortLinkService } from './short-link.service'
 import { isJpeg, PREVIEW_MAX_BYTES, previewCopy } from './link-preview'
+import { reachOf, type LinkReach } from './link-opens'
 import { bestCode } from '../../src/application/trainer/share-kit'
 
 export interface ShareCode { code: string; percentOff: number }
@@ -25,13 +26,15 @@ export interface ShareKit extends ShareCode {
   short: { wide: string | null; cohorts: Record<string, string> }
   /** بصمةُ معاينة كلّ رابطٍ قصيرٍ برمزه — وما لا معاينةَ له `null` فترسمها صفحتُه وترفعها (`link-preview.ts`) */
   previews: Record<string, string | null>
+  /** ما بلغه كلُّ رابطٍ قصيرٍ برمزه: كم فُتح ومن أيّ منصّة، وكم سجّل منه (`link-opens.ts`) */
+  reach: Record<string, LinkReach>
 }
 
 /** رابطٌ من روابطه القصيرة، والدوراتُ التي يدعو إليها */
-interface MyLink { url: string; code: string; courses: { courseTitle: string; startsAt: string | null }[] }
+interface MyLink { url: string; code: string; refCode: string; courses: { courseTitle: string; startsAt: string | null }[] }
 
 /** غرضُ روابط «شارك دوراتك» القصيرة — به يُعاد ما سُكّ */
-const SHORT_PURPOSE = 'share-kit'
+export const SHORT_PURPOSE = 'share-kit'
 
 export class TrainerShareCodeService {
   private prisma: PrismaClient
@@ -56,6 +59,7 @@ export class TrainerShareCodeService {
       ...ours,
       short: { wide: links.wide?.url ?? null, cohorts },
       previews: Object.fromEntries(rows.map((r) => [r.code, r.previewSig])),
+      reach: await reachOf(this.prisma, all),
       name: profile.application.fullName,
       headline: profile.headline,
       photoUrl: photoPublicUrl(profile.photoUrl),
@@ -72,14 +76,14 @@ export class TrainerShareCodeService {
       referrals.wideLinkFor(userId).catch(() => null),
       referrals.cohortLinksFor(userId).catch(() => []),
     ])
-    const link = async (url: string, courses: MyLink['courses']): Promise<MyLink> => {
+    const link = async (url: string, refCode: string, courses: MyLink['courses']): Promise<MyLink> => {
       const short = await this.shortOf(url, userId)
-      return { url: short, code: new URL(short).pathname.split('/').pop() ?? '', courses }
+      return { url: short, code: new URL(short).pathname.split('/').pop() ?? '', refCode, courses }
     }
     const cohorts: Record<string, MyLink> = {}
-    for (const c of cohortLinks) cohorts[c.cohortId] = await link(c.url, [{ courseTitle: c.courseTitle, startsAt: c.startsAt }])
+    for (const c of cohortLinks) cohorts[c.cohortId] = await link(c.url, c.code, [{ courseTitle: c.courseTitle, startsAt: c.startsAt }])
     const everything = cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt }))
-    return { wide: wide?.publicReady ? await link(wide.url, everything) : null, cohorts }
+    return { wide: wide?.publicReady ? await link(wide.url, wide.code, everything) : null, cohorts }
   }
 
   /** معاينةُ رابطٍ من روابطه — صورتُه كما رسمتها صفحتُه، والعنوانُ والوصفُ من دوراته هنا */

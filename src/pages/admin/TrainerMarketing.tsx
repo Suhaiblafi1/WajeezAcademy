@@ -34,6 +34,8 @@ import { cleanMarketingUrl, MAX_MARKETING_NOTE, POSTER_STATUS_AR } from "@/appli
 interface ListRow {
   profileId: string; fullName: string; email: string; videos: number; photos: number;
   posters: { pending: number; approved: number; changesRequested: number };
+  /** من ينشر فعلا: كم شخصا فتح روابطه القصيرة، وكم ملتحقا سجّل عبره (`sharesOf`) */
+  shares: { opens: number; registered: number };
 }
 interface VideoRow { url: string; noteAr: string | null; updatedAt: string }
 interface Poster {
@@ -95,7 +97,7 @@ export default function TrainerMarketing() {
                 <div className="min-w-0">
                   <p className="text-read font-bold">{r.fullName}</p>
                   <p className="text-sm text-muted-foreground">
-                    {r.videos} فيديو · {r.photos} صورة
+                    {r.videos} فيديو · {r.photos} صورة · فتح روابطه {r.shares.opens} · سجل عبره {r.shares.registered}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">

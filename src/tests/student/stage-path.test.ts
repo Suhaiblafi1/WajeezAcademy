@@ -8,13 +8,17 @@
      ④ «أنت هنا» أوّلُ محطّةٍ مفتوحةٍ لم تكتمل — لا المقفلة
      ⑤ الخطوةُ التالية بترتيبها: جلسةٌ الآن ثمّ إعادةٌ ثمّ تسليمٌ ثمّ قراءة…
      ⑥ والشاشةُ ترسم ذلك: بطاقةٌ واحدة، والمحطّاتُ بترتيبها، والحصادُ للمقبول وحدَه
-     ⑦ ومحورُ كتالوجٍ ليس في خطّة الشعبة لا يُعرض — «a, hide them» */
+     ⑦ ومحورُ كتالوجٍ ليس في خطّة الشعبة لا يُعرض — «a, hide them»
+     ⑧ وشاشةُ الدراسة على الطريق نفسِه: موضعُها محطّة، وتاليها بترتيبه (٢٧ أكتوبر ٢٠٢٦)
+     ⑨ والأثرُ يُقرأ من موضعٍ واحدٍ للشاشتين */
 
 import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router'
-import { buildStagePath, inPlanOnly, nextStep, type NextStepInput, type PathInput } from '@/application/student/stage-path'
+import { afterModule, buildStagePath, evidenceOf, inPlanOnly, nextStep, readableModules, stopOfModule, type NextStepInput, type PathInput } from '@/application/student/stage-path'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { LearnerSlot } from '@/application/trainer/plan-overlay'
 import type { EnrollmentDetail } from '@/services/enrollment-detail'
 import type { JourneyStage } from '@/application/student/journey'
@@ -270,5 +274,62 @@ describe('⑦ محور كتالوج تركه المدرّب لا يعرض', () =
     expect(html, 'المتروك عاد يعرض').not.toContain('محور الكتالوج المتروك')
     expect(html).not.toContain('قيد التأليف')
     expect(html).not.toContain('محاور أخرى')
+  })
+})
+
+/* ═══ ⑧ شاشة الدراسة على الطريق نفسه ═══ */
+describe('⑧ ما بعد المحور بترتيب الطريق', () => {
+  const p = buildStagePath(base())
+  it('⚠️ أوّل مقروء بعده في الطريق', () => {
+    expect(afterModule(p, 'M1', new Set(['M1', 'M9']))).toEqual({ kind: 'read', moduleId: 'M9' })
+  })
+  it('⚠️ وما لم يكتب بعد يتخطّى — ثمّ المحطّة المقفلة ومتى تفتح', () => {
+    expect(afterModule(p, 'M1', new Set(['M1']))).toEqual({ kind: 'wait', title: 'قوة الصوت', opensAt: '2099-02-21T00:00:00.000Z' })
+  })
+  it('وآخر الطريق: لا شيء بعده', () => {
+    expect(afterModule(p, 'M10', new Set(['M1', 'M9']))).toEqual({ kind: 'end' })
+  })
+  it('⚠️ والمحطّة تعرف محورها — لا رقم الكتالوج', () => {
+    expect(stopOfModule(p, 'M9')?.seq).toBe(2)
+    expect(stopOfModule(p, 'X')).toBeNull()
+  })
+
+  it('⚠️ والشاشة تأخذ موضعها وتاليها من الطريق — لا من قائمة الكتالوج', () => {
+    const src = readFileSync(join(process.cwd(), 'src/pages/student/ModuleStudy.tsx'), 'utf8')
+      .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+    expect(src, 'التالي من الكتالوج').not.toMatch(/modules\[modIndex \+ 1\]/)
+    expect(src).toMatch(/afterModule\(path, moduleId/)
+    expect(src, 'العدد من الكتالوج').not.toMatch(/full\.modules\.length/)
+    expect(src).toMatch(/stopOfModule\(path, moduleId\)/)
+    expect(src, 'ما ليس في الخطّة يقرأ').toMatch(/inPlanOnly\(overlayModules\(/)
+  })
+})
+
+describe('⑨ الأثر من موضع واحد', () => {
+  it('⚠️ آخر تسليم يحكم: قبل ثمّ طلبت إعادته = ليس مقبولا', () => {
+    const ev = evidenceOf({
+      moduleProgress: [{ moduleId: 'M1', status: 'completed' }, { moduleId: 'M2', status: 'in_progress' }],
+      attendance: [{ sessionId: 'S1', status: 'late' }, { sessionId: 'S2', status: 'excused' }],
+      submissions: [
+        { assessmentId: 'A1', status: 'accepted', submittedAt: '2026-10-01T00:00:00Z' },
+        { assessmentId: 'A1', status: 'resubmit_requested', submittedAt: '2026-10-05T00:00:00Z' },
+        { assessmentId: 'A2', status: 'rejected', submittedAt: '2026-10-01T00:00:00Z' },
+        { assessmentId: 'A2', status: 'accepted', submittedAt: '2026-10-06T00:00:00Z' },
+      ],
+    })
+    expect([...ev.doneModules]).toEqual(['M1'])
+    expect([...ev.attended], 'المعذور ليس حضورا').toEqual(['S1'])
+    expect([...ev.accepted]).toEqual(['A2'])
+  })
+
+  it('⚠️ المقروء: مفتوح بدرس أو ملفّ — لا مقفل ولا فارغ', () => {
+    const body = '## درس\nنصّ مكتوب بما يكفي ليعدّ درسا واحدا في هذه الوحدة.'
+    const r = readableModules([
+      { id: 'a', body },
+      { id: 'b', body: null, bodyFileKey: 'k' },
+      { id: 'c', body, locked: true },
+      { id: 'd', body: '   ' },
+    ])
+    expect([...r]).toEqual(['a', 'b'])
   })
 })

@@ -12,6 +12,7 @@ const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*
 const APP = code('src/App.tsx')
 const REDIRECT = code('src/pages/GrantRecordLink.tsx')
 const LIST = code('src/pages/admin/GrantRegistrants.tsx')
+const PAGE = code('src/pages/MemberGrantPage.tsx')
 
 describe('رابط ملف صاحب المنحة', () => {
   it('⚠️ قصير: النطاق بلا https ولا www، ثم /g/ والكود', () => {
@@ -40,5 +41,16 @@ describe('رابط ملف صاحب المنحة', () => {
     expect(LIST).toMatch(/matchesQuery\(q, \[[^\]]*r\.code, r\.id\]\)/)
     expect(LIST).toMatch(/<h2 id="grant-registrants"/)
     expect(LIST).toMatch(/if \(rows && fromLink\) document\.getElementById\("grant-registrants"\)\?\.scrollIntoView/)
+  })
+
+  /* وما اختاره يُحفظ في ملفّه فيراه المستشار (٢٧ أكتوبر ٢٠٢٦) — والخادمُ في `server/tests/commerce/grant-landing.test.ts` ⑩ */
+  it('⚠️ الصفحة تحفظ ما اختاره بعد أن يغيره هو لا عند فتحها — والقائمة تعرضه بأسمائه', () => {
+    expect(PAGE).toMatch(/const toggle = \(id: string\) => \{ setTouched\(true\); setPicked\(/)
+    expect(PAGE).toMatch(/if \(!touched \|\| !ref\) return;\s*const t = setTimeout\(\(\) => \{ void apiPut\(GRANT_PICKS_PATH, \{ ref, courseIds: picked \}\)/)
+    expect(PAGE).toContain('const GRANT_PICKS_PATH = "/api/public/grant/picks";')
+    /* ولا يُضبط «غيّره» إلّا في نقرته: لو ضُبط عند فتح الصفحة لمحا فتحُها في جهازٍ آخر ما اختاره قبله */
+    expect(PAGE.match(/setTouched\(true\)/g)?.length).toBe(1)
+    expect(LIST).toMatch(/r\.picks\.length > 0 && <>.*اختار: \{r\.picks\.join\("، "\)\}/)
+    expect(LIST).toMatch(/matchesQuery\(q, \[[^\]]*\.\.\.r\.picks/)
   })
 })

@@ -67,7 +67,8 @@ import EnglishPlanCard from "@/components/EnglishPlanCard";
 import { saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { NEEDS_ADVISOR_KEY } from "@/application/plan/advisor-referral";
 import { whyPathwayFacts } from "@/application/plan/why-pathway";
-import { pathwayCourses, pathwayDelivery, MAX_PATHWAY_COURSES, weeksLabel } from "@/data/courses";
+import { courseById, pathwayCourses, pathwayDelivery, MAX_PATHWAY_COURSES, weeksLabel } from "@/data/courses";
+import { referralTextAr } from "@/application/advisor/brief-message";
 import AdvisorContact from "@/components/AdvisorContact";
 import { pathwayCategory, type Pathway } from "@/data/pathways";
 
@@ -1935,8 +1936,9 @@ export default function Diagnostic() {
                 ننصح بجلسة تعريفية مع مستشار وجيز (30 دقيقة) لبناء خطتك بدقة، والتشخيص الذي
                 أكملته يجعل الجلسة أقصر وأنفع.
               </p>
+              {/* وتحمل الرسالةُ المسارَ ودوراتِ الخطّة — `referralTextAr` */}
               <AdvisorContact
-                text={`مرحبا، أكملت مؤشر وجيز وأخبرني أن حالتي تستحق جلسة مع مستشار بشري — أريد حجز الجلسة التعريفية.`}
+                text={referralTextAr(topPathway.id, planCourseIds.map((id) => courseById(id)?.name).filter((n): n is string => Boolean(n)))}
                 label="احجز جلسة مستشار عبر واتساب"
                 className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/60 px-5 py-2.5 text-sm font-bold text-gold-ink transition hover:bg-gold/10"
               />

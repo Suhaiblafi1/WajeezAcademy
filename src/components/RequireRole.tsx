@@ -1,6 +1,6 @@
 /* حارس مسارات البوابات — يتحقق من الجلسة والأدوار عند الخادم (/api/auth/me)
    وليس من التخزين المحلي، فالكوكي هو دليل الدخول الوحيد.
-   - بلا جلسة → يوجَّه إلى /auth
+   - بلا جلسة → يوجَّه إلى /auth ومعه ما فتحه (`?next=`) ليعود إليه بعد الدخول
    - جلسة بلا الدور المطلوب → يوجَّه إلى بوابة دوره (لا صفحة خطأ صمّاء)
 
    ─────────── وتعذُّرُ الوصول ليس جوابا ───────────
@@ -19,7 +19,8 @@
    أيّ بوابة على غير جوابٍ من الخادم. */
 
 import { useEffect, useState } from 'react'
-import { Navigate, Outlet } from 'react-router'
+import { Navigate, Outlet, useLocation } from 'react-router'
+import { authPathFor } from '@/application/links/return-to'
 import { RefreshCw, ServerOff } from 'lucide-react'
 import { homePathForRoles, verifySession } from '../services/auth'
 
@@ -63,6 +64,8 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
   const [state, setState] = useState<GuardState>('loading')
   const [home, setHome] = useState('/student')
   const [attempt, setAttempt] = useState(0)
+  /* ما فُتح قبل الدخول — يُعاد إليه بعده (`application/links/return-to.ts`) */
+  const location = useLocation()
 
   useEffect(() => {
     let alive = true
@@ -116,7 +119,7 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
       </div>
     )
   }
-  if (state === 'anon') return <Navigate to="/auth" replace />
+  if (state === 'anon') return <Navigate to={authPathFor(`${location.pathname}${location.search}${location.hash}`)} replace />
   if (state === 'forbidden') return <Navigate to={home} replace />
   return <Outlet />
 }

@@ -72,13 +72,23 @@ async function paidEmails(prisma: PrismaClient, emails: string[]): Promise<Set<s
   return new Set(rows.map((r) => r.user.email.toLowerCase()))
 }
 
+/** اسمُ كلِّ دورةٍ من آخر نسخةٍ لها — كما في دورات المنحة (`grant-courses.service.ts`) */
+async function courseTitles(prisma: PrismaClient, ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map()
+  const rows = await prisma.course.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } },
+  })
+  return new Map(rows.map((c) => [c.id, c.versions[0]?.titleAr ?? c.id]))
+}
+
 export async function grantRegistrants(prisma: PrismaClient) {
   const leads = await prisma.lead.findMany({
     where: { campaign: MEMBER_GRANT_SLUG, erasedAt: null },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true, fullName: true, phone: true, email: true, workField: true, careerLevel: true, interests: true,
-      channel: true, wave: true, createdAt: true,
+      channel: true, wave: true, createdAt: true, grantPicks: true,
       grantCode: { select: { coupon: { select: { code: true, orders: { select: { status: true } } } } } },
       cases: {
         where: { status: { notIn: OPEN_CASE } },
@@ -87,6 +97,8 @@ export async function grantRegistrants(prisma: PrismaClient) {
     },
   })
   const paid = await paidEmails(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
+  /* والدوراتُ التي اختارها بأسمائها اليوم — يُحفظ معرّفُها، فلا يتقادم اسمٌ تغيّر */
+  const titles = await courseTitles(prisma, [...new Set(leads.flatMap((l) => l.grantPicks))])
   return leads.map((l) => {
     const orders = l.grantCode?.coupon.orders ?? []
     const state: RegistrantState = orders.some((o) => BOUGHT.includes(o.status)) || (l.email && paid.has(l.email.toLowerCase()))
@@ -97,6 +109,7 @@ export async function grantRegistrants(prisma: PrismaClient) {
       careerLevel: l.careerLevel, interests: l.interests,
       channel: l.channel, wave: l.wave, createdAt: l.createdAt,
       code: l.grantCode?.coupon.code ?? null, state,
+      picks: l.grantPicks.map((id) => titles.get(id) ?? id),
       advisor: l.cases[0] ? (l.cases[0].assignments[0]?.advisor.displayName ?? 'بلا مستشار بعد') : null,
     }
   })

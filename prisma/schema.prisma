@@ -2779,6 +2779,8 @@ model Cohort {
   language            String                    @default("العربية")
   deliveryMode        String                    @default("remote") // remote | in_person | hybrid
   registrationOpen    Boolean                   @default(false)
+  /// متى ذُكِّر مدرّبُها بنشرها قبل بدئها بأسبوع — مرّةً واحدة (`server/services/share-reminder.service.ts`)
+  shareReminderAt     DateTime?
   /// آخرُ لحظةٍ يُقبل فيها الالتحاق — بدءُ الموعد الثاني (٣ج). «التسجيلُ يُغلق يومَ
   /// البدء، والالتحاقُ المتأخّرُ حتّى الموعد الثاني» (قرارُ صاحب المنصّة، ٢٧ سبتمبر
   /// ٢٠٢٦). يُكتب عند اعتماد خطّة المدرّب من مواعيدها، و`null` لما اعتُمد بلا
@@ -3795,6 +3797,10 @@ model Lead {
   careerLevel        String?
   /// ما يريد تطويرَه — مجالاتُ دوراتٍ اختارها في نموذج المنحة، اختياريّة، وبها تُرتَّب له الدورات
   interests          String[]      @default([])
+  /// الدوراتُ التي اختارها في صفحة المنحة بمعرّفاتها — يراها المستشارُ في ملفّه (٢٧ أكتوبر ٢٠٢٦، `grant-landing.service.ts#savePicks`)
+  grantPicks         String[]      @default([])
+  /// متى اختارها آخرَ مرّة
+  grantPicksAt       DateTime?
   createdAt          DateTime      @default(now())
   user               User?         @relation("LeadUser", fields: [userId], references: [id])
   cases              AdvisorCase[]
@@ -4818,6 +4824,22 @@ model ShortLink {
   /// بصمةُ ما رُسمت منه الصورة — فلا تُرفع ثانيةً إلّا إن تغيّر
   previewSig   String?
   previewAt    DateTime?
+  opens        ShortLinkOpen[]
+}
+
+/// فتحةُ رابطٍ قصيرٍ فتحها إنسان (٢٧ أكتوبر ٢٠٢٦) — يُعدّ منها ما يراه المدرّبُ تحت كلّ رابط: كم فُتح ومن أيّ منصّة.
+/// والزاحفُ لا يُعدّ، ومن فتحه مرّتين في نصف ساعةٍ يُعدّ مرّة (`server/services/link-opens.ts`).
+model ShortLinkOpen {
+  id      String    @id @default(uuid()) @db.Uuid
+  linkId  String    @db.Uuid
+  /// المنصّةُ التي نُشر عليها — `?p=` في الرابط (`src/application/links/share-via.ts`)، وفارغٌ لما نُسخ بيده
+  via     String?
+  /// بصمةُ الزائر (عنوانُه ومتصفّحُه مجزَّآن) — لا يُحفظ عنوانُه، ويُعرف بها من عاد في نصف ساعة
+  visitor String
+  at      DateTime  @default(now())
+  link    ShortLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, at])
 }
 
 /// بريدُ من جاء ليشتري فوجد البابَ مغلقا (قرارُ صاحب المنصّة ١٨ سبتمبر ٢٠٢٦).

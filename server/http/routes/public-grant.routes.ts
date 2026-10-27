@@ -56,6 +56,15 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     return reply.status(201).send(await influencers.apply(body, req.ip))
   })
 
+  /* ما اختاره من دوراتٍ يُحفظ في ملفّه فيراه المستشار — يُرسَل بعد كلّ تغييرٍ بمهلة، فالسقفُ أوسعُ من النموذج */
+  app.put('/api/public/grant/picks', {
+    config: { rateLimit: { max: 60, timeWindow: '15 minutes' } },
+    schema: { tags: ['public'], summary: 'الدورات التي اختارها صاحب المنحة — تحفظ في ملفه' },
+  }, async (req) => {
+    const body = z.object({ ref: z.string().uuid(), courseIds: z.array(z.string().max(40)).max(20) }).parse(req.body)
+    return landing.savePicks(body.ref, body.courseIds)
+  })
+
   app.post('/api/public/grant/advisor', {
     config: { rateLimit: { max: 3, timeWindow: '15 minutes' } },
     schema: { tags: ['public'], summary: 'من عبأ نموذج المنحة يطلب مستشارا' },
