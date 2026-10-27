@@ -19,6 +19,9 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { TrainerShareCodeService } from '../../services/trainer-share-code.service'
+import { TrainerMarketingService } from '../../services/trainer-marketing.service'
+import { ShareReminderService, shareReminderMail } from '../../services/share-reminder.service'
+import { renderMail } from '../../services/mail-template'
 import { SHARE_CODE_PERCENT, SHARE_CODE_PREFIX } from '../../../src/application/trainer/share-code'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 
@@ -218,5 +221,104 @@ describe('⑦ معاينة روابطه حين تلصق', () => {
 
     const dead = await app.inject({ method: 'GET', url: '/s/ZZZZZZ' })
     expect(dead.statusCode).toBe(404)
+  })
+})
+
+/* ⑧ كم فتح رابطَه ومن أين — اقترحه Claude فقال صاحبُ المنصّة: «كلّهم» (٢٧ أكتوبر ٢٠٢٦). والعلّةُ في
+   `server/services/link-opens.ts`: الإنسانُ وحدَه يُعدّ، ومن عاد في نصف ساعةٍ يُعدّ مرّة، والمنصّةُ من `?p=`. */
+describe('⑧ عداد روابطه', () => {
+  const HUMAN = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 [FBAN/FBIOS;FBAV/450.0]'
+  const codeOf = (url: string) => url.slice(url.lastIndexOf('/') + 1)
+  let app: FastifyInstance
+
+  beforeAll(async () => { app = await buildApp(prisma) }, 120_000)
+  afterAll(async () => { await app?.close() })
+
+  const open = (code: string, ua: string, ip: string, p?: string) => app.inject({
+    method: 'GET', url: `/s/${code}${p ? `?p=${p}` : ''}`, headers: { 'user-agent': ua }, remoteAddress: ip,
+  })
+
+  it('⚠️ يعد الإنسان مرة بمنصته، ولا يعد الزاحف، ولا من عاد في نصف ساعة', async () => {
+    const code = codeOf((await shares.kit(A.userId)).short.cohorts[cohort.A1])
+    const before = (await shares.kit(A.userId)).reach[code]
+    await open(code, HUMAN, '10.0.0.1', 'wa')
+    await open(code, HUMAN, '10.0.0.1', 'wa')
+    await open(code, 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)', '10.0.0.2', 'fb')
+    await open(code, 'WhatsApp/2.23.20.0 A', '10.0.0.3', 'wa')
+    await open(code, HUMAN, '10.0.0.4', 'li')
+    await open(code, HUMAN, '10.0.0.5', 'evil')
+    const after = (await shares.kit(A.userId)).reach[code]
+    expect(after.opens - before.opens, 'عد الزاحف أو من عاد').toBe(3)
+    expect((after.byVia.wa ?? 0) - (before.byVia.wa ?? 0)).toBe(1)
+    expect((after.byVia.li ?? 0) - (before.byVia.li ?? 0)).toBe(1)
+    expect(after.byVia.evil, 'منصة لا نعرفها كتبت في القاعدة').toBeUndefined()
+    expect(after.byVia.fb, 'عد زاحف فيسبوك فتحة').toBeUndefined()
+  })
+
+  it('⚠️ ومن سجل برمز إحالة الرابط يعد له — والانتظار ليس مقعدا', async () => {
+    const kit = await shares.kit(A.userId)
+    const code = codeOf(kit.short.cohorts[cohort.A1])
+    const link = await prisma.trainerReferralLink.findFirstOrThrow({ where: { profileId: A.profileId, cohortId: cohort.A1 } })
+    const before = kit.reach[code].registered
+    await prisma.enrollment.create({ data: { cohortId: cohort.A1, userId: await learner('reach1'), status: 'enrolled', referralCode: link.code } })
+    await prisma.enrollment.create({ data: { cohortId: cohort.A1, userId: await learner('reach2'), status: 'waitlisted', referralCode: link.code } })
+    expect((await shares.kit(A.userId)).reach[code].registered - before).toBe(1)
+  })
+
+  it('⚠️ وفي «تسويق المدربين» يرى المدير من ينشر فعلا — بمجموع روابطه نفسه', async () => {
+    const a = (await new TrainerMarketingService(prisma).adminList()).find((r) => r.profileId === A.profileId)
+    const reach = Object.values((await shares.kit(A.userId)).reach)
+    expect(a, 'المدرب النشط غاب عن القائمة').toBeDefined()
+    expect(a!.shares.opens, 'مجموع الإدارة غير مجموع روابطه').toBe(reach.reduce((s, r) => s + r.opens, 0))
+    expect(a!.shares.opens).toBeGreaterThanOrEqual(3)
+    expect(a!.shares.registered, 'من سجل عبره لا يبلغ الإدارة').toBeGreaterThanOrEqual(1)
+  })
+})
+
+/* ⑨ «انشر دورتك الآن» قبل البدء بأسبوع — اقترحه Claude فقال صاحب المنصة: «كلهم» (٢٧ أكتوبر ٢٠٢٦).
+   والعلة في `server/services/share-reminder.service.ts`: مرة لكل شعبة، ولا يذكر من فاته الأسبوع إلى آخر يوم. */
+describe('⑨ تذكيره بنشر شعبته قبل بدئها', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const inDays = (d: number) => new Date(Date.now() + d * DAY)
+
+  it('⚠️ يذكر مرة واحدة من تبدأ شعبته بعد أيام — ببريد وجرس وأثر', async () => {
+    const now = new Date()
+    await prisma.cohort.update({ where: { id: cohort.A1 }, data: { startsAt: inDays(5), shareReminderAt: null } })
+    await new ShareReminderService(prisma).remindDue(now)
+    const row = await prisma.cohort.findUniqueOrThrow({ where: { id: cohort.A1 }, select: { shareReminderAt: true } })
+    expect(row.shareReminderAt, 'لم يختم التذكير').not.toBeNull()
+    const audits = () => prisma.auditEvent.count({ where: { action: 'referral.share.remind', entityId: cohort.A1 } })
+    expect(await audits(), 'لم يقع التذكير').toBe(1)
+    const bell = await prisma.notification.findFirst({ where: { userId: A.userId, channel: 'in_app', title: { contains: 'شاركها الآن' } } })
+    expect(bell, 'لا جرس في بوابته').not.toBeNull()
+    await new ShareReminderService(prisma).remindDue(new Date(now.getTime() + 60 * 60 * 1000))
+    expect(await audits(), 'ذكر بالشعبة مرتين').toBe(1)
+  })
+
+  it('ولا يذكر قبل الأسبوع، ولا من بقي على شعبته أقل من يوم', async () => {
+    const courses = await prisma.course.findMany({ take: 4, select: { id: true }, orderBy: { id: 'asc' } })
+    await openCohort('FAR', courses[2].id, 100, A.profileId)
+    await openCohort('LATE', courses[3].id, 100, A.profileId)
+    await prisma.cohort.update({ where: { id: cohort.FAR }, data: { startsAt: inDays(10) } })
+    await prisma.cohort.update({ where: { id: cohort.LATE }, data: { startsAt: new Date(Date.now() + 12 * 60 * 60 * 1000) } })
+    await new ShareReminderService(prisma).remindDue(new Date())
+    const far = await prisma.cohort.findUniqueOrThrow({ where: { id: cohort.FAR }, select: { shareReminderAt: true } })
+    expect(far.shareReminderAt, 'ذكر قبل الأسبوع').toBeNull()
+    const late = await prisma.cohort.findUniqueOrThrow({ where: { id: cohort.LATE }, select: { shareReminderAt: true } })
+    expect(late.shareReminderAt, 'لم تختم المتأخرة فتبقى تقرأ كل ساعة').not.toBeNull()
+    expect(await prisma.auditEvent.count({ where: { action: 'referral.share.remind', entityId: cohort.LATE } }), 'طلب النشر من شعبة تبدأ غدا').toBe(0)
+  })
+
+  it('⚠️ والرسالة فيها رابط الشعبة وكوده، وزرها يفتح لوحة الشعبة نفسها', () => {
+    const m = shareReminderMail({
+      name: 'صهيب', course: 'مهارة الخطابة', startsAr: '1 ديسمبر', link: 'https://x/s/K7Q2MX',
+      code: { code: 'WJ30-K7Q2MX', percentOff: 30 }, opens: 12, panel: 'https://x/trainer/share?share=C1',
+    })
+    expect(m.subject).toBe('«مهارة الخطابة» تبدأ 1 ديسمبر — شاركها الآن')
+    const { text } = renderMail(m.doc)
+    expect(text).toContain('https://x/s/K7Q2MX')
+    expect(text).toContain('WJ30-K7Q2MX')
+    expect(text).toContain('فتح رابطها حتى الآن 12 شخصا')
+    expect(m.doc.blocks.find((b) => b.kind === 'cta')).toMatchObject({ href: 'https://x/trainer/share?share=C1' })
   })
 })

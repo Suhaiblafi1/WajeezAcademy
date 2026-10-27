@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { bestCode, emailSubject, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, type ShareInput } from '@/application/trainer/share-kit'
 import { artPlan } from '@/components/trainer/share-art'
 import { previewSig } from '@/components/trainer/link-preview'
+import { isCrawler, VIA_OF, viaOf, withVia } from '@/application/links/share-via'
 
 const URL_ONE = 'https://www.wajeezacademy.com/build/C-1?ref=WJ-AAAA'
 const one: ShareInput = {
@@ -250,5 +251,46 @@ describe('«مباشر» مرة واحدة في الصورة', () => {
   })
   it('⚠️ ولا جملة «هذا الموسم» في الصورة', () => {
     expect(art).not.toContain('هذا الموسم')
+  })
+})
+
+/* عداد روابطه (٢٧ أكتوبر ٢٠٢٦) — اقترحه Claude فقال صاحب المنصة: «كلهم». والعد في القاعدة يحرسه
+   `server/tests/commerce/trainer-share-code.test.ts` (⑧). وهنا: أن الرابط في كل منشور يحمل منصته، وأن الزاحف يعرف. */
+describe('عداد روابطه', () => {
+  it('⚠️ الرابط القصير يحمل منصته، والطويل يبقى كما هو', () => {
+    expect(withVia('https://www.wajeezacademy.com/s/K7Q2MX', 'whatsapp')).toBe('https://www.wajeezacademy.com/s/K7Q2MX?p=wa')
+    expect(withVia('https://www.wajeezacademy.com/s/K7Q2MX', 'linkedin')).toBe('https://www.wajeezacademy.com/s/K7Q2MX?p=li')
+    expect(withVia(URL_ONE, 'whatsapp'), 'رمز الإحالة في الطويل كسر').toBe(URL_ONE)
+    for (const p of SHARE_PLATFORMS) expect(viaOf(VIA_OF[p.id]), `منصة بلا اسم: ${p.id}`).toBe(VIA_OF[p.id])
+    expect(viaOf('evil')).toBeNull()
+  })
+
+  it('⚠️ الزاحف لا يعد فتحة — ومتصفح التطبيق إنسان', () => {
+    for (const ua of ['facebookexternalhit/1.1', 'WhatsApp/2.23.20.0 A', 'LinkedInBot/1.0', 'Twitterbot/1.0', 'TelegramBot (like TwitterBot)', '', undefined]) {
+      expect(isCrawler(ua), `عد زاحفا: ${ua}`).toBe(true)
+    }
+    for (const ua of [
+      'Mozilla/5.0 (iPhone) Mobile/15E148 [FBAN/FBIOS;FBAV/450.0]',
+      'Mozilla/5.0 (iPhone) Mobile/15E148 LinkedInApp/9.29',
+      'Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile Safari/537.36',
+    ]) expect(isCrawler(ua), `لم يعد إنسانا: ${ua}`).toBe(false)
+  })
+
+  it('ولوحة المشاركة تنشر الرابط بمنصته، والصفحة تقول تحت كل رابط كم فتحه', () => {
+    const kit = readFileSync(join(process.cwd(), 'src/components/trainer/ShareKit.tsx'), 'utf8')
+    expect(kit).toMatch(/url: withVia\(url, platform\)/)
+    const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
+    expect(page).toMatch(/<LinkReachLine url=\{kit\.short\.cohorts\[c\.cohortId\]\} reach=\{kit\.reach\} \/>/)
+    expect(page).toMatch(/<LinkReachLine url=\{kit\.short\.wide\} reach=\{kit\.reach\} registered=\{false\} \/>/)
+  })
+})
+
+/* «انشر دورتك الآن» (٢٧ أكتوبر ٢٠٢٦): زر البريد `?share=<الشعبة>` يفتح لوحة الشعبة نفسها — `share-reminder.service.ts` */
+describe('زر تذكير النشر', () => {
+  it('⚠️ الصفحة تفتح لوحة الشعبة التي جاء البريد بها وتنزل إليها', () => {
+    const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
+    expect(page).toMatch(/useState<string \| null>\(\(\) => params\.get\("share"\)\)/)
+    expect(page).toMatch(/id=\{`share-\$\{c\.cohortId\}`\}/)
+    expect(page).toMatch(/getElementById\(`share-\$\{id\}`\)\?\.scrollIntoView/)
   })
 })

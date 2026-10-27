@@ -42,6 +42,7 @@ import {
 } from './storage.service'
 import { deleteObject } from './object-store'
 import { MATERIALS_STATUSES, portalDoorProblemAr } from '../../src/application/trainer/portal-access'
+import { SHORT_PURPOSE } from './trainer-share-code.service'
 import {
   cleanMarketingUrl, MAX_MARKETING_NOTE, MAX_MARKETING_PHOTOS, type MarketingTargetKind,
 } from '../../src/application/trainer/marketing'
@@ -294,12 +295,13 @@ export class TrainerMarketingService {
     const profiles = await this.prisma.trainerProfile.findMany({
       where: { userId: { not: null } },
       select: {
-        id: true,
+        id: true, userId: true,
         application: { select: { fullName: true, email: true, status: true } },
         _count: { select: { marketingVideos: true, marketingPhotos: true } },
         posters: { select: { status: true } },
       },
     })
+    const shares = await this.sharesOf(profiles.map((p) => ({ profileId: p.id, userId: p.userId })))
     return profiles
       /* من يعمل على موادّه (`MATERIALS_STATUSES`)، ومن سبق أن كان له في القسم شيء */
       .filter((p) => MATERIALS_STATUSES.includes(p.application.status) || p._count.marketingVideos + p._count.marketingPhotos + p.posters.length > 0)
@@ -314,10 +316,37 @@ export class TrainerMarketingService {
           approved: p.posters.filter((x) => x.status === 'approved').length,
           changesRequested: p.posters.filter((x) => x.status === 'changes_requested').length,
         },
+        shares: shares.get(p.id) ?? { opens: 0, registered: 0 },
       }))
       .sort((a, b) => b.posters.changesRequested - a.posters.changesRequested
         || (b.videos + b.photos) - (a.videos + a.photos)
         || a.fullName.localeCompare(b.fullName, 'ar'))
+  }
+
+  /* ═══ ومن ينشر فعلا (٢٧ أكتوبر ٢٠٢٦) ═══
+     «وترى أنت أيّ المدرّبين ينشر فعلا» — كم إنسانا فتح روابطَه القصيرة («شارك دوراتك»، `link-opens.ts`)، وكم
+     ملتحقا سجّل عبره بأيّ رابطٍ أو كودٍ له — بالعدّ نفسِه الذي يُدفع عليه أجرُ الإحالة (`ReferralService.reachOf`). */
+  private async sharesOf(profiles: { profileId: string; userId: string | null }[]) {
+    const userIds = profiles.map((p) => p.userId).filter((u): u is string => u !== null)
+    const [links, enrolled] = await Promise.all([
+      this.prisma.shortLink.findMany({
+        where: { purpose: SHORT_PURPOSE, createdBy: { in: userIds } },
+        select: { createdBy: true, _count: { select: { opens: true } } },
+      }),
+      this.prisma.enrollment.groupBy({
+        by: ['referralProfileId'],
+        where: { referralProfileId: { in: profiles.map((p) => p.profileId) }, status: { in: ['enrolled', 'completed'] } },
+        _count: { _all: true },
+      }),
+    ])
+    const out = new Map<string, { opens: number; registered: number }>()
+    for (const p of profiles) {
+      out.set(p.profileId, {
+        opens: links.filter((l) => l.createdBy === p.userId).reduce((a, l) => a + l._count.opens, 0),
+        registered: enrolled.find((e) => e.referralProfileId === p.profileId)?._count._all ?? 0,
+      })
+    }
+    return out
   }
 
   async adminDetail(profileId: string) {
