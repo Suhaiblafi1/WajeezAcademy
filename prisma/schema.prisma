@@ -2987,7 +2987,8 @@ model CohortTrainer {
   assignedBy String?        @db.Uuid
   createdAt  DateTime       @default(now())
   /// متى وصله جدولُ ما بقي من لقاءات الشعبة (`SessionInviteService.trainerJoined`) — وما يُعتمَد بعده تصله
-  /// دعوتُه مع الجميع. وفارغا يرسله العاملُ مرّةً (٢٧ أكتوبر ٢٠٢٦: لم تكن تصل المدرّبَ دعوةٌ قبلها)
+  /// دعوتُه مع الجميع. وفارغا يرسله العاملُ مرّةً (٢٧ أكتوبر ٢٠٢٦: لم تكن تصل المدرّبَ دعوةٌ قبلها).
+  /// ويُمحى حين يُوقَف فتُرفع لقاءاتُها من تقويمه (`trainerSuspended`)، وحين يُرفع إيقافُه — فيصله جدولُها ثانيةً
   calendarSentAt DateTime?
   cohort     Cohort         @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   profile    TrainerProfile @relation(fields: [profileId], references: [id])

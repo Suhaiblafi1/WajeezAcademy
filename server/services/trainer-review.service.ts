@@ -44,6 +44,7 @@ import { nextTrainerApplicationReference } from './trainer-application-reference
 import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
+import { SessionInviteService } from './session-invite.service'
 import { UPCOMING_STATUSES } from '../../src/application/learning/upcoming-cohorts'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { TRAINER_GUIDE_PATH } from '../../src/application/trainer/trainer-guide'
@@ -1426,6 +1427,11 @@ export class TrainerReviewService {
           where: { id: profile.id },
           data: { suspendedAt: null, suspendedBy: null, publicVisibility: profile.publishApprovedAt !== null },
         })
+        /* ═══ ويعود إلى تقويمه جدولُ ما بقي من شعبه (٢٧ أكتوبر ٢٠٢٦) ═══
+           رُفعت لقاءاتُها منه حين أُوقف، ولم يصله في إيقافه تحديثٌ ولا دعوة (`SessionInviteService.trainerSuspended`).
+           فيُمحى `calendarSentAt` عن كلّ إسنادٍ له، فيرسل العاملُ جدولَ كلِّ شعبةٍ هو فيها (`sweepTrainerCalendars`) —
+           ومنه من أُوقف قبل أن يُرفع عند الإيقاف شيء: تقويمُه على ما كان يومَ أُوقف. */
+        await this.prisma.cohortTrainer.updateMany({ where: { profileId: profile.id }, data: { calendarSentAt: null } })
         /* ولا يُرفع عن الحساب إلّا ما أوقفه هذا المسارُ نفسُه: `suspendTrainer`
            لا يوقف دخولَ من له موقعٌ فوقَ التدريب، فرفعُه هنا يُنشِّط حسابا
            أوقفته شاشةُ المستخدمين لسببٍ آخرَ — رفعُ إيقافٍ بلا قرارٍ برفعه. */
@@ -6720,6 +6726,13 @@ export class TrainerReviewService {
     if (profile.application.status === 'active') {
       await this.apps.transition(profile.applicationId, 'suspended', actorId, note ?? 'إيقاف المدرب')
     }
+
+    /* ═══ ولقاءاتُ شعبه تُرفع من تقويمه، ويصله جدولُها حين يعود (٢٧ أكتوبر ٢٠٢٦) ═══
+       ومنها شعبُه التي تُلغى أدناه: رفعُها يصل الجميعَ إلّا الموقوف. والعلّةُ في `SessionInviteService.trainerSuspended`.
+       ولا يُسقط إخفاقُه إيقافا وقع: يُكتب في السجلّ، والعاملُ يلحقه (`sweepTrainerCalendars`) */
+    await new SessionInviteService(this.prisma).trainerSuspended(profileId).catch((e: unknown) => {
+      console.error(`[invite] تعذّر رفع لقاءات شعبه من تقويم الموقوف (${profileId})`, e)
+    })
 
     /* وما اختير إلغاؤه من شعبه التي لم تبدأ — من شعبه وحدَها، والإلغاءُ نفسُه الذي تفعله الإدارة: يصل متعلّميها
        الخبر. وما لم يُختر يبقى كما هو لمدرّبٍ بديل. */

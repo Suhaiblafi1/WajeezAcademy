@@ -1410,15 +1410,20 @@ export async function runVoidedSessionInvites(prisma: PrismaClient, now = new Da
 
 /* ═══ تقاويمُ المدرّبين (٢٧ أكتوبر ٢٠٢٦) ═══
    لم تكن تصل المدرّبَ دعوةٌ قطّ. فمن أُسند إلى شعبةٍ قبل هذا اليوم يصله جدولُ ما بقي من لقاءاتها مرّةً،
-   ومن فاته جدولُه بخطأٍ ابتُلع. والعلّةُ في `SessionInviteService.sweepTrainerCalendars`. */
+   ومن فاته جدولُه بخطأٍ ابتُلع، ومن رُفع إيقافُه. وموقوفٌ بقي جدولُ شعبه في تقويمه تُرفع منه لقاءاتُها.
+   والعلّةُ في `SessionInviteService.sweepTrainerCalendars`. */
 export async function runTrainerCalendars(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
   const { SessionInviteService } = await import('../services/session-invite.service')
-  const { links, mails } = await new SessionInviteService(prisma).sweepTrainerCalendars(now)
+  const { links, mails, held, withdrawn } = await new SessionInviteService(prisma).sweepTrainerCalendars(now)
+  const said = [
+    ...(links > 0 ? [`أرسل إلى المدربين ${mails} جدول لقاءات`] : []),
+    ...(held > 0 ? [`رفع ${withdrawn} لقاء من تقويم مدرب موقوف`] : []),
+  ]
   return {
     job: 'trainer_calendars',
-    summaryAr: links === 0 ? 'كل مدرب وصله جدول شعبه' : `أرسل إلى المدربين ${mails} جدول لقاءات`,
-    done: links, failed: 0, ms: Date.now() - started,
+    summaryAr: said.length === 0 ? 'كل مدرب وصله جدول شعبه' : said.join('، و'),
+    done: links + held, failed: 0, ms: Date.now() - started,
   }
 }
 
