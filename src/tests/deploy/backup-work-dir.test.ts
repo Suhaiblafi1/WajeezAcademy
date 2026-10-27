@@ -85,4 +85,11 @@ describe('نسخةُ ما قبل النشر تُؤخذ كاملة ولو ضاق 
     expect(src).toMatch(/^WORK="\$\(mktemp -d -p "\$\{BACKUP_WORK_DIR:-\/var\/tmp\}"\)"$/m)
     expect(src, 'عاد مجلد العمل إلى /tmp').not.toMatch(/^WORK="\$\(mktemp -d\)"$/m)
   })
+
+  /* «Keep 7 nights» — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): الليلةُ نحوُ ١٫٩ غيغابايتا، وثلاثون تملأ القرص */
+  it('⚠️ والليلية سبع ليال افتراضا — في السكربت ومثال الإعداد', () => {
+    const src = readFileSync(join(root, 'deploy/backup.sh'), 'utf8')
+    expect(src).toMatch(/local keep="\$\{BACKUP_KEEP_DAYS:-7\}"/)
+    expect(readFileSync(join(root, 'deploy/.env.production.example'), 'utf8')).toMatch(/^BACKUP_KEEP_DAYS=7$/m)
+  })
 })
