@@ -24,6 +24,8 @@ import {
 import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
 import { sortKeyAr } from '@/application/catalog/course-title'
 import { useCourseCohorts } from '@/services/cohort-prices'
+import { trainerFacesOf } from '@/application/catalog/course-trainers'
+import TrainerFaces from '@/components/TrainerFaces'
 import { useListedCourses } from '@/services/listed-courses'
 import { listedOnly, listedWhole } from '@/application/catalog/listed-courses'
 import { cohortDayAr } from '@/application/learning/cohort-gate'
@@ -357,7 +359,9 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               <div className="mt-3 text-fine leading-5 text-muted-foreground">
                 {pathwaySizeAr(p)} · {p.weeklyHours} أسبوعيا
               </div>
-              <div className="mt-auto pt-5">
+              {/* ووجوهُ مدرّبي دوراته فوق بابه — كبطاقات الرئيسة (`trainerFacesOf`) */}
+              <div className="mt-auto grid gap-3 pt-5">
+                <TrainerFaces {...trainerFacesOf(p.courseIds, openCohorts)} />
                 <Inset as={Link} tone="accent" interactive to={`/pathways/${p.id}`}
                   onClick={() => track('pathway_viewed', { from: 'catalog' })} className="block py-2.5 text-center text-sm font-semibold text-teal-light-ink transition group-hover:bg-teal-deep group-hover:text-white">
                   تفاصيل المسار
@@ -431,7 +435,9 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
                 {c.skill}
               </span>
-              <div className="mt-auto pt-4">
+              {/* ووجوهُ مدرّبيها فوق بابها — كبطاقات الرئيسة (`trainerFacesOf`) */}
+              <div className="mt-auto grid gap-3 pt-4">
+                <TrainerFaces {...trainerFacesOf([c.id], openCohorts)} />
                 {/* التفاصيل تفتح مسارا من هذه الدورة وحدها لا نافذة مقتطفة:
                     النافذة كانت تعرض المحاور والمخرج فقط، وزرّها الوحيد ينقل
                     القارئ إلى المسار كاملا — فمن أراد دورة وجد ستّا وسعر مسار. */}
