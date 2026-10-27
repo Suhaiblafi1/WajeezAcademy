@@ -16,7 +16,7 @@
 
 import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-domain'
 import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
-import { courseLinesAr } from '../text/course-lines'
+import { courseLinesAr, shortCourseTitleAr } from '../text/course-lines'
 import { plainAr } from '../text/plain-ar'
 import { clashesOf, sessionsOverlap, type TimedSession } from '../learning/cohort-overlap'
 import { MEMBER_GRANT_NAME_AR } from './grant'
@@ -346,15 +346,16 @@ export function grantAdvisorTextAr(m: {
   ].join('\n\n')
 }
 
-/** طريقُ ملفّ صاحب المنحة — `/g/<كوده>` يفتح صفَّه في قائمة المنحة للإدارة (`pages/GrantRecordLink.tsx`) */
+/** طريقُ ملفّ صاحب المنحة — `/g/<كوده>` يفتح صفَّه في قائمة المنحة للإدارة (`pages/GrantRecordLink.tsx`).
+    و`/g/i/<كوده>` لصاحب منحة المؤثّرين: قائمتُه في صفحة منحتهم لا في صفحة الأولى (٢٧ أكتوبر ٢٠٢٦) */
 export const GRANT_RECORD_PATH = '/g'
 
 /** ما يُعرف به صاحبُ المنحة في الرابط: كودُه، أو رقمُ طلبه إن لم يُصدَر له كود */
 export const GRANT_RECORD_KEY_RE = /^(WG-[A-Z0-9]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
 
 /** الرابطُ القصيرُ لملفّه — بلا `https://` ولا `www`، وواتساب يجعله رابطا */
-export function grantRecordLink(host: string, key: string): string {
-  return `${host}${GRANT_RECORD_PATH}/${key}`
+export function grantRecordLink(host: string, key: string, influencer = false): string {
+  return `${host}${GRANT_RECORD_PATH}${influencer ? '/i' : ''}/${key}`
 }
 
 /* ═══ نصُّ الهديّة — يتباهى صاحبُه بمنحته ويختار صديقَه (٢٧ أكتوبر ٢٠٢٦) ═══
@@ -388,11 +389,13 @@ export function rankByInterest<T>(items: readonly T[], hits: (x: T) => number): 
 }
 
 /** ما يُكتب للمستشار عن صاحب النموذج — مجالُه ومستواه وما يريد، بما أجاب منها */
-export function leadProfileAr(l: { workField: string | null; careerLevel: string | null; interests: readonly string[] }): string {
+export function leadProfileAr(l: { workField: string | null; careerLevel: string | null; interests: readonly string[]; picks?: readonly string[] }): string {
   return [
     l.workField && `مجاله: ${l.workField}`,
     l.careerLevel && `مستواه: ${l.careerLevel}`,
     l.interests.length > 0 && `يريد: ${l.interests.join('، ')}`,
+    /* وما اختاره من دوراتٍ في صفحة المنحة — بعناوينها القصيرة (٢٧ أكتوبر ٢٠٢٦، «fix all too») */
+    l.picks && l.picks.length > 0 && `اختار: ${l.picks.map(shortCourseTitleAr).join('، ')}`,
   ].filter(Boolean).join(' · ')
 }
 

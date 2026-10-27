@@ -238,6 +238,8 @@ describe('بعد النموذج', () => {
     expect(GRANT_INTEREST_DOMAINS.has('أخرى')).toBe(false)
     expect(leadProfileAr({ workField: 'الهندسة', careerLevel: 'مدير', interests: ['أ', 'ب'] })).toBe('مجاله: الهندسة · مستواه: مدير · يريد: أ، ب')
     expect(leadProfileAr({ workField: null, careerLevel: null, interests: [] })).toBe('')
+    /* وما اختاره يقرؤه المستشار في حالته بعناوينه القصيرة */
+    expect(leadProfileAr({ workField: 'الهندسة', careerLevel: null, interests: [], picks: ['دورة استراتيجية التسعير: بناء النطاق', 'تحليل البيانات'] })).toBe('مجاله: الهندسة · اختار: استراتيجية التسعير، تحليل البيانات')
   })
 
   it('⚠️ خمس دورات نقترحها له — ما يريد تطويره، ثم مجال عمله، ثم الأقرب موعدا', () => {
@@ -512,7 +514,7 @@ describe('بعد النموذج', () => {
     expect(grantAdvisorTextAr({ name: 'سارة', grantNameAr: 'منحة مؤثرين وجيز' })).toBe('مرحبا، أنا سارة.\nسجلت في منحة مؤثرين وجيز، وأحتاج مساعدة في اختيار دوراتي.')
     expect(grantAdvisorTextAr({ name: ' ', email: 'sara@x.test' }).split('\n')[0]).toBe('مرحبا، بريدي sara@x.test.')
     expect(PAGE).toMatch(/name: stored\.name, email: stored\.email, code: stored\.code, courses: chosen\.map\(\(x\) => x\.titleAr\),/)
-    expect(PAGE).toMatch(/recordLink: grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref\), grantNameAr: nameAr,/)
+    expect(PAGE).toMatch(/recordLink: grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref, forInfluencer\), grantNameAr: nameAr,/)
     expect(PAGE, 'عاد الطلب المكتوب').not.toMatch(/\/api\/public\/grant\/advisor|<textarea|اطلب مستشارا/)
   })
 

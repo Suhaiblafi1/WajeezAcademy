@@ -8,7 +8,8 @@
    ④ **والعاملُ يفتحها.**
    ⑤ **وتذكيرٌ قبل انتهاء المنحة** — بريدٌ قبل ثلاثة أيّامٍ وفي آخر يوم، التاسعةَ صباحا بتوقيت عمّان، مرّةً لكلّ
       مرحلة، والأحدثُ وحدَها لمن فاتته الأولى؛ ولا يصل من اشترى ولا من ينتظر طلبُه الدفع ولا من أخذ كودَه للتوّ،
-      ولا يُكتب شيءٌ وقناةُ البريد مفصولة. */
+      ولا يُكتب شيءٌ وقناةُ البريد مفصولة.
+   ⑧ **وما اختاره من دوراتٍ في ملاحظة حالته، ولمنحة المؤثّرين قائمتُها** (٢٧ أكتوبر ٢٠٢٦) — كانت القائمةُ للأولى وحدَها. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -21,6 +22,8 @@ import { GrantLandingService } from '../../services/grant-landing.service'
 import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, applyGrantCoursesFix, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { grantCallDueAt } from '../../../src/application/commerce/grant-landing'
+import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { shortCourseTitleAr } from '../../../src/application/text/course-lines'
 import { runJob } from '../../worker/jobs'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
@@ -291,5 +294,26 @@ describe('⑦ والمنحة تغطي 4 دورات بحد أقصى — بقرا�
     await runJob(prisma, 'grant_reminders')
     expect(await maxCourses()).toBe(4)
     await g.update({ maxCourses: before }, ownerId)
+  })
+})
+
+describe('⑧ ما اختاره في حالته، ولمنحة المؤثرين قائمتها', () => {
+  it('⚠️ المستشار يقرأ ما اختاره بعناوينه القصيرة — وكل منحة قائمتها وحدها', async () => {
+    const picked = await member()
+    const courseId = nextCourse()
+    await prisma.lead.update({ where: { id: picked.ref }, data: { grantPicks: [courseId] } })
+    await openGrantFollowups(prisma, new Date())
+    const title = (await prisma.courseVersion.findFirstOrThrow({ where: { courseId }, orderBy: { version: 'desc' } })).titleAr
+    const [kase] = await casesOf(picked.ref)
+    expect(kase?.nextAction, 'لم يقرأ المستشار ما اختاره').toContain(`اختار: ${shortCourseTitleAr(title)}`)
+
+    seq += 1
+    const inf = await prisma.lead.create({
+      data: { fullName: `متابع مؤثر ${seq}`, email: `fu-inf-${seq}-${STAMP}@test.local`, phone: `0793${String(700000 + seq)}`, source: 'campaign', campaign: INFLUENCER_GRANT_SLUG, grantPicks: [courseId] },
+    })
+    const ofInfluencers = await grantRegistrants(prisma, INFLUENCER_GRANT_SLUG)
+    expect(ofInfluencers.find((r) => r.id === inf.id)?.picks, 'لا يُرى من عبأ نموذج المؤثرين').toEqual([title])
+    expect(ofInfluencers.some((r) => r.id === picked.ref), 'دخل صاحب المنحة الأولى قائمة المؤثرين').toBe(false)
+    expect((await grantRegistrants(prisma)).some((r) => r.id === inf.id), 'دخل متابع المؤثر قائمة المنحة الأولى').toBe(false)
   })
 })

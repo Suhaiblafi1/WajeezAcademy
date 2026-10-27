@@ -90,7 +90,8 @@ describe('نتائج الحملة', () => {
 describe('من عبأ النموذج', () => {
   it('⚠️ قائمة بالأسماء في شاشة المنحة — ببحث وزر واتساب ورسالة جاهزة، وبابها بصلاحية الكوبونات', () => {
     expect(PAGE).toMatch(/<GrantRegistrants \/>/)
-    expect(REG).toMatch(/apiGet<Registrant\[\]>\("\/api\/admin\/member-grant\/registrants"\)/)
+    expect(REG).toMatch(/\{ api = "\/api\/admin\/member-grant\/registrants" \}/)
+    expect(REG).toMatch(/apiGet<Registrant\[\]>\(api\)/)
     expect(REG).toMatch(/<ListToolbar q=\{q\}/)
     expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName\)\)/)
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/registrants', \{\s*preHandler: canManage/)

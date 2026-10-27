@@ -12,6 +12,7 @@ import { fmtDate } from "@/application/text/format-ar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { grantFollowupAr } from "@/application/commerce/grant-landing";
+import { shortCourseTitleAr } from "@/application/text/course-lines";
 import { waToPerson } from "@/application/site/whatsapp";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { staffSelectCls } from "@/components/FormKit";
@@ -28,7 +29,8 @@ interface Registrant {
 
 const STATE_AR: Record<State, string> = { bought: "اشترى", pending: "ينتظر الدفع", none: "لم يشتر بعد" };
 
-export default function GrantRegistrants() {
+/** `api`: قائمةُ أيّ حملة — الأولى في صفحتها، والمؤثّرون في صفحة منحتهم (٢٧ أكتوبر ٢٠٢٦) */
+export default function GrantRegistrants({ api = "/api/admin/member-grant/registrants" }: { api?: string }) {
   const [rows, setRows] = useState<Registrant[] | null>(null);
   /* من جاء من رابط ملفّ صاحب المنحة (`/g/<كوده>`) تُفتح له القائمةُ مبحوثا فيها بكوده، ويُنزل إليها */
   const [params] = useSearchParams();
@@ -36,7 +38,7 @@ export default function GrantRegistrants() {
   const [q, setQ] = useState(fromLink);
   const [page, setPage] = useState(1);
   const [only, setOnly] = useState<"" | State>("");
-  useEffect(() => { apiGet<Registrant[]>("/api/admin/member-grant/registrants").then(setRows).catch(() => setRows(null)); }, []);
+  useEffect(() => { apiGet<Registrant[]>(api).then(setRows).catch(() => setRows(null)); }, [api]);
   useEffect(() => {
     if (rows && fromLink) document.getElementById("grant-registrants")?.scrollIntoView({ block: "start" });
   }, [rows, fromLink]);
@@ -99,7 +101,15 @@ export default function GrantRegistrants() {
                         {r.workField ?? "—"}
                         {r.careerLevel && <><br /><span className="text-muted-foreground">{r.careerLevel}</span></>}
                         {r.interests.length > 0 && <><br /><span className="text-muted-foreground">يريد: {r.interests.join("، ")}</span></>}
-                        {r.picks.length > 0 && <><br /><span className="font-bold">اختار: {r.picks.join("، ")}</span></>}
+                        {/* ما اختاره سطرٌ لكلّ دورةٍ مرقّمٌ بعنوانها القصير — كرسالة واتساب (`course-lines.ts`) */}
+                        {r.picks.length > 0 && (
+                          <span className="mt-1 block">
+                            <span className="font-bold">اختار:</span>
+                            <ol className="list-inside list-decimal font-bold">
+                              {r.picks.map((p) => <li key={p}>{shortCourseTitleAr(p)}</li>)}
+                            </ol>
+                          </span>
+                        )}
                       </td>
                       <td className="p-2">{[r.channel, r.wave && `دفعة ${r.wave}`].filter(Boolean).join(" · ") || "—"}</td>
                       <td className={`p-2 font-bold ${r.state === "bought" ? "text-teal-light-ink" : ""}`}>{STATE_AR[r.state]}</td>

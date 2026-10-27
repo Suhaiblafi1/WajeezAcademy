@@ -166,7 +166,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: "m
         <Button disabled={busy || !changed || !pctOk || !maxOk || !coursesOk} onClick={() => setConfirm(true)}>احفظ</Button>
       </Card>
 
-      {forInfluencer ? <InfluencersPanel /> : <><GrantResults /><GrantRegistrants /></>}
+      {forInfluencer ? <><InfluencersPanel /><GrantRegistrants api="/api/admin/influencer-grant/registrants" /></> : <><GrantResults /><GrantRegistrants /></>}
 
       <GrantCourses percentOff={pctOk ? pctNum : null} />
 

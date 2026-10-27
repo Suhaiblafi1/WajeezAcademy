@@ -299,7 +299,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
     const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr({
       name: stored.name, email: stored.email, code: stored.code, courses: chosen.map((x) => x.titleAr),
-      recordLink: grantRecordLink(BARE_HOST, stored.code ?? stored.ref), grantNameAr: nameAr,
+      recordLink: grantRecordLink(BARE_HOST, stored.code ?? stored.ref, forInfluencer), grantNameAr: nameAr,
     }));
     /* سطرُ الصندوق حين لا كود ولا بريد — سببُ الخادم، أو أنّها مغلقة. ولا فقرةٌ فارغةٌ حين لا شيء يقال */
     const topNote = reasonAr ?? (c.open ? null : "المنحة مغلقة الآن");

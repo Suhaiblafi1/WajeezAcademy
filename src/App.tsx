@@ -223,6 +223,7 @@ export default function App() {
           <Route path="/s/:code" element={<ShortLinkPage />} />
           {/* ملفُّ صاحب المنحة من رسالته إلى المستشار — `pages/GrantRecordLink.tsx` */}
           <Route path="/g/:key" element={<GrantRecordLinkPage />} />
+          <Route path="/g/i/:key" element={<GrantRecordLinkPage influencer />} />
           <Route path="/join-trainer" element={<JoinTrainer />} />
           <Route path="/join-advisor" element={<JoinAdvisor />} />
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
