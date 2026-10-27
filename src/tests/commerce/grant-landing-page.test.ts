@@ -14,7 +14,7 @@ import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -236,8 +236,9 @@ describe('بعد النموذج', () => {
     expect(leadProfileAr({ workField: null, careerLevel: null, interests: [] })).toBe('')
   })
 
-  it('⚠️ أربع دورات نختارها له سلفا — ما يريد تطويره، ثم مجال عمله، ثم الأقرب موعدا', () => {
-    expect(GRANT_SUGGESTED_COURSES).toBe(4)
+  it('⚠️ خمس دورات نقترحها له — ما يريد تطويره، ثم مجال عمله، ثم الأقرب موعدا', () => {
+    /* «اجعلهم ٥ دوراتٍ على أن يختار هو أربعةً فقط» — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+    expect(GRANT_SUGGESTED_COURSES).toBe(5)
     const hr = courseDomain('C-HR-101'), mkt = courseDomain('C-MKT-101'), ai = courseDomain('C-AI-101')
     const day = (d: number) => new Date(Date.UTC(2026, 10, d)).toISOString()
     const pool = [
@@ -263,6 +264,44 @@ describe('بعد النموذج', () => {
     }
   })
 
+  /* «اقترح له ٤ دوراتٍ لا تتعارض ولا تكرّر المدرّبَ نفسَه، واجعلهم ٥» — و«عندما تتعارض دوراتٌ يجب أن تظهر فورا… تتعارض مع
+     التي قبلها، واجعل الرسالةَ واضحةً وسهلةَ القراءة» — قرارا صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ والمقترحة لا تتعارض ولا يتكرر فيها مدرب — ودورات المسار الرئيسي أولها', () => {
+    const at = (d: number, h: number) => ({ startsAt: new Date(Date.UTC(2026, 11, d, h)).toISOString(), endsAt: new Date(Date.UTC(2026, 11, d, h + 2)).toISOString() })
+    const t = (id: string) => ({ id })
+    const pool = [
+      { courseId: 'a', domainAr: null, startsAt: null, trainer: t('T1'), sessions: [at(1, 16)] },
+      { courseId: 'b', domainAr: null, startsAt: null, trainer: t('T1'), sessions: [at(2, 16)] },
+      { courseId: 'c', domainAr: null, startsAt: null, trainer: t('T2'), sessions: [at(1, 17)] },
+      { courseId: 'd', domainAr: null, startsAt: null, trainer: t('T3'), sessions: [at(1, 18)] },
+      { courseId: 'e', domainAr: null, startsAt: null, trainer: null, sessions: [] },
+      { courseId: 'f', domainAr: null, startsAt: null, trainer: t('T4'), sessions: [at(3, 16)] },
+    ]
+    /* «b» مدرّبُ «a»، و«c» تقع على «a» (١٧ داخلَ ١٦–١٨)، و«d» تبدأ حين تنتهي «a» فلا تتعارض. وبلا جدولٍ لا يُتخطّى */
+    expect(suggestCourses(pool, [], 'أخرى', 5)).toEqual(['a', 'd', 'e', 'f'])
+    expect(suggestCourses(pool, [], 'أخرى', 2)).toEqual(['a', 'd'])
+    /* ودوراتُ المسار الرئيسيّ أوّلا بترتيبه — ثمّ تُطبَّق القاعدتان على ما بعدها: «a» مدرّبُ «b»، و«d» تقع على «c» */
+    expect(suggestCourses(pool, [], 'أخرى', 5, ['c', 'b'])).toEqual(['c', 'b', 'e', 'f'])
+    /* وسطرُ التعارض: مع التي قبلها وحدَها، ومرّةً */
+    const row = (courseId: string, sessions: { startsAt: string; endsAt: string }[]) => ({ courseId, cohortId: `K-${courseId}`, titleAr: `دورة ${courseId}`, sessions })
+    const x = row('x', [at(6, 16), at(13, 16)]), y = row('y', [at(6, 17), at(13, 17)]), z = row('z', [at(7, 16)])
+    expect(grantClashAr(y, [x])).toBe('تتعارض مع «x» في لقاءين، أولها الأحد 6 ديسمبر.')
+    expect(grantClashAr(x, []), 'الأولى لا تتعارض مع ما بعدها').toBeNull()
+    expect(grantClashAr(z, [x, y])).toBeNull()
+    expect(plainAr(grantClashAr(y, [x])!)).toBe(grantClashAr(y, [x]))
+    /* والاسمُ قصيرٌ يُعرف به — لا العنوانُ كلُّه بوعده */
+    const long = { ...x, titleAr: 'دورة تحليلات الموارد البشرية: فحص التحيّز قبل أن يصير سياسة' }
+    expect(grantClashAr(y, [long])).toBe('تتعارض مع «تحليلات الموارد البشرية» في لقاءين، أولها الأحد 6 ديسمبر.')
+    /* وفي الصفّ: فورَ اختيارها، مع ما اختاره قبلها بترتيبه — ولا يمنع الاختيار */
+    const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf(TOP_CARD))
+    expect(card).toMatch(/const clash = on \? grantClashAr\(x, chosen\.slice\(0, chosen\.findIndex\(\(c\) => c\.courseId === x\.courseId\)\)\) : null;/)
+    expect(card).toMatch(/\{clash && \(\s*<span role="status" className="mt-2 flex items-start gap-1\.5 text-read font-bold leading-6 text-gold-ink">/)
+    expect(card, 'التعارض يمنع الاختيار').toMatch(/const full = !on && picked\.length >= max;/)
+    /* و«لا تتعارض» لا تُقال إلّا وكلُّ مقترحةٍ لها لقاءاتٌ معتمَدة */
+    expect(PAGE).toMatch(/const timedSuggested = top\.length > 0 && top\.every\(\(x\) => \(x\.sessions\?\.length \?\? 0\) > 0\);/)
+    expect(PAGE).toMatch(/تناسبك\{timedSuggested \? " ولا تتعارض مواعيدها" : ""\}\.\{suggested\.length > max && ` اختر منها حتى \$\{max\}\.`\}/)
+  })
+
   it('⚠️ مسار رئيسي وبديل — كل دوراته في المنحة، والأنسب له، ولا رئيسي بلا ملاءمة', () => {
     const hr = courseDomain('C-HR-101'), mkt = courseDomain('C-MKT-101'), ai = courseDomain('C-AI-101'), cyb = courseDomain('C-CYB-101')
     const pool = [
@@ -285,8 +324,8 @@ describe('بعد النموذج', () => {
     /* وفي الصفحة: المساراتُ العامّةُ بترتيب المختارات، ودوراتُ الرئيسيّ تُختار، والبديلُ بضغطة */
     expect(PAGE).toMatch(/import publicPathsData from "@\/data\/catalog\/public-pathways\.json";/)
     expect(PAGE).toMatch(/const found = suggestPaths\(GRANT_PATHS, view\.openCourses, stored\.interests, stored\.workField\);/)
-    expect(PAGE).toMatch(/const ours = found\.main\s*\? found\.main\.courseIds\.slice\(0, max\)\s*: suggestCourses\(/)
-    expect(PAGE).toMatch(/setMainPath\(found\.main\);/)
+    /* ودوراتُ الرئيسيّ أوّلُ المقترحة — لا كلُّها: الخمسُ لا تتعارض ولا يتكرّر فيها مدرّب (٢٧ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const ours = suggestCourses\(view\.openCourses, stored\.interests, stored\.workField, GRANT_SUGGESTED_COURSES, found\.main\?\.courseIds \?\? \[\]\);/)
     /* ولا خيارَ «بدّل» إلى البديل — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لا داعي لخيار بدّل للمسار لأنّه غير مفهوم» */
     expect(PAGE, 'عاد خيار بدّل المسار').not.toMatch(/switchPath|بدّل إليه|أو مسار|\.alt\b/)
   })
@@ -294,7 +333,7 @@ describe('بعد النموذج', () => {
   it('⚠️ نقترحها ولا نختارها عنه — وما تركه قبل توثيق بريده يعود مختارا، ولا تتجاوز الحد', () => {
     const effect = PAGE.slice(PAGE.indexOf('useEffect(() => {\n    if (!view || !stored || seeded) return;'))
     expect(effect.length, 'الاختيار الأول لا ينتظر الكود').toBeGreaterThan(0)
-    expect(effect).toMatch(/suggestCourses\(view\.openCourses, stored\.interests, stored\.workField, Math\.min\(GRANT_SUGGESTED_COURSES, max\)\)/)
+    expect(effect).toMatch(/suggestCourses\(view\.openCourses, stored\.interests, stored\.workField, GRANT_SUGGESTED_COURSES, found\.main\?\.courseIds \?\? \[\]\)/)
     expect(effect, 'اختارها عنه').toMatch(/setPicked\(resumed \? resumed\.intent\.courseIds\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\) : \[\]\)/)
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
     /* وسمٌ نصّيٌّ أعلى البطاقة لا قرصٌ يشبه الزرّ — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */
@@ -602,7 +641,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'نقترحها لك', 'نقترح لك دورات مسار', 'تناسبك.', 'يناسب ما تريد تطويره', 'تحتاج مساعدة في الاختيار؟', 'مستشارك الخاص يرد عليك مباشرة على واتساب.', 'راسل مستشارك', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
+      'نقترحها لك', 'نقترح لك', 'تناسبك', ' ولا تتعارض مواعيدها', ' اختر منها حتى', 'يناسب ما تريد تطويره', 'تحتاج مساعدة في الاختيار؟', 'مستشارك الخاص يرد عليك مباشرة على واتساب.', 'راسل مستشارك', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')

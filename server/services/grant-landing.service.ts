@@ -37,6 +37,7 @@ import { enqueueMail } from './outbox.service'
 import { renderMail } from './mail-template'
 import { mintShortLink } from './short-link.service'
 import { publicSiteUrl } from './site-url'
+import { PUBLIC_SESSIONS_CAP, PUBLIC_SESSION_WHERE } from './public-catalog.service'
 import { normalizePhone } from '../../src/application/advisor/guest-contact'
 import {
   CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, WORK_FIELDS, campaignTag, grantCourseSummary, leadProfileAr,
@@ -118,7 +119,9 @@ export class GrantLandingService {
   /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين */
   async view(now = new Date()) {
     const [s, open] = await Promise.all([this.grants.settings(now), this.courses.openCourses(now)])
-    const summaries = await this.summaries(open.courses.map((c) => c.courseId))
+    const [summaries, sessions] = await Promise.all([
+      this.summaries(open.courses.map((c) => c.courseId)), this.sessions(open.courses.map((c) => c.cohortId)),
+    ])
     return {
       /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
       campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
@@ -131,8 +134,27 @@ export class GrantLandingService {
         seatsLeft: c.seatsLeft, trainer: c.trainer,
         /* ونبذتُها تحت سهمٍ في صفّها — فلا ينتقل إلى الموقع ليعرف عمّ هي (`grantCourseSummary`) */
         summary: summaries.get(c.courseId) ?? null,
+        /* ومواعيدُ لقاءاتها — يُقال بها فورا إن تعارضت مع ما اختاره قبلها، ولا يُقترح له دورتان تتعارضان */
+        sessions: sessions.get(c.cohortId) ?? [],
       })),
     }
+  }
+
+  /** لقاءاتُ كلِّ شعبةٍ بموعدها — ما يُعلَن في صفحة الدورة نفسِه (`PUBLIC_SESSION_WHERE`)، بالبداية والنهاية وحدهما */
+  private async sessions(cohortIds: string[]): Promise<Map<string, { startsAt: Date; endsAt: Date | null }[]>> {
+    if (cohortIds.length === 0) return new Map()
+    const rows = await this.prisma.cohortSession.findMany({
+      where: { cohortId: { in: cohortIds }, ...PUBLIC_SESSION_WHERE },
+      orderBy: { startsAt: 'asc' },
+      select: { cohortId: true, startsAt: true, endsAt: true },
+    })
+    const out = new Map<string, { startsAt: Date; endsAt: Date | null }[]>()
+    for (const r of rows) {
+      const list = out.get(r.cohortId) ?? []
+      if (list.length < PUBLIC_SESSIONS_CAP) list.push({ startsAt: r.startsAt, endsAt: r.endsAt })
+      out.set(r.cohortId, list)
+    }
+    return out
   }
 
   /** نبذةُ كلِّ دورةٍ من آخر نسخةٍ لها — كعنوانها في دورات المنحة (`grant-courses.service.ts`) */

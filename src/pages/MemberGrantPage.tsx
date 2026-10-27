@@ -34,7 +34,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Check, ChevronDown, Clock, Copy, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, Share2, Sparkles, UserRound } from "lucide-react";
+import { Check, ChevronDown, Clock, Copy, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, Share2, Sparkles, TriangleAlert, UserRound } from "lucide-react";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -50,11 +50,12 @@ import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
+import type { TimedSession } from "@/application/learning/cohort-overlap";
 import { grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -71,6 +72,8 @@ interface GrantCourse {
   trainer?: { id: string; name: string; photoUrl: string | null } | null;
   /** نبذتُها تحت سهمٍ في صفّها (`grantCourseSummary`) — بلا شيءٍ لا سهمَ لها */
   summary?: GrantCourseSummary | null;
+  /** مواعيدُ لقاءاتها المعتمَدة — بها يُقال التعارضُ فورَ الاختيار (`grantClashAr`) */
+  sessions?: TimedSession[];
 }
 interface View {
   campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
@@ -158,9 +161,6 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [suggested, setSuggested] = useState<string[]>([]);
   /* نبذةُ أيِّ دورةٍ مفتوحةٌ الآن — واحدةٌ في كلّ مرّة، فتبقى القائمةُ مرتّبة */
   const [summaryOf, setSummaryOf] = useState<string | null>(null);
-  /* المسارُ الذي اخترنا دوراتِه له. وكان معه بديلٌ يبدّل إليه بضغطة، فحُذف بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لا داعي
-     لخيار بدّل للمسار لأنّه غير مفهوم» — ومن أراد غيرَ ما اقترحناه يجده في أقسام المجالات تحته */
-  const [mainPath, setMainPath] = useState<GrantPathOption | null>(null);
   const [seeded, setSeeded] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
@@ -176,19 +176,17 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 
   const [resumed] = useState(() => (pickPath ? resumedCheckoutFor(pickPath) : null));
 
-  /* ما نقترحه مرّةً واحدةً حين يصير له كود: دوراتُ المسار الرئيسيّ الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، أو
-     أربعُ دوراتٍ تناسبهما إن لم يناسبه مسار (`suggestCourses`) — تُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه**:
+  /* ما نقترحه مرّةً واحدةً حين يصير له كود: خمسُ دوراتٍ لا تتعارض ولا يتكرّر فيها مدرّب، أوّلُها دوراتُ المسار الرئيسيّ
+     الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، ثمّ ما يناسبهما (`suggestCourses`) — ويختار منها حتّى الحدّ. قرارُ صاحب
+     المنصّة (٢٧ أكتوبر ٢٠٢٦). وتُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه**:
      قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) «لا تختر عنه أنت، فقط اكتب له بخطٍّ صغير: نقترحها لك». ويعود ما تركه قبل أن
      يخرج ليوثّق بريده مختارا كما كان */
   useEffect(() => {
     if (!view || !stored || seeded) return;
     const max = view.campaign.maxCourses;
     const found = suggestPaths(GRANT_PATHS, view.openCourses, stored.interests, stored.workField);
-    const ours = found.main
-      ? found.main.courseIds.slice(0, max)
-      : suggestCourses(view.openCourses, stored.interests, stored.workField, Math.min(GRANT_SUGGESTED_COURSES, max));
+    const ours = suggestCourses(view.openCourses, stored.interests, stored.workField, GRANT_SUGGESTED_COURSES, found.main?.courseIds ?? []);
     const open = new Set(view.openCourses.map((x) => x.courseId));
-    setMainPath(found.main);
     setSuggested(ours);
     setPicked(resumed ? resumed.intent.courseIds.filter((id) => open.has(id)).slice(0, max) : []);
     setSeeded(true);
@@ -275,6 +273,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const courses = rankByInterest(view.openCourses, (x) => (ours.has(x.courseId) ? 2 + suggested.length - suggested.indexOf(x.courseId) : fits(x)));
     /* ما اخترناه له فوقُ مفتوحا، والباقي أقسامٌ مطويّةٌ بمجالها — ما يريد تطويرَه أوّلا (`grantSections`) */
     const top = courses.filter((x) => ours.has(x.courseId));
+    const timedSuggested = top.length > 0 && top.every((x) => (x.sessions?.length ?? 0) > 0);
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
     const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr({
       name: stored.name, email: stored.email, code: stored.code, courses: chosen.map((x) => x.titleAr),
@@ -293,6 +292,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       const sum = x.summary ?? null;
       const open = sum !== null && summaryOf === x.courseId;
       const sumId = `sum-${x.courseId}`;
+      /* وتعارضُها مع ما اختاره قبلها — يُقال فورَ اختيارها، ولا يمنعه */
+      const clash = on ? grantClashAr(x, chosen.slice(0, chosen.findIndex((c) => c.courseId === x.courseId))) : null;
       /* الصفُّ كلُّه يختار — والسهمُ خارجَ وسمه، فنبذتُه تُفتح ولا تختار. ولا رابطَ فيه إلى الموقع: قرارُ صاحب المنصّة
          (٢٧ أكتوبر ٢٠٢٦): «عند النقر على الدورات لشرائها لا يجب أن تأخذ النقرةُ العميلَ إلى صفحة الموقع» */
       return (
@@ -319,6 +320,11 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
                 <bdi dir="ltr" className="text-lg font-black">{money(grantPrice(x.price, pct))}</bdi>
                 <bdi dir="ltr" className="text-read text-muted-foreground line-through">{money(x.price)}</bdi>
               </span>
+              {clash && (
+                <span role="status" className="mt-2 flex items-start gap-1.5 text-read font-bold leading-6 text-gold-ink">
+                  <TriangleAlert className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden="true" />{clash}
+                </span>
+              )}
             </span>
           </label>
           {sum && (
@@ -392,7 +398,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           اختر دوراتك{view.termAr && <span className="text-read font-normal text-muted-foreground"> · {view.termAr}</span>}
         </h2>
         {suggested.length > 0 && (
-          <p className="mt-2 text-read">{mainPath ? `نقترح لك دورات مسار «${mainPath.title}».` : `نقترح لك ${coursesAr(suggested.length)} تناسبك.`}</p>
+          <p className="mt-2 text-read">
+            {/* «لا تتعارض» قولٌ يُقاس: يُقال حين لكلِّ مقترحةٍ لقاءاتٌ معتمَدة، وإلّا فـ«تناسبك» وحدَها */}
+            نقترح لك {coursesAr(suggested.length)} تناسبك{timedSuggested ? " ولا تتعارض مواعيدها" : ""}.{suggested.length > max && ` اختر منها حتى ${max}.`}
+          </p>
         )}
 
         {view.openCourses.length === 0 ? (

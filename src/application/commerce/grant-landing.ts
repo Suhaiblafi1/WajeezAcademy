@@ -18,6 +18,7 @@ import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-
 import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
 import { courseLinesAr } from '../text/course-lines'
 import { plainAr } from '../text/plain-ar'
+import { clashLineAr, clashesOf, sessionsOverlap, type TimedSession } from '../learning/cohort-overlap'
 import { MEMBER_GRANT_NAME_AR } from './grant'
 import { ENDORSEMENT_MIN_ATTENDANCE } from '../learning/endorsement'
 
@@ -173,8 +174,9 @@ export const GRANT_ACADEMY_LINE_AR = 'أكاديمية وجيز من وجيز، 
    للحدّ ٥ فقط». وخُيّر كيف تُختار، فاختار **حسب مجاله واهتمامه**: ما اختاره في «ما الذي تريد تطويره» أوّلا، ثمّ
    مجالاتُ مجال عمله، ثمّ الأقربُ موعدا يُكمل الأربع. فلكلٍّ اقتراحٌ يناسبه بلا أن يُعدّ صاحبُ المنصّة شيئا. */
 
-/** كم دورةً تُختار له سلفا — ويضيف حتّى حدّ المنحة (`maxCourses`) */
-export const GRANT_SUGGESTED_COURSES = 4
+/** كم دورةً نقترحها له — خمسٌ يختار منها حتّى حدّ المنحة (`maxCourses`). قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦):
+    «اقترح له ٤ دوراتٍ لا تتعارض ولا تكرّر المدرّبَ نفسَه، واجعلهم ٥ دوراتٍ على أن يختار هو أربعةً فقط» */
+export const GRANT_SUGGESTED_COURSES = 5
 
 /** مجالاتُ الدورات الأقربُ لكلّ مجال عمل — بعائلات المعرّفات (`course-domain.ts`)، فلا يفترق اسمٌ عن اسم */
 const WORK_FIELD_FAMILIES: Readonly<Record<string, readonly string[]>> = {
@@ -204,20 +206,49 @@ function courseFit(interests: readonly string[], workField: string): (domainAr: 
   return (d) => (d && want.has(d) ? 2 : d && near.has(d) ? 1 : 0)
 }
 
-/** الدوراتُ المختارةُ له سلفا — ما يريد تطويرَه، ثمّ مجالُ عمله، ثمّ الأقربُ موعدا، حتّى `n` */
+/** دورةٌ كما يقرؤها الاقتراح — مجالُها وموعدُها، ومدرّبُها ولقاءاتُها إن عُرفت */
+interface SuggestCourse {
+  courseId: string; domainAr?: string | null; startsAt: string | Date | null
+  trainer?: { id: string } | null; sessions?: readonly TimedSession[]
+}
+
+/** الدوراتُ المقترحةُ له — دوراتُ مساره الرئيسيّ إن كان (`first`)، ثمّ ما يريد تطويرَه، ثمّ مجالُ عمله، ثمّ الأقربُ موعدا،
+    حتّى `n`. **ولا تتعارض اثنتان منها ولا يتكرّر فيها مدرّب** (٢٧ أكتوبر ٢٠٢٦): تُتخطّى دورةٌ مدرّبُها في القائمة، أو تقع
+    لقاءاتُها على لقاءات دورةٍ فيها. وما لم يُعتمد جدولُه لا لقاءاتِ له تُقاس فلا يُتخطّى بها */
 export function suggestCourses(
-  courses: readonly { courseId: string; domainAr?: string | null; startsAt: string | Date | null }[],
+  courses: readonly SuggestCourse[],
   interests: readonly string[],
   workField: string,
   n: number,
+  first: readonly string[] = [],
 ): string[] {
   const score = courseFit(interests, workField)
   const at = (x: string | Date | null) => (x ? new Date(x).getTime() : Number.POSITIVE_INFINITY)
-  return courses
-    .map((c, i) => ({ id: c.courseId, s: score(c.domainAr), t: at(c.startsAt), i }))
-    .sort((a, b) => b.s - a.s || a.t - b.t || a.i - b.i)
-    .slice(0, Math.max(0, n))
-    .map((x) => x.id)
+  const lead = (id: string) => (first.includes(id) ? first.length - first.indexOf(id) : 0)
+  const ranked = courses
+    .map((c, i) => ({ c, p: lead(c.courseId), s: score(c.domainAr), t: at(c.startsAt), i }))
+    .sort((a, b) => b.p - a.p || b.s - a.s || a.t - b.t || a.i - b.i)
+  const out: SuggestCourse[] = []
+  for (const { c } of ranked) {
+    if (out.length >= n) break
+    if (c.trainer && out.some((o) => o.trainer?.id === c.trainer!.id)) continue
+    if (out.some((o) => sessionsOverlap(o.sessions ?? [], c.sessions ?? []))) continue
+    out.push(c)
+  }
+  return out.map((c) => c.courseId)
+}
+
+/** «تتعارض مع «X» في 3 لقاءات، أولها الأحد 6 ديسمبر.» — لدورةٍ اختارها بعد دورةٍ تتعارض معها، فورَ اختيارها. قرارُ صاحب
+    المنصّة (٢٧ أكتوبر ٢٠٢٦): «إذا كانت تتعارض يقولها: تتعارض مع التي قبلها، واجعل الرسالةَ واضحةً وسهلةَ القراءة، ليست فيها
+    معلوماتٌ مكرّرة». فمع أقربِ ما قبلها تعارضا، والقرارُ له — لا يُمنع الاختيار */
+export function grantClashAr<T extends { courseId: string; cohortId: string; titleAr: string; sessions?: readonly TimedSession[] }>(
+  course: T, before: readonly T[],
+): string | null {
+  /* والاسمُ قصيرٌ يُعرف به: ما قبل النقطتين بلا «دورة» — «تحليلات الموارد البشرية» لا العنوانُ كلُّه بوعده */
+  const short = (t: string) => t.split(/[:：]/)[0].replace(/^دورة\s+/, '').trim() || t
+  const timed = (x: T) => ({ cohortId: x.cohortId, courseId: x.courseId, titleAr: short(x.titleAr), sessions: x.sessions ?? [] })
+  const hit = clashesOf(timed(course), before.map(timed))[0]
+  return hit ? `${clashLineAr(hit)}.` : null
 }
 
 /* ═══ ومسارٌ رئيسيٌّ وبديلٌ من المسارات العامّة (٢١ أكتوبر ٢٠٢٦) ═══
