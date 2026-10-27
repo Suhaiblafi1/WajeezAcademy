@@ -309,7 +309,8 @@ describe('بعد النموذج', () => {
 
   /* «عندما يقوم بالدفع لا يظهر نفس السعر… يجب أن يصلح من جهتك» — واختار صاحبُ المنصّة المطابقةَ بالبريد (٢٧ أكتوبر ٢٠٢٦) */
   it('⚠️ من لا كود ظاهرا له يأخذه بحسابه حين يدخل — ولوح الدفع يعاد بالكود فيسعر بمنحته', () => {
-    expect(PAGE).toMatch(/const claimFor = session && stored && !stored\.code \? `\$\{session\.email\}\|\$\{stored\.ref\}` : null;/)
+    /* وحين يفتح لوحُ الدفع أيضا — من أنشأ حسابه في نافذة الدفع لا تعرفه الصفحةُ بعدُ (بلاغُ ٢٧ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const claimFor = \(session \|\| buyOpen\) && stored && !stored\.code \? `\$\{session\?\.email \?\? "buy"\}\|\$\{stored\.ref\}` : null;/)
     expect(PAGE).toMatch(/apiGet<\{ code: string \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{forInfluencer \? "influencer" : "member"\}`\)/)
     expect(PAGE, 'لا يحفظ الكود على الجهاز').toMatch(/if \(kept && !kept\.code\) saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null \}, storeKey\);/)
     expect(PAGE).toMatch(/setStored\(\(s\) => \(s && !s\.code \? \{ \.\.\.s, code, sentTo: null \} : s\)\);/)

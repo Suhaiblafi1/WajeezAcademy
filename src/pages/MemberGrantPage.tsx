@@ -237,7 +237,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 
   /* ومن جاء بلا كودٍ ظاهر («أرسلناه إلى بريدك») يأخذه بحسابه حين يدخل — ببريد النموذج (`myCode` في الخادم). فيظهر في صندوقه،
      ويفتح لوحُ الدفع بمنحته وبالسعر الذي رآه. قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «يجب أن يصلح ويتغيّر من جهتك» */
-  const claimFor = session && stored && !stored.code ? `${session.email}|${stored.ref}` : null;
+  /* ويُطلب حين يفتح لوحُ الدفع أيضا: من أنشأ حسابه في نافذة الدفع لا تعرفه هذه الصفحة بعدُ (`useRealSession` يُقرأ مرّةً
+     عند التحميل)، فكان لا يُطلب له كودُه أبدا ويرى «اكتب كود منحتك» — بلاغُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «اجعل الكود يتفعّل
+     تلقائيّا بدلا من تصعيب الأمور». واللوحُ لا يفتح إلّا بحساب (`pay`)، فطلبُه حينها آمن */
+  const claimFor = (session || buyOpen) && stored && !stored.code ? `${session?.email ?? "buy"}|${stored.ref}` : null;
   useEffect(() => {
     if (!claimFor) return;
     let on = true;
