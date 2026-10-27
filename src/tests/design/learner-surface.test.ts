@@ -402,7 +402,8 @@ describe('٥٦ · الرئيسة أقصر — جدارا الشعارات صار
 
     it('ويبقى الدليل والبابان', () => {
       expect(best, 'ذهبت البطاقة المميّزة معها').toContain('اختيار وجيز الأول')
-      expect(best).toContain('تتخرّج بـ')
+      /* «تتخرّج بـ» صار في إطاره (`PathOutput`، ٢٧ أكتوبر ٢٠٢٦) — فالمحروسُ أنّ البطاقةَ المميّزةَ تمرّر مخرَجَها إليه */
+      expect(best, 'ذهب مخرج البطاقة المميّزة').toMatch(/<PathOutput output=\{spotlight\.p\.output\}/)
       expect(best).toContain('to="/pathways"')
       expect(best).toContain('to="/courses"')
     })
