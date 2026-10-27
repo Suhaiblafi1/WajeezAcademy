@@ -30,6 +30,8 @@ export interface StoredGrant {
   influencer?: string | null
   /** الدوراتُ التي اختارها — فلا يجد القائمةَ فارغةً إن حدّث الصفحةَ أو عاد إليها */
   picks?: string[]
+  /** نسبةُ كوده يومَ أُعطي — وبها يُدفع، لا بنسبة الحملة اليوم إن غيّرها صاحبُ المنصّة بعده */
+  percentOff?: number | null
   at: number
 }
 
@@ -55,6 +57,7 @@ export function parseStoredGrant(raw: string | null, now = Date.now()): StoredGr
     interests: Array.isArray(o.interests)
       ? o.interests.filter((x): x is string => typeof x === 'string').map((x) => x.slice(0, 80)).slice(0, GRANT_MAX_INTERESTS)
       : [],
+    percentOff: typeof o.percentOff === 'number' && Number.isInteger(o.percentOff) && o.percentOff >= 1 && o.percentOff <= 100 ? o.percentOff : null,
     picks: Array.isArray(o.picks)
       ? o.picks.filter((x): x is string => typeof x === 'string' && x.length <= 80).slice(0, STORED_PICKS_MAX)
       : [],

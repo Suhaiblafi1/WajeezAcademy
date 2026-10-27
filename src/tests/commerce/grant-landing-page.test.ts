@@ -311,9 +311,9 @@ describe('بعد النموذج', () => {
   it('⚠️ من لا كود ظاهرا له يأخذه بحسابه حين يدخل — ولوح الدفع يعاد بالكود فيسعر بمنحته', () => {
     /* وحين يفتح لوحُ الدفع أيضا — من أنشأ حسابه في نافذة الدفع لا تعرفه الصفحةُ بعدُ (بلاغُ ٢٧ أكتوبر ٢٠٢٦) */
     expect(PAGE).toMatch(/const claimFor = \(authed \|\| buyOpen\) && stored && !stored\.code \? `\$\{session\?\.email \?\? "buy"\}\|\$\{stored\.ref\}` : null;/)
-    expect(PAGE).toMatch(/apiGet<\{ code: string \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{forInfluencer \? "influencer" : "member"\}`\)/)
-    expect(PAGE, 'لا يحفظ الكود على الجهاز').toMatch(/if \(kept && !kept\.code\) saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null \}, storeKey\);/)
-    expect(PAGE).toMatch(/setStored\(\(s\) => \(s && !s\.code \? \{ \.\.\.s, code, sentTo: null \} : s\)\);/)
+    expect(PAGE).toMatch(/apiGet<\{ code: string \| null; percentOff\?: number \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{forInfluencer \? "influencer" : "member"\}`\)/)
+    expect(PAGE, 'لا يحفظ الكود على الجهاز').toMatch(/if \(kept && !kept\.code\) saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null, percentOff: percentOff \?\? kept\.percentOff \}, storeKey\);/)
+    expect(PAGE).toMatch(/setStored\(\(s\) => \(s && !s\.code \? \{ \.\.\.s, code, sentTo: null, percentOff: percentOff \?\? s\.percentOff \} : s\)\);/)
     /* ولوحُ الدفع يُبنى من جديدٍ حين يصل الكود — فلا يبقى على أوّل حالٍ بلا منحة */
     expect(PAGE).toMatch(/<BuyPanel\s+key=\{stored\.code \?\? "no-code"\}[\s\S]{0,200}initialCoupon=\{stored\.code \?\? ""\}/)
     expect(code('server/http/routes/public-grant.routes.ts')).toMatch(/app\.get\('\/api\/learner\/grant-code', \{\s*preHandler: requireAuth,/)
@@ -328,6 +328,17 @@ describe('بعد النموذج', () => {
     const gates = PAGE.match(/[^\n]*setAuthOpen\(true\)[^\n]*/g) ?? []
     expect(gates.length, 'لا باب إلى نافذة الحساب').toBeGreaterThan(0)
     for (const g of gates) expect(g, `باب يسأل session وحده: ${g.trim()}`).toMatch(/\bauthed\b/)
+  })
+
+  /* كلُّ كودٍ يحمل نسبتَه يومَ أُعطي — فإن غُيّرت نسبةُ الحملة بعده سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ الصفحة تسعر بنسبة كوده إن كان له — من النموذج ومن حسابه', () => {
+    expect(PAGE).toMatch(/const pct = stored\?\.percentOff \?\? view\?\.campaign\.percentOff \?\? 0;/)
+    expect(PAGE).toMatch(/influencer: out\.influencer\?\.code \?\? null, percentOff: out\.grant\?\.percentOff \?\? null,/)
+    expect(PAGE).toMatch(/saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null, percentOff: percentOff \?\? kept\.percentOff \}, storeKey\)/)
+    const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', interests: [], at: Date.now() }
+    expect(parseStoredGrant(JSON.stringify({ ...ok, percentOff: 60 }))?.percentOff).toBe(60)
+    expect(parseStoredGrant(JSON.stringify({ ...ok, percentOff: 160 }))?.percentOff, 'نسبة بغير شكلها').toBeNull()
+    expect(parseStoredGrant(JSON.stringify(ok))?.percentOff, 'حفظ قبل النسبة').toBeNull()
   })
 
   /* من حدّث الصفحةَ أو عاد إليها كان يجد الدوراتِ فارغة — وقد اختارها وحُفظت في ملفّه عندنا (٢٧ أكتوبر ٢٠٢٦) */
