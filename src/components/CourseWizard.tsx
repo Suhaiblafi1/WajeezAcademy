@@ -13,6 +13,7 @@ import {
 import SkillPicker from "@/components/SkillPicker";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { draftApprovalBody } from "@/application/catalog/change-request-view";
 import { toast } from "@/components/Toast";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -91,10 +92,12 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
         })),
       });
       /* والمعرّفُ من ردّ الخادم لا من المسوّدة: هو الذي ولّده، ومن ربط
-         اقتراحَ مدرّبٍ بمعرّفٍ خمّنه المتصفّحُ ربطه بدورةٍ لا وجودَ لها. */
+         اقتراحَ مدرّبٍ بمعرّفٍ خمّنه المتصفّحُ ربطه بدورةٍ لا وجودَ لها.
+         وتُقدَّم للاعتماد معها (`draftApprovalBody`) — كان بابُها صندوقَ JSON في الكتالوج، وذهب. */
+      await apiPost("/api/admin/catalog/change-requests", draftApprovalBody("course", created.id));
       toast(d.pathwayId
-        ? `أنشئت الدورة ${created.id} كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر`
-        : `أنشئت الدورة ${created.id} كمسودة قائمة بنفسها — أكمل سير الاعتماد ثم النشر`);
+        ? `أنشئت الدورة ${created.id} مسودة في مسارها وقدمت للاعتماد — تنتظر مراجعا في «طلبات التغيير»`
+        : `أنشئت الدورة ${created.id} مسودة قائمة بنفسها وقدمت للاعتماد — تنتظر مراجعا في «طلبات التغيير»`);
       onDone(created.id);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "فشل إنشاء الدورة");
@@ -282,7 +285,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
             </p>
           </Card>
           <Inset as="p" className="px-4 py-3 text-read leading-6 text-foreground">
-            تنشأ الدورة مسودة، ثم تمرّ بسير الاعتماد المعتاد (مراجعة فاعتماد فنشر) من «النشر والإصدارات» — لا تنشر من هنا.
+            تنشأ الدورة مسودة وتقدم للاعتماد في «طلبات التغيير»، وتنشر بعد اعتمادها — لا تنشر من هنا.
           </Inset>
         </div>
       )}

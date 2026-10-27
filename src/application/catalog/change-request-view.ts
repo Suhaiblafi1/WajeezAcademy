@@ -6,7 +6,9 @@
 
    والأصنافُ ما تكتبه المنصّةُ اليوم: اسمُ دورة (`course_rename` — من «أسماء الدورات» ومن «اسمها» في قائمة
    الدورات)، ومهارةٌ تُطلب (`skill_request` — من محرّر المهارات)، ومسارٌ جديد (`action: 'create'` — من معالج
-   المسار). وما قبلها يُقرأ ولا يُكتب بعد: صندوقُ JSON (`{ titleAr }` وغيرُه)، واقتراحاتُ المدرّبين القديمة.
+   المسار)، ومسودّةٌ تُقدَّم للاعتماد (`action: 'create'` — من معالج الدورة ونموذج المهارة ومن صفّ كلّ مسودّة:
+   `draftApprovalBody`). وما قبلها يُقرأ ولا يُكتب بعد: صندوقُ JSON (`{ titleAr }` وغيرُه)، واقتراحاتُ المدرّبين
+   القديمة.
 
    وما يقع إن اعتُمد يقوله الخادمُ لا هذا الملفّ (`decide` و`promoteEntity` في `catalog-admin.service.ts`):
    الاسمُ يُكتب ويُنشر، والمسودّةُ وحدَها تُجهَّز للنشر، وما سواها يبقى كما هو. وهنا قراءتُه بكلمات. */
@@ -40,6 +42,18 @@ export type ChangeRequestView = {
 
 /** ما يقع إن رُدّ — في كلّ صنف */
 export const REJECT_AR = 'لا يتغير شيء.'
+
+/* ═══ المسودّةُ تُقدَّم للاعتماد (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   كان بابُ المسودّة إلى الاعتماد صندوقَ JSON: تُختار ويُكتب فيه أيُّ شيء، فيصل الطابورَ فيُعتمد فيُنشر. وذهب
+   الصندوق، فبقيت دورةُ المعالج ومهارةُ النموذج وسؤالُ القياس مسودّاتٍ لا طريقَ لها إلى النشر. فهذا جسمُ الطلب
+   الواحد الذي يقدّمها — يرسله المعالجُ والنموذجُ بعد الإنشاء، وزرُّ «قدم للاعتماد» في صفّ كلّ مسودّة. */
+export const draftApprovalBody = (entityType: string, entityId: string) =>
+  ({ entityType, entityId, payload: { action: 'create' } })
+
+const NEW_AR: Record<string, string> = {
+  course: 'دورة جديدة', skill: 'مهارة جديدة', question: 'سؤال جديد', pathway: 'مسار جديد', template: 'قالب جديد',
+}
 
 const text = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
 const count = (v: unknown): number => (Array.isArray(v) ? v.length : 0)
@@ -78,7 +92,7 @@ export function changeRequestView(cr: ChangeRequestLike): ChangeRequestView {
     const reason = text(p.reasonAr)
     return {
       ...base,
-      kindAr: 'مهارة جديدة',
+      kindAr: 'مهارة مطلوبة',
       subjectAr: text(p.nameAr) ?? slug,
       lines: [`رمزها: ${slug}`, ...(reason ? [`السبب: ${reason}`] : [])],
       approveAr: cr.entityStatus == null
@@ -87,14 +101,25 @@ export function changeRequestView(cr: ChangeRequestLike): ChangeRequestView {
     }
   }
 
-  /* مسارٌ من معالجه — وُلد مسودّةً، والاعتمادُ يجهّزه للنشر */
-  if (cr.entityType === 'pathway' && text(p.action) === 'create') {
+  /* مسارٌ من معالجه — وُلد مسودّةً، والاعتمادُ يجهّزه للنشر. ومن زرّ صفّه بلا ما فيه: يُقرأ مسودّةً كغيره أدناه */
+  if (cr.entityType === 'pathway' && text(p.action) === 'create' && Array.isArray(p.courseIds)) {
     return {
       ...base,
       kindAr: 'مسار جديد',
       subjectAr: label,
       lines: [`دوراته: ${count(p.courseIds)} · أهدافه: ${count(p.goals)} · شخصياته: ${count(p.personas)}`],
       approveAr: readyAr(cr.entityStatus) ?? 'لا تتغير حالته.',
+    }
+  }
+
+  /* مسودّةٌ قُدّمت للاعتماد (`draftApprovalBody`) — والاعتمادُ يجهّزها للنشر */
+  if (text(p.action) === 'create') {
+    return {
+      ...base,
+      kindAr: NEW_AR[cr.entityType] ?? 'جديد',
+      subjectAr: label,
+      lines: [],
+      approveAr: readyAr(cr.entityStatus) ?? (cr.entityStatus == null ? 'لم يعد موجودا. الاعتماد قرار فقط.' : 'لا تتغير حالته.'),
     }
   }
 

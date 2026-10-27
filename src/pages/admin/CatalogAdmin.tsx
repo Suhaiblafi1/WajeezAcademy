@@ -13,7 +13,7 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
-import { changeRequestView } from "@/application/catalog/change-request-view";
+import { changeRequestView, draftApprovalBody } from "@/application/catalog/change-request-view";
 import { renameDoneAr, tidyCourseTitleAr } from "@/application/catalog/course-name-suggest";
 import { toast } from "@/components/Toast";
 import PathwayWizard from "@/components/PathwayWizard";
@@ -21,6 +21,7 @@ import CourseWizard from "@/components/CourseWizard";
 import SkillPicker from "@/components/SkillPicker";
 import CourseNamesPanel from "@/components/admin/CourseNamesPanel";
 import ChangeRequestItem from "@/components/admin/ChangeRequestItem";
+import DraftApproval from "@/components/admin/DraftApproval";
 import { useRealSession } from "@/services/session";
 import { safeAdminBack } from "@/application/trainer/idea-links";
 
@@ -100,6 +101,13 @@ export default function CatalogAdmin() {
   const canSelfApprove = me?.permissions.includes("catalog.self_approve") ?? false;
   /* والقرارُ في الطابور حبّةُ مساره نفسُها — والخادمُ هو الحَكَم */
   const canDecide = me?.permissions.includes("catalog.pathway.review") ?? false;
+  /* ويقدّم المسودّةَ للاعتماد من يملك تأليفَ صنفها — حبّةُ باب إنشائه */
+  const canSubmitDraft: Record<string, boolean> = {
+    course: canEditCourse,
+    skill: me?.permissions.includes("catalog.skill.edit") ?? false,
+    question: me?.permissions.includes("diagnostic.question.edit") ?? false,
+    pathway: me?.permissions.includes("catalog.pathway.create") ?? false,
+  };
   /* اسمُ دورةٍ قائمة — لكلّ دورةٍ لا لما له شعبٌ وحدَه: كان صندوقُ JSON بابَ ما سواها */
   const [nameFor, setNameFor] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState("");
@@ -187,6 +195,12 @@ export default function CatalogAdmin() {
     revealRow("change-requests");
   }, [openRequests, overview]);
 
+  /* المسودّةُ تُقدَّم من صفّها — كان بابُها صندوقَ JSON (`draftApprovalBody`) */
+  const submitDraft = (entityType: string, entityId: string) => void act(
+    () => apiPost("/api/admin/catalog/change-requests", draftApprovalBody(entityType, entityId)),
+    "قدم للاعتماد — ينتظر مراجعا في «طلبات التغيير»",
+  );
+
   /* القرارُ ورسالتُه — واسمٌ اعتُمد يقول أنُشر الآن أم ينتظر النشرَ التالي (`decide` يقول إن كتب اسما) */
   const decideCr = (cr: ChangeRequest, decision: "approve" | "reject") => {
     const renameTo = changeRequestView(cr).renameTo;
@@ -247,6 +261,12 @@ export default function CatalogAdmin() {
   const waitingCrs = crs.filter((cr) => cr.status === "in_review");
   const decidedCrs = crs.filter((cr) => cr.status !== "in_review");
   const pendingCrs = waitingCrs.length;
+  /* ما له طلبٌ ينتظر — فلا يُقدَّم مرّتين */
+  const waitingFor = new Set(waitingCrs.map((cr) => `${cr.entityType}:${cr.entityId}`));
+  const draftControl = (entityType: string, row: { id: string; status: string }) => (
+    <DraftApproval status={row.status} waiting={waitingFor.has(`${entityType}:${row.id}`)}
+      canSubmit={canSubmitDraft[entityType] ?? false} busy={busy} onSubmit={() => submitDraft(entityType, row.id)} />
+  );
 
   /* مسارٌ واحدٌ لكلّ مرشِّحٍ يُعرض — فلا يُنسى ترشيحٌ ظاهرٌ على قائمةٍ لا تعنيه */
   const browseUi = browse === null ? null
@@ -346,7 +366,7 @@ export default function CatalogAdmin() {
                 <span className="font-mono text-fine text-muted-foreground" dir="ltr">{p.id}</span>
                 <span className="font-bold">{p.title}</span>
                 <span className="text-fine text-muted-foreground">{p.courseCount} دورة</span>
-                <span className="mr-auto"><Pill v={p.status} /></span>
+                <span className="mr-auto flex items-center gap-2"><Pill v={p.status} />{draftControl("pathway", p)}</span>
               </Inset>
             ))}
             {pathways.length === 0 && <p className="text-sm text-muted-foreground">لا مسارات بعد.</p>}
@@ -375,6 +395,7 @@ export default function CatalogAdmin() {
                   )}
                   <span className="mr-auto flex items-center gap-2">
                     <Pill v={c.status} />
+                    {draftControl("course", c)}
                     {canEditCourse && (
                       <Button
                         tone="ghost" size="sm"
@@ -572,6 +593,7 @@ export default function CatalogAdmin() {
                     <span className="font-mono text-fine text-muted-foreground" dir="ltr">{s.id}</span>
                     <span className="min-w-0 flex-1 truncate font-bold">{s.nameAr}</span>
                     <Pill v={s.status} />
+                    {draftControl("skill", s)}
                   </div>
                   {s.measureNoteAr && (
                     <p className={`mt-1 text-read ${s.measureState === "measured" ? "text-teal-light-ink" : "text-muted-foreground"}`}>
@@ -591,7 +613,7 @@ export default function CatalogAdmin() {
                 <span className="font-mono text-fine text-muted-foreground" dir="ltr">{qq.id}</span>
                 <span className="min-w-0 flex-1 font-bold">{qq.text || "—"}</span>
                 <span className="text-fine text-muted-foreground">{qq.module} · {qq.optionCount} خيار{!qq.active && " · موقوف"}</span>
-                <span className="mr-auto"><Pill v={qq.status} /></span>
+                <span className="mr-auto flex items-center gap-2"><Pill v={qq.status} />{draftControl("question", qq)}</span>
               </Inset>
             ))}
             {questions.length === 0 && <p className="text-sm text-muted-foreground">لا أسئلة بعد.</p>}
@@ -679,8 +701,10 @@ export default function CatalogAdmin() {
             <Button tone="confirm" disabled={busy || !skillForm.id || !skillForm.slug || skillForm.nameAr.length < 2}
               onClick={() => act(async () => {
                 await apiPost("/api/admin/catalog/skills", { ...skillForm, familyId: skillForm.familyId || undefined });
+                /* وتُقدَّم للاعتماد معها — فلا تبقى مسودّةً بلا طريقٍ إلى النشر */
+                await apiPost("/api/admin/catalog/change-requests", draftApprovalBody("skill", skillForm.id));
                 setSkillForm({ id: "", slug: "", nameAr: "", familyId: "" });
-              }, "أنشئت المهارة كمسودة")} className="mt-4">
+              }, "أنشئت المهارة وقدمت للاعتماد — تنتظر مراجعا في «طلبات التغيير»")} className="mt-4">
               إنشاء المسودة
             </Button>
           </Card>

@@ -79,7 +79,7 @@ describe('① الاعتماد يرفع المسودة وحدها', () => {
     expect(c.versions[0]?.status).toBe(before)
   })
 
-  it('والمسودة ترفع كما كانت — فالحارس لم يعطل الرفع', async () => {
+  it('والمسودة ترفع كما كانت — بالطلب الذي يقدمها به المعالج وزر صفها', async () => {
     const pathway = await prisma.pathway.findFirstOrThrow({ where: { status: 'published' }, orderBy: { id: 'asc' } })
     const skill = await prisma.skill.findFirstOrThrow({ where: { status: 'published' }, orderBy: { id: 'asc' } })
     const { id } = await admin.createCourse({
@@ -87,7 +87,8 @@ describe('① الاعتماد يرفع المسودة وحدها', () => {
       modules: [{ sequence: 1, titleAr: 'وحدتها الأولى', hours: 4 }],
     }, MAKER)
     try {
-      const cr = await admin.submitChangeRequest('course', id, { kind: 'tidy' }, MAKER)
+      /* جسمُ `draftApprovalBody` في الشاشة — كان بابُ المسودّة صندوقَ JSON */
+      const cr = await admin.submitChangeRequest('course', id, { action: 'create' }, MAKER)
       await admin.decide(cr.id, 'approve', undefined, CHECKER)
       const c = await courseNow(id)
       expect(c.status).toBe('approved')

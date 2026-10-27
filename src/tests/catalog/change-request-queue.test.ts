@@ -3,7 +3,8 @@
    ① كلُّ طلبٍ يُقرأ بكلمات: ما يطلبه وعلى أيّ شيء، وما يقع إن اعتُمد (`change-request-view.ts`). كان «دورة ·
       C-MKT-104» وعددَ قراراته.
    ② وبجانبه «اعتمد» و«ارفض» لمن يملك القرار — لا «طلب تعديل» بملاحظةٍ ثابتةٍ لا يُعدَّل الطلبُ بعدها.
-   ③ وصندوقُ JSON ذهب: اسمُ كلّ دورةٍ حقلٌ في قائمتها، يكتبه بابُ الاسم نفسُه.
+   ③ وصندوقُ JSON ذهب: اسمُ كلّ دورةٍ حقلٌ في قائمتها، يكتبه بابُ الاسم نفسُه. وكان الصندوقُ بابَ المسودّة إلى
+      الاعتماد أيضا — فصار في صفّ كلّ مسودّةٍ «قدم للاعتماد»، والمعالجُ والنموذجُ يقدّمان ما يُنشئانه.
    ④ ونصوصُ ذلك بلا تشكيل.
 
    وما يقع في القاعدة — لا يُنزَل منشور، والاسمُ يُنشر — في `server/tests/catalog/change-request-queue.test.ts`. */
@@ -13,8 +14,9 @@ import { join } from 'node:path'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { changeRequestView } from '@/application/catalog/change-request-view'
+import { changeRequestView, draftApprovalBody } from '@/application/catalog/change-request-view'
 import ChangeRequestItem, { type QueuedChangeRequest } from '@/components/admin/ChangeRequestItem'
+import DraftApproval from '@/components/admin/DraftApproval'
 import { markedTexts } from '../helpers/marked-text'
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
@@ -52,7 +54,7 @@ describe('① كل طلب يقرأ بكلمات', () => {
       entityType: 'skill', entityId: 'k-slug', entityLabelAr: null, entityStatus: null,
       payload: { kind: 'skill_request', slug: 'k-slug', nameAr: 'مهارة التفاوض', reasonAr: 'تحتاجها دورة المبيعات' },
     })
-    expect(v).toMatchObject({ kindAr: 'مهارة جديدة', subjectAr: 'مهارة التفاوض', renameTo: null })
+    expect(v).toMatchObject({ kindAr: 'مهارة مطلوبة', subjectAr: 'مهارة التفاوض', renameTo: null })
     expect(v.lines).toEqual(['رمزها: k-slug', 'السبب: تحتاجها دورة المبيعات'])
     expect(v.approveAr).toBe('لا ينشئها. تنشأ بعده من «مهارة جديدة» في هذه الصفحة.')
   })
@@ -65,6 +67,19 @@ describe('① كل طلب يقرأ بكلمات', () => {
     expect(v).toMatchObject({ kindAr: 'مسار جديد', subjectAr: 'مسار القيادة' })
     expect(v.lines).toEqual(['دوراته: 3 · أهدافه: 1 · شخصياته: 2'])
     expect(v.approveAr).toBe('تجهز المسودة للنشر وتظهر مع النشر التالي.')
+  })
+
+  it('⚠️ مسودة قدمت للاعتماد: صنفها واسمها — واعتمادها يجهزها للنشر', () => {
+    const body = draftApprovalBody('course', 'C-NEW-101')
+    expect(body).toEqual({ entityType: 'course', entityId: 'C-NEW-101', payload: { action: 'create' } })
+    const v = changeRequestView({ ...body, entityLabelAr: 'دورة التفاوض', entityStatus: 'draft' })
+    expect(v).toMatchObject({ kindAr: 'دورة جديدة', subjectAr: 'دورة التفاوض', lines: [], renameTo: null })
+    expect(v.approveAr).toBe('تجهز المسودة للنشر وتظهر مع النشر التالي.')
+    /* ومسارٌ من زرّ صفّه بلا ما فيه — لا «دوراته: 0» */
+    const pw = changeRequestView({ ...draftApprovalBody('pathway', 'PW-X'), entityLabelAr: 'مسار القيادة', entityStatus: 'draft' })
+    expect(pw).toMatchObject({ kindAr: 'مسار جديد', lines: [] })
+    expect(changeRequestView({ ...draftApprovalBody('skill', 'SK-X'), entityLabelAr: 'التفاوض', entityStatus: 'published' }).approveAr)
+      .toBe('لا تتغير حالته.')
   })
 
   it('واقتراح المدرب القديم يقرأ — ولا يقرأ اسمه اسما لهذه الدورة', () => {
@@ -149,15 +164,19 @@ describe('② اعتمد أو ارفض — لمن يملك القرار', () => 
   })
 })
 
-describe('③ لا صندوق JSON — واسم كل دورة حقل', () => {
+const draft = (status: string, waiting: boolean, canSubmit: boolean) =>
+  renderToStaticMarkup(createElement(DraftApproval, { status, waiting, canSubmit, busy: false, onSubmit: () => {} }))
+
+describe('③ لا صندوق JSON — واسم كل دورة حقل، والمسودة تقدم من صفها', () => {
   it('⚠️ لا خانة JSON ولا مثالها في الشاشة', () => {
     expect(PAGE).not.toMatch(/JSON\.parse\(/)
     expect(PAGE).not.toMatch(/<textarea/)
     expect(PAGE).not.toContain('change-request-example')
-    /* والطلبُ الوحيدُ الذي تكتبه الشاشةُ بعدُ طلبُ المهارة */
-    const posts = PAGE.match(/apiPost\("\/api\/admin\/catalog\/change-requests", \{[\s\S]*?\}\);/g) ?? []
-    expect(posts).toHaveLength(1)
-    expect(posts[0]).toContain('kind: "skill_request"')
+    /* وكلُّ طلبٍ تكتبه الشاشةُ صنفٌ معروف: مهارةٌ تُطلب، أو مسودّةٌ تُقدَّم */
+    const posts = PAGE.match(/apiPost\("\/api\/admin\/catalog\/change-requests", [^\n]*/g) ?? []
+    expect(posts.length).toBe(3)
+    for (const post of posts) expect(post, `طلب بلا صنف معروف: ${post}`).toMatch(/draftApprovalBody\(|\{$/)
+    expect(PAGE).toMatch(/apiPost\("\/api\/admin\/catalog\/change-requests", \{\s*entityType: "skill",\s*entityId: input\.slug,\s*payload: \{ kind: "skill_request"/)
   })
 
   it('⚠️ «اسمها» لكل دورة لمن يعدل الدورات — بباب الاسم نفسه', () => {
@@ -165,12 +184,39 @@ describe('③ لا صندوق JSON — واسم كل دورة حقل', () => {
     expect(PAGE).toMatch(/apiPost<RenameResult>\(`\/api\/admin\/catalog\/courses\/\$\{c\.id\}\/rename`, \{ titleAr: next \}\),\s*renameDoneAr,/)
     expect(PAGE).toMatch(/disabled=\{!next \|\| next === c\.title\}/)
   })
+
+  it('⚠️ المسودة: «قدم للاعتماد» لمن يؤلف صنفها، وشارة إن كانت تنتظر، ولا شيء لغيرها', () => {
+    expect(draft('draft', false, true)).toMatch(/<button[^>]*>قدم للاعتماد<\/button>/)
+    expect(draft('draft', true, true), 'قدمت مرتين').toContain('ينتظر الاعتماد')
+    expect(draft('draft', true, true)).not.toContain('<button')
+    expect(draft('draft', false, false)).toBe('')
+    expect(draft('published', false, true)).toBe('')
+  })
+
+  it('⚠️ وفي صف كل مسودة من القوائم الأربع — بحبة باب إنشائها', () => {
+    for (const [type, row] of [['pathway', 'p'], ['course', 'c'], ['skill', 's'], ['question', 'qq']] as const) {
+      expect(PAGE, `لا باب اعتماد في صفوف ${type}`).toContain(`{draftControl("${type}", ${row})}`)
+    }
+    expect(PAGE).toMatch(/skill: me\?\.permissions\.includes\("catalog\.skill\.edit"\)/)
+    expect(PAGE).toMatch(/question: me\?\.permissions\.includes\("diagnostic\.question\.edit"\)/)
+    expect(PAGE).toMatch(/pathway: me\?\.permissions\.includes\("catalog\.pathway\.create"\)/)
+    expect(PAGE).toMatch(/waiting=\{waitingFor\.has\(`\$\{entityType\}:\$\{row\.id\}`\)\}/)
+    expect(PAGE).toMatch(/apiPost\("\/api\/admin\/catalog\/change-requests", draftApprovalBody\(entityType, entityId\)\)/)
+  })
+
+  it('⚠️ والمعالج والنموذج يقدمان ما ينشئانه', () => {
+    const wizard = code('src/components/CourseWizard.tsx')
+    expect(wizard).toMatch(/const created = await apiPost<\{ id: string \}>\("\/api\/admin\/catalog\/courses"[\s\S]*?await apiPost\("\/api\/admin\/catalog\/change-requests", draftApprovalBody\("course", created\.id\)\);/)
+    expect(PAGE).toMatch(/await apiPost\("\/api\/admin\/catalog\/skills", [^\n]*\n[\s\S]*?await apiPost\("\/api\/admin\/catalog\/change-requests", draftApprovalBody\("skill", skillForm\.id\)\);/)
+  })
 })
 
 describe('④ بلا تشكيل', () => {
   for (const f of [
     'src/application/catalog/change-request-view.ts',
     'src/components/admin/ChangeRequestItem.tsx',
+    'src/components/admin/DraftApproval.tsx',
+    'src/components/CourseWizard.tsx',
     'src/pages/admin/CatalogAdmin.tsx',
   ]) {
     it(f, () => expect(markedTexts(f, read(f))).toEqual([]))
