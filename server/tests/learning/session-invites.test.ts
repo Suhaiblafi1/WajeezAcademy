@@ -16,7 +16,8 @@
    ④ والعودةُ لانتظار الإدارة ترفعها من التقويم بموعدها القديم.
    ⑤ والحذفُ يرفعها قبل أن يُمحى صفُّه — والمنتظِرُ لم يُدعَ إليه أحدٌ فلا يُرفع.
    ⑥ ولا دعوةَ لمثالٍ مبدئيّ ولا لما مضى.
-   ⑦ وما جدولته الإدارةُ، واعتمادُ تأجيلها، ورابطٌ أُلصق — كلٌّ يدعو أو يحدّث.
+   ⑦ وما جدولته الإدارةُ، ورابطٌ أُلصق — كلٌّ يدعو أو يحدّث. (وكان معهما «اعتمادُ تأجيلٍ اقتُرح» — خرج
+      الاقتراحُ وطابورُه، ٢٧ أكتوبر ٢٠٢٦.)
    ⑧ والعاملُ يُرسل الدعوةَ مرفقةً بمنهجها، ثمّ يمحوها.
 
    ولا شبكةَ هنا: `fetch` مُلتقَط، وتسجيلاتُ Zoom تُعدّ. */
@@ -27,7 +28,6 @@ const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { CohortService } from '../../services/cohort.service'
-import { CohortMessageService } from '../../services/cohort-message.service'
 import { SESSION_GUESTS, SessionInviteService } from '../../services/session-invite.service'
 import { drainOutbox, type OutboxIcs } from '../../services/outbox.service'
 import { forgetZoomToken } from '../../services/zoom.service'
@@ -266,19 +266,6 @@ describe('⑦ وما يُعلن موعدا من غير الاعتماد', () => 
     })
     const rows = await invitesFor(session.id, 'session.invite.new')
     expect(rows.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())
-  })
-
-  it('⚠️ واعتمادُ تأجيلٍ اقتُرح يحدّث الدعوة', async () => {
-    const s = await approvedSession(130)
-    const req = await prisma.sessionRescheduleRequest.create({
-      data: {
-        sessionId: s.id, requestedBy: trainerUserId, currentStartsAt: s.startsAt,
-        proposedStartsAt: new Date(s.startsAt.getTime() + 24 * H), reason: 'اختبار',
-      },
-    })
-    await new CohortMessageService(prisma).review(adminId, req.id, { action: 'approve' })
-    const updates = await invitesFor(s.id, 'session.invite.update')
-    expect(updates.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())
   })
 
   it('⚠️ ورابطٌ أُلصق بلقاءٍ معتمَد يحدّث الدعوةَ فتحمله — مشتركا لا «لك وحدَك»', async () => {

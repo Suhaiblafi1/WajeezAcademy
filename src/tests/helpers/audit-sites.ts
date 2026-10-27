@@ -55,7 +55,6 @@ export function auditWindows(src: string): string[] {
    عنهما — فمرّت **خمسةَ عشرَ فعلا بلا اسمٍ عربيّ** تُعرض مفاتيحَ لاتينيّةً
    في سجلٍّ عربيّ، ولم يحمرّ شيء. فتُسمَّى توسّعاتُ القوالب هنا صراحةً. */
 export const DYNAMIC: Record<string, readonly string[]> = {
-  'session.reschedule.@input.action@': ['session.reschedule.approve', 'session.reschedule.reject'],
   'cohort.move.@input.action@': ['cohort.move.approve', 'cohort.move.reject'],
   'submission.@action@': [
     'submission.start_review', 'submission.request_resubmit',

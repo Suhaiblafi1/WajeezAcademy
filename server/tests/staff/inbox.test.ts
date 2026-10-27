@@ -87,10 +87,12 @@ describe('اللوحُ يقول ما ينتظر فعلا', () => {
     expect(after.find((i) => i.key === 'sessions_at_risk')?.count, 'المسودّةُ ليست خطرا').toBe(1)
   })
 
-  it('ويُظهر اقتراحَ تأجيلٍ معلَّقا كعاجل، باسم شعبته', async () => {
-    const c = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةُ الاقتراح' })
+  /* «اقتراحاتُ تأجيلٍ تنتظر قرارك» ذهبت مع طابورها (٢٧ أكتوبر ٢٠٢٦، المرحلة السادسة — ج) — فاقتراحٌ قديمٌ
+     بقي في الجدول لا يُعرض بندا لا يقرّره أحد */
+  it('⚠️ واقتراحُ تأجيلٍ قديمٌ بقي في الجدول لا يصير بندا', async () => {
+    const c = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةُ الاقتراح القديم' })
     const session = await cohorts.addSession(managerId, c.id, {
-      title: 'جلسةٌ تُؤجَّل',
+      title: 'جلسةٌ اقتُرح تأجيلها',
       startsAt: new Date(Date.now() + 10 * 86_400_000),
       endsAt: new Date(Date.now() + 10 * 86_400_000 + 7_200_000),
     })
@@ -103,10 +105,7 @@ describe('اللوحُ يقول ما ينتظر فعلا', () => {
       },
     })
     const items = await inbox.forStaff(managerId, permsOf('academic_manager'))
-    const r = items.find((i) => i.key === 'reschedules')
-    expect(r?.count).toBe(1)
-    expect(r?.severity).toBe('urgent')
-    expect(r?.sample[0]).toContain('شعبةُ الاقتراح')
+    expect(items.map((i) => i.key)).not.toContain('reschedules')
   })
 
   /* ═══ وخططُ الشعب المرسَلة (٣ أكتوبر ٢٠٢٦) ═══
@@ -187,9 +186,9 @@ describe('اللوحُ يقول ما ينتظر فعلا', () => {
 })
 
 describe('ولا يعرض لأحدٍ ما لا يملك صلاحيّتَه', () => {
-  it('المالية لا ترى اقتراحاتِ التأجيل ولا الجلساتِ ولا طابورَ المحتوى', async () => {
+  it('المالية لا ترى طلباتِ نقل الشعب ولا الجلساتِ ولا طابورَ المحتوى', async () => {
     const keys = (await inbox.forStaff(managerId, permsOf('finance'))).map((i) => i.key)
-    expect(keys).not.toContain('reschedules')
+    expect(keys).not.toContain('cohort_moves')
     expect(keys).not.toContain('sessions_at_risk')
     expect(keys).not.toContain('content_review')
   })
@@ -199,7 +198,7 @@ describe('ولا يعرض لأحدٍ ما لا يملك صلاحيّتَه', () 
       data: { userId: learnerId, subject: 'رابطُ الجلسة لا يعمل', category: 'technical', status: 'open' },
     })
     const support = await inbox.forStaff(managerId, permsOf('support'))
-    expect(support.map((i) => i.key)).not.toContain('reschedules')
+    expect(support.map((i) => i.key)).not.toContain('cohort_moves')
     expect(support.find((i) => i.key === 'support')?.count).toBe(1)
   })
 

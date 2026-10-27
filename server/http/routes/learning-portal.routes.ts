@@ -1065,9 +1065,9 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      كان المدرّبُ يملك `reschedule` وحدَه: **اقتراحا** يُرفع إلى طابور
      موافقاتٍ على شاشة الإدارة. وهو طابورٌ بُني ليعوّض صلاحيّةً لم تُمنح.
 
-     فصار له بابان: هذان — يقعان الآن داخلَ حدّ الإدارة — وذاك الاقتراحُ
-     الباقي أسفلَه لما يقع **خارجَ** الحدّ. فالإدارةُ على الاستثناء لا
-     على الروتين. */
+     فصار له بابان: هذان — يقعان الآن داخلَ حدّ الإدارة — وبقي الاقتراحُ لما
+     يقع **خارجَ** الحدّ، فالإدارةُ على الاستثناء لا على الروتين. ثمّ صار النقلُ
+     كلُّه بيده (١٧ سبتمبر ٢٠٢٦)، وذهب الاقتراحُ (٢٧ أكتوبر ٢٠٢٦، أسفلَه). */
 
   app.get('/api/trainer/cohorts/:id/schedule-window', {
     preHandler: requirePermission('trainer.cohort.schedule'),
@@ -1179,53 +1179,10 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return cohorts.trainerHostStart(req.auth!.userId, sessionId)
   })
 
-  /* والاقتراحُ باقٍ لما يقع خارجَ النافذة — لا بديلا عمّا صار داخلها */
-  app.post('/api/trainer/sessions/:sessionId/reschedule', {
-    preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'اقتراح موعد جديد لجلسة من شعبي — الإدارة تعتمد' },
-  }, async (req, reply) => {
-    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
-    const body = z.object({
-      proposedStartsAt: z.coerce.date(),
-      reason: z.string().min(10).max(500),
-    }).parse(req.body)
-    const session = await prisma.cohortSession.findUnique({ where: { id: sessionId }, select: { cohortId: true } })
-    if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
-    await enrollments.assertCohortTrainer(req.auth!.userId, session.cohortId)
-    return reply.status(201).send(await messages.propose(req.auth!.userId, sessionId, body))
-  })
-
-  app.get('/api/trainer/reschedules', {
-    preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'اقتراحاتي لتأجيل الجلسات وأين وقفت' },
-  }, async (req) => messages.mine(req.auth!.userId))
-
-  app.post('/api/trainer/reschedules/:id/withdraw', {
-    preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'سحب اقتراح تأجيل معلّق' },
-  }, async (req) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    return messages.withdraw(req.auth!.userId, id)
-  })
-
-  /* ── قرار الإدارة: الاعتماد وحده يحرّك الموعد عند المتعلّمين ── */
-
-  app.get('/api/admin/session-reschedules', {
-    preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-cohorts'], summary: 'اقتراحات تأجيل الجلسات المعلّقة' },
-  }, async () => messages.pending())
-
-  app.post('/api/admin/session-reschedules/:id/review', {
-    preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-cohorts'], summary: 'اعتماد اقتراح تأجيل أو ردّه بسبب' },
-  }, async (req) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const body = z.object({
-      action: z.enum(['approve', 'reject']),
-      comment: z.string().max(500).optional(),
-    }).parse(req.body)
-    return messages.review(req.auth!.userId, id, body)
-  })
+  /* ═══ وذهبت أبوابُ «اقتراح التأجيل» (٢٧ أكتوبر ٢٠٢٦، المرحلة السادسة — ج) ═══
+     يقترح المدرّبُ موعدا ويعتمده المدير — ولا يُقترح شيءٌ منذ ١٧ سبتمبر ٢٠٢٦: ينقل لقاءَه بنفسه (أعلاه).
+     واختار صاحبُ المنصّة («a») أن يخرج هذا وحدَه، وتبقى أدواتُ التأجيل الأربع الأخرى. وما بقي معلَّقا
+     أغلقه ترحيلُه (`20261027130000_close_session_reschedules`). */
 
   /* ── نقلُ الشعبة إلى فصلٍ آخر: المدرّبُ يطلب والإدارةُ تعتمد (١٧ أكتوبر ٢٠٢٦) ── */
 

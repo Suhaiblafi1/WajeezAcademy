@@ -1,16 +1,19 @@
-/* المدرب يخاطب شعبته، ويقترح موعدا ولا يغيّره.
+/* المدرب يخاطب شعبته.
 
    كان يرى المتعثّر ولا يملك أن يخاطبه: التغذية الراجعة تُكتب على تسليم، ومن لم
-   يُسلّم شيئا لا يبلغه شيء. وكانت الجدولة بيد الإدارة وحدها وهو من يعرف
-   انقطاعه. والقراران المتّفق عليهما: رسائل **تُسجَّل** لا تمرّ، وموعدٌ
-   **يُقترح** لا يُغيَّر.
+   يُسلّم شيئا لا يبلغه شيء. والقرارُ المتّفق عليه: رسائل **تُسجَّل** لا تمرّ.
 
-   وما يُحرس هنا ثلاثة، وكلّها تسقط صامتةً لو انفرطت:
+   وما يُحرس هنا، وكلّه يسقط صامتا لو انفرط:
    ١) الرسالة أثرٌ باقٍ لا إشعارٌ عابر — من مسح الإشعار لم يمسح الرسالة.
    ٢) لا يخاطب مدرّبٌ متعلّم شعبةٍ ليست له بمعرّفٍ يُخمَّن.
-   ٣) الموعد لا يتحرّك عند المتعلّمين إلا باعتماد الإدارة — ولا يتحرّك بالرفض. */
+   ٣) وكان معهما «اقتراحُ التأجيل»: موعدٌ يُقترح ولا يتحرّك إلّا باعتماد الإدارة. ثمّ صار المدرّبُ ينقل لقاءَه
+      بنفسه (١٧ سبتمبر ٢٠٢٦)، وخرج الاقتراحُ وطابورُه (٢٧ أكتوبر ٢٠٢٦، المرحلة السادسة — ج). فبقي هنا ترحيلُه:
+      يُغلق ما بقي معلَّقا بلا قرار، ولا يمسّ ما حُسم ولا موعدَ اللقاء. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
@@ -19,7 +22,6 @@ import { CohortMessageService } from '../../services/cohort-message.service'
 let prisma: PrismaClient
 let svc: CohortMessageService
 let trainerUserId = ''
-let adminId = ''
 let learnerId = ''
 let otherLearnerId = ''
 let cohortId = ''
@@ -27,6 +29,7 @@ let otherCohortId = ''
 let enrollmentId = ''
 let outsiderEnrollmentId = ''
 let sessionId = ''
+const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 
 const notifsFor = (userId: string) =>
   prisma.notification.findMany({ where: { userId }, orderBy: { queuedAt: 'desc' } })
@@ -40,9 +43,6 @@ beforeAll(async () => {
   const t = await auth.register('msg-trainer@test.local', 'Trainer#12345', 'أستاذ الرسائل')
   trainerUserId = t.userId
   await auth.setRoles(trainerUserId, ['trainer'])
-  const a = await auth.register('msg-admin@test.local', 'Admin#12345', 'المدير الأكاديمي')
-  adminId = a.userId
-  await auth.setRoles(adminId, ['academic_manager'])
 
   const application = await prisma.trainerApplication.create({
     data: {
@@ -123,53 +123,27 @@ describe('مخاطبة الشعبة', () => {
   })
 })
 
-describe('اقتراح تأجيل جلسة', () => {
-  it('الاقتراح لا يحرّك الموعد — والاعتماد وحده يحرّكه، بمدّة الجلسة نفسها', async () => {
+describe('وخرج اقتراحُ التأجيل — وترحيلُه يُغلق ما بقي معلَّقا', () => {
+  it('⚠️ المعلَّقُ يُغلق بلا قرارٍ وسببُه على الصفّ — والمحسومُ وموعدُ اللقاء كما هما', async () => {
     const before = await prisma.cohortSession.findUniqueOrThrow({ where: { id: sessionId } })
-    const span = before.endsAt!.getTime() - before.startsAt.getTime()
-    const proposed = new Date(Date.now() + 14 * 86400000)
+    const row = (status: string) => ({
+      sessionId, requestedBy: trainerUserId, status,
+      currentStartsAt: before.startsAt, proposedStartsAt: new Date(Date.now() + 14 * 86400000), reason: 'اقتراحٌ قبل ١٧ سبتمبر',
+    })
+    const pending = await prisma.sessionRescheduleRequest.create({ data: row('pending') })
+    const rejected = await prisma.sessionRescheduleRequest.create({ data: { ...row('rejected'), reviewerComment: 'يصطدم بشعبة أخرى' } })
 
-    const req = await svc.propose(trainerUserId, sessionId, { proposedStartsAt: proposed, reason: 'سفرٌ في موعد الجلسة، وأقترح تأجيلها أسبوعا' })
-    const during = await prisma.cohortSession.findUniqueOrThrow({ where: { id: sessionId } })
-    expect(during.startsAt.getTime(), 'الاقتراح وحده حرّك الموعد').toBe(before.startsAt.getTime())
+    const sql = readFileSync(join(root, 'prisma/migrations/20261027130000_close_session_reschedules/migration.sql'), 'utf8')
+    await prisma.$executeRawUnsafe(sql)
 
-    await svc.review(adminId, req.id, { action: 'approve' })
-    const after = await prisma.cohortSession.findUniqueOrThrow({ where: { id: sessionId } })
-    expect(after.startsAt.getTime()).toBe(proposed.getTime())
-    expect(after.endsAt!.getTime() - after.startsAt.getTime(), 'التأجيل قصّر الجلسة').toBe(span)
-
-    const n = await notifsFor(learnerId)
-    expect(n[0].title, 'المتعلّم لم يُخبَر بتغيّر موعده').toContain('تغيّر موعد')
-  })
-
-  it('الردّ لا يحرّك الموعد، ويصل المدرب في بوابته هو', async () => {
-    const before = await prisma.cohortSession.findUniqueOrThrow({ where: { id: sessionId } })
-    const req = await svc.propose(trainerUserId, sessionId, { proposedStartsAt: new Date(Date.now() + 30 * 86400000), reason: 'اقتراحٌ ثانٍ للتجربة والفحص' })
-    await svc.review(adminId, req.id, { action: 'reject', comment: 'الموعد يصطدم بشعبة أخرى' })
-
-    const after = await prisma.cohortSession.findUniqueOrThrow({ where: { id: sessionId } })
-    expect(after.startsAt.getTime(), 'الردّ حرّك الموعد').toBe(before.startsAt.getTime())
-
-    const n = await notifsFor(trainerUserId)
-    expect(n[0].audience, 'شأن المدرب وقع في بوابة غير بوابته').toBe('trainer')
-    expect(n[0].body).toContain('يصطدم')
-    /* والسبب يبقى مكتوبا في الاقتراح نفسه لا في إشعارٍ يُمسح */
-    const kept = await prisma.sessionRescheduleRequest.findUniqueOrThrow({ where: { id: req.id } })
+    const closed = await prisma.sessionRescheduleRequest.findUniqueOrThrow({ where: { id: pending.id } })
+    expect(closed.status).toBe('withdrawn')
+    expect(closed.reviewedAt).not.toBeNull()
+    expect(closed.reviewerComment).toContain('ينقل المدرب لقاءه بنفسه')
+    const kept = await prisma.sessionRescheduleRequest.findUniqueOrThrow({ where: { id: rejected.id } })
     expect(kept.status).toBe('rejected')
-    expect(kept.reviewerComment).toContain('يصطدم')
-  })
-
-  it('اقتراحٌ معلّقٌ واحدٌ للجلسة، ولا موعدَ في الماضي، ولا قرارَ مرّتين', async () => {
-    const req = await svc.propose(trainerUserId, sessionId, { proposedStartsAt: new Date(Date.now() + 40 * 86400000), reason: 'اقتراحٌ ثالثٌ لفحص الحدود' })
-    await expect(
-      svc.propose(trainerUserId, sessionId, { proposedStartsAt: new Date(Date.now() + 41 * 86400000), reason: 'اقتراحٌ رابعٌ يزاحم الثالث' }),
-    ).rejects.toMatchObject({ code: 'already_pending' })
-
-    await svc.review(adminId, req.id, { action: 'reject' })
-    await expect(svc.review(adminId, req.id, { action: 'approve' })).rejects.toMatchObject({ code: 'not_pending' })
-
-    await expect(
-      svc.propose(trainerUserId, sessionId, { proposedStartsAt: new Date(Date.now() - 86400000), reason: 'موعدٌ في الماضي لا يُقبل' }),
-    ).rejects.toMatchObject({ code: 'past_date' })
+    expect(kept.reviewerComment).toBe('يصطدم بشعبة أخرى')
+    const after = await prisma.cohortSession.findUniqueOrThrow({ where: { id: sessionId } })
+    expect(after.startsAt.getTime(), 'تحرّك الموعد بإغلاق الاقتراح').toBe(before.startsAt.getTime())
   })
 })

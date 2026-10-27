@@ -55,12 +55,6 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
 
 const filterCls = `mt-1 ${staffSelectCls}`;
 
-interface RescheduleRow {
-  id: string; currentStartsAt: string; proposedStartsAt: string; reason: string; createdAt: string;
-  requester: { displayName: string };
-  session: { id: string; title: string; cohort: { id: string; title: string } };
-}
-
 /* طلبُ نقل شعبةٍ إلى فصلٍ آخر — من المدرّب، ولا يقع إلّا باعتمادك (١٧ أكتوبر ٢٠٢٦) */
 interface MoveRow {
   id: string; cohortId: string; cohortTitle: string; learners: number; requester: string; reason: string;
@@ -154,7 +148,6 @@ export default function AdminCohorts() {
   const [zoomForm, setZoomForm] = useState<Record<string, { sessionId: string; joinUrl: string; meetingId: string; passcode: string }>>({});
   const [enrollLearner, setEnrollLearner] = useState<LearnerHit | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [reschedules, setReschedules] = useState<RescheduleRow[]>([]);
   const [moves, setMoves] = useState<MoveRow[]>([]);
   /* الفلاتر الأربعة — قرارُ صاحب المنصّة: «فلاتر: المدرّب، التاريخ، المجال،
      الحالة». والقائمةُ تطول بطول الكتالوج (٨١ دورة)، فبلا فرزٍ يُقرأ الجدولُ
@@ -171,12 +164,10 @@ export default function AdminCohorts() {
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try {
-      const [cohortRows, courseRows, rsRows, termRows, moveRows] = await Promise.all([
+      const [cohortRows, courseRows, termRows, moveRows] = await Promise.all([
         apiGet<CohortRow[]>("/api/admin/cohorts"),
         apiGet<CourseOption[]>("/api/admin/catalog/courses"),
-        /* اقتراحات التأجيل لا تُسقط الصفحة: غيابها أهون من شعبٍ لا تُدار */
-        apiGet<RescheduleRow[]>("/api/admin/session-reschedules").catch(() => [] as RescheduleRow[]),
-        /* والمواسمُ كذلك: الشعبةُ تُولَد بفصلها منذ ١٧ سبتمبر ٢٠٢٦ */
+        /* المواسمُ لا تُسقط الصفحة: الشعبةُ تُولَد بفصلها منذ ١٧ سبتمبر ٢٠٢٦، وغيابُها أهونُ من شعبٍ لا تُدار */
         apiGet<WizardTerm[]>("/api/admin/terms?all=true").catch(() => [] as WizardTerm[]),
         apiGet<MoveRow[]>("/api/admin/cohort-moves").catch(() => [] as MoveRow[]),
       ]);
@@ -201,7 +192,6 @@ export default function AdminCohorts() {
           .catch(() => undefined);
       }
       setCourses(courseRows.filter((c) => c.status === "published"));
-      setReschedules(rsRows);
       setMoves(moveRows);
       setTerms(termRows);
     } catch (err) {
@@ -236,13 +226,6 @@ export default function AdminCohorts() {
   /* ═══ وحذفُ الملغاة صار صندوقا بخيارين (٢٢ أكتوبر ٢٠٢٦) — `DeleteCancelledBox` ═══
      كان زرُّ «احذفها» هنا للملغاة التي لا مدرّبَ لها وحدَها، فالملغاةُ لقلّة التسجيل — ولها مدرّبٌ دائما —
      لا بابَ لها. والقاعدةُ في `cancelled-cohort-delete.service.ts`. */
-
-  /* قرار الإدارة — والاعتماد وحده يحرّك الموعد عند المتعلّمين */
-  const reviewReschedule = (id: string, action: "approve" | "reject") =>
-    act(
-      () => apiPost(`/api/admin/session-reschedules/${id}/review`, { action, comment: rsComment[id]?.trim() || undefined }),
-      action === "approve" ? "اعتمد الموعد الجديد — وأخبر المتعلّمون" : "لم يعتمد الاقتراح — ووصل المدرب تعليقك",
-    );
 
   /* ونقلُ الشعبة كلّها — الاعتمادُ يحرّك مواعيدَها ويبلّغ المتعلّمين */
   const reviewMove = (id: string, action: "approve" | "reject") =>
@@ -344,11 +327,15 @@ export default function AdminCohorts() {
 
       <CohortReadiness onApplied={() => void load()} />
 
-      {/* ── اقتراحات تأجيل الجلسات ──
+      {/* ── طلباتُ نقل الشعب إلى فصلٍ آخر ──
 
-          المدرب يقترح والإدارة تعتمد — وهو القرار المتّفق عليه. والموعد لا
-          يتبدّل عند المتعلّمين قبل الاعتماد، فما هنا ينتظر قرارا لا علما.
-          وموضعه أعلى الصفحة لأنّ ما ينتظر قرارا يسبق ما يُنشأ. */}
+          المدرّب يطلب والإدارة تعتمد. ولا تتبدّل مواعيدُها عند المتعلّمين قبل
+          الاعتماد، فما هنا ينتظر قرارا لا علما. وموضعه أعلى الصفحة لأنّ ما ينتظر
+          قرارا يسبق ما يُنشأ.
+
+          ═══ وذهبت «اقتراحات تأجيل تنتظر قرارك» (٢٧ أكتوبر ٢٠٢٦، المرحلة السادسة — ج) ═══
+          اقتراحٌ للقاءٍ واحدٍ يعتمده المدير — ولا يُقترح شيءٌ منذ ١٧ سبتمبر ٢٠٢٦: المدرّبُ ينقل لقاءه
+          بنفسه. واختار صاحبُ المنصّة («a») أن يخرج هذا وحدَه، وتبقى أدواتُ التأجيل الأربع الأخرى. */}
       {moves.length > 0 && (
         <Panel tone="warn" className="mb-6">
           <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
@@ -388,48 +375,6 @@ export default function AdminCohorts() {
         </Panel>
       )}
 
-      {reschedules.length > 0 && (
-        <Panel tone="warn" className="mb-6">
-          <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
-            <CalendarClock className="h-4 w-4" /> اقتراحات تأجيل تنتظر قرارك ({reschedules.length})
-          </h2>
-          <div className="mt-4 space-y-3">
-            {reschedules.map((r) => (
-              <Card key={r.id} className="bg-paper/25">
-                <p className="text-sm font-bold">{r.session.title}</p>
-                <p className="mt-0.5 text-read text-muted-foreground">
-                  {r.session.cohort.title} · اقترحه {r.requester.displayName}
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs">
-                  <span className="text-muted-foreground">الموعد الآن: <span className="text-foreground">{fmtDateTimeAr(r.currentStartsAt)}</span></span>
-                  <span className="text-gold-ink">المقترح: <span className="font-bold">{fmtDateTimeAr(r.proposedStartsAt)}</span></span>
-                </div>
-                <Inset as="p" className="mt-2.5 px-3 py-2 text-read leading-6 text-foreground">{r.reason}</Inset>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <input
-                    aria-label={`تعليق على اقتراح ${r.session.title}`}
-                    value={rsComment[r.id] ?? ""}
-                    onChange={(e) => setRsComment((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                    placeholder="تعليقك — يصل المدرب مع القرار"
-                    className="min-w-0 flex-1 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
-                  />
-                  <Button tone="confirm" type="button" disabled={busy}
-                    onClick={() => void reviewReschedule(r.id, "approve")}>
-                    اعتمد الموعد
-                  </Button>
-                  <Button tone="danger" type="button" disabled={busy}
-                    onClick={() => void reviewReschedule(r.id, "reject")}>
-                    لا أعتمده
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-          <p className="mt-3 text-read leading-relaxed text-muted-foreground">
-            الاعتماد ينقل الموعد ويبلّغ المتعلّمين. والرفض يبقيه، ويصل تعليقك للمدرّب.
-          </p>
-        </Panel>
-      )}
 
       {/* إنشاء شعبة — معالجٌ من خمس خطوات: الدورة، الجدول (وجلساتُه تُولَّد)،
           المقاعد والسعر، المدرّب، ثمّ مراجعةٌ قبل الإنشاء. استعاض عن نموذجٍ

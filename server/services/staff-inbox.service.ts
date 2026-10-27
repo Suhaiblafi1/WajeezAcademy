@@ -95,25 +95,9 @@ export class StaffInboxService {
       sample: myTasks.map((t) => `${t.title}${t.dueAt && t.dueAt < now ? ' (تأخّرت)' : ''}`),
     })
 
-    /* ── اقتراحاتُ تأجيلٍ من المدرّبين ──
-       الاقتراحُ لا يحرّك موعدا حتّى يُعتمَد، والمتعلّمُ ينتظر جوابا. */
+    /* «اقتراحاتُ تأجيلٍ تنتظر قرارك» ذهبت مع طابورها (٢٧ أكتوبر ٢٠٢٦، المرحلة السادسة — ج):
+       لا يُقترح تأجيلُ لقاءٍ منذ ١٧ سبتمبر ٢٠٢٦ — المدرّبُ ينقله بنفسه. */
     if (can('cohort.manage')) {
-      const proposals = await this.prisma.sessionRescheduleRequest.findMany({
-        where: { status: 'pending' },
-        orderBy: { createdAt: 'asc' },
-        take: 5,
-        select: { proposedStartsAt: true, session: { select: { title: true, cohort: { select: { title: true } } } } },
-      })
-      push({
-        key: 'reschedules',
-        titleAr: 'اقتراحات تأجيل تنتظر قرارك',
-        whyAr: 'الموعد لا يتغيّر عند المتعلّمين حتّى تعتمده',
-        count: await this.prisma.sessionRescheduleRequest.count({ where: { status: 'pending' } }),
-        href: '/admin/cohorts',
-        severity: 'urgent',
-        sample: proposals.map((r) => `${r.session.cohort.title} — ${r.session.title}`),
-      })
-
       /* ── طلباتُ نقل شعبةٍ إلى فصلٍ آخر — لا يتغيّر موعدٌ حتّى تُعتمد ── */
       const moves = await this.prisma.cohortMoveRequest.findMany({
         where: { status: 'pending' }, orderBy: { createdAt: 'asc' }, take: 5,
