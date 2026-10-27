@@ -171,6 +171,21 @@ jobs:
         # القاعدة، والبناءُ ينجح.
         run: npm run ci:migrations
 
+      - name: إعدادُ Caddy صالحٌ قبل أن يبلغ الخادم
+        # `deploy/deploy.sh` يعيد إنشاءَ حاوية Caddy بلا فحص، فخطأٌ في صيغة
+        # `deploy/Caddyfile` يُسقط الموقعَ كلَّه — لا الكتلةَ وحدَها. ولم يكن
+        # شيءٌ يقرؤه قبل النشر: أُضيفت إليه كتلتا `/s/*` و`@previewCrawler`
+        # (٢٦–٢٧ أكتوبر ٢٠٢٦) بلا Caddy في بيئة الكاتب. فيُقرأ هنا بالصورة
+        # نفسِها التي تخدم الإنتاج (`caddy:2-alpine` في `compose.prod.yml`)،
+        # ونطاقان مختلفان كما يشترط `deploy.sh` (كتلتان بالاسم نفسِه تُسقطانه).
+        # وسكربتٌ لا أمرٌ في سطر: يحتاج Docker، فلا يُطلب في `npm run verify` على كلّ جهاز
+        # (`src/tests/verify-mirrors-ci.test.ts` يستثني السكربتات بقصد).
+        run: |
+          docker run --rm \
+            -e SITE_DOMAIN=wajeez.example -e SITE_ALT_DOMAIN=www.wajeez.example -e ACME_EMAIL=ops@wajeez.example \
+            -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
       - name: بناء الإنتاج
         run: npm run build
 

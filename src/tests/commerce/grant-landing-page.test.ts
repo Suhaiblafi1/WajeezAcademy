@@ -312,14 +312,54 @@ describe('بعد النموذج', () => {
   /* «عندما يقوم بالدفع لا يظهر نفس السعر… يجب أن يصلح من جهتك» — واختار صاحبُ المنصّة المطابقةَ بالبريد (٢٧ أكتوبر ٢٠٢٦) */
   it('⚠️ من لا كود ظاهرا له يأخذه بحسابه حين يدخل — ولوح الدفع يعاد بالكود فيسعر بمنحته', () => {
     /* وحين يفتح لوحُ الدفع أيضا — من أنشأ حسابه في نافذة الدفع لا تعرفه الصفحةُ بعدُ (بلاغُ ٢٧ أكتوبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/const claimFor = \(session \|\| buyOpen\) && stored && !stored\.code \? `\$\{session\?\.email \?\? "buy"\}\|\$\{stored\.ref\}` : null;/)
-    expect(PAGE).toMatch(/apiGet<\{ code: string \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{forInfluencer \? "influencer" : "member"\}`\)/)
-    expect(PAGE, 'لا يحفظ الكود على الجهاز').toMatch(/if \(kept && !kept\.code\) saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null \}, storeKey\);/)
-    expect(PAGE).toMatch(/setStored\(\(s\) => \(s && !s\.code \? \{ \.\.\.s, code, sentTo: null \} : s\)\);/)
+    expect(PAGE).toMatch(/const claimFor = \(authed \|\| buyOpen\) && stored && !stored\.code \? `\$\{session\?\.email \?\? "buy"\}\|\$\{stored\.ref\}` : null;/)
+    expect(PAGE).toMatch(/apiGet<\{ code: string \| null; percentOff\?: number \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{forInfluencer \? "influencer" : "member"\}`\)/)
+    expect(PAGE, 'لا يحفظ الكود على الجهاز').toMatch(/if \(kept && !kept\.code\) saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null, percentOff: percentOff \?\? kept\.percentOff \}, storeKey\);/)
+    expect(PAGE).toMatch(/setStored\(\(s\) => \(s && !s\.code \? \{ \.\.\.s, code, sentTo: null, percentOff: percentOff \?\? s\.percentOff \} : s\)\);/)
     /* ولوحُ الدفع يُبنى من جديدٍ حين يصل الكود — فلا يبقى على أوّل حالٍ بلا منحة */
     expect(PAGE).toMatch(/<BuyPanel\s+key=\{stored\.code \?\? "no-code"\}[\s\S]{0,200}initialCoupon=\{stored\.code \?\? ""\}/)
     expect(code('server/http/routes/public-grant.routes.ts')).toMatch(/app\.get\('\/api\/learner\/grant-code', \{\s*preHandler: requireAuth,/)
     expect(auditActionAr('coupon.grant_claim')).not.toBe('coupon.grant_claim')
+  })
+
+  /* من أنشأ حسابه في نافذة الدفع ثمّ أغلق اللوحَ وضغط الشراءَ ثانيةً كانت تعود نافذةُ الحساب: «البريدُ مسجّل» (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ من دخل في نافذة الدفع داخل من يومها — لا تعود له نافذة الحساب', () => {
+    expect(PAGE).toMatch(/const authed = !!session \|\| signedIn;/)
+    expect(PAGE).toMatch(/onDone=\{\(\) => \{ setSignedIn\(true\); setAuthOpen\(false\); setBuyOpen\(true\); \}\}/)
+    /* وكلُّ بابٍ إلى نافذة الحساب يسأل `authed` لا `session` */
+    const gates = PAGE.match(/[^\n]*setAuthOpen\(true\)[^\n]*/g) ?? []
+    expect(gates.length, 'لا باب إلى نافذة الحساب').toBeGreaterThan(0)
+    for (const g of gates) expect(g, `باب يسأل session وحده: ${g.trim()}`).toMatch(/\bauthed\b/)
+  })
+
+  /* كلُّ كودٍ يحمل نسبتَه يومَ أُعطي — فإن غُيّرت نسبةُ الحملة بعده سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ الصفحة تسعر بنسبة كوده إن كان له — من النموذج ومن حسابه', () => {
+    expect(PAGE).toMatch(/const pct = stored\?\.percentOff \?\? view\?\.campaign\.percentOff \?\? 0;/)
+    expect(PAGE).toMatch(/influencer: out\.influencer\?\.code \?\? null, percentOff: out\.grant\?\.percentOff \?\? null,/)
+    expect(PAGE).toMatch(/saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null, percentOff: percentOff \?\? kept\.percentOff \}, storeKey\)/)
+    const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', interests: [], at: Date.now() }
+    expect(parseStoredGrant(JSON.stringify({ ...ok, percentOff: 60 }))?.percentOff).toBe(60)
+    expect(parseStoredGrant(JSON.stringify({ ...ok, percentOff: 160 }))?.percentOff, 'نسبة بغير شكلها').toBeNull()
+    expect(parseStoredGrant(JSON.stringify(ok))?.percentOff, 'حفظ قبل النسبة').toBeNull()
+  })
+
+  /* من حدّث الصفحةَ أو عاد إليها كان يجد الدوراتِ فارغة — وقد اختارها وحُفظت في ملفّه عندنا (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ ما اختاره يبقى على جهازه — ويعود إليه حين يحدّث الصفحة', () => {
+    expect(PAGE).toMatch(/if \(kept\?\.ref === ref\) saveStoredGrant\(\{ \.\.\.kept, picks: picked \}, storeKey\);/)
+    expect(PAGE).toMatch(/setPicked\(\(resumed \? resumed\.intent\.courseIds : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)\);/)
+    const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', interests: [], at: Date.now() }
+    expect(parseStoredGrant(JSON.stringify({ ...ok, picks: ['C-1', 7, 'C-2'] }))?.picks).toEqual(['C-1', 'C-2'])
+    expect(parseStoredGrant(JSON.stringify(ok))?.picks, 'حفظ قبل الاختيار').toEqual([])
+  })
+
+  /* من عبّأ النموذجَ والمنحةُ مغلقةٌ أو نفدت أكوادُها لم يأخذ كودا ولا بريدا — فكان يجد الدوراتِ بلا كودٍ إن فتحت، ويدفع كاملا */
+  it('⚠️ من لا كود له ولا بريد والمنحة مفتوحة يعود إلى النموذج — بما كتب أول مرة', () => {
+    expect(PAGE).toMatch(/if \(stored && \(stored\.code \|\| stored\.sentTo \|\| reasonAr \|\| !c\.open\)\) \{/)
+    expect(PAGE.match(/if \(stored\) \{/g) ?? [], 'عادت الدورات لكل من حفظ شيئا').toEqual([])
+    expect(PAGE).toMatch(/return \{ fullName: was\?\.name \?\? "", phone: "", email: was\?\.email \?\? "", workField: was\?\.workField \?\? "", careerLevel: "" \};/)
+    /* ويُقترح له من جديدٍ بما كتب الآن */
+    const apply = PAGE.slice(PAGE.indexOf('const apply = async'), PAGE.indexOf('const claimFor'))
+    expect(apply).toMatch(/setStored\(\{ \.\.\.g, at: Date\.now\(\) \}\);\s*setSeeded\(false\);/)
   })
 
   it('⚠️ مسار رئيسي وبديل — كل دوراته في المنحة، والأنسب له، ولا رئيسي بلا ملاءمة', () => {
@@ -354,7 +394,11 @@ describe('بعد النموذج', () => {
     const effect = PAGE.slice(PAGE.indexOf('useEffect(() => {\n    if (!view || !stored || seeded) return;'))
     expect(effect.length, 'الاختيار الأول لا ينتظر الكود').toBeGreaterThan(0)
     expect(effect).toMatch(/suggestCourses\(view\.openCourses, stored\.interests, stored\.workField, GRANT_SUGGESTED_COURSES, found\.main\?\.courseIds \?\? \[\]\)/)
-    expect(effect, 'اختارها عنه').toMatch(/setPicked\(resumed \? resumed\.intent\.courseIds\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\) : \[\]\)/)
+    /* ما يعود مختارا ما اختاره هو — من رحلة الدفع أو من جهازه — لا ما اقترحناه */
+    const seed = effect.match(/setPicked\(([^;]*)\);/)
+    expect(seed, 'لا اختيار أول').not.toBeNull()
+    expect(seed![1], 'اختارها عنه').toMatch(/^\(resumed \? resumed\.intent\.courseIds : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)$/)
+    expect(seed![1], 'اختارها عنه').not.toMatch(/\bours\b|suggested|found/)
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
     /* وسمٌ نصّيٌّ أعلى البطاقة لا قرصٌ يشبه الزرّ — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */
     expect(PAGE).toMatch(/const tag = ours\.has\(x\.courseId\) \? "نقترحها لك" : fits\(x\) > 0 \? "يناسب ما تريد تطويره" : null;/)
@@ -514,7 +558,7 @@ describe('بعد النموذج', () => {
     expect(grantAdvisorTextAr({ name: 'سارة', grantNameAr: 'منحة مؤثرين وجيز' })).toBe('مرحبا، أنا سارة.\nسجلت في منحة مؤثرين وجيز، وأحتاج مساعدة في اختيار دوراتي.')
     expect(grantAdvisorTextAr({ name: ' ', email: 'sara@x.test' }).split('\n')[0]).toBe('مرحبا، بريدي sara@x.test.')
     expect(PAGE).toMatch(/name: stored\.name, email: stored\.email, code: stored\.code, courses: chosen\.map\(\(x\) => x\.titleAr\),/)
-    expect(PAGE).toMatch(/recordLink: grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref, forInfluencer\), grantNameAr: nameAr,/)
+    expect(PAGE).toMatch(/recordLink: grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref\), grantNameAr: nameAr,/)
     expect(PAGE, 'عاد الطلب المكتوب').not.toMatch(/\/api\/public\/grant\/advisor|<textarea|اطلب مستشارا/)
   })
 

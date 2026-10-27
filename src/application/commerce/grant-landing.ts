@@ -106,8 +106,8 @@ export function grantTrainerFaces<T extends { trainer?: { id: string; name: stri
 }
 
 /** رسالةُ متابعة من عبّأ النموذج ولم يشترِ — تُفتح في واتساب جاهزةً ويرسلها فريقُ الأكاديميّة */
-export const grantFollowupAr = (name: string) =>
-  `مرحبا ${name}، معك فريق أكاديمية وجيز. سجلت في منحة وجيز، ويسعدنا أن نساعدك في اختيار دوراتك قبل انتهائها.`
+export const grantFollowupAr = (name: string, grantNameAr = MEMBER_GRANT_NAME_AR) =>
+  `مرحبا ${name}، معك فريق أكاديمية وجيز. سجلت في ${grantNameAr}، ويسعدنا أن نساعدك في اختيار دوراتك قبل انتهائها.`
 
 /* ═══ سطرُ الشكر أعلى صفحة المنحة (٢٧ أكتوبر ٢٠٢٦) ═══
    قرارُ صاحب المنصّة: «في الصفحات الخاصّة بالمنحة لا تستخدم كلمة عضو، بل مستخدم وجيز»، و«لا تقل لأنّك من مستخدمي
@@ -346,16 +346,15 @@ export function grantAdvisorTextAr(m: {
   ].join('\n\n')
 }
 
-/** طريقُ ملفّ صاحب المنحة — `/g/<كوده>` يفتح صفَّه في قائمة المنحة للإدارة (`pages/GrantRecordLink.tsx`).
-    و`/g/i/<كوده>` لصاحب منحة المؤثّرين: قائمتُه في صفحة منحتهم لا في صفحة الأولى (٢٧ أكتوبر ٢٠٢٦) */
+/** طريقُ ملفّ صاحب المنحة — `/g/<كوده>` يفتح صفَّه في قائمة المنحة للإدارة (`pages/GrantRecordLink.tsx`) */
 export const GRANT_RECORD_PATH = '/g'
 
 /** ما يُعرف به صاحبُ المنحة في الرابط: كودُه، أو رقمُ طلبه إن لم يُصدَر له كود */
 export const GRANT_RECORD_KEY_RE = /^(WG-[A-Z0-9]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
 
 /** الرابطُ القصيرُ لملفّه — بلا `https://` ولا `www`، وواتساب يجعله رابطا */
-export function grantRecordLink(host: string, key: string, influencer = false): string {
-  return `${host}${GRANT_RECORD_PATH}${influencer ? '/i' : ''}/${key}`
+export function grantRecordLink(host: string, key: string): string {
+  return `${host}${GRANT_RECORD_PATH}/${key}`
 }
 
 /* ═══ نصُّ الهديّة — يتباهى صاحبُه بمنحته ويختار صديقَه (٢٧ أكتوبر ٢٠٢٦) ═══

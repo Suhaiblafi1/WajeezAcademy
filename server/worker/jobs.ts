@@ -86,7 +86,9 @@ const LIMITS = { notifications: 100, reminders: 200, publishes: 20, cleanup: 5_0
   /* لقاءاتٌ انتهت في دورةٍ واحدة — ودورتُها خمسُ دقائق، فالباقي في التالية */
   endedSessions: 300,
   /* شعبٌ على خطّ المحاور تُقرأ أخبارُها في دورةٍ واحدة */
-  timelineCohorts: 200 }
+  timelineCohorts: 200,
+  /* تسجيلاتٌ يُعاد حسابُ تقدّمها على محاور الخطّة في دورةٍ واحدة — والباقي في التالية */
+  progressRefresh: 200 }
 
 /** تذكيرتان لكلّ جلسة: قبل يومٍ وقبل ساعة. المفتاحُ هو ما يمنع التكرار. */
 const REMINDERS = [
@@ -519,6 +521,21 @@ export async function closeEndedSessions(prisma: PrismaClient, now = new Date())
   }
 }
 
+/* ═══ التقدّمُ القديمُ الحساب (٢٧ أكتوبر ٢٠٢٦) ═══
+   صار المقامُ محاورَ الخطّة، والنسبةُ المحفوظةُ قبلها تبقى حتّى يتحرّك التسجيل. فهذه
+   تلحقها دفعةً دفعة (`ProgressService.refreshStale`)، ثمّ لا تجد شيئا. */
+async function refreshProgressAxes(prisma: PrismaClient): Promise<JobResult> {
+  const started = Date.now()
+  const { recomputed, failed } = await new ProgressService(prisma).refreshStale(LIMITS.progressRefresh)
+  return {
+    job: 'refresh_progress_axes',
+    summaryAr: recomputed + failed === 0
+      ? 'لا تقدّم قديم الحساب'
+      : `أعيد حساب تقدّم ${recomputed} تسجيل على محاور الخطّة` + (failed > 0 ? ` · وتعثّر ${failed}` : ''),
+    done: recomputed, failed, ms: Date.now() - started,
+  }
+}
+
 /** يعيد حسابَ تقدّم من له مقعدٌ في هذه الشعب — والقاعدةُ في `ProgressService.recomputeCohort` */
 async function recomputeCohorts(prisma: PrismaClient, cohortIds: readonly string[]) {
   const progress = new ProgressService(prisma)
@@ -858,6 +875,8 @@ export async function enforceRetention(prisma: PrismaClient, now = new Date()): 
         select: { id: true }, take: RETENTION_BATCH,
       }),
       (ids) => prisma.paymentWebhookEvent.deleteMany({ where: { id: { in: ids } } })),
+    /* وبصماتُ زوّار الروابط القصيرة تُمحى بعد يوم ويبقى عدُّها — العلّةُ في `link-opens.ts` */
+    import('../services/link-opens').then(async (m) => ({ labelAr: 'بصمة زائر رابط', count: await m.forgetVisitors(prisma, now) })),
   ])
 
   const done = parts.reduce((a, p) => a + p.count, 0)
@@ -1684,6 +1703,8 @@ export const JOBS = [
   { key: 'session_reminders', everyMs: 5 * 60_000, run: sendSessionReminders, titleAr: 'تذكير الجلسات' },
   /* كلَّ خمس دقائق: ما يُفتح «بعد انتهاء اللقاء» ينتظر هذه الحالة */
   { key: 'close_ended_sessions', everyMs: 5 * 60_000, run: closeEndedSessions, titleAr: 'انتهاء اللقاءات' },
+  /* كلَّ ربع ساعة: يلحق التقدّمَ المحسوبَ قبل محاور الخطّة، ثمّ لا يجد شيئا */
+  { key: 'refresh_progress_axes', everyMs: 15 * 60_000, run: refreshProgressAxes, titleAr: 'إعادة حساب التقدم على محاور الخطة' },
   { key: 'notify_timeline', everyMs: 15 * 60_000, run: notifyTimeline, titleAr: 'أخبار خطوط المحاور' },
   /* ي-٥: ودورتُه ساعةٌ لا خمسُ دقائق — عتبتُه يومٌ وأربعةٌ، فدقّةُ الدقائق
      فيه لا تشتري شيئا وتُثقل القاعدةَ باستعلامٍ لا يجد أحدا. */

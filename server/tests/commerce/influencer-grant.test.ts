@@ -22,6 +22,7 @@ import { GrantLandingService } from '../../services/grant-landing.service'
 import { InfluencerService } from '../../services/influencer.service'
 import { openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { approvedPlanBy, approvedTrainerPlan } from '../helpers/approved-trainer'
+import { PHOTO_KEY_PREFIX } from '../../services/storage.service'
 import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 
 let prisma: PrismaClient
@@ -225,6 +226,37 @@ describe('⑧ الرصيد وحساب المؤثر', () => {
     expect(mails[0].text).toContain('رصيدك الآن:')
     expect(mails[1].text).toContain('عمولتك صارت 18%')
     await expect(influencers.portal(await learner())).rejects.toMatchObject({ code: 'not_influencer' })
+  })
+
+  it('⚠️ صورته لـ«تصميمك الخاص» المرفوعة عندنا وحدها — والرابط الخارجي لا يرسم في لوحة تنزل', async () => {
+    const id = await addInfluencer('PHOTO')
+    const acc = await influencers.attachAccount(id, `photo-${STAMP}@test.local`, ownerId)
+    await prisma.learnerProfile.upsert({
+      where: { userId: acc.userId }, create: { userId: acc.userId, avatarUrl: 'https://elsewhere.test/me.jpg' },
+      update: { avatarUrl: 'https://elsewhere.test/me.jpg' },
+    })
+    expect((await influencers.portal(acc.userId)).photoUrl, 'رابط خارجي يعطى').toBeNull()
+    const KEY = `a${'b'.repeat(47)}`
+    await prisma.learnerProfile.update({ where: { userId: acc.userId }, data: { avatarUrl: `${PHOTO_KEY_PREFIX}${KEY}` } })
+    expect((await influencers.portal(acc.userId)).photoUrl).toBe(`/api/v1/avatars/${KEY}`)
+  })
+})
+
+/* «b» (صاحب المنصة، ٢٧ أكتوبر ٢٠٢٦): يأخذ المنحة بكوده كأي متابع، ولا عمولة له على شرائه هو */
+describe('⑧ب شراؤه هو بكوده', () => {
+  it('⚠️ منحته له وعمولته صفر — ولا يعد في من اشترى ولا في المبيعات، ومتابعه بعمولته', async () => {
+    const id = await addInfluencer('SELFBUY')
+    const email = `selfbuy-${STAMP}@test.local`
+    const acc = await influencers.attachAccount(id, email, ownerId)
+    const mine = await landing.apply(person({ influencerCode: 'SELFBUY', email }))
+    await pay(acc.userId, [await openCohort(100)], mine.grant!.code!)
+    const theirs = await landing.apply(person({ influencerCode: 'SELFBUY' }))
+    await pay(await learner(), [await openCohort(100)], theirs.grant!.code!)
+    const st = await influencers.statement(id)
+    expect(st.totals).toMatchObject({ earned: 15, buyers: 1, sales: 100 })
+    const own = st.rows.find((r) => r.own)!
+    expect(own).toMatchObject({ commission: 0, percent: 0, listTotal: 100, stateAr: 'شراء صاحب الكود — بلا عمولة' })
+    expect(st.rows.filter((r) => !r.own).map((r) => r.commission)).toEqual([15])
   })
 })
 

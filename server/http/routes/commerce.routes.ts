@@ -273,8 +273,9 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
     schema: { tags: ['finance'], summary: 'تنفيذ أو رفض الاسترداد — يحدّث الدفعة والطلب' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const body = z.object({ approve: z.boolean(), note: z.string().optional() }).parse(req.body)
-    return commerce.processRefund(id, req.auth!.userId, body.approve, body.note)
+    /* و`dropSeat`: يُخرَج من شعبته مع الردّ — يختاره من ينفّذه (`processRefund`) */
+    const body = z.object({ approve: z.boolean(), note: z.string().optional(), dropSeat: z.boolean().optional() }).parse(req.body)
+    return commerce.processRefund(id, req.auth!.userId, body.approve, body.note, { dropSeat: body.dropSeat === true })
   })
 
   /* ════ webhook الدفع — موقَّت وidempotent؛ رجوع المتصفح ليس دليلا ════ */

@@ -56,7 +56,7 @@ export interface PathModule {
 export interface PathInput {
   modules: readonly PathModule[]
   slots: readonly LearnerSlot[]
-  sessions: readonly { id: string; startsAt: string }[]
+  sessions: readonly { id: string; startsAt: string; status?: string }[]
   assessments: readonly { id: string; moduleId?: string | null }[]
   doneModules: ReadonlySet<string>
   /** جلساتٌ سُجّل حضورُه فيها — حاضرا أو متأخّرا */
@@ -140,7 +140,10 @@ export function buildStagePath(input: PathInput): StagePath {
   raw.forEach((s, i) => s.moduleIds.forEach((id) => stopOfModule.set(id, i)))
 
   const looseSessionIds: string[] = []
+  /* والملغى لا يدخل الطريق (٢٧ أكتوبر ٢٠٢٦): كان يُعدّ في محطّته فيُطلب حضورُ لقاءٍ لم
+     يقع — فلا تكتمل نجمةُ الحضور، ولا المحطّة، وتقف «أنت هنا» عليها إلى آخر الشعبة */
   for (const s of sessions) {
+    if (s.status === 'cancelled') continue
     const i = slots.length > 0 ? slotOfSession(slots, s.startsAt) : -1
     if (i >= 0) raw[i].sessionIds.push(s.id)
     else looseSessionIds.push(s.id)
@@ -284,7 +287,11 @@ export interface EvidenceSource {
   submissions: readonly { assessmentId: string; status: string; submittedAt: string }[]
 }
 
-export function evidenceOf(d: EvidenceSource): { doneModules: Set<string>; attended: Set<string>; accepted: Set<string> } {
+export function evidenceOf(d: EvidenceSource): {
+  doneModules: Set<string>; attended: Set<string>; accepted: Set<string>
+  /** آخرُ تسليمٍ لكلّ مهمّة — بحالته. يقرؤه حسابُ الخطوة: ما طُلبت إعادتُه وما ينتظر مدرّبَه */
+  latest: Map<string, { status: string; submittedAt: string }>
+} {
   const latest = new Map<string, { status: string; submittedAt: string }>()
   for (const s of d.submissions) {
     const cur = latest.get(s.assessmentId)
@@ -294,6 +301,7 @@ export function evidenceOf(d: EvidenceSource): { doneModules: Set<string>; atten
     doneModules: new Set(d.moduleProgress.filter((m) => m.status === 'completed').map((m) => m.moduleId)),
     attended: new Set(d.attendance.filter((a) => a.status === 'present' || a.status === 'late').map((a) => a.sessionId)),
     accepted: new Set([...latest].filter(([, s]) => s.status === 'accepted').map(([id]) => id)),
+    latest,
   }
 }
 
@@ -318,6 +326,8 @@ export type AfterModule =
 export function afterModule(path: StagePath, moduleId: string, readable: ReadonlySet<string>): AfterModule {
   const order = [...path.stops.flatMap((s) => s.moduleIds), ...path.looseModuleIds]
   const at = order.indexOf(moduleId)
+  /* محورٌ ليس في الطريق لا «بعدَه» فيه — وكان `slice(0)` يعيده إلى أوّل الدورة */
+  if (at < 0) return { kind: 'end' }
   for (const id of order.slice(at + 1)) {
     if (readable.has(id)) return { kind: 'read', moduleId: id }
     const stop = stopOfModule(path, id)

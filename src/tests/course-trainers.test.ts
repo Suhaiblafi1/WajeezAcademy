@@ -105,3 +105,13 @@ describe('وجوه المدربين دوائر متراصة في بطاقات ا
     expect(courses, 'بطاقة الدورة بلا وجوه مدربيها').toMatch(/<TrainerFaces \{\.\.\.trainerFacesOf\(\[c\.id\], openCohorts\)\}/)
   })
 })
+
+/* «كبّر صور المدرّبين أكثر» — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦). رُئي ساقطا بإعادة الوجه إلى ‎h-8 w-8‎. */
+describe('وجوه المدربين بمقاس يعرف', () => {
+  const faces = read('src/components/TrainerFaces.tsx').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
+  it('⚠️ الوجه و«+N» ٤٤ بكسلا لا أقل', () => {
+    const img = faces.match(/<img[^>]*className="([^"]*)"/)?.[1] ?? ''
+    expect(img, 'الوجه أصغر من ٤٤').toMatch(/\bh-11 w-11\b/)
+    expect(faces, '«+N» لا يطابق الوجه').toMatch(/className="grid h-11 w-11 /)
+  })
+})

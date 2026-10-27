@@ -33,8 +33,7 @@ describe('رابط ملف صاحب المنحة', () => {
     expect(APP).toMatch(/<Route path="\/g\/:key" element=\{<GrantRecordLinkPage \/>\} \/>/)
     expect(APP).toMatch(/const GrantRecordLinkPage = lazy\(\(\) => import\('\.\/pages\/GrantRecordLink'\)\)/)
     expect(REDIRECT).toMatch(/if \(!GRANT_RECORD_KEY_RE\.test\(key\)\) return <Navigate replace to="\/grant" \/>;/)
-    expect(REDIRECT).toContain('const admin = influencer ? "/admin/influencer-grant" : "/admin/member-grant";')
-    expect(REDIRECT).toContain('<Navigate replace to={`${admin}?q=${encodeURIComponent(key)}#grant-registrants`} />')
+    expect(REDIRECT).toContain('<Navigate replace to={`/admin/member-grant?q=${encodeURIComponent(key)}#grant-registrants`} />')
   })
 
   it('⚠️ القائمة تبدأ بالبحث من الرابط، وتطابق الكود ورقم الطلب، وتنزل إلى قسمها', () => {
@@ -55,13 +54,5 @@ describe('رابط ملف صاحب المنحة', () => {
     expect(LIST).toMatch(/r\.picks\.length > 0 && \([\s\S]*?<ol className="[^"]*list-decimal[^"]*">\s*\{r\.picks\.map\(\(p\) => <li key=\{p\}>\{shortCourseTitleAr\(p\)\}<\/li>\)\}/)
     expect(LIST).not.toMatch(/r\.picks\.join/)
     expect(LIST).toMatch(/matchesQuery\(q, \[[^\]]*\.\.\.r\.picks/)
-  })
-
-  /* ومنحةُ المؤثّرين (٢٧ أكتوبر ٢٠٢٦): رابطُ ملفّ صاحبها كان يفتح على قائمة المنحة الأولى وليس فيها، ولا قائمةَ لهم في صفحتهم */
-  it('⚠️ صاحب منحة المؤثرين: رابطه /g/i/ يفتح قائمة في صفحة منحتهم', () => {
-    expect(grantRecordLink(BARE_HOST, 'WG-ABCD2345', true)).toBe('wajeezacademy.com/g/i/WG-ABCD2345')
-    expect(APP).toMatch(/<Route path="\/g\/i\/:key" element=\{<GrantRecordLinkPage influencer \/>\} \/>/)
-    expect(code('src/pages/admin/MemberGrant.tsx')).toMatch(/forInfluencer \? <><InfluencersPanel \/><GrantRegistrants api="\/api\/admin\/influencer-grant\/registrants" \/><\/>/)
-    expect(code('server/http/routes/influencer.routes.ts')).toMatch(/'\/api\/admin\/influencer-grant\/registrants'[\s\S]*?preHandler: canManage[\s\S]*?grantRegistrants\(prisma, INFLUENCER_GRANT_SLUG\)/)
   })
 })

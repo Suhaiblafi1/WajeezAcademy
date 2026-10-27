@@ -36,6 +36,9 @@ export function buyerNameAr(displayName: string | null | undefined): string {
 }
 
 /** حالُ عمولة الطلب كما تُقال — من حال الطلب نفسه */
+/** طلبُ المؤثّر نفسِه بكوده — منحتُه له وعمولتُه صفر: قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) «b» */
+export const OWN_PURCHASE_AR = 'شراء صاحب الكود — بلا عمولة'
+
 export function commissionStateAr(orderStatus: string): string {
   if (orderStatus === 'refunded') return 'رد المبلغ'
   if (orderStatus === 'partially_refunded') return 'رد جزء منه'

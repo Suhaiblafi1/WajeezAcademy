@@ -9,7 +9,7 @@
    ⑤ **وتذكيرٌ قبل انتهاء المنحة** — بريدٌ قبل ثلاثة أيّامٍ وفي آخر يوم، التاسعةَ صباحا بتوقيت عمّان، مرّةً لكلّ
       مرحلة، والأحدثُ وحدَها لمن فاتته الأولى؛ ولا يصل من اشترى ولا من ينتظر طلبُه الدفع ولا من أخذ كودَه للتوّ،
       ولا يُكتب شيءٌ وقناةُ البريد مفصولة.
-   ⑧ **وما اختاره من دوراتٍ في ملاحظة حالته، ولمنحة المؤثّرين قائمتُها** (٢٧ أكتوبر ٢٠٢٦) — كانت القائمةُ للأولى وحدَها. */
+   ⑧ **وما اختاره من دوراتٍ في ملاحظة حالته** (٢٧ أكتوبر ٢٠٢٦) — بعناوينها القصيرة، فيقرؤها المستشارُ قبل أن يتّصل. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -101,6 +101,21 @@ describe('① القائمة تقول ما فعل كل واحد', () => {
     expect(of(idle.ref).state).toBe('none')
     expect(of(idle.ref).advisor, 'لم يقل مستشاره').toBeTruthy()
     expect(of(gifted.ref).code).toBe(gifted.code)
+  })
+
+  /* رابطُ ملفّه (`/g/<كوده>`) في رسالة «راسل مستشارك» من صفحة المؤثّر يفتح هذه القائمة — فكان يفتحها وليس هو فيها */
+  it('⚠️ ومن «منحة مؤثرين وجيز» فيها أيضا — بكود مؤثّره، ومن «منحة وجيز» بلا مؤثّر', async () => {
+    const inf = await prisma.influencer.create({ data: { nameAr: 'مؤثر القائمة', code: `FU${String(STAMP).slice(-8)}` } })
+    const viaInf = await prisma.lead.create({
+      data: { fullName: 'متابع المؤثر', email: `fu-inf-${STAMP}@test.local`, source: 'campaign', campaign: INFLUENCER_GRANT_SLUG, influencerId: inf.id },
+    })
+    const plain = await member()
+    const list = await grantRegistrants(prisma)
+    const row = list.find((r) => r.id === viaInf.id)
+    expect(row, 'لم يظهر من جاء من منحة المؤثرين').toBeTruthy()
+    expect(row!.influencer).toBe(true)
+    expect(row!.influencerCode).toBe(inf.code)
+    expect(list.find((r) => r.id === plain.ref)!.influencer).toBe(false)
   })
 })
 
@@ -297,8 +312,8 @@ describe('⑦ والمنحة تغطي 4 دورات بحد أقصى — بقرا�
   })
 })
 
-describe('⑧ ما اختاره في حالته، ولمنحة المؤثرين قائمتها', () => {
-  it('⚠️ المستشار يقرأ ما اختاره بعناوينه القصيرة — وكل منحة قائمتها وحدها', async () => {
+describe('⑧ ما اختاره في حالته', () => {
+  it('⚠️ المستشار يقرأ ما اختاره بعناوينه القصيرة', async () => {
     const picked = await member()
     const courseId = nextCourse()
     await prisma.lead.update({ where: { id: picked.ref }, data: { grantPicks: [courseId] } })
@@ -306,14 +321,5 @@ describe('⑧ ما اختاره في حالته، ولمنحة المؤثرين 
     const title = (await prisma.courseVersion.findFirstOrThrow({ where: { courseId }, orderBy: { version: 'desc' } })).titleAr
     const [kase] = await casesOf(picked.ref)
     expect(kase?.nextAction, 'لم يقرأ المستشار ما اختاره').toContain(`اختار: ${shortCourseTitleAr(title)}`)
-
-    seq += 1
-    const inf = await prisma.lead.create({
-      data: { fullName: `متابع مؤثر ${seq}`, email: `fu-inf-${seq}-${STAMP}@test.local`, phone: `0793${String(700000 + seq)}`, source: 'campaign', campaign: INFLUENCER_GRANT_SLUG, grantPicks: [courseId] },
-    })
-    const ofInfluencers = await grantRegistrants(prisma, INFLUENCER_GRANT_SLUG)
-    expect(ofInfluencers.find((r) => r.id === inf.id)?.picks, 'لا يُرى من عبأ نموذج المؤثرين').toEqual([title])
-    expect(ofInfluencers.some((r) => r.id === picked.ref), 'دخل صاحب المنحة الأولى قائمة المؤثرين').toBe(false)
-    expect((await grantRegistrants(prisma)).some((r) => r.id === inf.id), 'دخل متابع المؤثر قائمة المنحة الأولى').toBe(false)
   })
 })

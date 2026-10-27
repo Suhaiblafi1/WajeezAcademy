@@ -13,6 +13,8 @@ export const GRANT_STORE_KEY = 'wajeez_grant'
 /** وما أخذه من «منحة مؤثرين وجيز» في مفتاحٍ وحدَه — فلا تعرض إحدى الصفحتين كودَ الأخرى (٢٦ أكتوبر ٢٠٢٦) */
 export const INFLUENCER_GRANT_STORE_KEY = 'wajeez_grant_influencer'
 const TTL_MS = 60 * 86_400_000
+/** سقفُ ما يُقرأ من اختياره — فوق حدّ المنحة بكثير، والصفحةُ تقصّه على حدّها */
+const STORED_PICKS_MAX = 20
 
 export interface StoredGrant {
   ref: string
@@ -26,6 +28,10 @@ export interface StoredGrant {
   workField: string
   /** كودُ المؤثّر الذي حُسب له — في منحة المؤثّرين وحدَها */
   influencer?: string | null
+  /** الدوراتُ التي اختارها — فلا يجد القائمةَ فارغةً إن حدّث الصفحةَ أو عاد إليها */
+  picks?: string[]
+  /** نسبةُ كوده يومَ أُعطي — وبها يُدفع، لا بنسبة الحملة اليوم إن غيّرها صاحبُ المنصّة بعده */
+  percentOff?: number | null
   at: number
 }
 
@@ -50,6 +56,10 @@ export function parseStoredGrant(raw: string | null, now = Date.now()): StoredGr
     influencer: typeof o.influencer === 'string' && INFLUENCER_CODE_RE.test(o.influencer) ? o.influencer : null,
     interests: Array.isArray(o.interests)
       ? o.interests.filter((x): x is string => typeof x === 'string').map((x) => x.slice(0, 80)).slice(0, GRANT_MAX_INTERESTS)
+      : [],
+    percentOff: typeof o.percentOff === 'number' && Number.isInteger(o.percentOff) && o.percentOff >= 1 && o.percentOff <= 100 ? o.percentOff : null,
+    picks: Array.isArray(o.picks)
+      ? o.picks.filter((x): x is string => typeof x === 'string' && x.length <= 80).slice(0, STORED_PICKS_MAX)
       : [],
   }
 }

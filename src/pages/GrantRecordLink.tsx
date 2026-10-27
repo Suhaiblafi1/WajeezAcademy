@@ -9,10 +9,8 @@
 import { Navigate, useParams } from "react-router";
 import { GRANT_RECORD_KEY_RE } from "@/application/commerce/grant-landing";
 
-/** `influencer`: `/g/i/<كوده>` — صاحبُ منحة المؤثّرين قائمتُه في صفحة منحتهم (٢٧ أكتوبر ٢٠٢٦) */
-export default function GrantRecordLink({ influencer = false }: { influencer?: boolean }) {
+export default function GrantRecordLink() {
   const { key = "" } = useParams();
   if (!GRANT_RECORD_KEY_RE.test(key)) return <Navigate replace to="/grant" />;
-  const admin = influencer ? "/admin/influencer-grant" : "/admin/member-grant";
-  return <Navigate replace to={`${admin}?q=${encodeURIComponent(key)}#grant-registrants`} />;
+  return <Navigate replace to={`/admin/member-grant?q=${encodeURIComponent(key)}#grant-registrants`} />;
 }

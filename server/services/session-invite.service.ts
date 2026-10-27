@@ -254,14 +254,22 @@ export class SessionInviteService {
 
      دُعي إليها وهو فيها، فبقيت في تقويمه بروابطَ تعمل. ومن انتقل يرى لقاءاتِ
      شعبتَين في أسبوعٍ واحد فيحضر ما ليس له. فيُرفع كلُّ لقاءٍ برسالته — الرفعُ
-     عن موعدٍ واحدٍ بمعرّفه كالدعوة — ولا يُكتب لأحدٍ سواه. */
+     عن موعدٍ واحدٍ بمعرّفه كالدعوة — ولا يُكتب لأحدٍ سواه.
+
+     ═══ وما وقع فرُفع من تقاويم الجميع لا يُرفع ثانيةً (٢٧ أكتوبر ٢٠٢٦) ═══
+     من يترك شعبةً أُلغيت أو أُجّلت — يُسقَط تسجيلُه أو يُنقل، والجرسُ يدعوه إلى ذلك — كان يصله رفعُ كلِّ
+     لقاءٍ منها مرّةً ثانية: رُفع من تقويمه يومَ أُلغيت (`withdrawCohort`)، ولقاءاتُها باقيةٌ معتمَدةً
+     فيعدّها `upcoming`. ومن التحق بعد الرفع لم يصله أصلا: لا يُدعى إلى ما وقع (`announce` و`welcome`).
+     فلا يُرفع ما وقع ورُفع. وما عاد فلم يعد واقعا (`voidBefore`) يُرفع: قد وصل من التحق بعد عودته. */
   async release(
     to: { email: string; name?: string | null }, cohortId: string, whyAr: string, now = new Date(),
     audience: InviteAudience = 'learner',
   ): Promise<number> {
     const pageUrl = `${publicSiteUrl()}${audience === 'trainer' ? '/trainer' : '/student/learning'}`
+    const before = await this.voidBefore(cohortId)
     let queued = 0
     for (const s of await this.upcoming(cohortId, now)) {
+      if (s.calendarWithdrawnAt && before && s.startsAt.getTime() < before.getTime()) continue
       const snap: InvitedSession = {
         id: s.id, cohortId, cohortTitle: s.cohort.title, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
       }

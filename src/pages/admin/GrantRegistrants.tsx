@@ -13,6 +13,7 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { grantFollowupAr } from "@/application/commerce/grant-landing";
 import { shortCourseTitleAr } from "@/application/text/course-lines";
+import { INFLUENCER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { waToPerson } from "@/application/site/whatsapp";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { staffSelectCls } from "@/components/FormKit";
@@ -25,12 +26,13 @@ interface Registrant {
   channel: string | null; wave: string | null; createdAt: string; code: string | null; state: State; advisor: string | null;
   /** الدوراتُ التي اختارها في صفحة المنحة بأسمائها */
   picks: string[];
+  /** من «منحة مؤثرين وجيز» — وبكود أيّ مؤثّر */
+  influencer: boolean; influencerCode: string | null;
 }
 
 const STATE_AR: Record<State, string> = { bought: "اشترى", pending: "ينتظر الدفع", none: "لم يشتر بعد" };
 
-/** `api`: قائمةُ أيّ حملة — الأولى في صفحتها، والمؤثّرون في صفحة منحتهم (٢٧ أكتوبر ٢٠٢٦) */
-export default function GrantRegistrants({ api = "/api/admin/member-grant/registrants" }: { api?: string }) {
+export default function GrantRegistrants() {
   const [rows, setRows] = useState<Registrant[] | null>(null);
   /* من جاء من رابط ملفّ صاحب المنحة (`/g/<كوده>`) تُفتح له القائمةُ مبحوثا فيها بكوده، ويُنزل إليها */
   const [params] = useSearchParams();
@@ -38,14 +40,14 @@ export default function GrantRegistrants({ api = "/api/admin/member-grant/regist
   const [q, setQ] = useState(fromLink);
   const [page, setPage] = useState(1);
   const [only, setOnly] = useState<"" | State>("");
-  useEffect(() => { apiGet<Registrant[]>(api).then(setRows).catch(() => setRows(null)); }, [api]);
+  useEffect(() => { apiGet<Registrant[]>("/api/admin/member-grant/registrants").then(setRows).catch(() => setRows(null)); }, []);
   useEffect(() => {
     if (rows && fromLink) document.getElementById("grant-registrants")?.scrollIntoView({ block: "start" });
   }, [rows, fromLink]);
 
   const matched = useMemo(
     () => (rows ?? []).filter((r) => (!only || r.state === only)
-      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, ...r.picks, r.code, r.id])),
+      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, ...r.picks, r.influencerCode, r.code, r.id])),
     [rows, q, only],
   );
   if (!rows) return null;
@@ -84,7 +86,9 @@ export default function GrantRegistrants({ api = "/api/admin/member-grant/regist
               </thead>
               <tbody>
                 {view.rows.map((r) => {
-                  const wa = waToPerson(r.phone, grantFollowupAr(r.fullName));
+                  const wa = waToPerson(r.phone, grantFollowupAr(r.fullName, r.influencer ? INFLUENCER_GRANT_NAME_AR : undefined));
+                  /* ومن منحة المؤثّرين يقال ذلك أوّلَ «من أين»، وبكود مؤثّره */
+                  const from = [r.influencer && `منحة المؤثرين${r.influencerCode ? ` · كود ${r.influencerCode}` : ""}`, r.channel, r.wave && `دفعة ${r.wave}`];
                   return (
                     <tr key={r.id} className="border-t border-border align-top">
                       <td className="p-2"><span className="font-bold">{r.fullName}</span><br /><span className="text-muted-foreground">{fmtDate(r.createdAt)}</span></td>
@@ -111,7 +115,7 @@ export default function GrantRegistrants({ api = "/api/admin/member-grant/regist
                           </span>
                         )}
                       </td>
-                      <td className="p-2">{[r.channel, r.wave && `دفعة ${r.wave}`].filter(Boolean).join(" · ") || "—"}</td>
+                      <td className="p-2">{from.filter(Boolean).join(" · ") || "—"}</td>
                       <td className={`p-2 font-bold ${r.state === "bought" ? "text-teal-light-ink" : ""}`}>{STATE_AR[r.state]}</td>
                       <td className="p-2">{r.advisor ?? "—"}</td>
                     </tr>

@@ -11,7 +11,6 @@ import { requirePermission } from '../auth-plugin'
 import { InfluencerService } from '../../services/influencer.service'
 import { GrantService } from '../../services/grant.service'
 import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
-import { grantRegistrants } from '../../services/grant-followup.service'
 import { INFLUENCER_COMMISSION_DEFAULT } from '../../../src/application/commerce/influencer'
 
 export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -41,12 +40,6 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
   })
 
   /* والهامشُ بعد عمولة المؤثّر — بأعلى عمولةٍ لمؤثّرٍ نشط، فلا يُرى هامشٌ أحسنُ ممّا يقع */
-  /* ومن عبّأ نموذجَها — كقائمة المنحة الأولى (`grantRegistrants`) */
-  app.get('/api/admin/influencer-grant/registrants', {
-    preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'من عبأ نموذج منحة المؤثرين: بياناته وكود مؤثره وما فعل ومستشاره' },
-  }, async () => grantRegistrants(prisma, INFLUENCER_GRANT_SLUG))
-
   app.get('/api/admin/influencer-grant/margins', {
     preHandler: canManage,
     schema: { tags: ['admin-commerce'], summary: 'سعر كل شعبة بعد منحة المؤثرين مقابل أجر مقعدها وعمولة المؤثر' },

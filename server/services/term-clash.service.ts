@@ -19,7 +19,7 @@ import { PlanEditService } from './plan-edit.service'
 import { resolvePeriod, type PlanStatus, type TrainerPlanContent } from './cohort-plan.service'
 import { publicSiteUrl, safeNotify, sendDirectEmail } from './notification.service'
 import { renderMail } from './mail-template'
-import { proposeSchedule, type ScheduleEdit } from '../../src/application/trainer/schedule-proposal'
+import { proposeHourShift, proposeSchedule, type ScheduleEdit } from '../../src/application/trainer/schedule-proposal'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import { scheduleChainProblem, type PlanEdit } from '../../src/application/trainer/plan-edits'
 import {
@@ -187,7 +187,7 @@ export class TermClashService {
         .filter((e) => e.status === 'rejected')
         .map((e) => {
           const ed = e.edit as unknown as ScheduleEdit
-          return { weekday: ed.weekday, clock: ed.clock, scope: rejectedScope(e.noteAr) }
+          return { weekday: ed.weekday, clock: ed.clock, ...(ed.days ? { days: ed.days } : {}), scope: rejectedScope(e.noteAr) }
         })
 
       const fixedAr = c.scheduleLockedAt ? 'ثبتت الإدارة موعدها'
@@ -216,7 +216,7 @@ export class TermClashService {
         trainer: lead ? { userId: lead.userId, fullName: lead.application.fullName, email: lead.application.email } : null,
         planId: plan?.id ?? null,
         sent: last && lastEdit
-          ? { status: last.status, toAr: slotAr({ weekday: lastEdit.weekday, clock: lastEdit.clock }), noteAr: last.noteAr, at: (last.decidedAt ?? last.createdAt).toISOString() }
+          ? { status: last.status, toAr: slotAr({ weekday: lastEdit.weekday, clock: lastEdit.clock, days: lastEdit.days }), noteAr: last.noteAr, at: (last.decidedAt ?? last.createdAt).toISOString() }
           : null,
       })
       if (plan) {
@@ -234,7 +234,10 @@ export class TermClashService {
     const build: Loaded['build'] = (cohortId, slot, whyAr) => {
       const input = inputs.get(cohortId)
       if (!input) return { ok: false, reasonAr: 'لا خطة مدرب لها' }
-      const r = proposeSchedule({ ...input, target: slot, whyAr })
+      /* وما يلتقي أكثرَ من مرّةٍ في الأسبوع: أيّامُه نفسُها بساعةٍ أخرى (`proposeHourShift`، ٢٧ أكتوبر ٢٠٢٦) */
+      const r = slot.days
+        ? proposeHourShift({ ...input, clock: slot.clock, whyAr })
+        : proposeSchedule({ ...input, target: { weekday: slot.weekday, clock: slot.clock }, whyAr })
       if (!r.ok) return r
       /* وما يردّه الرفعُ يُردّ هنا — فلا تَعِد المعاينةُ بنقلٍ يرفضه الإرسال */
       const chain = scheduleChainProblem(r.edit, chainRows.get(cohortId)?.sessions ?? [], chainRows.get(cohortId)?.tasks ?? [])
@@ -333,32 +336,33 @@ export class TermClashService {
     return out.sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.courseTitleAr.localeCompare(b.courseTitleAr))
   }
 
-  /** يرسل كلَّ نقلٍ بطاقةً إلى مدرّبه، ويخبره بجرسٍ وبريد — ويُعاد الحسابُ الآن لا ممّا عُرض */
-  async send(actorId: string, termId: string, hold: ReadonlySet<string> = new Set()) {
+  /* ═══ واحدةً واحدة — يرى صاحبُ المنصّة لمن يذهب البريدُ ثمّ يرسله (٢٧ أكتوبر ٢٠٢٦) ═══
+     قرارُه: «أرني لمن سيُرسَل البريد، وأنا أرسل واحدا واحدا». فالإرسالُ لشعبةٍ واحدةٍ يسمّيها، ويُعاد الحسابُ الآن لا
+     ممّا عُرض: إن لم تعد تنتقل لم يُرسَل شيءٌ وقيل لماذا. وما أُرسل يُحسب بعده على ما اقتُرح له، فلا يتغيّر ما بقي. */
+  async send(actorId: string, termId: string, cohortId: string, hold: ReadonlySet<string> = new Set()) {
     const l = await this.load(termId, hold)
     const p = this.plan(l)
-    let sent = 0
-    const skipped: { titleAr: string; whyAr: string }[] = []
-    for (const r of p.rows) {
-      if (r.action !== 'move') continue
-      const m = l.meta.get(r.cohortId)!
-      if (!m.planId) { skipped.push({ titleAr: m.title, whyAr: 'لا خطة مدرب لها' }); continue }
+    const r = p.rows.find((x) => x.cohortId === cohortId)
+    const m = l.meta.get(cohortId)
+    if (!r || !m) throw new AuthError('not_found', 'الشعبة ليست في هذا الفصل', 404)
+    let skipped: string | null = r.action !== 'move' ? 'لم تعد تحتاج نقلا' : !m.planId ? 'لا خطة مدرب لها' : null
+    if (r.action === 'move' && m.planId && !skipped) {
       try {
         await this.edits.proposeClashFree(actorId, m.planId, r.payload.edit, r.payload.reasonAr)
       } catch (e) {
-        skipped.push({ titleAr: m.title, whyAr: e instanceof AuthError ? e.message : 'خطأ غير متوقع' })
-        continue
+        skipped = e instanceof AuthError ? e.message : 'خطأ غير متوقع'
       }
-      sent += 1
-      await this.tellTrainer(m.trainer, { id: r.cohortId, title: m.title }, {
-        cohortTitle: m.title, courseTitleAr: m.courseTitleAr, fromAr: slotAr(r.from), toAr: slotAr(r.to),
-      })
+      if (!skipped) {
+        await this.tellTrainer(m.trainer, { id: cohortId, title: m.title }, {
+          cohortTitle: m.title, courseTitleAr: m.courseTitleAr, fromAr: slotAr(r.from), toAr: slotAr(r.to),
+        })
+      }
     }
     await recordAudit(this.prisma, {
       actorId, action: 'term.clash.send', entityType: 'term', entityId: termId,
-      meta: { sent, skipped: skipped.length, clashesBefore: p.before.length, ...(hold.size ? { held: hold.size } : {}) },
+      meta: { cohortId, sent: skipped ? 0 : 1, clashesBefore: p.before.length, ...(skipped ? { skippedAr: skipped } : {}), ...(hold.size ? { held: hold.size } : {}) },
     })
-    return { sent, skipped, view: await this.view(termId, hold) }
+    return { sent: skipped ? 0 : 1, skipped: skipped ? [{ titleAr: m.title, whyAr: skipped }] : [], view: await this.view(termId, hold) }
   }
 
   private async tellTrainer(

@@ -100,15 +100,19 @@ const REFRESHED_KEY = "wajeez:link-previews-refreshed";
 export async function refreshMyLinkPreviews(): Promise<void> {
   try {
     if (sessionStorage.getItem(REFRESHED_KEY)) return;
-    sessionStorage.setItem(REFRESHED_KEY, "1");
   } catch { /* بلا تخزين: يجدّد في كلّ زيارة، وما لم يتغيّر لا يُرسم */ }
   try {
-    const [kit, cohorts] = await Promise.all([
-      apiGet<PreviewKit>("/api/trainer/me/share-kit"),
-      apiGet<PreviewCohort[]>("/api/trainer/me/referral-links"),
-    ]);
-    await syncLinkPreviews(previewFaceOf(kit), previewLinksOf(kit, cohorts), kit.previews ?? {});
+    /* ═══ وشعبُه أوّلا، والعُدّةُ بعدها (٢٧ أكتوبر ٢٠٢٦) ═══
+       `share-kit` يُنشئ كودَ الخصم أوّلَ مرّةٍ يُطلب (`TrainerShareCodeService.mine`). وكانت اللوحةُ تطلبه لكلّ مدرّبٍ يفتحها،
+       فيُسَكّ كودٌ وأثرُه لمن لا شعبةَ له يُرسم عنها. فلا يُطلب إلّا ولمعاينته شيءٌ يُرسم. */
+    const cohorts = await apiGet<PreviewCohort[]>("/api/trainer/me/referral-links");
+    if (cohorts.length > 0) {
+      const kit = await apiGet<PreviewKit>("/api/trainer/me/share-kit");
+      await syncLinkPreviews(previewFaceOf(kit), previewLinksOf(kit, cohorts), kit.previews ?? {});
+    }
+    /* ويُعلَّم بعد أن تمّ لا قبله: ما تعذّر يُعاد في الزيارة التالية من الجلسة نفسِها */
+    try { sessionStorage.setItem(REFRESHED_KEY, "1"); } catch { /* بلا تخزين */ }
   } catch {
-    /* من ليس له شعبةٌ أو كود — لا شيء يُرسم */
+    /* من ليس له طريقٌ إلى روابطه — لا شيء يُرسم */
   }
 }

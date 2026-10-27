@@ -90,12 +90,11 @@ describe('نتائج الحملة', () => {
 describe('من عبأ النموذج', () => {
   it('⚠️ قائمة بالأسماء في شاشة المنحة — ببحث وزر واتساب ورسالة جاهزة، وبابها بصلاحية الكوبونات', () => {
     expect(PAGE).toMatch(/<GrantRegistrants \/>/)
-    expect(REG).toMatch(/\{ api = "\/api\/admin\/member-grant\/registrants" \}/)
-    expect(REG).toMatch(/apiGet<Registrant\[\]>\(api\)/)
+    expect(REG).toMatch(/apiGet<Registrant\[\]>\("\/api\/admin\/member-grant\/registrants"\)/)
     expect(REG).toMatch(/<ListToolbar q=\{q\}/)
-    expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName\)\)/)
+    expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.influencer \? INFLUENCER_GRANT_NAME_AR : undefined\)\)/)
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/registrants', \{\s*preHandler: canManage/)
-    for (const t of ['من عبأ النموذج', 'اشترى', 'ينتظر الدفع', 'لم يشتر بعد', 'واتساب', grantFollowupAr('سارة')]) {
+    for (const t of ['من عبأ النموذج', 'اشترى', 'ينتظر الدفع', 'لم يشتر بعد', 'واتساب', grantFollowupAr('سارة'), grantFollowupAr('سارة', GRANT.INFLUENCER_GRANT_NAME_AR), 'منحة المؤثرين']) {
       expect(t).toBe(plainAr(t))
     }
   })
@@ -137,7 +136,19 @@ describe('النصوص', () => {
 
   it('وآخر يوم يحفظ يومه كله ويقرأ كما كتب', () => {
     const ends = GRANT.grantClosesAt('2026-11-30')
-    expect(new Date(ends).getDate()).toBe(1)
     expect(GRANT.grantLastDay(ends)).toBe('2026-11-30')
+  })
+
+  /* كانت النهايةُ بتوقيت جهاز من يحفظ — فمن حفظ النسبةَ من جهازٍ بتوقيت الإمارات نقل نهايةَ ٣٠ أكتوبر إلى ٣١ */
+  it('⚠️ وبتوقيت عمّان أينما كان الجهاز — نهاية 30 أكتوبر كما هي في القاعدة', () => {
+    expect(GRANT.grantClosesAt('2026-10-30')).toBe('2026-10-30T21:00:00.000Z')
+    expect(GRANT.grantLastDay('2026-10-30T21:00:00.000Z')).toBe('2026-10-30')
+    /* وآخرُ السنة يعبر إلى أوّل التالية */
+    expect(GRANT.grantClosesAt('2026-12-31')).toBe('2026-12-31T21:00:00.000Z')
+    expect(GRANT.grantLastDay(GRANT.grantClosesAt('2026-12-31'))).toBe('2026-12-31')
+    /* ولا تقرأ الدالتان توقيتَ الجهاز */
+    const src = readFileSync(join(root, 'src/application/commerce/grant.ts'), 'utf8')
+    const fns = src.slice(src.indexOf('export function grantClosesAt'))
+    expect(fns.slice(0, fns.indexOf('\n}\n', fns.indexOf('export function grantLastDay'))), 'عاد توقيت الجهاز').not.toMatch(/getDate\(|getFullYear\(|getMonth\(|T00:00:00`/)
   })
 })

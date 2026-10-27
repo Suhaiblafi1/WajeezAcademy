@@ -33,7 +33,8 @@ import { NotificationService, notifyRole, sendDirectEmail } from './notification
 import { renderMail } from './mail-template'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { CommerceService } from './commerce.service'
-import { SessionInviteService } from './session-invite.service'
+import { EnrollmentService } from './enrollment.service'
+import { SEATED, SessionInviteService } from './session-invite.service'
 import {
   canClose, CHOICE_LABEL_AR, closeBlockersAr, isResolved, LEARNER_CHOICES, needsLearnerChoice,
   notifyBlockerAr, OUTCOME_OF_CHOICE, settleBlockerAr,
@@ -478,7 +479,10 @@ export class TrainerDepartureService {
   async moveLearner(actorId: string, caseId: string, toCohortId: string, noteAr?: string | null) {
     const c = await this.prisma.departureCase.findUnique({
       where: { id: caseId },
-      include: { cohort: { select: { courseId: true } }, departure: { select: { closedAt: true } } },
+      include: {
+        cohort: { select: { courseId: true } }, departure: { select: { closedAt: true } },
+        enrollment: { select: { userId: true, status: true } },
+      },
     })
     if (!c) throw new AuthError('not_found', 'لا صفّ بهذا المعرّف', 404)
     if (c.departure.closedAt) throw new AuthError('closed', 'أغلق ملفّ الرحيل', 409)
@@ -514,6 +518,12 @@ export class TrainerDepartureService {
       actorId, action: 'trainer.departure.move', entityType: 'departure_case', entityId: caseId,
       meta: { fromCohortId: c.cohortId, toCohortId, toTitle: to.title },
     })
+    /* ═══ ورابطُه وتقويمُه ينتقلان معه (٢٧ أكتوبر ٢٠٢٦) ═══
+       كان المقعدُ ينتقل وحدَه: تبقى لقاءاتُ المغادَرة في تقويمه، ولا تصله لقاءاتُ الوجهة التي اعتُمدت ولا رابطُه
+       فيها. فيقع ما يقع في تبديل الشعبة (`EnrollmentService.seatMoved`). ومن ليس له مقعدٌ قائمٌ لم يُدعَ إلى شيء */
+    if (SEATED.includes(c.enrollment.status)) {
+      await new EnrollmentService(this.prisma).seatMoved(c.enrollmentId, c.enrollment.userId, c.cohortId, to)
+    }
     /* ومقعدُه انتقل في السطر فوقُ — فلا يبقى جدولُه يتغيّر وهو لا يعلم */
     const told = await this.tellResolved(actorId, caseId)
     return { moved: true, told }

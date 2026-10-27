@@ -370,9 +370,18 @@ export class EnrollmentService {
     })
     /* وتقويمُه ينتقل معه: لقاءاتُ المغادَرة تُرفع — وإلّا رأى شعبتَين في أسبوعٍ
        فحضر ما ليس له — ولقاءاتُ الوجهة تصله برابطه. */
-    await this.seatLeft(enrollmentId, userId, from.id, `انتقل مقعدك إلى «${to.title}» — وتصلك مواعيدها في رسالتها.`)
-    await this.seatTaken(enrollmentId, to.id)
+    await this.seatMoved(enrollmentId, userId, from.id, to)
     return moved
+  }
+
+  /* ═══ ومقعدٌ انتقل — يتبعه رابطُه وتقويمُه، من أيّ بابٍ نُقل (٢٧ أكتوبر ٢٠٢٦) ═══
+
+     ما بعد النقل في `switchCohort`، ولمن نقلته الإدارةُ إلى نظيرٍ حين رحل مدرّبُه
+     (`TrainerDepartureService.moveLearner`). وكان ذاك ينقل المقعدَ بسطرٍ في القاعدة ولا شيءَ بعده: تبقى
+     لقاءاتُ المغادَرة في تقويمه، ولا تصله لقاءاتُ الوجهة التي اعتُمدت قبل نقله ولا رابطُه فيها. */
+  async seatMoved(enrollmentId: string, userId: string, fromCohortId: string, to: { id: string; title: string }) {
+    await this.seatLeft(enrollmentId, userId, fromCohortId, `انتقل مقعدك إلى «${to.title}» — وتصلك مواعيدها في رسالتها.`)
+    await this.seatTaken(enrollmentId, to.id)
   }
 
   async drop(enrollmentId: string, actorId: string | null, note?: string) {
