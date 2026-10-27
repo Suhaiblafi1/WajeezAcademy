@@ -38,12 +38,12 @@ import { parseChecks } from "@/application/content/module-checks";
 import { fmtDate, fmtSession } from "@/application/text/format-ar";
 import { westernDigits } from "@/application/text/date-parts";
 import { referencesByIds } from "@/data/methodology";
-import { overlayModules, readTypedLinks, resourceKind, type LearnerCohortWorkbook, type LearnerModuleWorkbook, type LearnerWorkbook } from "@/application/trainer/plan-overlay";
+import { readTypedLinks, resourceKind, type LearnerCohortWorkbook, type LearnerModuleWorkbook, type LearnerWorkbook } from "@/application/trainer/plan-overlay";
 import { groupLabelAr } from "@/application/trainer/cohort-workbooks";
 import { dayLabelAr } from "@/application/trainer/axis-timeline";
 import { whenAr } from "@/application/learning/cohort-gate";
-import { inPlanOnly, type PathStop, type StagePath } from "@/application/student/stage-path";
-import { enrollmentStep } from "@/application/student/enrollment-step";
+import type { PathStop, StagePath } from "@/application/student/stage-path";
+import { cohortModules, cohortPath, stepFor } from "@/application/student/enrollment-step";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import StopStars from "@/components/journey/StopStars";
 import NextStepCard from "@/components/journey/NextStepCard";
@@ -112,8 +112,8 @@ export default function StageWork({
      كان `full.modules` وحدَها — وحداتُ الكتالوج — فما يؤلّفه مدرّبُ الشعبة
      ويُعتمَد لا يصل متعلّميه. قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦). */
   const modules = useMemo(
-    () => inPlanOnly(overlayModules(full?.modules ?? [], detail.cohort.trainerPlan), detail.cohort.trainerPlan),
-    [full?.modules, detail.cohort.trainerPlan],
+    () => cohortModules(full?.modules ?? [], detail),
+    [full?.modules, detail],
   );
   const percent = detail.courseProgress?.percent ?? stage.percent ?? 0;
   const trainers = detail.cohort.trainers.map((t) => t.profile.application.fullName);
@@ -138,7 +138,11 @@ export default function StageWork({
   );
   /* الطريقُ والخطوةُ والأثرُ من حسابٍ واحدٍ تقرؤه الرئيسيّةُ أيضا (`enrollment-step.ts`) —
      فلا تقول الرئيسيّةُ «سلّم كذا» والدورةُ «اقرأ كذا» */
-  const { path, step, doneModules } = useMemo(() => enrollmentStep(detail, modules, now), [detail, modules, now]);
+  const cp = useMemo(() => cohortPath(detail, modules), [detail, modules]);
+  const { path } = cp;
+  const doneModules = cp.evidence.doneModules;
+  /* والخطوةُ وحدَها تتبع الساعة — الطريقُ لا يُعاد بنبضتها */
+  const step = useMemo(() => stepFor(detail, modules, cp, now), [detail, modules, cp, now]);
   /* «ابدأ من هنا» على المحور الذي تدعو إليه البطاقةُ نفسُه — حقيقةٌ واحدة لا اثنتان */
   const nextModuleId = step?.kind === "read" ? step.moduleId : null;
 

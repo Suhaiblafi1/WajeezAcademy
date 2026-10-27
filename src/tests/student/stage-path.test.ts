@@ -10,7 +10,8 @@
      ⑥ والشاشةُ ترسم ذلك: بطاقةٌ واحدة، والمحطّاتُ بترتيبها، والحصادُ للمقبول وحدَه
      ⑦ ومحورُ كتالوجٍ ليس في خطّة الشعبة لا يُعرض — «a, hide them»
      ⑧ وشاشةُ الدراسة على الطريق نفسِه: موضعُها محطّة، وتاليها بترتيبه (٢٧ أكتوبر ٢٠٢٦)
-     ⑨ والأثرُ يُقرأ من موضعٍ واحدٍ للشاشتين */
+     ⑨ والأثرُ يُقرأ من موضعٍ واحدٍ للشاشتين
+     ⑩ وما وجدته المراجعةُ بعد النشر (٢٧ أكتوبر ٢٠٢٦): الملغى، والمحورُ خارج الطريق، وموعدُ «يصلك» */
 
 import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
@@ -301,7 +302,8 @@ describe('⑧ ما بعد المحور بترتيب الطريق', () => {
     expect(src).toMatch(/afterModule\(path, moduleId/)
     expect(src, 'العدد من الكتالوج').not.toMatch(/full\.modules\.length/)
     expect(src).toMatch(/stopOfModule\(path, moduleId\)/)
-    expect(src, 'ما ليس في الخطّة يقرأ').toMatch(/inPlanOnly\(overlayModules\(/)
+    expect(src, 'ما ليس في الخطّة يقرأ').toMatch(/cohortModules\(full\?\.modules \?\? \[\], detail\)/)
+    expect(src, 'الطريق يبنى هنا لا بحساب صفحة الدورة').toMatch(/cohortPath\(detail, modules\)\.path/)
   })
 })
 
@@ -331,5 +333,33 @@ describe('⑨ الأثر من موضع واحد', () => {
       { id: 'd', body: '   ' },
     ])
     expect([...r]).toEqual(['a', 'b'])
+  })
+})
+
+/* ═══ ⑩ ما وجدته المراجعة ═══ */
+describe('⑩ الملغى والمحور خارج الطريق وموعد «يصلك»', () => {
+  it('⚠️ اللقاء الملغى لا يدخل المحطّة — فتكتمل بما وقع فعلا', () => {
+    const p = buildStagePath(base({
+      sessions: [
+        { id: 'S1', startsAt: '2026-12-03T17:00:00.000Z' },
+        { id: 'S1x', startsAt: '2026-12-04T17:00:00.000Z', status: 'cancelled' },
+      ],
+      doneModules: new Set(['M1']), attended: new Set(['S1']), accepted: new Set(['A1']),
+    }))
+    expect(p.stops[0].sessionIds, 'الملغى في المحطّة').toEqual(['S1'])
+    expect(p.looseSessionIds, 'الملغى خارج المحطّات').not.toContain('S1x')
+    expect(p.stops[0].state).toBe('done')
+  })
+
+  it('⚠️ محور ليس في الطريق لا «تالي» له — لا يعاد إلى أوّل الدورة', () => {
+    expect(afterModule(buildStagePath(base()), 'X-dropped', new Set(['M1', 'M9']))).toEqual({ kind: 'end' })
+  })
+
+  it('⚠️ وشاشة الدراسة: «يصلك» بلقاء قادم غير ملغى — ورابط محور متروك يقال إنّه ليس في خطّته', () => {
+    const src = readFileSync(join(process.cwd(), 'src/pages/student/ModuleStudy.tsx'), 'utf8')
+      .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+    expect(src).toMatch(/s\.status !== "cancelled" && Date\.parse\(s\.startsAt\) > now/)
+    expect(src).toMatch(/const outOfPlan = detail !== null && modIndex < 0/)
+    expect(src).toContain('هذه الوحدة ليست في خطة شعبتك')
   })
 })

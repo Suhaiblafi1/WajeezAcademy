@@ -1,9 +1,14 @@
-/* خطوةُ التسجيل التالية — حسابٌ واحدٌ لصفحة الدورة والرئيسيّة (٢٧ أكتوبر ٢٠٢٦).
+/* خطوةُ التسجيل التالية — حسابٌ واحدٌ لصفحة الدورة وشاشة الدراسة والرئيسيّة (٢٧ أكتوبر ٢٠٢٦).
 
    قرارُ صاحب المنصّة: «C both» — شاشةُ الدراسة ثمّ الرئيسيّةُ تفتح على «خطوتك
    التالية» عبر دوراته كلِّها. فكانت الخطوةُ تُحسب داخل `StageWork` وحدَه؛ ولو
-   حسبتها الرئيسيّةُ لنفسها لقالت «سلّم كذا» والدورةُ تقول «اقرأ كذا». فصارت هنا:
-   الطريقُ والمقروءُ والأثرُ والخطوة — من تسجيلٍ واحد.
+   حسبتها الرئيسيّةُ لنفسها لقالت «سلّم كذا» والدورةُ تقول «اقرأ كذا». فصارت هنا
+   على طبقتين:
+     • `cohortPath` — الطريقُ والمقروءُ والأثر. لا يتغيّر بالساعة، فيُحفظ ما دام
+       التسجيلُ نفسَه (وكان يُعاد كلَّ دقيقةٍ مع نبضة الساعة: تحليلُ كلِّ متنٍ من جديد).
+     • `stepFor` — الخطوةُ وحدَها، وهي التي تتبع الساعة.
+   وشاشةُ الدراسة تقرأ الطريقَ نفسَه (`cohortModules` و`cohortPath`) — فلا تُبنى قائمةُ
+   محاورها ولا طريقُها في موضعٍ ثالث.
 
    ثمّ **أيُّ خطوةٍ تُقدَّم حين تتعدّد الدورات** (`pickNextStep`): الأشدُّ إلحاحا
    بالترتيب نفسِه الذي تختار به الدورةُ خطوتَها (جلسةٌ الآن ← إعادةٌ مطلوبة ←
@@ -22,51 +27,58 @@ export function cohortModules<T extends CatalogModuleLike>(catalog: readonly T[]
   return inPlanOnly(overlayModules(catalog, detail.cohort.trainerPlan), detail.cohort.trainerPlan)
 }
 
-export interface EnrollmentStep {
+type PathModuleIn = { id: string; title: string; locked?: boolean; opensAt?: string | null; body?: string | null; bodyFileKey?: string | null }
+
+export interface CohortPath {
   path: StagePath
-  step: NextStep | null
   readable: Set<string>
-  doneModules: Set<string>
+  evidence: ReturnType<typeof evidenceOf>
 }
 
-export function enrollmentStep(
-  detail: EnrollmentDetail,
-  modules: readonly { id: string; title: string; locked?: boolean; opensAt?: string | null; body?: string | null; bodyFileKey?: string | null }[],
-  now: number,
-): EnrollmentStep {
-  const ev = evidenceOf(detail)
+/** الطريقُ من التسجيل — بلا ساعة */
+export function cohortPath(detail: EnrollmentDetail, modules: readonly PathModuleIn[]): CohortPath {
+  const evidence = evidenceOf(detail)
   const readable = readableModules(modules)
   const path = buildStagePath({
     modules,
     slots: detail.cohort.trainerPlan?.slots ?? [],
     sessions: detail.cohort.sessions,
     assessments: detail.cohort.assessments,
-    ...ev,
+    doneModules: evidence.doneModules,
+    attended: evidence.attended,
+    accepted: evidence.accepted,
   })
-  /* آخرُ تسليمٍ لكلّ مهمّة — به يُعرف ما طُلبت إعادتُه وما ينتظر مدرّبَه */
-  const latest = new Map<string, string>()
-  const at = new Map<string, string>()
-  for (const s of detail.submissions) {
-    if (!at.has(s.assessmentId) || s.submittedAt > at.get(s.assessmentId)!) {
-      at.set(s.assessmentId, s.submittedAt)
-      latest.set(s.assessmentId, s.status)
-    }
-  }
+  return { path, readable, evidence }
+}
+
+/** والخطوةُ على الطريق — وهي التي تتبع الساعة */
+export function stepFor(detail: EnrollmentDetail, modules: readonly PathModuleIn[], cp: CohortPath, now: number): NextStep | null {
+  const { latest } = cp.evidence
   const when = new Date(now)
   const submittable = new Set(detail.cohort.assessments.filter((a) => canSubmitNow(detail, a, when)).map((a) => a.id))
-  const step = nextStep({
-    path,
+  return nextStep({
+    path: cp.path,
     modules,
     sessions: detail.cohort.sessions,
     assessments: detail.cohort.assessments,
     submittable,
-    resubmit: new Set([...submittable].filter((id) => latest.get(id) === 'resubmit_requested')),
-    inReview: new Set([...latest].filter(([, s]) => s === 'submitted' || s === 'under_review').map(([id]) => id)),
-    readable,
-    doneModules: ev.doneModules,
+    resubmit: new Set([...submittable].filter((id) => latest.get(id)?.status === 'resubmit_requested')),
+    inReview: new Set([...latest].filter(([, s]) => s.status === 'submitted' || s.status === 'under_review').map(([id]) => id)),
+    readable: cp.readable,
+    doneModules: cp.evidence.doneModules,
     now,
   })
-  return { path, step, readable, doneModules: ev.doneModules }
+}
+
+export interface EnrollmentStep {
+  path: StagePath
+  step: NextStep | null
+}
+
+/** الاثنان معا — للرئيسيّة، وهي لا تحفظ الطريقَ بين نبضات الساعة */
+export function enrollmentStep(detail: EnrollmentDetail, modules: readonly PathModuleIn[], now: number): EnrollmentStep {
+  const cp = cohortPath(detail, modules)
+  return { path: cp.path, step: stepFor(detail, modules, cp, now) }
 }
 
 /* ═══ أيُّ دورةٍ تُقدَّم خطوتُها ═══ */
