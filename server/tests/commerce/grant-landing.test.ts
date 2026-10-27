@@ -10,6 +10,7 @@
    ⑧ **ونتائجُ الحملة بالقناة والدفعة** — والشراءُ يُنسب إلى قناة صاحب الكود ولو اشترى به غيرُه.
    ⑨ **والسؤالان الاختياريّان** — يُحفظان إن أجاب، ولا يُسقطان نموذجا تُركا فيه، وما ليس من القائمة يُردّ؛
       ومجالُ كلّ دورةٍ مفتوحةٍ في الردّ (منه يُختار)، والمستشارُ يقرأ ما أجاب.
+   ⑩ **وما اختاره من دوراتٍ يُحفظ في ملفّه** — ما يُشترى في حملته وحدَه وبحدّ دوراتها، ويقرؤه بأسمائها من يتابعه.
 
    وما يقرأ دوراتِ المنحة يقرؤها بساعة ٢٠٩٩ (`NOW`) وشعبُه بعدها — فالفصلُ فصلُ أقرب شعبةٍ لم تبدأ في القاعدة
    كلِّها، والعلّةُ في رأس `grant-courses.test.ts`. */
@@ -22,6 +23,7 @@ import { AuthService } from '../../services/auth.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService, grantResults, maskEmail } from '../../services/grant-landing.service'
 import { CommerceService } from '../../services/commerce.service'
+import { grantRegistrants } from '../../services/grant-followup.service'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 import { courseDomain } from '../../../src/application/catalog/course-domain'
 
@@ -229,5 +231,36 @@ describe('⑨ والسؤالان الاختياريان', () => {
     expect(kase.nextAction).toContain('مجاله: الهندسة')
     expect(kase.nextAction, 'لم يقرأ المستشار مستواه').toContain('مستواه: موظف بخبرة')
     expect(kase.nextAction, 'لم يقرأ ما يريد تطويره').toContain(`يريد: ${courseDomain('C-PM-101')}`)
+  })
+})
+
+describe('⑩ وما اختاره من دورات يحفظ في ملفه', () => {
+  it('⚠️ ما يشترى في حملته وحده وبحد دوراتها — ويقرؤه بأسمائها من يتابعه', async () => {
+    const [a, b, c] = [nextCourse(), nextCourse(), nextCourse()]
+    await cohort(a)
+    await cohort(b)
+    const cc = await cohort(c)
+    await prisma.cohort.update({ where: { id: cc.id }, data: { registrationOpen: false } })
+    const out = await landing.apply(person())
+
+    /* المكرّرُ مرّةً، وما أغلقت شعبتُه وما لا وجودَ له لا يُكتبان */
+    expect((await landing.savePicks(out.ref, [a, c, a, b, 'C-NOPE-999'], NOW)).picks).toEqual([a, b])
+    const lead = await prisma.lead.findUniqueOrThrow({ where: { id: out.ref } })
+    expect(lead.grantPicks).toEqual([a, b])
+    expect(lead.grantPicksAt, 'لم يكتب متى اختار').not.toBeNull()
+
+    /* ومن يتابعه يقرؤها بأسمائها */
+    const titleOf = async (id: string) => (await prisma.courseVersion.findFirstOrThrow({ where: { courseId: id }, orderBy: { version: 'desc' } })).titleAr
+    const row = (await grantRegistrants(prisma)).find((r) => r.id === out.ref)!
+    expect(row.picks).toEqual([await titleOf(a), await titleOf(b)])
+
+    /* وبحدّ دورات الحملة */
+    await grants.update({ active: true, percentOff: 60, maxCodes: null, maxCourses: 1, closesAt: null }, ownerId)
+    try {
+      expect((await landing.savePicks(out.ref, [b, a], NOW)).picks).toEqual([b])
+    } finally {
+      await grants.update({ active: true, percentOff: 60, maxCodes: null, maxCourses: 4, closesAt: null }, ownerId)
+    }
+    await expect(landing.savePicks('00000000-0000-4000-8000-000000000000', [a], NOW)).rejects.toMatchObject({ code: 'not_found' })
   })
 })
