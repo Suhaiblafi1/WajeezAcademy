@@ -986,7 +986,7 @@ export class CommerceService {
   }
 
   /** تنفيذ الاسترداد — صلاحية مالية؛ يحدّث الدفعة والطلب */
-  async processRefund(refundId: string, actorId: string, approve: boolean, note?: string) {
+  async processRefund(refundId: string, actorId: string, approve: boolean, note?: string, opts: { dropSeat?: boolean } = {}) {
     /* وصاحبُ المال يُقرأ مع الصفّ (ي-٤): كان الاستعلامُ يقف عند الفاتورة،
        فيُردّ المبلغُ أو يُرفض ردُّه ولا أحدَ في المدى يُخبَر. */
     const refund = await this.prisma.refund.findUnique({
@@ -1007,7 +1007,7 @@ export class CommerceService {
         templateKey: 'payment.refund_rejected',
         data: { refundId, amount: num(refund.amount), currency: refund.payment.currency },
       })
-      return r
+      return { ...r, droppedEnrollmentIds: [] as string[] }
     }
     /* ردّ المال عند المزود قبل القيد. كان القيد وحده: يُعلَّم الاسترداد
        «مُنفَّذا» وتُحدَّث الدفعة والطلب، ولا يُنادى المزود أبدا — فالمتعلم يرى
@@ -1068,7 +1068,33 @@ export class CommerceService {
       templateKey: 'payment.refunded',
       data: { refundId, amount: num(refund.amount), currency: refund.payment.currency },
     })
-    return result
+
+    /* ═══ ويُخرَج من شعبته إن اختار ذلك من نفّذ الردّ (٢٧ أكتوبر ٢٠٢٦) ═══
+       كان الردُّ يعيد المالَ ويُبقي المقعد: تبقى لقاءاتُ الشعبة في تقويمه، ورابطُه في Zoom يعمل، وتصله دعواتُها.
+       وخُيّر صاحبُ المنصّة بين أن يُسقط الردُّ الكاملُ المقعدَ وحدَه وأن يبقى كما هو وأن يُسأل عنه عند الردّ، فاختار
+       الثالث: علامةٌ في «الاستردادات». فيُسقَط مقعدُه في كلّ شعبةٍ في الطلب بالإسقاط نفسِه الذي في «المتعلّمون»
+       (`EnrollmentService.drop`) — يُخبَر، وتُرفع لقاءاتُها من تقويمه، ويُلغى رابطُه، ويدخل من ينتظر. والردُّ وقع
+       عند المزوّد قبله، فإخفاقُه لا يُسقط الردّ: يُقال في السجلّ ويُسقَط باليد. */
+    const dropped: string[] = []
+    if (opts.dropSeat) {
+      const order = await this.prisma.order.findUnique({
+        where: { id: refund.payment.invoice.orderId },
+        select: { userId: true, items: { where: { kind: 'cohort' }, select: { refId: true } } },
+      })
+      const seats = order ? await this.prisma.enrollment.findMany({
+        where: { userId: order.userId, cohortId: { in: order.items.map((i) => i.refId) }, status: { in: ['enrolled', 'waitlisted'] } },
+        select: { id: true },
+      }) : []
+      for (const seat of seats) {
+        try {
+          await this.enrollments.drop(seat.id, actorId, 'ردّ إليك ثمنها')
+          dropped.push(seat.id)
+        } catch (e) {
+          console.error(`[refund] تعذّر إسقاط المقعد بعد الردّ (${seat.id})`, e)
+        }
+      }
+    }
+    return { ...result, droppedEnrollmentIds: dropped }
   }
 
   /* ── الكوبونات وخطط الاشتراك ── */

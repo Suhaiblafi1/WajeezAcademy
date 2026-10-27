@@ -190,8 +190,18 @@ describe('التسجيل والدفع الاختباري', () => {
     /* المتبقي 350 — الزيادة مرفوضة */
     await expect(commerce.requestRefund(paymentId, managerId, { amount: 400, reason: 'مبلغ يتجاوز المتبقي' }))
       .rejects.toMatchObject({ code: 'bad_amount' })
+    /* والردُّ وحدَه لا يمسّ المقعد — يبقى متعلّما في شعبته حتّى يختار من ينفّذ إخراجَه */
+    const seat = () => prisma.enrollment.findFirst({ where: { userId: learnerId, cohortId }, select: { status: true } })
+    expect((await seat())?.status).toBe('enrolled')
     const rest = await commerce.requestRefund(paymentId, managerId, { amount: 350, reason: 'استكمال الاسترداد' })
-    await commerce.processRefund(rest.id, managerId, true)
+    /* «وأخرجه من الشعبة» (٢٧ أكتوبر ٢٠٢٦): يُسقَط مقعدُه بالإسقاط نفسِه — ويُخبَر */
+    const done = await commerce.processRefund(rest.id, managerId, true, undefined, { dropSeat: true })
+    expect(done.droppedEnrollmentIds.length, 'اختير إخراجُه ولم يُسقَط مقعدُه').toBe(1)
+    expect((await seat())?.status).toBe('dropped')
+    expect(
+      await prisma.notification.findFirst({ where: { userId: learnerId, templateKey: 'enrollment.dropped' } }),
+      'أُخرج من شعبته ولم يُخبَر',
+    ).not.toBeNull()
     payment = await prisma.payment.findUnique({ where: { id: paymentId } })
     expect(payment?.status).toBe('refunded')
     const order = await prisma.order.findUnique({ where: { id: orderId } })
