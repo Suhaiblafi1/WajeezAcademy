@@ -88,13 +88,20 @@ describe('وجوه المدربين دوائر متراصة في بطاقات ا
     expect(r.total).toBe(7)
   })
 
-  it('⚠️ شريطا الرئيسة يرسمانها — وصفحة الكتالوج كما هي', () => {
+  it('⚠️ شريطا الرئيسة يرسمانها', () => {
     const best = read('src/pages/home/Bestsellers.tsx').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
     const paths = best.slice(best.indexOf('morePaths.map'), best.indexOf('moreCourses.length'))
     const courses = best.slice(best.indexOf('moreCourses.map'))
     expect(paths, 'بطاقة المسار بلا وجوه مدربي دوراته').toMatch(/<TrainerFaces \{\.\.\.trainerFacesOf\(b\.item\.courseIds, cohorts\)\}/)
     expect(courses, 'بطاقة الدورة بلا وجوه مدربيها').toMatch(/<TrainerFaces \{\.\.\.trainerFacesOf\(\[b\.item\.id\], cohorts\)\}/)
-    /* «فقط للصندوق الخارجي واترك الداخلي كما هو» — قرار صاحب المنصّة */
-    expect(read('src/pages/Catalog.tsx'), 'الكتالوج تغيّر وقد طلب بقاؤه').not.toContain('TrainerFaces')
+  })
+
+  /* «طبّق نفس الشيء لبطاقات الدورات والمسارات في صفحة الكل» — قرار صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ وبطاقتا صفحة الكل ترسمانها', () => {
+    const cat = read('src/pages/Catalog.tsx').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
+    const paths = cat.slice(cat.indexOf('visiblePathways.map'), cat.indexOf('visibleCourses.map'))
+    const courses = cat.slice(cat.indexOf('visibleCourses.map'))
+    expect(paths, 'بطاقة المسار بلا وجوه مدربي دوراته').toMatch(/<TrainerFaces \{\.\.\.trainerFacesOf\(p\.courseIds, openCohorts\)\}/)
+    expect(courses, 'بطاقة الدورة بلا وجوه مدربيها').toMatch(/<TrainerFaces \{\.\.\.trainerFacesOf\(\[c\.id\], openCohorts\)\}/)
   })
 })
