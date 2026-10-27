@@ -65,8 +65,8 @@ export function registerAdvisorApplicationRoutes(app: FastifyInstance, prisma: P
     schema: { tags: ['advisor-applications'], summary: 'طلب انضمام مستشار — من النموذج العامّ' },
   }, async (req, reply) => {
     assertNotBot(req.body)
-    const { termsAccepted: _accepted, ...body } = applicationBody.parse(req.body)
-    return reply.status(201).send(await svc.submit(body))
+    /* علامةُ الشروط شرطٌ للمرور هنا ولا تُحفظ هي: الخدمةُ تكتب ساعةَ قبولها (`termsAcceptedAt`) */
+    return reply.status(201).send(await svc.submit(applicationBody.parse(req.body)))
   })
 
   app.get('/api/admin/advisor-applications', {

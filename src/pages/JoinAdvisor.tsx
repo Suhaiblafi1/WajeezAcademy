@@ -19,6 +19,7 @@ import { ConsentRow, Field, FieldRow, FieldSet, OptionGrid, areaCls, controlCls,
 import { CountryPicker, PhoneCodePicker } from "@/components/CountryPicker";
 import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
 import { normalizeApplicantLink } from "@/application/trainer/applicant-link";
+import { fmtNum } from "@/application/text/format-ar";
 import {
   ADVISOR_AUDIENCES, ADVISOR_COMMUNITY_KINDS, ADVISOR_EMPLOYMENT, ADVISOR_EXPERIENCE, ADVISOR_HOURS, ADVISOR_PLATFORMS,
   ADVISOR_TERMS_AR, MAX_ADVISOR_ACCOUNTS, MAX_ADVISOR_COMMUNITIES, reachTotal,
@@ -303,7 +304,7 @@ export default function JoinAdvisor() {
 
               {reach > 0 && (
                 <p className="text-read text-muted-foreground">
-                  وصولك كله: <b className="text-foreground">{reach.toLocaleString("ar-EG")}</b> متابع وعضو.
+                  وصولك كله: <b className="text-foreground">{fmtNum(reach)}</b> متابع وعضو.
                 </p>
               )}
 

@@ -183,7 +183,7 @@ describe('③ القبول لحساب جديد — خطوة واحدة', () => {
 
     const [mail] = mailsTo(app0.email)
     expect(mail!.text).toContain('/auth/reset?token=')
-    expect(mail!.text).toContain('٥٪')
+    expect(mail!.text).toContain('5٪')
 
     vexpect((await approve(app0.id, 7)).statusCode, 'قبل مرتين').toBe(409)
     vexpect((await reject(app0.id)).statusCode, 'اعتذر عن مقبول').toBe(409)

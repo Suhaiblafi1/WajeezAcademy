@@ -18,11 +18,11 @@ import ConfirmAction from "@/components/ConfirmAction";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
-import { fmtDate } from "@/application/text/format-ar";
+import { fmtDate, fmtNum } from "@/application/text/format-ar";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import {
   ADVISOR_AUDIENCES, ADVISOR_COMMUNITY_KINDS, ADVISOR_DEFAULT_COMMISSION_PCT, ADVISOR_EMPLOYMENT, ADVISOR_EXPERIENCE,
-  ADVISOR_HOURS, ADVISOR_PLATFORMS, labelOf, pctAr, reachLineAr,
+  ADVISOR_HOURS, ADVISOR_PLATFORMS, labelOf, pctAr, reachLineAr, sortApplications,
   type AdvisorAccount, type AdvisorCommunity,
 } from "@/application/advisor/application";
 
@@ -37,13 +37,6 @@ export interface ApplicationRow {
 
 type Stage = ApplicationRow["status"];
 const STAGE_AR: Record<Stage, string> = { submitted: "تنتظر قرارك", approved: "قبلناهم", rejected: "اعتذرنا لهم" };
-
-/** الترتيبُ: الأحدثُ أوّلا، أو الأوسعُ وصولا */
-export function sortApplications(rows: readonly ApplicationRow[], by: "recent" | "reach"): ApplicationRow[] {
-  return [...rows].sort((a, b) => (by === "reach"
-    ? b.reachTotal - a.reachTotal || b.createdAt.localeCompare(a.createdAt)
-    : b.createdAt.localeCompare(a.createdAt)));
-}
 
 export default function AdvisorApplications() {
   const [rows, setRows] = useState<ApplicationRow[]>([]);
@@ -148,7 +141,7 @@ export default function AdvisorApplications() {
                     <ul className="mt-1 space-y-1">
                       {r.accounts.map((a) => (
                         <li key={a.url}>
-                          {labelOf(ADVISOR_PLATFORMS, a.platform)} · {a.followers.toLocaleString("ar-EG")} متابع ·{" "}
+                          {labelOf(ADVISOR_PLATFORMS, a.platform)} · {fmtNum(a.followers)} متابع ·{" "}
                           <a href={a.url} target="_blank" rel="noopener noreferrer" dir="ltr" className="inline-flex items-center gap-1 text-teal-light-ink underline">
                             {a.url.replace(/^https?:\/\//, "")} <ExternalLink className="h-3 w-3" />
                           </a>
@@ -162,7 +155,7 @@ export default function AdvisorApplications() {
                     <b>مجموعاته:</b>
                     <ul className="mt-1 space-y-1">
                       {r.communities.map((c) => (
-                        <li key={`${c.kind}-${c.name}`}>{labelOf(ADVISOR_COMMUNITY_KINDS, c.kind)} · {c.name} · {c.members.toLocaleString("ar-EG")} عضو</li>
+                        <li key={`${c.kind}-${c.name}`}>{labelOf(ADVISOR_COMMUNITY_KINDS, c.kind)} · {c.name} · {fmtNum(c.members)} عضو</li>
                       ))}
                     </ul>
                   </div>

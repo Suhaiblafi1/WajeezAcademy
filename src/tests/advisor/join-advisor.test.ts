@@ -13,9 +13,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  ADVISOR_DEFAULT_COMMISSION_PCT, biggestAccount, pctAr, reachLineAr, reachTotal, type AdvisorAccount,
+  ADVISOR_DEFAULT_COMMISSION_PCT, biggestAccount, pctAr, reachLineAr, reachTotal, sortApplications, type AdvisorAccount,
 } from '@/application/advisor/application'
-import { sortApplications, type ApplicationRow } from '@/pages/admin/AdvisorApplications'
+import type { ApplicationRow } from '@/pages/admin/AdvisorApplications'
 import { PUBLIC_PAGES } from '@/application/site/public-pages'
 import { sectionsFor } from '@/pages/admin/nav-map'
 import { markedTexts } from '../helpers/marked-text'
@@ -66,14 +66,14 @@ describe('③ الوصول والنسبة', () => {
   })
 
   it('وسطر الوصول يقول المجموع وأكبر الحسابات', () => {
-    expect(reachLineAr(accounts, [{ kind: 'whatsapp', name: 'ج', members: 900 }])).toBe('٤٢٬٩٠٠ متابع وعضو · أكبرها إنستغرام ٣٠٬٠٠٠')
+    expect(reachLineAr(accounts, [{ kind: 'whatsapp', name: 'ج', members: 900 }])).toBe('42,900 متابع وعضو · أكبرها إنستغرام 30,000')
     expect(reachLineAr([], [])).toBe('لم يكتب حسابا ولا مجموعة')
   })
 
-  it('⚠️ والنسبة المقترحة ٥٪ — قرار صاحب المنصة', () => {
+  it('⚠️ والنسبة المقترحة ٥٪ — قرار صاحب المنصة، بأرقام العرض الواحدة', () => {
     expect(ADVISOR_DEFAULT_COMMISSION_PCT).toBe(5)
-    expect(pctAr(ADVISOR_DEFAULT_COMMISSION_PCT)).toBe('٥٪')
-    expect(pctAr(7.5)).toBe('٧٫٥٪')
+    expect(pctAr(ADVISOR_DEFAULT_COMMISSION_PCT)).toBe('5٪')
+    expect(pctAr(7.5)).toBe('7.5٪')
   })
 })
 

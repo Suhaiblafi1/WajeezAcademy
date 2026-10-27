@@ -12,6 +12,8 @@
    والقيمُ هنا تُكتب في القاعدة كما هي (`freelance` و`6+`)، والأسماءُ للشاشة والبريد. والخادمُ يتحقّق بالقيم نفسِها
    (`server/http/routes/advisor-applications.routes.ts`) — فلا تفترق قائمتان. */
 
+import { fmtNum } from '../text/format-ar'
+
 export interface Choice<V extends string = string> {
   value: V
   label: string
@@ -101,8 +103,8 @@ export const MAX_ADVISOR_COMMUNITIES = 10
 /** نسبةُ العمولة التي تُقترح عند القبول — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
 export const ADVISOR_DEFAULT_COMMISSION_PCT = 5
 
-/** «٥٪» — النسبةُ بأرقامٍ عربيّةٍ كما في النصّ حولها */
-export const pctAr = (n: number): string => `${n.toLocaleString('ar-EG', { maximumFractionDigits: 2 })}٪`
+/** «5٪» و«7.5٪» — بأرقام العرض الواحدة (`fmtNum`) كسائر أرقام المنصّة */
+export const pctAr = (n: number): string => `${fmtNum(n, { maximumFractionDigits: 2 })}٪`
 
 /** الشروطُ التي يقبلها في النموذج — تُعرض فيه، وتُعاد إليه في بريد استلام طلبه */
 export const ADVISOR_TERMS_AR = [
@@ -123,12 +125,18 @@ export function biggestAccount(accounts: readonly AdvisorAccount[]): AdvisorAcco
   return accounts.reduce<AdvisorAccount | null>((best, a) => (!best || a.followers > best.followers ? a : best), null)
 }
 
-/** «٤٣٬٠٠٠ متابع وعضو · أكبرها إنستغرام ٣٠٬٠٠٠» — أو «لم يكتب حسابا ولا مجموعة» */
+/** «42,900 متابع وعضو · أكبرها إنستغرام 30,000» — أو «لم يكتب حسابا ولا مجموعة» */
 export function reachLineAr(accounts: readonly AdvisorAccount[], communities: readonly AdvisorCommunity[]): string {
   const total = reachTotal(accounts, communities)
   if (accounts.length === 0 && communities.length === 0) return 'لم يكتب حسابا ولا مجموعة'
-  const fmt = (n: number) => n.toLocaleString('ar-EG')
   const top = biggestAccount(accounts)
-  const head = `${fmt(total)} متابع وعضو`
-  return top && top.followers > 0 ? `${head} · أكبرها ${labelOf(ADVISOR_PLATFORMS, top.platform)} ${fmt(top.followers)}` : head
+  const head = `${fmtNum(total)} متابع وعضو`
+  return top && top.followers > 0 ? `${head} · أكبرها ${labelOf(ADVISOR_PLATFORMS, top.platform)} ${fmtNum(top.followers)}` : head
+}
+
+/** ترتيبُ الطابور: الأحدثُ أوّلا، أو الأوسعُ وصولا (والأحدثُ بين المتساويَين) */
+export function sortApplications<T extends { reachTotal: number; createdAt: string }>(rows: readonly T[], by: 'recent' | 'reach'): T[] {
+  return [...rows].sort((a, b) => (by === 'reach'
+    ? b.reachTotal - a.reachTotal || b.createdAt.localeCompare(a.createdAt)
+    : b.createdAt.localeCompare(a.createdAt)))
 }
