@@ -75,10 +75,15 @@ const KIND: Record<NowItem["kind"], { icon: LucideIcon; tone: SurfaceTone }> = {
   inbox: { icon: Bell, tone: "default" },
 };
 
-export default function MyDeadlines({ className = "", before = [], after = [] }: {
+export default function MyDeadlines({ className = "", before = [], after = [], hideAssessmentIds = [], afterNextStep = false }: {
   className?: string;
   before?: NowItem[];
   after?: NowItem[];
+  /* ═══ وتحت «خطوتك التالية» (٢٧ أكتوبر ٢٠٢٦) ═══
+     صارت الرئيسيّةُ تفتح على خطوةٍ واحدة («C both»). فما تقوله البطاقةُ لا يُعاد هنا —
+     كان سيُرى مرّتين في شاشةٍ شُكي من اكتظاظها — والعنوانُ يقول إنّ هذه القائمةَ ما بعدها. */
+  hideAssessmentIds?: readonly string[];
+  afterNextStep?: boolean;
 }) {
   const [data, setData] = useState<Payload | null>(null);
   const [settled, setSettled] = useState(false);
@@ -94,7 +99,7 @@ export default function MyDeadlines({ className = "", before = [], after = [] }:
 
   if (!settled) return null;
 
-  const tasks = data?.items ?? [];
+  const tasks = (data?.items ?? []).filter((d) => !hideAssessmentIds.includes(d.assessmentId));
   const now = tasks.filter((d) => d.urgency !== "later");
   const later = tasks.filter((d) => d.urgency === "later");
   const nothingNow = before.length + now.length + after.length === 0;
@@ -104,7 +109,9 @@ export default function MyDeadlines({ className = "", before = [], after = [] }:
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="now-h" className="flex items-center gap-2 text-base font-black">
           <CalendarClock className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
-          {nothingNow ? "لا شيء عليك الآن" : "ما عليك الآن"}
+          {afterNextStep
+            ? nothingNow ? "لا شيء غيرها الآن" : "وما عليك غيرها"
+            : nothingNow ? "لا شيء عليك الآن" : "ما عليك الآن"}
         </h2>
         {data && data.overdue > 0 && (
           <span className="rounded-full border border-rose-400/40 bg-rose-500/[0.08] px-3 py-1 text-fine font-black text-danger-ink">
@@ -113,7 +120,7 @@ export default function MyDeadlines({ className = "", before = [], after = [] }:
         )}
       </div>
       {/* والمعنى يُقال حين تفرغ القائمة — فلا يُقرأ الفراغُ عطبا. وحين تمتلئ تقوله سطورُها */}
-      {data && nothingNow && <p className="mt-1 text-read leading-6 text-muted-foreground">{data.meaningAr}</p>}
+      {data && nothingNow && !afterNextStep && <p className="mt-1 text-read leading-6 text-muted-foreground">{data.meaningAr}</p>}
 
       {!nothingNow && (
         <ul className="mt-4 space-y-2">

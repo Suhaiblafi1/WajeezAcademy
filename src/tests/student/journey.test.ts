@@ -286,7 +286,8 @@ describe('«رحلتي» — باب واحد', () => {
     /* كان الصندوقُ ثلاثةَ تبويبات (الدروس · الجلسات · الواجبات) تكرّر الشيءَ نفسَه،
        فصار طريقا (٢٦ أكتوبر ٢٠٢٦) — `stage-path.test.ts` يحرس حسابَه ورسمَه */
     const work = read('src/components/journey/StageWork.tsx')
-    expect(work, 'الطريق لا يبنى من حسابه').toMatch(/buildStagePath\(/)
+    /* والحسابُ مشتركٌ مع الرئيسيّة (`enrollment-step.ts`) — فلا تقولان خطوتين */
+    expect(work, 'الطريق لا يبنى من حسابه المشترك').toMatch(/enrollmentStep\(detail, modules, now\)/)
     expect(work, 'لا خطوة تالية').toContain('<NextStepCard')
     expect(work, 'المحطّات لا ترسم').toContain('<StopItem')
     expect(work, 'عادت التبويبات').not.toMatch(/role="tablist"/)

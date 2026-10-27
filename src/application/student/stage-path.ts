@@ -25,6 +25,7 @@
    والوحدةُ نقيّةٌ والوقتُ يُمرَّر — فتُفحص بالحساب لا بالنقر. */
 
 import type { LearnerSlot } from '../trainer/plan-overlay'
+import { splitLessons } from '../content/lesson-split'
 
 /* ═══ ما ليس في خطّة الشعبة لا يُعرض (٢٦ أكتوبر ٢٠٢٦) ═══
 
@@ -269,4 +270,69 @@ export function nextStep(input: NextStepInput): NextStep | null {
 
   if (path.stops.length > 0 && path.stops.every((s) => s.state === 'done')) return { kind: 'finish' }
   return null
+}
+
+/* ═══ الأثرُ من التسجيل — مرّةً لشاشتين (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   صفحةُ الدورة وشاشةُ الدراسة ترسمان الطريقَ نفسَه، فتقرآن الأثرَ من الموضع
+   نفسِه: محاورُ أُقرّ إكمالُها، وجلساتٌ حضرها (حاضرا أو متأخّرا)، ومهامُّ آخرُ
+   تسليمٍ له فيها مقبول. ولو حسبته كلٌّ منهما لنفسها لاختلفت نجومُ المحطّة
+   بين الشاشتين يوما. */
+export interface EvidenceSource {
+  moduleProgress: readonly { moduleId: string; status: string }[]
+  attendance: readonly { sessionId: string; status: string }[]
+  submissions: readonly { assessmentId: string; status: string; submittedAt: string }[]
+}
+
+export function evidenceOf(d: EvidenceSource): { doneModules: Set<string>; attended: Set<string>; accepted: Set<string> } {
+  const latest = new Map<string, { status: string; submittedAt: string }>()
+  for (const s of d.submissions) {
+    const cur = latest.get(s.assessmentId)
+    if (!cur || s.submittedAt > cur.submittedAt) latest.set(s.assessmentId, s)
+  }
+  return {
+    doneModules: new Set(d.moduleProgress.filter((m) => m.status === 'completed').map((m) => m.moduleId)),
+    attended: new Set(d.attendance.filter((a) => a.status === 'present' || a.status === 'late').map((a) => a.sessionId)),
+    accepted: new Set([...latest].filter(([, s]) => s.status === 'accepted').map(([id]) => id)),
+  }
+}
+
+/** المحطّةُ التي فيها هذا المحور — `null` لمحورٍ خارج الطريق */
+export function stopOfModule(path: StagePath, moduleId: string): PathStop | null {
+  return path.stops.find((s) => s.moduleIds.includes(moduleId)) ?? null
+}
+
+/* ═══ وما بعد هذا المحور — بترتيب الطريق لا الكتالوج ═══
+
+   كان «الوحدة التالية» في شاشة الدراسة ما يلي المحورَ في قائمة الكتالوج: محورٌ
+   تركه المدرّبُ أو لم يُكتب بعد، ومحاورُ المدرّب في ذيلها. فصار:
+     • أوّلُ محورٍ مقروءٍ بعده في الطريق — يُفتح
+     • وإلّا محطّةٌ مقفلةٌ بعده — يُقال متى تفتح
+     • وإلّا آخرُ الطريق
+   وما لا متنَ له بعدُ يُتخطّى: لا يُدعى المتعلّمُ إلى صفحةٍ تقول «يصلك لاحقا». */
+export type AfterModule =
+  | { kind: 'read'; moduleId: string }
+  | { kind: 'wait'; title: string; opensAt: string | null }
+  | { kind: 'end' }
+
+export function afterModule(path: StagePath, moduleId: string, readable: ReadonlySet<string>): AfterModule {
+  const order = [...path.stops.flatMap((s) => s.moduleIds), ...path.looseModuleIds]
+  const at = order.indexOf(moduleId)
+  for (const id of order.slice(at + 1)) {
+    if (readable.has(id)) return { kind: 'read', moduleId: id }
+    const stop = stopOfModule(path, id)
+    if (stop?.locked) return { kind: 'wait', title: stop.title, opensAt: stop.opensAt }
+  }
+  return { kind: 'end' }
+}
+
+/** المقروءُ: مفتوحٌ له متنٌ فيه درسٌ أو ملفٌّ أرفقه مدرّبُه — وما «يصلك قبل جلسته» لا يُدعى إليه */
+export function readableModules(
+  modules: readonly { id: string; locked?: boolean | null; body?: string | null; bodyFileKey?: string | null }[],
+): Set<string> {
+  return new Set(
+    modules
+      .filter((m) => !m.locked && (splitLessons(m.body ?? null).length > 0 || Boolean((m.bodyFileKey ?? '').trim())))
+      .map((m) => m.id),
+  )
 }
