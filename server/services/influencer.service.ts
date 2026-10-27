@@ -30,6 +30,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { GrantService } from './grant.service'
+import { GrantCoursesService } from './grant-courses.service'
 import { sendStaffInviteEmail } from './account-mail'
 import { publicSiteUrl } from './site-url'
 import { photoStorageKey } from './storage.service'
@@ -273,10 +274,11 @@ export class InfluencerService {
   async portal(userId: string) {
     const inf = await this.prisma.influencer.findUnique({ where: { userId } })
     if (!inf) throw new AuthError('not_influencer', 'لا ملف مؤثر لهذا الحساب', 404)
-    const [st, s, learner] = await Promise.all([
+    const [st, s, learner, designs] = await Promise.all([
       this.statement(inf.id),
       new GrantService(this.prisma, INFLUENCER_GRANT_SLUG).settings(),
       this.prisma.learnerProfile.findUnique({ where: { userId }, select: { avatarUrl: true } }),
+      this.designMaterial(),
     ])
     /* صورةُ حسابه لتصاميم «صمم منشورك» — بعنوانها الذي يفتح كما تعطيه صفحةُ حسابه (`profile.service.ts`) */
     const key = photoStorageKey(learner?.avatarUrl)
@@ -285,7 +287,32 @@ export class InfluencerService {
       link: influencerLink(publicSiteUrl(), inf.code),
       photoUrl: key ? `/api/v1/avatars/${key}` : learner?.avatarUrl ?? null,
       grant: { nameAr: s.nameAr, open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
+      designs,
       ...st,
+    }
+  }
+
+  /** مادّةُ «صمم منشورك»: فصلُ الدورات ودوراتُه، وصورُ مدرّبيه بلا أسماء.
+
+      ═══ ومدرّبٌ هو صاحبُ المنصّة لا يُعرض (٢٧ أكتوبر ٢٠٢٦) ═══
+
+      قال صاحبُ المنصّة: «لا تضع صهيبَ من ضمنهم ولا داعيَ لأسمائهم». فالحكمُ بالدور لا بالاسم: من يحمل حسابُه
+      دورَ مدير النظام الأعلى لا يُعدّ في مدرّبي التصاميم — ولو تغيّر اسمُه أو صورتُه. والدوراتُ ومدرّبوها من صفحة
+      المنحة نفسِها ببوّابة النشر (`grant-courses.service.ts`). */
+  async designMaterial(now = new Date()) {
+    const { termAr, courses } = await new GrantCoursesService(this.prisma).openCourses(now)
+    const byId = new Map<string, { id: string; photoUrl: string | null }>()
+    for (const c of courses) if (c.trainer && !byId.has(c.trainer.id)) byId.set(c.trainer.id, c.trainer)
+    const owners = new Set((await this.prisma.trainerProfile.findMany({
+      where: { id: { in: [...byId.keys()] }, user: { roles: { some: { roleId: 'super_admin' } } } },
+      select: { id: true },
+    })).map((p) => p.id))
+    const trainers = [...byId.values()].filter((t) => !owners.has(t.id))
+    return {
+      termAr,
+      courses: courses.map((c) => ({ title: c.courseTitleAr, startsAt: c.startsAt })),
+      photos: trainers.flatMap((t) => (t.photoUrl ? [t.photoUrl] : [])),
+      trainerTotal: trainers.length,
     }
   }
 }

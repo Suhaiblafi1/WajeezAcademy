@@ -21,7 +21,6 @@ import Chip from "@/components/ui/Chip";
 import { fmtDate, fmtDayMonth, fmtMoney } from "@/application/text/format-ar";
 import ShareKit, { type ShareContent } from "@/components/trainer/ShareKit";
 import { drawGrantArt, grantArtPlan, grantDesigns, GRANT_DESIGNS, parseGrantKind, type GrantArtData, type GrantDesign } from "@/components/influencer/grant-art";
-import { grantTrainerFaces } from "@/application/commerce/grant-landing";
 import { grantEmailSubject, grantShareText, grantShareUrl, type GrantShareInput } from "@/application/commerce/influencer-share";
 import { waShare } from "@/application/site/whatsapp";
 
@@ -29,46 +28,30 @@ interface Row { orderId: string; at: string; buyerAr: string; courses: number; l
 interface Me {
   nameAr: string; code: string; active: boolean; commissionPercent: number; link: string; currency: string;
   photoUrl: string | null;
+  /** مادّةُ التصاميم — الدوراتُ وصورُ المدرّبين بلا أسماء (`designMaterial`) */
+  designs: { termAr: string | null; courses: { title: string; startsAt: string | null }[]; photos: string[]; trainerTotal: number };
   grant: { nameAr: string; open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
   totals: { signups: number; codes: number; buyers: number; sales: number; earned: number; paid: number; balance: number };
   rows: Row[];
   payouts: { id: string; amount: number; currency: string; noteAr: string | null; paidAt: string }[];
 }
 
-/** ما تعطيه صفحةُ المنحة العامّة — دوراتُها ومدرّبوها المنشورون بفصلها (`grant-landing.service.ts#influencerView`) */
-interface GrantView {
-  termAr: string | null;
-  openCourses: { titleAr: string; startsAt: string | null; trainer?: { id: string; name: string; photoUrl: string | null } | null }[];
-}
-
 /** «صمم منشورك» — تصاميمُ المنحة والأكاديميّة، ونصُّها لكلّ منصّة برابط صفحته وكوده.
 
     وبلا صورته: «لا داعيَ لوجود صورة صاحب المنحة، فهو ينشرها لحساباته فقط، اذكرها مع الكود كاسمه» (صاحب المنصّة،
-    ٢٦ أكتوبر ٢٠٢٦). فيختار تصميما من أربعة (`GRANT_DESIGNS`)، والدوراتُ ومدرّبوها من صفحة المنحة نفسِها. */
+    ٢٦ أكتوبر ٢٠٢٦). فيختار تصميما من سبعة (`GRANT_DESIGNS`)، ومادّتُها من كشفه (`designMaterial` في الخادم):
+    الدوراتُ وصورُ مدرّبيها بلا أسماء، وبلا صاحب المنصّة. */
 function GrantShare({ me }: { me: Me }) {
-  const [view, setView] = useState<GrantView | null>(null);
   const [design, setDesign] = useState<GrantDesign>("offer");
-  useEffect(() => {
-    apiGet<GrantView>(`/api/public/grant/influencer?code=${encodeURIComponent(me.code)}`)
-      .then(setView).catch(() => setView({ termAr: null, openCourses: [] }));
-  }, [me.code]);
+  const art = useMemo<GrantArtData>(() => ({
+    name: me.nameAr, code: me.code, percentOff: me.grant.percentOff, maxCourses: me.grant.maxCourses,
+    lastDayAr: me.grant.closesAt ? fmtDayMonth(new Date(new Date(me.grant.closesAt).getTime() - 1).toISOString()) : null,
+    termAr: me.designs.termAr, photos: me.designs.photos, trainerTotal: me.designs.trainerTotal,
+    courses: me.designs.courses, dayAr: (iso: string) => fmtDayMonth(iso),
+  }), [me]);
+  const available = useMemo(() => grantDesigns(art), [art]);
 
-  const art = useMemo<GrantArtData | null>(() => {
-    if (!view) return null;
-    const faces = grantTrainerFaces(view.openCourses, 24);
-    return {
-      name: me.nameAr, code: me.code, percentOff: me.grant.percentOff, maxCourses: me.grant.maxCourses,
-      lastDayAr: me.grant.closesAt ? fmtDayMonth(new Date(new Date(me.grant.closesAt).getTime() - 1).toISOString()) : null,
-      termAr: view.termAr,
-      trainers: faces.faces.map((t) => ({ name: t.name, photoUrl: t.photoUrl })), trainerTotal: faces.total,
-      courses: view.openCourses.map((c) => ({ title: c.titleAr, startsAt: c.startsAt })),
-      dayAr: (iso: string) => fmtDayMonth(iso),
-    };
-  }, [me, view]);
-  const available = useMemo(() => (art ? grantDesigns(art) : []), [art]);
-
-  const content = useMemo<ShareContent | null>(() => {
-    if (!art) return null;
+  const content = useMemo<ShareContent>(() => {
     const g: GrantShareInput = {
       nameAr: me.nameAr, code: me.code, percentOff: art.percentOff, maxCourses: art.maxCourses, lastDayAr: art.lastDayAr, url: me.link,
     };
@@ -90,23 +73,17 @@ function GrantShare({ me }: { me: Me }) {
         </h2>
         <p className="text-read text-muted-foreground">تصاميم عن المنحة والأكاديمية وكودك باسمك، ونص جاهز لكل منصة برابطك.</p>
       </div>
-      {!content ? (
-        <div className="grid place-items-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>
-      ) : (
-        <>
-          <p className="mt-3 text-read font-bold">التصميم</p>
-          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="التصميم">
-            {GRANT_DESIGNS.filter((x) => available.includes(x.id)).map((x) => (
-              <Button key={x.id} size="sm" type="button" tone={design === x.id ? "confirm" : "secondary"}
-                aria-pressed={design === x.id} onClick={() => setDesign(x.id)}>
-                {x.label}
-              </Button>
-            ))}
-          </div>
-          <ShareKit face={{ name: me.nameAr, photoUrl: null }} courses={[]} url={me.link}
-            code={{ code: me.code, percentOff: me.grant.percentOff }} fileStem={`wajeez-grant-${design}`} content={content} />
-        </>
-      )}
+      <p className="mt-3 text-read font-bold">التصميم</p>
+      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="التصميم">
+        {GRANT_DESIGNS.filter((x) => available.includes(x.id)).map((x) => (
+          <Button key={x.id} size="sm" type="button" tone={design === x.id ? "confirm" : "secondary"}
+            aria-pressed={design === x.id} onClick={() => setDesign(x.id)}>
+            {x.label}
+          </Button>
+        ))}
+      </div>
+      <ShareKit face={{ name: me.nameAr, photoUrl: null }} courses={[]} url={me.link}
+        code={{ code: me.code, percentOff: me.grant.percentOff }} fileStem={`wajeez-grant-${design}`} content={content} />
     </Panel>
   );
 }

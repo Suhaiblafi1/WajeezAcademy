@@ -21,7 +21,7 @@ import { GrantService } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
 import { InfluencerService } from '../../services/influencer.service'
 import { openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
-import { approvedTrainerPlan } from '../helpers/approved-trainer'
+import { approvedPlanBy, approvedTrainerPlan } from '../helpers/approved-trainer'
 import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 
 let prisma: PrismaClient
@@ -293,3 +293,41 @@ describe('⑪ المتابعة والتذكير كالأولى', () => {
     }
   })
 })
+
+/* «ولا تضع صهيب من ضمنهم ولا داعي لاسمائهم» (صاحب المنصة، ٢٧ أكتوبر ٢٠٢٦) — والحكم بالدور لا بالاسم.
+   وساعته في ٢٠٩٨: الفصل فصل أقرب شعبة لم تبدأ، فلا تختلط بشعب الملفات الأخرى (٢٠٩٩ وما قبل اليوم). */
+describe('⑫ مدربو التصاميم بلا صاحب المنصة', () => {
+  it('⚠️ صورة المدرب المنشور في تصاميم المؤثر، وصاحب المنصة لا — ولو كان مدربا منشورا', async () => {
+    const NOW = new Date(Date.UTC(2098, 0, 20))
+    async function trainer(tag: string, owner: boolean) {
+      const user = await prisma.user.create({ data: { email: `inf-tr-${tag}-${STAMP}@wajeez.test`, displayName: `مدرب ${tag}`, passwordHash: 'x' } })
+      if (owner) await prisma.userRole.create({ data: { userId: user.id, roleId: 'super_admin' } })
+      const app = await prisma.trainerApplication.create({
+        data: { reference: `WJ-TR-INF-${tag}-${STAMP}`, fullName: `مدرب ${tag}`, email: user.email, status: 'active' },
+      })
+      const p = await prisma.trainerProfile.create({ data: {
+        userId: user.id, applicationId: app.id, publicVisibility: true, isVerified: true, publishApprovedAt: new Date(),
+        photoUrl: `https://cdn.test/${tag}-${STAMP}.jpg`,
+      } })
+      const c = await prisma.cohort.create({
+        data: {
+          plans: { create: approvedPlanBy(p.id) },
+          courseId: nextCourse(), title: `شعبة تصاميم ${tag}`,
+          status: 'open', registrationOpen: true, financialReady: true,
+          price: 200, currency: 'USD', capacity: 20, startsAt: new Date(NOW.getTime() + 30 * 86_400_000),
+        } as never,
+      })
+      await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId: p.id, role: 'lead', assignedBy: ownerId } })
+      return `https://cdn.test/${tag}-${STAMP}.jpg`
+    }
+    const shown = await trainer('guest', false)
+    const owner = await trainer('owner', true)
+    const m = await influencers.designMaterial(NOW)
+    expect(m.photos).toContain(shown)
+    expect(m.photos, 'صاحب المنصة بين صور المدربين').not.toContain(owner)
+    expect(m.trainerTotal, 'وعده مع المدربين').toBe(m.photos.length)
+    /* ودورتُه تبقى في الدورات — الذي لا يُعرض صورتُه لا دورتُه */
+    expect(m.courses.length).toBe(2)
+  })
+})
+
