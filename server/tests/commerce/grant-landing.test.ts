@@ -176,6 +176,40 @@ describe('⑤ والدورات للزائر بلا أجور المدربين', (
     expect(v.openCourses.some((x) => x.courseId === b), 'عرض دورة أغلقت شعبتها').toBe(false)
     expect(v.termAr).toBe('موسم الربيع 2099')
   })
+
+  /* «"تفاصيل الدورة" أريد أن تبدلها بسهمٍ للأسفل، وينسدل نبذةٌ بسيطة: عنها وأهدافُها ولمن هي» — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ ونبذة كل دورة في الرد من آخر نسخة لها — وعدها وثلاثة أهداف بترتيبها ولمن هي', async () => {
+    const a = nextCourse()
+    await cohort(a)
+    const last = await prisma.courseVersion.findFirstOrThrow({ where: { courseId: a }, orderBy: { version: 'desc' } })
+    await prisma.courseVersion.create({
+      data: {
+        courseId: a, version: last.version + 1, titleAr: last.titleAr, totalHours: last.totalHours,
+        shortPromiseAr: 'تكتب خطتك في أسبوع.', audienceAr: 'لمن يبدأ عملا جديدا.',
+        objectives: { create: ['يحدد', 'يبني', 'يقيّم', 'ينفذ'].map((textAr, i) => ({ sequence: 4 - i, textAr })) },
+      },
+    })
+    const row = (await landing.view(NOW)).openCourses.find((x) => x.courseId === a)!
+    expect(row.summary, 'النبذة من غير آخر نسخة').toEqual({ aboutAr: 'تكتب خطتك في أسبوع.', goalsAr: ['ينفذ', 'يقيّم', 'يبني'], audienceAr: 'لمن يبدأ عملا جديدا.' })
+  })
+
+  /* «عندما تتعارض دوراتٌ يجب أن تظهر فورا» و«اقترح له دوراتٍ لا تتعارض» — قرارا صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ ومواعيد لقاءات كل شعبة في الرد — المعتمد وحده، لا الملغى ولا المبدئي ولا ما ينتظر الاعتماد', async () => {
+    const a = nextCourse()
+    const c = await cohort(a)
+    const at = (d: number) => new Date(NOW.getTime() + d * DAY)
+    const add = (d: number, over: Record<string, unknown> = {}) => prisma.cohortSession.create({
+      data: { cohortId: c.id, title: `لقاء ${d}`, startsAt: at(d), endsAt: new Date(at(d).getTime() + 7_200_000), ...over } as never,
+    })
+    await add(31)
+    await add(32, { status: 'cancelled' })
+    await add(33, { placeholder: true })
+    await add(34, { approvalState: 'pending' })
+    await add(35, { endsAt: null })
+    const row = (await landing.view(NOW)).openCourses.find((x) => x.courseId === a)!
+    expect(row.sessions.map((x) => x.startsAt.toISOString()), 'خرج لقاء لا يعلن').toEqual([at(31).toISOString(), at(35).toISOString()])
+    expect(Object.keys(row.sessions[0]).sort(), 'خرج من اللقاء غير موعده').toEqual(['endsAt', 'startsAt'])
+  })
 })
 
 describe('⑥ وتواصل مع مستشار حالة واحدة', () => {

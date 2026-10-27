@@ -64,7 +64,8 @@ const dayAr = (iso: string) => {
   return `${WEEKDAY_AR[new Date(`${day}T12:00:00Z`).getUTCDay()]} ${cohortDayAr(iso, { day: 'numeric', month: 'long' })}`
 }
 
-const meetingsAr = (n: number) => (n === 1 ? 'لقاء واحد' : n === 2 ? 'لقاءان' : n <= 10 ? `${n} لقاءات` : `${n} لقاء`)
+/** والعددُ بعد «في» مجرور: «في لقاءين» لا «في لقاءان» */
+const meetingsAr = (n: number) => (n === 1 ? 'لقاء واحد' : n === 2 ? 'لقاءين' : n <= 10 ? `${n} لقاءات` : `${n} لقاء`)
 
 /** «تتعارض مع «دورة X» في 3 لقاءات، أولها الأحد 6 ديسمبر» */
 export function clashLineAr(c: CohortClash): string {
