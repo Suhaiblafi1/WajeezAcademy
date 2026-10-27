@@ -9,18 +9,18 @@
    ويفتح خطّتَها حيث تُعتمَد، لا يكرّرها: المرسَلةُ في «خططٌ تنتظر اعتمادك»
    مرشَّحةً بخططه (`/admin/pending-plans?trainer=…`)، وما سواها في بطاقة شعبتها.
 
-   ويبقى لمن كتب موادَّه في اللوح القديم قبل هذا اليوم ولم يقبل شعبةً بعد
-   ما كان له: تُقرأ موادُّه ويُعتمَد بها — فلا يُطالَب بكتابتها ثانية. */
+   وكان يبقى لمن كتب موادَّه في اللوح القديم قبله ولم يقبل شعبةً زرُّ «اعتمد هذه الدورة بموادّها». وذهب (٢٧ أكتوبر
+   ٢٠٢٦، المرحلة الثامنة): كان يؤهّله ويقول «اعتمدت» — و«معتمدة» لا تُقال إلّا لما اعتمدناه نحن (٢٤ أكتوبر)، ودورةٌ
+   معتمدةٌ خطّةُ شعبةٍ اعتمدناها لا تأهيلٌ وحدَه (٢٠ أكتوبر). فطريقُه اليومَ طريقُ غيره: يقبلها فتُنشأ شعبتُها. */
 
 import { useState } from "react";
 import { Link } from "react-router";
-import { CheckCircle2, ExternalLink, FileStack, Loader2 } from "lucide-react";
+import { ExternalLink, FileStack, Loader2 } from "lucide-react";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { toast, toastError } from "@/components/Toast";
-import { apiGet, apiPost, permissionMessage } from "@/services/api";
-import type { CourseMaterials } from "@/application/trainer/course-materials";
+import { toastError } from "@/components/Toast";
+import { apiGet, permissionMessage } from "@/services/api";
 import { countAr } from "@/application/text/count-ar";
 import { fmtDate } from "@/application/text/format-ar";
 import { postponedLineAr } from "@/application/trainer/plan-postpone";
@@ -43,8 +43,6 @@ interface MaterialsRow {
   courseId: string;
   titleAr: string;
   status: string;
-  materials: CourseMaterials | null;
-  missingAr: string[];
   /** كيف اعتُمدت — شعبتُها أو تأهيلٌ مباشر، ومن ومتى (١٧ أكتوبر ٢٠٢٦، `approvalsOf`) */
   approval?: { cohortId: string | null; cohortTitle: string | null; byAr: string | null; at: string | null } | null;
 }
@@ -69,9 +67,8 @@ const STATE_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "posi
 
 export default function MaterialsReview({ profileId }: { profileId: string }) {
   const [prep, setPrep] = useState<PrepRow[] | null>(null);
-  const [legacy, setLegacy] = useState<MaterialsRow[]>([]);
+  const [materials, setMaterials] = useState<MaterialsRow[]>([]);
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -79,22 +76,8 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
         apiGet<PrepRow[]>(`/api/admin/trainers/${profileId}/prep`),
         apiGet<MaterialsRow[]>(`/api/admin/trainers/${profileId}/materials`).catch(() => [] as MaterialsRow[]),
       ]);
-      setPrep(p); setLegacy(m);
+      setPrep(p); setMaterials(m);
     } catch (e) { toastError(permissionMessage(e, "تعذّرت قراءة دوراته")); }
-  };
-
-  /* اعتمادٌ بموادّ اللوح القديم — لمن كتبها قبل ٢ أكتوبر ٢٠٢٦ ولم يقبل شعبة */
-  const approveLegacy = async (courseId: string) => {
-    setBusy(courseId);
-    try {
-      await apiPost(`/api/admin/trainers/${profileId}/qualifications`, { courseId, note: "اعتمدت موادّها" });
-      toast("اعتمدت الدورة — وأهّل لها");
-      await load();
-    } catch (e) {
-      toastError(permissionMessage(e, "تعذّر الاعتماد"));
-    } finally {
-      setBusy(null);
-    }
   };
 
   if (!open) {
@@ -109,7 +92,7 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
      ما لم يقبله بعدُ يُقرأ «معتمَدة» تحت، وما قبِله يُقرأ بحال شعبته فوق */
   const shown = prep.filter((r) => !(r.approved && r.state === "to_decide"));
   const inPrep = new Set(shown.map((r) => r.courseId));
-  const qualified = legacy.filter((r) => r.status === "qualified" && !inPrep.has(r.courseId));
+  const qualified = materials.filter((r) => r.status === "qualified" && !inPrep.has(r.courseId));
   if (shown.length === 0 && qualified.length === 0) {
     return <p className="mt-2 text-read text-muted-foreground">هذا المدرب غير مؤهل لأي دورة بعد.</p>;
   }
@@ -131,8 +114,6 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
       <ul className="mt-3 grid gap-2">
         {shown.map((r) => {
           const s = r.postponedTo ? { label: postponedLineAr(r.postponedTo), tone: "neutral" as const } : STATE_AR[r.state];
-          const old = legacy.find((x) => x.courseId === r.courseId && x.status === "pending");
-          const oldReady = !r.cohortId && old?.materials && old.missingAr.length === 0;
           return (
             <li key={r.courseId}>
               <Inset tone="default" className="p-3">
@@ -153,25 +134,6 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
                       {r.state === "submitted" ? "افتح خطّتها واعتمدها" : "افتح شعبتها"}
                     </Button>
                     {r.cohortTitle && <span className="text-read text-muted-foreground">{r.cohortTitle}</span>}
-                  </div>
-                )}
-                {oldReady && old?.materials && (
-                  <div className="mt-2 grid gap-1.5 text-read leading-7">
-                    <p className="text-muted-foreground">كتب موادّها في اللوحة القديمة قبل ٢ أكتوبر ٢٠٢٦ — يمكن اعتماد الدورة بها، أو تنتقل إلى شعبتها عند قبولها.</p>
-                    <ol className="list-decimal ps-5">
-                      {old.materials.modules.map((m, i) => (
-                        <li key={i}><b>{m.titleAr}</b>{m.outcomeAr ? ` — ${m.outcomeAr}` : ""}</li>
-                      ))}
-                    </ol>
-                    {old.materials.materialsUrl && (
-                      <p>الموادّ: <a className="text-teal-light-ink underline" href={old.materials.materialsUrl} target="_blank" rel="noreferrer noopener" dir="ltr">{old.materials.materialsUrl}</a></p>
-                    )}
-                    <div>
-                      <Button size="sm" tone="confirm" icon={CheckCircle2} loading={busy === r.courseId}
-                        onClick={() => void approveLegacy(r.courseId)}>
-                        اعتمد هذه الدورة بموادّها
-                      </Button>
-                    </div>
                   </div>
                 )}
               </Inset>

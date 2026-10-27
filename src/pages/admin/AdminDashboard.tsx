@@ -200,13 +200,15 @@ export default function AdminDashboard() {
       {/* «ما ينتظرك» قبل العدّادات: العدّادُ يقول كم، وهذا يقول ما تعمله الآن */}
       <StaffInbox />
 
-      {/* من أين أبدأ؟ — التسلسل التشغيلي الصحيح: محتوى ← نشر ← شعبة ← تسجيلات */}
+      {/* من أين أبدأ؟ — التسلسل التشغيلي الصحيح: محتوى ← اعتماد ← نشر ← شعبة ← تسجيلات.
+          و«اعتمدها» خطوةٌ بنفسها (٢٧ أكتوبر ٢٠٢٦): الدورةُ تولد مسودّةً وتُقدَّم للاعتماد، ولا تُنشر قبله */}
       <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-fine text-muted-foreground">
         <span className="font-black text-foreground">من أين أبدأ؟</span>
         {/* الترقيمُ لاتينيّ كبقيّة أرقام اللوحة — ورقمان مختلفا الرسم في
             البطاقة الواحدة يُقرآن واجهتين مركّبتين لا واجهةً واحدة */}
         {[
           { label: "أضف دورة", to: "/admin/catalog" },
+          { label: "اعتمدها", to: "/admin/catalog?requests=1" },
           { label: "انشرها", to: "/admin/publishing" },
           { label: "أنشئ شعبة وعيّن مدربها", to: "/admin/cohorts" },
           { label: "راجع طلبات التسجيل", to: "/admin/finance" },

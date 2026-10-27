@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { FlaskConical, RefreshCw } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import { apiGet, ApiError } from "@/services/api";
+import { apiGet, permissionMessage } from "@/services/api";
 import MeasurementCoverage from "@/components/MeasurementCoverage";
 import { fmtDateTime } from "@/application/text/format-ar";
 
@@ -46,12 +46,9 @@ export default function DiagnosticQuality() {
       setImpacts(await apiGet<ImpactRun[]>("/api/admin/quality/impact-runs"));
       setFeedback(await apiGet<FeedbackSummary>("/api/admin/quality/feedback"));
     } catch (e) {
-      /* 403 تعني أن الدور الحالي ليس مدير التشخيص/النظام — رسالة مفهومة لا «عطل» */
-      if (e instanceof ApiError && e.status === 403) {
-        setError("هذه اللوحة لدور «مدير التشخيص» أو «مدير النظام» — حسابك لا يملك صلاحية المحاكي. في الديمو: ادخل بحساب superadmin.demo@wajeez.local.");
-      } else {
-        setError(e instanceof ApiError ? e.message : "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev");
-      }
+      /* و٤٠٣ يسمّي الخادمُ فيها الصلاحيّةَ ومن يملكها (`permissionMessage`) — كانت هنا جملةٌ ثابتةٌ تدلّ على حساب
+         الديمو، وأخرى تأمر بتشغيل `npm run api:dev`: كلتاهما للمطوّر لا لمن يفتح اللوحة (٢٧ أكتوبر ٢٠٢٦) */
+      setError(permissionMessage(e, "تعذر تحميل لوحة الجودة"));
     }
   }, []);
 
