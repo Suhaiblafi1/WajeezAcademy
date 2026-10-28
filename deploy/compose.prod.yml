@@ -140,6 +140,11 @@ services:
       # خادمٍ ملفُّ بيئته لم يُحدَّث بعد.
       SITE_ALT_DOMAIN: ${SITE_ALT_DOMAIN:-localhost}
       ACME_EMAIL: ${ACME_EMAIL:?اضبط ACME_EMAIL — تنبيهات انتهاء الشهادة تصلك عليه}
+    # ── بصمةُ `Caddyfile` وسمٌ على الحاوية (٢٨ أكتوبر ٢٠٢٦) ──
+    # يكتبها `deploy.sh` قبل `up -d`: فإن تغيّر الملفُّ تغيّر وصفُ الحاوية فأُعيد إنشاؤها وقرأته، وإلّا بقيت تعمل —
+    # فلا ينطفئ الموقعُ ستَّ ثوانٍ في كلّ نشر. ومن رفع الحاويات بيده بلا البصمة أخذت «unset»، فيعيدها النشرُ التالي.
+    labels:
+      wajeez.caddyfile-sha256: ${CADDYFILE_SHA256:-unset}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - web:/srv/web:ro
