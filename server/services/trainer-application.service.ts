@@ -24,6 +24,8 @@ import { cleanProposals } from '../../src/application/trainer/teachable-proposal
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 import { deleteObject } from './object-store'
 import { PURGEABLE_STATUSES as SHARED_PURGEABLE } from '../../src/application/trainer/purgeable'
+import type { ImpactCohort } from '../../src/application/trainer/purge-impact'
+import { removableOnTrainerDelete } from './trainer-delete-sessions'
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { INVITATION_ACTION } from '../../src/application/trainer/interview-invitation'
 import { nextTrainerApplicationReference, isReferenceCollision, REFERENCE_ATTEMPTS } from './trainer-application-reference'
@@ -1154,6 +1156,34 @@ export class TrainerApplicationService {
      > فصار يصف رمزا لا وجودَ له. ومن قرأه وأراد حارسا رابعا كان يبني على
      > قاعدةٍ نُسخت. فصُحّح (١٩ سبتمبر ٢٠٢٦) مع دخول الحارس الرابع. */
 
+  /* ═══ ما يقع بالحذف على شعبه — يُعرض قبل الحذف (٢٨ أكتوبر ٢٠٢٦) ═══
+     «with a warning that there's a student in this class before you deleted the sessions» (صاحب المنصّة). فلكلّ شعبةٍ
+     قائمةٍ له: من فيها من طلاب، وكم لقاءً قادما يُرفع بالحذف — وأيبقى فيها مدرّبٌ غيرُه فتبقى لقاءاتُها
+     (`CohortService.clearSessionsOfDeletedTrainer`). ولا يكتب شيئا. */
+  async purgeImpact(reference: string): Promise<{ cohorts: ImpactCohort[] }> {
+    const app = await this.prisma.trainerApplication.findUnique({ where: { reference }, select: { profile: { select: { id: true } } } })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    if (!app.profile) return { cohorts: [] }
+    const profileId = app.profile.id
+    const links = await this.prisma.cohortTrainer.findMany({
+      where: { profileId, cohort: { status: { notIn: ['completed', 'cancelled'] } } },
+      select: { cohort: { select: { id: true, title: true } } },
+    })
+    const now = new Date()
+    const cohorts: ImpactCohort[] = []
+    for (const { cohort } of links) {
+      const [learners, upcoming, others] = await Promise.all([
+        this.prisma.enrollment.count({ where: { cohortId: cohort.id, status: { not: 'dropped' } } }),
+        /* بقاعدة الحذف نفسِها — فلا يقول الإنذارُ عددا ويقع غيرُه */
+        this.prisma.cohortSession.count({ where: removableOnTrainerDelete(cohort.id, now) }),
+        this.prisma.cohortTrainer.count({ where: { cohortId: cohort.id, profileId: { not: profileId } } }),
+      ])
+      if (learners === 0) continue
+      cohorts.push({ id: cohort.id, title: cohort.title, learners, upcoming, keepsSessions: others > 0 })
+    }
+    return { cohorts }
+  }
+
   async purge(
     /** فارغٌ أو null = فعلٌ نظاميّ من سكربت صيانة، لا إنسانٌ في اللوحة */
     reference: string, actorId: string | null, reasonAr: string,
@@ -1165,6 +1195,9 @@ export class TrainerApplicationService {
     unremovedFiles: string[]
     deletedAccount: boolean
     keptAccountReason: string | null
+    /** ما رُفع من لقاءات شعبه القادمة — وشعبُه التي رُفعت منها (`clearSessionsOfDeletedTrainer`) */
+    removedSessions: number
+    clearedCohorts: number
   }> {
     const reason = (reasonAr ?? '').trim()
     if (reason.length < 5) {
@@ -1275,6 +1308,15 @@ export class TrainerApplicationService {
       },
     })
 
+    /* ═══ وشعبُه التي فيها طلابٌ تُرفع لقاءاتُها القادمة من كلّ تقويم — قبل أن يُفكّ عنها (٢٨ أكتوبر ٢٠٢٦) ═══
+       قرارُ صاحب المنصّة: «Warn, remove for all» — والإنذارُ قبل الحذف (`purgeImpact`)، والرفعُ هنا: ما دام من مدرّبيها
+       يُرفع من تقويمه أيضا. وشعبةٌ يبقى فيها مدرّبٌ غيرُه تبقى لقاءاتُها. والتفصيلُ في `CohortService`.
+       ويُستورد حين يُنادى — كـ`calendarFollows` في `auth.service.ts` — فلا يحمل هذا الملفُّ خدمةَ الشعب كلَّها */
+    const { CohortService } = await import('./cohort.service')
+    const cleared = app.profile
+      ? await new CohortService(this.prisma).clearSessionsOfDeletedTrainer(actorId || null, app.profile.id)
+      : { cohorts: 0, sessions: 0 }
+
     /* ═══ الملفّاتُ على القرص تُمحى بيدنا — لا يمحوها التتالي ═══
 
        كان هذا السطرُ وحدَه: `prisma.delete`. فيتهاوى الصفُّ وأبناؤه، **وتبقى
@@ -1373,6 +1415,8 @@ export class TrainerApplicationService {
       unremovedFiles,
       deletedAccount,
       keptAccountReason,
+      removedSessions: cleared.sessions,
+      clearedCohorts: cleared.cohorts,
     }
   }
 

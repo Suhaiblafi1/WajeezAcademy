@@ -31,8 +31,9 @@ import {
 } from '../../src/application/trainer/axis-timeline'
 import { LEARNER_PLAN_QUERY } from './learner-gate'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
-import { CLOSED_ACCOUNT, COHORT_CANCELLED_AR, SEATED, SessionInviteService } from './session-invite.service'
+import { CLOSED_ACCOUNT, COHORT_CANCELLED_AR, SEATED, SessionInviteService, TRAINER_DELETED_WHY } from './session-invite.service'
 import { MOVE_WHY_MIN, moveWhy, type MoveWhy } from '../../src/application/learning/session-move'
+import { removableOnTrainerDelete } from './trainer-delete-sessions'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
 import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
 import { publishCohortTrainers } from './trainer-auto-publish'
@@ -1624,6 +1625,79 @@ export class CohortService {
       meta: { cohortId: session.cohortId, title: session.title, startsAt: session.startsAt, announced: wasAnnounced, told },
     })
     return { deleted: true as const, told }
+  }
+
+  /* ═══ مدرّبٌ يُحذف وفي شعبه طلاب — تُرفع لقاءاتُها القادمة من كلّ تقويم (٢٨ أكتوبر ٢٠٢٦) ═══
+
+     قال صاحبُ المنصّة: «if we delete the trainer, then all the sessions should be deleted, but with a warning that
+     there's a student in this class before you deleted the sessions»، واختار «Warn, remove for all»: يُعرض قبل الحذف
+     ما في شعبه من طلابٍ ولقاءات (`TrainerApplicationService.purgeImpact`)، فإن أكّده رُفع كلُّ لقاءٍ قادمٍ فيها من
+     تقاويم الجميع — الطلاب والمدرّب والعنوانين — بسببه (`TRAINER_DELETED_WHY`)، وحُذف اجتماعُه في Zoom وصفُّه. ويبقى
+     الطلابُ مسجَّلين، والشعبةُ تنتظر مدرّبا يجدول لقاءاتها من جديد.
+
+     · ويُنادى قبل أن يُفكّ عن شعبه — فهو ما زال من مدرّبيها، فيُرفع من تقويمه هو أيضا.
+     · وشعبةٌ يبقى فيها مدرّبٌ غيرُه لا تُمسّ لقاءاتُها: يُرفع منها من تقويمه هو وحدَه (`trainerLeft`).
+     · وما يُرفع بقاعدةٍ واحدةٍ مع الإنذار (`trainer-delete-sessions.ts`): القادمُ غيرُ المبدئيّ، لا ما انعقد.
+     · والمنتظِرُ لم يُدعَ إليه أحد — يُحذف بلا رسالة. */
+  async clearSessionsOfDeletedTrainer(actorId: string | null, profileId: string, now = new Date()): Promise<{ cohorts: number; sessions: number }> {
+    const links = await this.prisma.cohortTrainer.findMany({
+      where: { profileId }, select: { cohortId: true, cohort: { select: { title: true } } },
+    })
+    let cohorts = 0
+    let sessions = 0
+    for (const link of links) {
+      const others = await this.prisma.cohortTrainer.count({ where: { cohortId: link.cohortId, profileId: { not: profileId } } })
+      if (others > 0) {
+        await this.inviteSafely('trainer-deleted', () => this.invites.trainerLeft(link.cohortId, profileId, now))
+        continue
+      }
+      const upcoming = await this.prisma.cohortSession.findMany({
+        where: removableOnTrainerDelete(link.cohortId, now),
+        select: { id: true, title: true, startsAt: true, endsAt: true, approvalState: true, zoom: { select: { meetingId: true } } },
+      })
+      let mailed = 0
+      let removed = 0
+      for (const s of upcoming) {
+        /* واجتماعُه يُلغى معه — كحذف المدرّب لقاءه (`trainerDeleteSession`)، وإخفاقُه لا يمنع الحذف */
+        if (s.zoom?.meetingId) {
+          try {
+            const cfg = await getZoomConfig(this.prisma)
+            if (zoomReady(cfg)) await deleteZoomMeeting(cfg, s.zoom.meetingId)
+          } catch (e) {
+            console.error('[zoom] تعذّر إلغاء الاجتماع مع لقائه', s.zoom.meetingId, e)
+          }
+        }
+        if (s.approvalState === 'approved') {
+          mailed += await this.inviteSafely('trainer-deleted', () => this.invites.withdraw({
+            id: s.id, cohortId: link.cohortId, cohortTitle: link.cohort.title, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
+          }, TRAINER_DELETED_WHY, now))
+        }
+        await this.prisma.cohortSession.delete({ where: { id: s.id } })
+        await recordAudit(this.prisma, {
+          actorId, action: 'cohort.session.delete', entityType: 'cohort_session', entityId: s.id,
+          meta: { cohortId: link.cohortId, title: s.title, startsAt: s.startsAt, announced: s.approvalState === 'approved', trainerDeleted: profileId },
+        })
+        removed += 1
+      }
+      if (removed === 0) continue
+      cohorts += 1
+      sessions += removed
+      /* ويُقال لطلابها مرّةً بالجرس — ومن وصلته رسالةُ الرفع لا يصله بريدٌ ثانٍ بالخبر نفسِه («One email») */
+      if (mailed === 0) continue
+      const learners = await this.prisma.enrollment.findMany({
+        where: { cohortId: link.cohortId, status: { not: 'dropped' } }, select: { userId: true, status: true },
+      })
+      for (const l of learners) {
+        await safeNotify(this.prisma, {
+          userId: l.userId, channel: 'in_app', audience: 'learner', templateKey: 'cohort.schedule_changed',
+          title: `رفعت لقاءات «${link.cohort.title}» القادمة`,
+          body: 'رحل مدرّب الشعبة، فرفعت لقاءاتها القادمة من تقويمك. ويصلك جدولها الجديد حين يسند إليها مدرّب.',
+          data: { cohortId: link.cohortId },
+          ...(SEATED.includes(l.status) ? { skipEmail: true } : {}),
+        })
+      }
+    }
+    return { cohorts, sessions }
   }
 
   /* ═══ توليدُ الجلسات من الجدول الأسبوعيّ ═══
