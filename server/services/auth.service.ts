@@ -513,6 +513,20 @@ export class AuthService {
       this.prisma.user.update({ where: { id: userId }, data: { status: 'suspended', suspendedAt: new Date() } }),
       this.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ])
+    await this.calendarFollows(userId)
+  }
+
+  /* ═══ وتقويمُه يتبع حالَ حسابه (٢٨ أكتوبر ٢٠٢٦) ═══
+     الإيقافُ والأرشفةُ يرفعان لقاءاتِه من تقويمه ويُلغيان رابطَه في Zoom، ورفعُهما يعيدهما — والعلّةُ في
+     `AccountCalendarService`. وبعد الحال لا قبلها، ولا يُسقط إخفاقُه حالا وقعت: يُكتب في السجلّ، والعاملُ يلحقه.
+     والاستيرادُ وقتَ النداء: تلك الخدمةُ تستورد ما يستورد هذه (`AuthError`) — فحلقةٌ وقتَ التحميل تُفرغ أحدَهما. */
+  private async calendarFollows(userId: string): Promise<void> {
+    try {
+      const { AccountCalendarService } = await import('./account-calendar.service')
+      await new AccountCalendarService(this.prisma).sync(userId)
+    } catch (e) {
+      console.error(`[invite] تعذّر أن يتبع التقويمُ حالَ الحساب (${userId})`, e)
+    }
   }
 
   /* ── الأرشفة: مغادرةٌ لا محوٌ ───────────────────────────────────────
@@ -538,6 +552,7 @@ export class AuthService {
         data: { usedAt: new Date() },
       }),
     ])
+    await this.calendarFollows(userId)
     void actorId
   }
 
@@ -546,6 +561,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } })
     if (user?.status !== 'archived') throw new AuthError('not_archived', 'هذا الحساب ليس مؤرشفا', 409)
     await this.prisma.user.update({ where: { id: userId }, data: { status: 'active', suspendedAt: null } })
+    await this.calendarFollows(userId)
   }
 
   /* والإيقافُ بابٌ يُفتح: «خانةُ الحسابات الموقوفة» بلا رفعِ إيقافٍ سجنٌ
@@ -555,6 +571,7 @@ export class AuthService {
       where: { id: userId },
       data: { status: 'active', suspendedAt: null },
     })
+    await this.calendarFollows(userId)
   }
 
   /* تُبطَل جلساتُه دون إيقاف حسابه: الجلسة تحمل الصلاحيات وقت حلّها، فمن

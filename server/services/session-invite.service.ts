@@ -26,6 +26,8 @@
    · ويدخلها مدرّبٌ — يُسنَد إليها أو يحلّ محلّ من رحل — رسالةٌ واحدةٌ بما بقي
      (`trainerJoined`)، ويخرج منها — تُرفع من تقويمه وحدَه (`trainerLeft`).
    · ويُوقَف تدريبُه — تُرفع لقاءاتُ شعبه من تقويمه (`trainerSuspended`)، ويصله جدولُها حين يعود.
+   · ويُوقَف حسابٌ أو يُؤرشَف — متعلّما كان أو مدرّبا — تُرفع لقاءاتُه كلُّها من تقويمه، ولا يُدعى بعدها إلى شيء
+     (`CLOSED_ACCOUNT`)، ويُلغى رابطُه في Zoom، ويعود ذلك كلُّه حين يعود (`AccountCalendarService`).
 
    ولا يُدعى إلى ما مضى، ولا إلى المبدئيّ — مثالُ الإدارة يُرفع حين يضع المدرّبُ
    جدولَه، فدعوتُه موعدٌ في تقويم إنسانٍ يُمحى بعد أيّام.
@@ -63,12 +65,23 @@ export const COHORT_POSTPONED_AR = 'تأجلت الشعبة إلى موسم قا
 export const TRAINER_LEFT_AR = 'انتقلت الشعبة إلى مدرب آخر، فلن تقدم هذا اللقاء.'
 /** وحين يُوقَف تدريبُه — وما بقي له يصله حين يعود (`trainerSuspended`) */
 export const TRAINER_SUSPENDED_AR = 'أوقف تدريبك. وتصلك مواعيد شعبك حين يرفع الإيقاف.'
+/** وحين يُوقَف حسابُه أو يُؤرشَف — وما بقي له يصله حين يعود (`AccountCalendarService`) */
+export const ACCOUNT_SUSPENDED_AR = 'أوقف حسابك. وتصلك مواعيد شعبك حين يرفع الإيقاف.'
+export const ACCOUNT_ARCHIVED_AR = 'أرشف حسابك. وتصلك مواعيد شعبك إن أعيد تنشيطه.'
 
 /** سببُ الرفع — واحدٌ للجميع، أو للمدرّب غيرُ ما للمتعلّم: «نقله مدرّبك» لا تُقال للمدرّب */
 export type WithdrawWhy = string | { learnerAr: string; trainerAr: string }
 
 /** ما يُدعى إليه المسجَّل: مقعدٌ قائم — لا منتظرٌ في القائمة ولا من ترك */
 export const SEATED = ['enrolled', 'completed']
+
+/** حسابٌ مغلق: لا يُدعى صاحبُه إلى شيء، ولا رابطَ له في Zoom (٢٨ أكتوبر ٢٠٢٦، `AccountCalendarService`) */
+export const CLOSED_ACCOUNT = ['suspended', 'archived']
+
+/** أيُراسَل؟ — العنوانُ المعمّى عند المحو (`archived+…@wajeez.invalid`، `account-reset.service.ts`) لا يصل أحدا */
+export function mailable(email: string | null | undefined): email is string {
+  return Boolean(email) && !/\.invalid$/i.test(email!)
+}
 
 /** لقاءٌ كما كان ساعةَ دُعي إليه — يُحفظ قبل حذفه لتُكتب رسالةُ رفعه */
 export interface InvitedSession {
@@ -216,10 +229,10 @@ export class SessionInviteService {
       select: {
         id: true, status: true, cohortId: true,
         cohort: { select: { title: true } },
-        user: { select: { email: true, displayName: true } },
+        user: { select: { email: true, displayName: true, status: true } },
       },
     })
-    if (!seat || !SEATED.includes(seat.status) || !seat.user?.email) return 0
+    if (!seat || !SEATED.includes(seat.status) || !seat.user?.email || CLOSED_ACCOUNT.includes(seat.user.status)) return 0
     const before = await this.voidBefore(seat.cohortId)
     const sessions = (await this.upcoming(seat.cohortId, now))
       .filter((s) => !before || s.startsAt.getTime() >= before.getTime())
@@ -290,11 +303,11 @@ export class SessionInviteService {
       select: {
         id: true,
         cohort: { select: { title: true } },
-        profile: { select: { suspendedAt: true, user: { select: { email: true, displayName: true } } } },
+        profile: { select: { suspendedAt: true, user: { select: { email: true, displayName: true, status: true } } } },
       },
     })
     const user = link?.profile.user
-    if (!link || link.profile.suspendedAt || !user?.email) return 0
+    if (!link || link.profile.suspendedAt || !user?.email || CLOSED_ACCOUNT.includes(user.status)) return 0
     const before = await this.voidBefore(cohortId)
     const sessions = (await this.upcoming(cohortId, now))
       .filter((s) => !before || s.startsAt.getTime() >= before.getTime())
@@ -320,10 +333,12 @@ export class SessionInviteService {
   /** ومدرّبٌ خرج من الشعبة — تُرفع لقاءاتُها المقبلة من تقويمه وحدَه */
   async trainerLeft(cohortId: string, profileId: string, now = new Date()): Promise<number> {
     const profile = await this.prisma.trainerProfile.findUnique({
-      where: { id: profileId }, select: { suspendedAt: true, user: { select: { email: true, displayName: true } } },
+      where: { id: profileId },
+      select: { suspendedAt: true, user: { select: { email: true, displayName: true, calendarClosedAt: true } } },
     })
-    /* والموقوفُ رُفعت لقاءاتُ شعبه من تقويمه حين أُوقف (`trainerSuspended`) — فلا تُرفع ثانيةً */
-    if (!profile?.user?.email || profile.suspendedAt) return 0
+    /* والموقوفُ رُفعت لقاءاتُ شعبه من تقويمه حين أُوقف (`trainerSuspended`) — فلا تُرفع ثانيةً. ومن أُغلق حسابُه
+       كذلك (`AccountCalendarService`) */
+    if (!profile?.user?.email || profile.suspendedAt || profile.user.calendarClosedAt) return 0
     return this.release({ email: profile.user.email, name: profile.user.displayName }, cohortId, TRAINER_LEFT_AR, now, 'trainer')
   }
 
@@ -338,27 +353,38 @@ export class SessionInviteService {
      منه شيءٌ مرّتين، ويرسل العاملُ جدولَها إن عاد (`sweepTrainerCalendars`). وما رُفع من تقاويم الجميع قبل إيقافه لا
      يُرفع ثانيةً: وصله رفعُه يومئذ. وما رُفع بعده يُرفع: لم يصله. يعود بعدد ما كُتب */
   async trainerSuspended(profileId: string, now = new Date()): Promise<number> {
+    const profile = await this.prisma.trainerProfile.findUnique({ where: { id: profileId }, select: { suspendedAt: true } })
+    if (!profile?.suspendedAt) return 0
+    return this.clearTrainerCalendar(profileId, profile.suspendedAt, TRAINER_SUSPENDED_AR, now)
+  }
+
+  /** ويُغلَق حسابُه — الرفعُ نفسُه بسبب الإغلاق. وما رُفع من تقاويم الجميع قبل إغلاقه وصله (`AccountCalendarService`) */
+  async trainerAccountClosed(profileId: string, closedAt: Date, whyAr: string, now = new Date()): Promise<number> {
+    return this.clearTrainerCalendar(profileId, closedAt, whyAr, now)
+  }
+
+  /** يرفع من تقويمه وحدَه ما بقي من لقاءات كلِّ شعبةٍ وصله جدولُها — إلّا ما رُفع من تقاويم الجميع قبل `since` —
+      ويمحو `calendarSentAt` عن إسنادها. يعود بعدد ما كُتب */
+  private async clearTrainerCalendar(profileId: string, since: Date, whyAr: string, now: Date): Promise<number> {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id: profileId },
       select: {
-        suspendedAt: true,
         user: { select: { email: true, displayName: true } },
         cohortTrainers: { where: { calendarSentAt: { not: null } }, select: { id: true, cohortId: true } },
       },
     })
-    if (!profile?.suspendedAt) return 0
-    const suspendedAt = profile.suspendedAt.getTime()
-    const to = profile.user?.email ? { email: profile.user.email, name: profile.user.displayName } : null
+    if (!profile) return 0
+    const to = profile.user && mailable(profile.user.email) ? { email: profile.user.email, name: profile.user.displayName } : null
     const pageUrl = `${publicSiteUrl()}/trainer`
     let queued = 0
     for (const link of profile.cohortTrainers) {
       if (to) {
         for (const s of await this.upcoming(link.cohortId, now)) {
-          if (s.calendarWithdrawnAt && s.calendarWithdrawnAt.getTime() < suspendedAt) continue
+          if (s.calendarWithdrawnAt && s.calendarWithdrawnAt.getTime() < since.getTime()) continue
           const snap: InvitedSession = {
             id: s.id, cohortId: link.cohortId, cohortTitle: s.cohort.title, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
           }
-          await this.enqueueInvite(snap, 'cancel', to, null, pageUrl, TRAINER_SUSPENDED_AR, now, 'trainer')
+          await this.enqueueInvite(snap, 'cancel', to, null, pageUrl, whyAr, now, 'trainer')
           queued += 1
         }
       }
@@ -382,7 +408,7 @@ export class SessionInviteService {
     for (const profileId of new Set(held.map((h) => h.profileId))) withdrawn += await this.trainerSuspended(profileId, now)
 
     const links = await this.prisma.cohortTrainer.findMany({
-      where: { calendarSentAt: null, profile: { suspendedAt: null, user: { isNot: null } } },
+      where: { calendarSentAt: null, profile: { suspendedAt: null, user: { is: { status: { notIn: CLOSED_ACCOUNT } } } } },
       select: { cohortId: true, profileId: true },
       orderBy: { createdAt: 'asc' },
       take: 200,
@@ -397,10 +423,10 @@ export class SessionInviteService {
     return `${publicSiteUrl()}/trainer/cohort/${cohortId}`
   }
 
-  /** مدرّبو الشعبة — من لم يُوقَف، ببريد حسابه */
+  /** مدرّبو الشعبة — من لم يُوقَف تدريبُه ولا حسابُه، ببريد حسابه */
   private async trainersOf(cohortId: string): Promise<{ email: string; name: string | null }[]> {
     const rows = await this.prisma.cohortTrainer.findMany({
-      where: { cohortId, profile: { suspendedAt: null } },
+      where: { cohortId, profile: { suspendedAt: null, user: { is: { status: { notIn: CLOSED_ACCOUNT } } } } },
       orderBy: { createdAt: 'asc' },
       select: { profile: { select: { user: { select: { email: true, displayName: true } } } } },
     })
@@ -452,7 +478,7 @@ export class SessionInviteService {
     }
 
     const seats = await this.prisma.enrollment.findMany({
-      where: { cohortId: snap.cohortId, status: { in: SEATED } },
+      where: { cohortId: snap.cohortId, status: { in: SEATED }, user: { status: { notIn: CLOSED_ACCOUNT } } },
       select: { id: true, user: { select: { email: true, displayName: true } } },
     })
     const links = await this.prisma.sessionJoinLink.findMany({

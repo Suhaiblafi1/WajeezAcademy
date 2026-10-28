@@ -194,8 +194,10 @@ export class EnrollmentService {
      أخرى يدخلان بلا رابطٍ خاصّ، ويُقرآن غائبَين وهما حاضران.
 
      والسقوطُ يُبتلع — مقعدٌ يسقط لأنّ Zoom أو البريدَ لم يردّ عطبٌ أكبرُ من
-     غياب الرابط أو الرسالة، والسببُ مكتوبٌ في `syncState` وفي السجلّ. */
-  private async seatTaken(enrollmentId: string, cohortId: string) {
+     غياب الرابط أو الرسالة، والسببُ مكتوبٌ في `syncState` وفي السجلّ.
+
+     ومن عاد حسابُه بعد أن أُغلق يُعاد له رابطُه وجدولُه بها (`AccountCalendarService`). */
+  async seatTaken(enrollmentId: string, cohortId: string) {
     const upcoming = await this.prisma.cohortSession.findMany({
       where: { ...LEARNER_SESSION_WHERE, cohortId, startsAt: { gte: new Date() }, zoom: { provider: 'zoom_api' } },
       select: { id: true },
@@ -222,8 +224,11 @@ export class EnrollmentService {
         if (r.failed > 0) console.error(`[zoom] بقي ${r.failed} من تسجيلات من ترك قائما (${enrollmentId}): ${r.reason}`)
       })
       .catch((e: unknown) => { console.error(`[zoom] تعذّر إلغاء تسجيل من ترك (${enrollmentId})`, e) })
-    const who = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, displayName: true } })
-    if (!who?.email) return
+    const who = await this.prisma.user.findUnique({
+      where: { id: userId }, select: { email: true, displayName: true, calendarClosedAt: true },
+    })
+    /* ومن أُغلق حسابُه رُفعت لقاءاتُ شعبه من تقويمه يومئذ (`AccountCalendarService`) — فلا تُرفع ثانيةً */
+    if (!who?.email || who.calendarClosedAt) return
     await this.invites.release({ email: who.email, name: who.displayName }, cohortId, whyAr).catch((e: unknown) => {
       console.error(`[invite] تعذّر رفع لقاءات الشعبة من تقويم من تركها (${cohortId})`, e)
     })
