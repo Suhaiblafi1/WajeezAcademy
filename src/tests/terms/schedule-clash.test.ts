@@ -135,6 +135,21 @@ describe('الحلّ: أقلّ ما يمكن من تغيير', () => {
     expect(p.rows.filter((r) => r.action === 'move').map((r) => r.cohortId)).toEqual(['9'])
   })
 
+  it('⚠️ وما اختير فلم يجد موعدا يبقى — وتنتقل التي تتعارض معه بدله', () => {
+    /* «لا يوجد إيميلات سوى واحد.. أين الباقي؟» (٢٨ أكتوبر ٢٠٢٦): كانت الأكثرُ تعارضا تعلق وتعلق معها تعارضاتُها كلُّها */
+    const cohorts = [
+      cohort('1', 'A', weekly('2026-12-06', '19:00')),
+      cohort('2', 'B', weekly('2026-12-07', '19:00')),
+      cohort('3', 'C', weekly('2026-12-08', '19:00')),
+      cohort('9', 'D', [...weekly('2026-12-13', '19:00', 1), ...weekly('2026-12-21', '19:00', 1), ...weekly('2026-12-29', '19:00', 1)]),
+    ]
+    const ok = fakeBuild(cohorts)
+    const build: BuildSchedule<WeeklySlot> = (id, slot, why) => (id === '9' ? { ok: false, reasonAr: 'لا يصلح' } : ok(id, slot, why))
+    const rows = planClashFree({ cohorts, courses, build }).rows
+    expect(rows.filter((r) => r.action === 'move').map((r) => r.cohortId)).toEqual(['1', '2', '3'])
+    expect(rows.find((r) => r.cohortId === '9')!.action).toBe('keep')
+  })
+
   it('والثابت لا ينتقل — يقال سببه، وينتقل غيره', () => {
     const cohorts = [
       cohort('1', 'A', weekly('2026-12-06', '19:00'), { fixedAr: 'ثبتت الإدارة موعدها' }),

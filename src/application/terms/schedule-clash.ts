@@ -312,80 +312,98 @@ export function planClashFree<T>(input: {
 }): ClashPlan<T> {
   const { cohorts, courses, build } = input
   const before = findClashes(cohorts, courses)
-  const pinned = (c: ClashCohort) => c.fixedAr !== null || Boolean(c.proposed)
-  /* من ينتقل يُحسب أوّلا على الشبكة كما ستكون — والشعبةُ التي عليها اقتراحٌ قائمٌ توضع على ما يقترحه */
-  const effective = cohorts.map((c) => (c.proposed ? { ...c, sessions: c.proposed } : c))
-  const movers = chooseMovers(effective, findClashes(effective, courses), pinned)
-  const moving = new Set(movers)
-  /* فيوضع الباقون على مواعيدهم أوّلا — الثابتُ قبل غيره — ثمّ ينتقل من اختير حولهم بترتيب اختياره */
-  const byStart = (x: ClashCohort, y: ClashCohort) =>
-    (x.sessions[0]?.startsAt ?? 0) - (y.sessions[0]?.startsAt ?? 0) || x.cohortId.localeCompare(y.cohortId)
-  const stays = cohorts.filter((c) => !moving.has(c.cohortId)).sort((x, y) => Number(pinned(y)) - Number(pinned(x)) || byStart(x, y))
-  const order = [...stays, ...movers.map((id) => cohorts.find((c) => c.cohortId === id)!)]
-
-  const placed = new Map<string, readonly ClashInterval[]>()
-  const byId = new Map(cohorts.map((c) => [c.cohortId, c]))
-  /** مع من يتعارض هذا الوضعُ ممّا وُضع قبله */
-  const clashesOf = (c: ClashCohort, sessions: readonly ClashInterval[]) => {
-    const out: { cohortId: string; whyAr: string }[] = []
-    for (const [id, other] of placed) {
-      const why = cohortLinkAr(c, byId.get(id)!, courses)
-      if (why && overlapOf(sessions, other)) out.push({ cohortId: id, whyAr: why })
-    }
-    return out
+  /* ═══ وما اختير فلم يجد موعدا يبقى، وينتقل غيرُه بدلَه (٢٨ أكتوبر ٢٠٢٦) ═══
+     سؤالُ صاحب المنصّة: «لا يوجد إيميلاتٌ سوى واحد.. أين الباقي؟» — ثلاثون تعارضا وشعبةٌ واحدةٌ تنتقل. كانت
+     الشعبةُ الأكثرُ تعارضا تُختار للنقل، فإن لم يوجد لها موعدٌ علقت وعلقت معها تعارضاتُها كلُّها، ولا يُجرَّب
+     نقلُ من يتعارض معها. فتُثبَّت هي بسببها ويُعاد الحساب — فينتقل من حولها — حتّى لا تعلق شعبةٌ اختيرت */
+  const stuckAs = new Map<string, string>()
+  for (;;) {
+    const { rows, moving } = solve(stuckAs)
+    const fresh = rows.filter((r) => r.action === 'stuck' && moving.has(r.cohortId))
+    if (fresh.length === 0) return { rows, before }
+    for (const r of fresh) if (r.action === 'stuck') stuckAs.set(r.cohortId, r.whyAr)
   }
-  const titleOf = (id: string) => courses.get(byId.get(id)?.courseId ?? '')?.titleAr ?? byId.get(id)?.title ?? ''
 
-  const rows: ClashRow<T>[] = []
-  for (const c of order) {
-    const now = c.proposed ?? c.sessions
-    const main = mainSlot(now)
-    const slot = main && twiceWeekly(now) ? { ...main, days: weekdaysOf(now) } : main
-    const clashes = clashesOf(c, now)
-    if (clashes.length === 0 || pinned(c)) {
-      placed.set(c.cohortId, now)
-      rows.push(clashes.length === 0
-        ? { cohortId: c.cohortId, action: 'keep', slot }
-        : { cohortId: c.cohortId, action: 'stuck', slot, clashes, whyAr: c.fixedAr ?? 'عليها اقتراح موعد لم يقرر فيه مدرّبها' })
-      continue
+  function solve(stuckAs: ReadonlyMap<string, string>): { rows: ClashRow<T>[]; moving: ReadonlySet<string> } {
+    const pinned = (c: ClashCohort) => c.fixedAr !== null || Boolean(c.proposed) || stuckAs.has(c.cohortId)
+    /* من ينتقل يُحسب أوّلا على الشبكة كما ستكون — والشعبةُ التي عليها اقتراحٌ قائمٌ توضع على ما يقترحه */
+    const effective = cohorts.map((c) => (c.proposed ? { ...c, sessions: c.proposed } : c))
+    const movers = chooseMovers(effective, findClashes(effective, courses), pinned)
+    const moving = new Set(movers)
+    /* فيوضع الباقون على مواعيدهم أوّلا — الثابتُ قبل غيره — ثمّ ينتقل من اختير حولهم بترتيب اختياره */
+    const byStart = (x: ClashCohort, y: ClashCohort) =>
+      (x.sessions[0]?.startsAt ?? 0) - (y.sessions[0]?.startsAt ?? 0) || x.cohortId.localeCompare(y.cohortId)
+    /* والثابتُ بسببه قبل ما ثُبّت لأنّه لم يجد موعدا، وهذا بعكس ترتيب علوقه — فيبقى التعارضُ مكتوبا على أوّل من اختير للنقل */
+    const tried = [...stuckAs.keys()]
+    const rank = (c: ClashCohort) => (c.fixedAr !== null || c.proposed ? 0 : stuckAs.has(c.cohortId) ? 1 : 2)
+    const stays = cohorts.filter((c) => !moving.has(c.cohortId)).sort((x, y) => rank(x) - rank(y)
+      || tried.indexOf(y.cohortId) - tried.indexOf(x.cohortId) || byStart(x, y))
+    const order = [...stays, ...movers.map((id) => cohorts.find((c) => c.cohortId === id)!)]
+
+    const placed = new Map<string, readonly ClashInterval[]>()
+    const byId = new Map(cohorts.map((c) => [c.cohortId, c]))
+    /** مع من يتعارض هذا الوضعُ ممّا وُضع قبله */
+    const clashesOf = (c: ClashCohort, sessions: readonly ClashInterval[]) => {
+      const out: { cohortId: string; whyAr: string }[] = []
+      for (const [id, other] of placed) {
+        const why = cohortLinkAr(c, byId.get(id)!, courses)
+        if (why && overlapOf(sessions, other)) out.push({ cohortId: id, whyAr: why })
+      }
+      return out
     }
-    /* وما يلتقي أكثرَ من مرّةٍ في الأسبوع لا يُضغط إلى يومٍ واحد: أيّامُه نفسُها بساعةٍ أخرى (`hourSlots`) */
-    const longest = Math.max(...now.map((s) => Math.round((s.endsAt - s.startsAt) / 60_000)))
-    const why = clashWhyAr(clashes.map((x) => ({ courseTitleAr: titleOf(x.cohortId), whyAr: x.whyAr })))
-    let chosen: { to: WeeklySlot; sessions: readonly ClashInterval[]; payload: T } | null = null
-    let lastFail: string | null = null
-    /* وإن صلح موعدٌ وتعارض لم يُقل سببُ آخرِ ما لم يصلح — فذاك أبعدُ المواعيد لا سببُ العلوق */
-    let built = false
-    const candidates = !slot ? []
-      : slot.days ? hourSlots(slot, slot.days, longest, c.rejected ?? [])
-      : candidateSlots(slot, longest, c.rejected ?? [])
-    for (const to of candidates) {
-      if (slot && to.clock === slot.clock && (slot.days || to.weekday === slot.weekday)) continue
-      const r = build(c.cohortId, to, why)
-      if (!r.ok) { lastFail = r.reasonAr; continue }
-      built = true
-      if (clashesOf(c, r.sessions).length > 0) continue
-      chosen = { to, sessions: r.sessions, payload: r.payload }
-      break
+    const titleOf = (id: string) => courses.get(byId.get(id)?.courseId ?? '')?.titleAr ?? byId.get(id)?.title ?? ''
+
+    const rows: ClashRow<T>[] = []
+    for (const c of order) {
+      const now = c.proposed ?? c.sessions
+      const main = mainSlot(now)
+      const slot = main && twiceWeekly(now) ? { ...main, days: weekdaysOf(now) } : main
+      const clashes = clashesOf(c, now)
+      if (clashes.length === 0 || pinned(c)) {
+        placed.set(c.cohortId, now)
+        rows.push(clashes.length === 0
+          ? { cohortId: c.cohortId, action: 'keep', slot }
+          : { cohortId: c.cohortId, action: 'stuck', slot, clashes, whyAr: c.fixedAr ?? stuckAs.get(c.cohortId) ?? 'عليها اقتراح موعد لم يقرر فيه مدرّبها' })
+        continue
+      }
+      /* وما يلتقي أكثرَ من مرّةٍ في الأسبوع لا يُضغط إلى يومٍ واحد: أيّامُه نفسُها بساعةٍ أخرى (`hourSlots`) */
+      const longest = Math.max(...now.map((s) => Math.round((s.endsAt - s.startsAt) / 60_000)))
+      const why = clashWhyAr(clashes.map((x) => ({ courseTitleAr: titleOf(x.cohortId), whyAr: x.whyAr })))
+      let chosen: { to: WeeklySlot; sessions: readonly ClashInterval[]; payload: T } | null = null
+      let lastFail: string | null = null
+      /* وإن صلح موعدٌ وتعارض لم يُقل سببُ آخرِ ما لم يصلح — فذاك أبعدُ المواعيد لا سببُ العلوق */
+      let built = false
+      const candidates = !slot ? []
+        : slot.days ? hourSlots(slot, slot.days, longest, c.rejected ?? [])
+        : candidateSlots(slot, longest, c.rejected ?? [])
+      for (const to of candidates) {
+        if (slot && to.clock === slot.clock && (slot.days || to.weekday === slot.weekday)) continue
+        const r = build(c.cohortId, to, why)
+        if (!r.ok) { lastFail = r.reasonAr; continue }
+        built = true
+        if (clashesOf(c, r.sessions).length > 0) continue
+        chosen = { to, sessions: r.sessions, payload: r.payload }
+        break
+      }
+      if (!chosen) {
+        placed.set(c.cohortId, now)
+        rows.push({
+          cohortId: c.cohortId, action: 'stuck', slot, clashes,
+          whyAr: lastFail && !built ? `لا موعد بلا تعارض يصلح لها — ${lastFail}`
+            : slot?.days && candidates.length === 0 && (c.rejected ?? []).some((r) => r.scope === 'day') ? 'رفض مدربها أيامها، والنقل هنا يغير الساعة وحدها'
+            : slot?.days ? 'لا ساعة بلا تعارض في أيامها نفسها'
+            : 'لا موعد بلا تعارض يصلح لها',
+        })
+        continue
+      }
+      placed.set(c.cohortId, chosen.sessions)
+      rows.push({ cohortId: c.cohortId, action: 'move', from: slot, to: chosen.to, clashes, payload: chosen.payload })
     }
-    if (!chosen) {
-      placed.set(c.cohortId, now)
-      rows.push({
-        cohortId: c.cohortId, action: 'stuck', slot, clashes,
-        whyAr: lastFail && !built ? `لا موعد بلا تعارض يصلح لها — ${lastFail}`
-          : slot?.days && candidates.length === 0 && (c.rejected ?? []).some((r) => r.scope === 'day') ? 'رفض مدربها أيامها، والنقل هنا يغير الساعة وحدها'
-          : slot?.days ? 'لا ساعة بلا تعارض في أيامها نفسها'
-          : 'لا موعد بلا تعارض يصلح لها',
-      })
-      continue
-    }
-    placed.set(c.cohortId, chosen.sessions)
-    rows.push({ cohortId: c.cohortId, action: 'move', from: slot, to: chosen.to, clashes, payload: chosen.payload })
+    /* بترتيب الشعب كما جاءت — لا بترتيب الحلّ */
+    const index = new Map(cohorts.map((c, i) => [c.cohortId, i]))
+    rows.sort((x, y) => index.get(x.cohortId)! - index.get(y.cohortId)!)
+    return { rows, moving }
   }
-  /* بترتيب الشعب كما جاءت — لا بترتيب الحلّ */
-  const index = new Map(cohorts.map((c, i) => [c.cohortId, i]))
-  rows.sort((x, y) => index.get(x.cohortId)! - index.get(y.cohortId)!)
-  return { rows, before }
 }
 
 /** «الثلاثاء 19:00» */
