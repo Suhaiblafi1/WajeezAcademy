@@ -319,7 +319,7 @@ describe('④ب وجدولٌ سقط بعد أن نُقلت لقاءاتُه — 
       .toBe(from.toISOString())
     const updates = (await mails(s.id, 'session.invite.update')).filter((m) => m.to === c.seated.email)
     expect(updates, 'لم يُقل له إنّه عاد — بقي في تقويمه بموعدٍ لم يعد').toHaveLength(2)
-    const back = updates.find((m) => m.text.includes(`صار: ${whenAr(from)}`))
+    const back = updates.find((m) => (m.text ?? '').includes(`صار: ${whenAr(from)}`))
     expect(back, 'لا رسالةَ تعيده إلى موعده').toBeDefined()
     expect(back!.text).toContain(`كان: ${whenAr(to)}`)
     expect(back!.text).toContain('تعذّر نقل جدول الشعبة كاملا، فعاد هذا اللقاء إلى موعده.')
