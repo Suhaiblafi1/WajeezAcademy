@@ -1427,6 +1427,20 @@ export async function runVoidedSessionInvites(prisma: PrismaClient, now = new Da
   }
 }
 
+/* ═══ اجتماعاتُ Zoom للشعب الملغاة تُحذف (٢٨ أكتوبر ٢٠٢٦) ═══
+   العلّةُ في `CohortService.dropCancelledMeetings`. يلحق ما أُلغي قبل الإصلاح، وما أبى فيه Zoom. */
+export async function runCancelledCohortMeetings(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { CohortService } = await import('../services/cohort.service')
+  const { deleted, failed } = await new CohortService(prisma).dropCancelledMeetings(null, { now })
+  return {
+    job: 'cancelled_cohort_meetings',
+    summaryAr: deleted + failed === 0 ? 'لا اجتماع لشعبة ملغاة'
+      : `حذف ${deleted} اجتماعا لشعب ملغاة من Zoom${failed ? ` · وتعذّر ${failed}` : ''}`,
+    done: deleted, failed, ms: Date.now() - started,
+  }
+}
+
 /* ═══ تقاويمُ المدرّبين (٢٧ أكتوبر ٢٠٢٦) ═══
    لم تكن تصل المدرّبَ دعوةٌ قطّ. فمن أُسند إلى شعبةٍ قبل هذا اليوم يصله جدولُ ما بقي من لقاءاتها مرّةً،
    ومن فاته جدولُه بخطأٍ ابتُلع، ومن رُفع إيقافُه. وموقوفٌ بقي جدولُ شعبه في تقويمه تُرفع منه لقاءاتُها.
@@ -1761,6 +1775,8 @@ export const JOBS = [
   { key: 'cohort_postpone_expire', everyMs: 15 * 60_000, run: runCohortPostponeExpire, titleAr: 'إيقاف الشعب التي لم يقبل مدربها التأجيل في موعده' },
   /* كلَّ ربع ساعة: لقاءٌ ملغى في تقويم إنسانٍ قد يحضره — والرفعُ لا يتكرّر */
   { key: 'voided_session_invites', everyMs: 15 * 60_000, run: runVoidedSessionInvites, titleAr: 'رفع لقاءات الشعب الملغاة والمؤجلة من التقاويم' },
+  /* كلَّ ساعة: اجتماعٌ لشعبةٍ ملغاة لا يُعقد، وما أبى فيه Zoom يُعاد في الدورة التالية */
+  { key: 'cancelled_cohort_meetings', everyMs: HOUR, run: runCancelledCohortMeetings, titleAr: 'حذف اجتماعات Zoom للشعب الملغاة' },
   /* كلَّ ربع ساعة: الجدولُ يصل مرّةً لكلّ إسناد، فالدورةُ بعد الأولى لا تجد شيئا */
   { key: 'trainer_calendars', everyMs: 15 * 60_000, run: runTrainerCalendars, titleAr: 'جدول لقاءات الشعبة في تقويم مدربها' },
   { key: 'account_calendars', everyMs: 15 * 60_000, run: runAccountCalendars, titleAr: 'تقويم من أوقف حسابه أو أرشف' },

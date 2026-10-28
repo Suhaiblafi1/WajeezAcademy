@@ -708,6 +708,9 @@ export class CohortService {
          كان الجرسُ يقول «لن تعقد لقاءاتها» ودعواتُها باقيةٌ في تقويم كلِّ مسجَّلٍ وفي تقويم الإدارة بروابطَ
          تعمل. والعلّةُ في `SessionInviteService.withdrawCohort` */
       await this.inviteSafely('cancel-cohort', () => this.invites.withdrawCohort(cohortId, COHORT_CANCELLED_AR))
+      /* واجتماعاتُها في Zoom تُحذف — والعلّةُ في `dropCancelledMeetings` */
+      await this.dropCancelledMeetings(actorId, { cohortId, now: opts.now })
+        .catch((e: unknown) => console.error('[zoom] تعذّر حذف اجتماعات الشعبة الملغاة', cohortId, e))
     }
 
     /* اكتمال الشعبة يولّد كشف مستحقات مدربها تلقائياً إن كانت له قاعدة أتعاب سارية.
@@ -773,8 +776,79 @@ export class CohortService {
       })
     }
     /* وما رُفع من التقاويم بإلغائها يعود إليها بالمعرّف نفسِه */
+    /* واجتماعاتُها تُنشأ من جديد قبل أن تعود دعواتُها — فتحمل الدعوةُ رابطَها (`restoreMeetings`) */
+    const meetings = await this.restoreMeetings(actorId, cohortId, now)
+      .catch((e: unknown) => { console.error('[zoom] تعذّر إنشاء اجتماعات الشعبة المعادة', cohortId, e); return { created: 0, failed: 0 } })
     await this.inviteSafely('reopen-cohort', () => this.invites.reannounceCohort(cohortId, now))
-    return { status: to, trainersTold: trainers.length, learnersTold: learners.length }
+    return { status: to, trainersTold: trainers.length, learnersTold: learners.length, meetingsCreated: meetings.created }
+  }
+
+  /* ═══ اجتماعاتُ الشعبة الملغاة تُحذف من Zoom — قرارُ صاحب المنصّة (٢٨ أكتوبر ٢٠٢٦): «yes delete them» ═══
+
+     كان الإلغاءُ يرفع اللقاءاتِ من التقاويم ويُبقي اجتماعاتِها في حساب الأكاديميّة: روابطُها في بريد من دُعي
+     تعمل، وتملأ جدولَ المضيف بمواعيدَ لا تُعقد. فيُحذف عند Zoom كلُّ اجتماعٍ لم يُعقد بعد لما بقي من لقاءاتها،
+     ويُمحى صفُّه ومعه روابطُ المسجَّلين والمدعوَّين. وما انعقد واقعةٌ بحضورها فيبقى (`actualStartAt`).
+     وإعادةُ الفتح تُنشئها من جديد (`restoreMeetings`).
+
+     ويُنادى عند الإلغاء لشعبةٍ بعينها، ومن العامل لكلّ ملغاة (`cancelled_cohort_meetings`) — يلحق ما أُلغي قبل
+     هذا، وما أبى فيه Zoom: لا يُمحى صفٌّ لم يُحذف اجتماعُه، فيُعاد في الدورة التالية. */
+  async dropCancelledMeetings(actorId: string | null, opts: { cohortId?: string; now?: Date } = {}) {
+    const now = opts.now ?? new Date()
+    const rows = await this.prisma.zoomMeeting.findMany({
+      where: {
+        provider: 'zoom_api', meetingId: { not: null }, actualStartAt: null,
+        session: {
+          startsAt: { gt: now }, status: { notIn: ['done'] },
+          cohort: { status: 'cancelled', ...(opts.cohortId ? { id: opts.cohortId } : {}) },
+        },
+      },
+      select: { id: true, sessionId: true, meetingId: true, session: { select: { cohortId: true } } },
+    })
+    if (rows.length === 0) return { deleted: 0, failed: 0 }
+    const cfg = await getZoomConfig(this.prisma)
+    if (!zoomReady(cfg)) return { deleted: 0, failed: rows.length }
+    let deleted = 0
+    let failed = 0
+    const byCohort = new Map<string, number>()
+    for (const r of rows) {
+      const res = await deleteZoomMeeting(cfg, r.meetingId!).catch((e: unknown) => ({ ok: false, reason: String(e) }))
+      if (!res.ok) { failed += 1; continue }
+      await this.prisma.zoomMeeting.delete({ where: { id: r.id } })
+      deleted += 1
+      byCohort.set(r.session.cohortId, (byCohort.get(r.session.cohortId) ?? 0) + 1)
+    }
+    for (const [cohortId, n] of byCohort) {
+      await recordAudit(this.prisma, {
+        actorId, action: 'zoom.delete_cancelled', entityType: 'cohort', entityId: cohortId, meta: { deleted: n },
+      })
+    }
+    return { deleted, failed }
+  }
+
+  /** وإعادةُ فتحها تُنشئ اجتماعا لكلّ لقاءٍ آتٍ معتمَدٍ يريده ولا اجتماعَ له */
+  private async restoreMeetings(actorId: string, cohortId: string, now: Date) {
+    const sessions = await this.prisma.cohortSession.findMany({
+      where: {
+        cohortId, startsAt: { gt: now }, approvalState: 'approved', placeholder: false,
+        status: { notIn: ['cancelled', 'done'] }, wantsMeeting: true, zoom: { is: null },
+      },
+      select: { id: true },
+    })
+    if (sessions.length === 0) return { created: 0, failed: 0 }
+    const cfg = await getZoomConfig(this.prisma)
+    if (!zoomReady(cfg)) return { created: 0, failed: sessions.length }
+    let created = 0
+    let failed = 0
+    for (const s of sessions) {
+      try {
+        await this.attachApiZoom(actorId, s.id, cfg, false)
+        created += 1
+      } catch (e) {
+        failed += 1
+        console.error('[zoom] تعذّر إنشاء اجتماع لقاء الشعبة المعادة', s.id, e)
+      }
+    }
+    return { created, failed }
   }
 
   /* ── الجلسات وZoom اليدوي ── */
