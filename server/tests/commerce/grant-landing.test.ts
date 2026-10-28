@@ -147,6 +147,23 @@ describe('③ والمنحة المغلقة لا تسقط العميل', () => {
       await grants.update({ active: true }, ownerId)
     }
   })
+
+  /* ومن نفدت أكوادُها يبقى عند سببه في الصفحة، ويعود إلى النموذج حين تُزاد — فالصفحةُ تسأل `soldOut` (٢٨ أكتوبر ٢٠٢٦) */
+  it('⚠️ نفدت الأكواد: الصفحة تقول ذلك وهي مفتوحة — وحين تزاد لا تقوله', async () => {
+    const s = await grants.settings()
+    await grants.update({ maxCodes: s.issued }, ownerId)
+    try {
+      const v = await landing.view()
+      expect(v.campaign.open).toBe(true)
+      expect(v.campaign.soldOut, 'نفدت ولم تقل').toBe(true)
+      const out = await landing.apply(person())
+      expect(out.grant).toBeNull()
+      expect(out.reasonAr).toBe('انتهت المنح المتاحة')
+    } finally {
+      await grants.update({ maxCodes: null }, ownerId)
+    }
+    expect((await landing.view()).campaign.soldOut, 'زيدت وبقيت تقول نفدت').toBe(false)
+  })
 })
 
 describe('④ وما لا يقبل يرد', () => {
@@ -168,7 +185,9 @@ describe('⑤ والدورات للزائر بلا أجور المدربين', (
     expect(json, 'خرج أجر المدرب إلى الزائر').not.toMatch(/seatCost|margin|ruleRate|ruleType/)
     expect(Object.keys(v).sort(), 'عاد في الرد غير الدورات').toEqual(['campaign', 'openCourses', 'sharePath', 'termAr'])
     /* ولا عددَ للمنح الباقية — «العددُ الكبير قد يقلّل من قيمتها» (٢١ أكتوبر ٢٠٢٦) */
-    expect(Object.keys(v.campaign).sort(), 'خرج عدد المنح إلى الزائر').toEqual(['closesAt', 'maxCourses', 'open', 'percentOff'])
+    /* و`soldOut` نعم/لا لا عدد: لا يقول إلّا «نفدت» حين نفدت — وهو ما يقوله النموذجُ نفسُه يومَها (٢٨ أكتوبر ٢٠٢٦) */
+    expect(Object.keys(v.campaign).sort(), 'خرج عدد المنح إلى الزائر').toEqual(['closesAt', 'maxCourses', 'open', 'percentOff', 'soldOut'])
+    expect(typeof v.campaign.soldOut, 'صار عددا').toBe('boolean')
     const row = v.openCourses.find((x) => x.courseId === a)!
     expect(row.price).toBe(150)
     /* والمقاعدُ والمدرّبُ لصفّ الدورة — والمدرّبُ اسمُه وصورتُه ومعرّفُه وحدها */

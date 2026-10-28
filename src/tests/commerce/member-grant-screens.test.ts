@@ -94,6 +94,8 @@ describe('من عبأ النموذج', () => {
     expect(REG).toMatch(/<ListToolbar q=\{q\}/)
     expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.influencer \? INFLUENCER_GRANT_NAME_AR : undefined\)\)/)
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/registrants', \{\s*preHandler: canManage/)
+    /* ومتابعُ المؤثّر قناتُه كودُ مؤثّره نفسُه — فلا يُعاد في «من أين» بعد «كود …» (٢٨ أكتوبر ٢٠٢٦) */
+    expect(REG).toMatch(/const from = \[r\.influencer && `منحة المؤثرين\$\{r\.influencerCode \? ` · كود \$\{r\.influencerCode\}` : ""\}`, !r\.influencer && r\.channel, r\.wave && `دفعة \$\{r\.wave\}`\];/)
     for (const t of ['من عبأ النموذج', 'اشترى', 'ينتظر الدفع', 'لم يشتر بعد', 'واتساب', grantFollowupAr('سارة'), grantFollowupAr('سارة', GRANT.INFLUENCER_GRANT_NAME_AR), 'منحة المؤثرين']) {
       expect(t).toBe(plainAr(t))
     }

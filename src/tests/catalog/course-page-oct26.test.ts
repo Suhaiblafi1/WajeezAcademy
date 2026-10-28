@@ -61,6 +61,10 @@ describe('③ زر إلى «تعلمي»', () => {
     const box = buy.slice(buy.indexOf('{nothingLeft && ('), buy.indexOf('{nothingLeft && (') + 1400)
     expect(box).toMatch(/^\{nothingLeft && \(!unpaidLeft \? \(/)
     expect(box).toMatch(/\) : \([\s\S]*لك طلب بهذه الدورات لم يكتمل دفعه\. أكمله من «فواتيري»\.[\s\S]*<Button as=\{Link\} to="\/student\/billing"/)
+    /* ومن صفحة المنحة خياران: يكمله أو يلغيه ويعود بمنحته — فالمحجوزُ قد يكون بلا كودها (مراجعةُ ٢٨ أكتوبر ٢٠٢٦) */
+    expect(box).toMatch(/grantPayTotal !== undefined\s*\? "لك طلب بهذه الدورات لم يكتمل دفعه\. من «فواتيري» تكمله، أو تلغيه ثم تعود فتشتري بمنحتك\."/)
+    /* ولا يقوله سطرُ الكود معه مرّةً ثانية */
+    expect(buy).toMatch(/\{couponError && !unpaidLeft && <p/)
   })
 })
 
