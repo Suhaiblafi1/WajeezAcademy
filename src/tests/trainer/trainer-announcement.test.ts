@@ -16,7 +16,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TEMPLATE_KEY, LATE_JOINERS_DRAFT_UNTIL, announcementToShow, defaultLateUntil,
+  ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TEMPLATE_KEY, LATE_JOINERS_DRAFT_UNTIL, announcementParts, announcementToShow, defaultLateUntil,
+  marketingDraft,
   lateUntilInstant, lateUntilProblem, recipientState,
 } from '@/application/trainer/announcement'
 import { categoryForTemplate } from '@/application/notifications/categories'
@@ -114,9 +115,12 @@ describe('③ ولا يرسل شيء بلا سؤال', () => {
     expect(modal).toMatch(/>ليس الآن<\/Button>\s*<p[^>]*>\s*لا يصل أحدا/)
   })
 
-  it('والنموذج يبدأ بالنصّ المقترح — ويعدّل كلّه', () => {
-    expect(ADMIN).toMatch(/useState<string>\(ANNOUNCEMENT_DRAFT\.titleAr\)/)
-    expect(ADMIN).toMatch(/useState<string>\(ANNOUNCEMENT_DRAFT\.bodyAr\)/)
+  it('والنموذج يبدأ بأول نص جاهز — ويعدّل كلّه، والنصان الجاهزان كلاهما يختاران', () => {
+    expect(ADMIN).toMatch(/useState<string>\(drafts\[0\]\.titleAr\)/)
+    expect(ADMIN).toMatch(/useState<string>\(drafts\[0\]\.bodyAr\)/)
+    expect(ADMIN).toMatch(/key: "marketing"[^\n]*\.\.\.marketingDraft\(origin\), byEmail: true/)
+    expect(ADMIN).toMatch(/key: "start"[^\n]*\.\.\.ANNOUNCEMENT_DRAFT, byEmail: false/)
+    expect(ADMIN).toMatch(/drafts\.map\(\(d\) => \([\s\S]{0,240}onClick=\{\(\) => fill\(d\)\}/)
     expect(ADMIN).toMatch(/<textarea value=\{body\} onChange=\{\(e\) => setBody\(e\.target\.value\)\}/)
   })
 
@@ -174,5 +178,44 @@ describe('⑤ ومن يصير مدرّبا بعد الإرسال', () => {
     const at = sql.match(/^UPDATE "TrainerAnnouncement" SET "lateJoinersUntil" = '([^']+)' WHERE "lateJoinersUntil" IS NULL;$/m)
     expect(at, 'لا ملء لما أرسل قبله').not.toBeNull()
     expect(`${at![1].replace(' ', 'T')}Z`).toBe(lateUntilInstant(LATE_JOINERS_DRAFT_UNTIL).toISOString())
+  })
+})
+
+/* ═══ «بدأنا التسويق» — ويصل بالبريد أيضا (٢٨ أكتوبر ٢٠٢٦) ═══
+   «جهّز رسالةً للمدرّبين نبلغهم أنّا بدأنا التسويق، وماذا يفعلون لنشر دوراتهم من قسم «شارك دوراتك»، واستخدامِ الصور
+   والنصوص إن أحبّ ذلك.. وتصلهم إيميلا ورسالةً على المنصّة». وما يقع في القاعدة يحرسه
+   `server/tests/trainer/trainer-announcements.test.ts` (⑦). */
+describe('⑥ «بدأنا التسويق» وبريده', () => {
+  const d = marketingDraft('https://www.wajeezacademy.com')
+  const text = `${d.titleAr}\n${d.bodyAr}`
+
+  it('⚠️ يقول بدأنا التسويق، وخطوات «شارك دوراتك»، والصور والنصوص اختيار — ورابطها من موقعه', () => {
+    expect(text).toContain('بدأنا')
+    expect(text).toContain('«شارك دوراتك»')
+    expect(text).toMatch(/الصور والنصوص لك إن أحببت/)
+    expect(d.bodyAr).toContain('\nhttps://www.wajeezacademy.com/trainer/share\n')
+    expect(marketingDraft('https://staging.example').bodyAr, 'رابط موقع غير الذي يرسل منه').toContain('https://staging.example/trainer/share')
+  })
+
+  it('⚠️ قصير، بلا تشكيل إعرابي ولا «عرضك» ولا أمر', () => {
+    expect(text).not.toMatch(/[ً-ِْ]/)
+    expect(text).not.toContain('عرضك')
+    expect(text).not.toMatch(/يجب|ممنوع|إلزامي/)
+    expect(d.bodyAr.length, 'طال النص').toBeLessThan(900)
+  })
+
+  it('⚠️ وفي البريد: الرابط زر عنوانه سطره قبله، والخطوات قائمة مرقمة', () => {
+    const parts = announcementParts(d.bodyAr)
+    expect(parts).toContainEqual({ kind: 'cta', label: 'افتح «شارك دوراتك»', href: 'https://www.wajeezacademy.com/trainer/share' })
+    const list = parts.find((p) => p.kind === 'list')
+    expect(list && list.kind === 'list' ? list.items : []).toHaveLength(4)
+    expect(parts.some((p) => p.kind === 'p' && /https?:/.test(p.text)), 'الرابط بقي نصا').toBe(false)
+    expect(announcementParts('فقرة\n\nhttps://x.test/a')).toEqual([{ kind: 'p', text: 'فقرة' }, { kind: 'cta', label: 'افتح الرابط', href: 'https://x.test/a' }])
+  })
+
+  it('⚠️ وفي النموذج خياران للبريد وتحت كل أثره — والمرسل يتبع الخيار', () => {
+    expect(ADMIN).toMatch(/onChange=\{\(\) => setByEmail\(true\)\} \/>\s*في المنصة وبالبريد\s*<\/label>\s*<p[^>]*>\s*نافذة وجرس في بوابته، ورسالة إلى بريده/)
+    expect(ADMIN).toMatch(/onChange=\{\(\) => setByEmail\(false\)\} \/>\s*في المنصة وحدها\s*<\/label>\s*<p[^>]*>نافذة وجرس في بوابته، بلا بريد\.<\/p>/)
+    expect(fnBody(ADMIN, 'send')).toMatch(/lateJoinersUntil: late \? until : null, byEmail,/)
   })
 })

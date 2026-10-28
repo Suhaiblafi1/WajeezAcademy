@@ -25,6 +25,8 @@ import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 import { addDays } from '../../../src/application/trainer/axis-timeline'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
+import { TrainerAnnouncementService } from '../../services/trainer-announcement.service'
+import { marketingDraft } from '../../../src/application/trainer/announcement'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -258,5 +260,63 @@ describe('⑥ ومن صار مدرّبا بعد إعلانٍ مفتوحٍ للم
       expect(r.statusCode, day).toBe(422)
     }
     expect(await prisma.trainerAnnouncement.count({ where: { titleAr: 'إعلانٌ بيومٍ خطأ' } })).toBe(0)
+  })
+})
+
+/* ═══ ⑦ وبالبريد إن اختاره المرسِل (٢٨ أكتوبر ٢٠٢٦) ═══
+   «وتصلهم إيميلا ورسالةً على المنصّة». والبريدُ نسخةُ الجرس: من كتم «إعلانات الأكاديمية» لا يصله. */
+describe('⑦ وبالبريد إن اختاره المرسل', () => {
+  const sentTo: { to: string; subject: string; html: string }[] = []
+  const svc = () => new TrainerAnnouncementService(prisma, async (to, subject, body) => {
+    sentTo.push({ to, subject, html: body.html })
+    return true
+  })
+  const draft = marketingDraft('https://www.wajeezacademy.com')
+  const lateUntil = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
+
+  it('⚠️ يصل بريد كل مستقبل — إلا من كتم إعلانات الأكاديمية — ويكتب متى خرج', async () => {
+    await prisma.notificationPreference.create({ data: { userId: people.b.id, category: 'announcements', channel: 'in_app', enabled: false } })
+    sentTo.length = 0
+    const r = await svc().send(people.super.id, { ...draft, byEmail: true, lateJoinersUntil: lateUntil })
+    const to = new Set(sentTo.map((m) => m.to))
+    expect(to.has(people.a.email), 'لم يصل بريد مدرّب نشط').toBe(true)
+    expect(to.has(people.b.email), 'وصل بريد من كتم إعلانات الأكاديمية').toBe(false)
+    for (const who of ['susp', 'noprofile', 'off', 'learner']) expect(to.has(people[who].email), who).toBe(false)
+    expect(r.emailed).toBe(sentTo.length)
+    const row = (who: string) => prisma.trainerAnnouncementRecipient.findUnique({
+      where: { announcementId_userId: { announcementId: r.id, userId: people[who].id } },
+    })
+    expect((await row('a'))?.emailedAt, 'خرج بريده ولم يكتب').not.toBeNull()
+    expect((await row('b'))?.emailedAt, 'كتب لمن لم يصله').toBeNull()
+    expect((await row('b'))?.userId, 'الكتم أسقط النافذة').toBe(people.b.id)
+  })
+
+  it('⚠️ والرسالة بعنوانه، والرابط زر «افتح «شارك دوراتك»» إلى صفحتها', () => {
+    const mail = sentTo.find((m) => m.to === people.a.email)!
+    expect(mail.subject).toBe(draft.titleAr)
+    expect(mail.html).toMatch(/href="https:\/\/www\.wajeezacademy\.com\/trainer\/share"[^>]*>[^<]*افتح «شارك دوراتك»/)
+  })
+
+  it('⚠️ ومن صار مدرّبا في المدة يصله بريده حين يكتب', async () => {
+    await person('late4', ['trainer'], { profile: 'active' })
+    sentTo.length = 0
+    await svc().mine(people.late4.id)
+    expect(sentTo.map((m) => m.to), 'كتب ولم يصله بريده').toContain(people.late4.email)
+  })
+
+  it('⚠️ وما أرسل «في المنصة وحدها» لا يخرج له بريد', async () => {
+    sentTo.length = 0
+    const r = await svc().send(people.super.id, { titleAr: 'إعلان في المنصة وحدها', bodyAr: BODY })
+    expect(sentTo, 'خرج بريد لما لم يختر').toHaveLength(0)
+    expect(r.emailed).toBe(0)
+    expect((await prisma.trainerAnnouncement.findUnique({ where: { id: r.id } }))?.byEmail).toBe(false)
+  })
+
+  it('والباب يحمل الخيار — وبلا مزود بريد يقع الإرسال ولا يكتب بريد', async () => {
+    const r = await post('super', '/api/admin/trainer-announcements', { titleAr: 'إعلان بالبريد من الباب', bodyAr: BODY, byEmail: true })
+    expect(r.statusCode, r.body).toBe(201)
+    expect(r.json().emailed).toBe(0)
+    expect((await prisma.trainerAnnouncement.findUnique({ where: { id: r.json().id } }))?.byEmail).toBe(true)
+    await prisma.notificationPreference.deleteMany({ where: { userId: people.b.id, category: 'announcements' } })
   })
 })

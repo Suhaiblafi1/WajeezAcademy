@@ -16,7 +16,7 @@
    قرأه · رآه ولم يضغط «قرأتُه» · لم يفتح بوّابتَه منذ أُرسل. ومن لم يقرأ أوّلا: هو
    من يُتابَع. والعلّةُ كاملةً في `server/services/trainer-announcement.service.ts`. */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Megaphone, Send, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import Modal from "@/components/Modal";
@@ -32,8 +32,19 @@ import { zonedDay } from "@/application/trainer/cohort-period";
 import { addDays, dayLabelAr } from "@/application/trainer/axis-timeline";
 import {
   ANNOUNCEMENT_BODY_MAX, ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TITLE_MAX, LATE_JOINERS_MAX_DAYS, RECIPIENT_STATE_AR,
-  defaultLateUntil, lateUntilProblem, recipientState,
+  defaultLateUntil, lateUntilProblem, marketingDraft, recipientState,
 } from "@/application/trainer/announcement";
+
+/* ═══ نصوصٌ جاهزة (٢٨ أكتوبر ٢٠٢٦) ═══
+   كان نصٌّ مقترحٌ واحد؛ وصار اثنين: «بدأنا التسويق» ويصل بالبريد أيضا، و«موعد بدء الشعب» كما كان. ويُملأ النموذجُ
+   بأوّلِ ما لم يُرسَل منهما، ويُختار غيرُه بزرّ — وكلُّه يُعدَّل قبل الإرسال. */
+interface Draft { key: string; labelAr: string; titleAr: string; bodyAr: string; byEmail: boolean; lateUntil: (today: string) => string }
+function draftsFor(origin: string): Draft[] {
+  return [
+    { key: "marketing", labelAr: "بدأنا التسويق", ...marketingDraft(origin), byEmail: true, lateUntil: (d) => defaultLateUntil(d, false) },
+    { key: "start", labelAr: "موعد بدء الشعب", ...ANNOUNCEMENT_DRAFT, byEmail: false, lateUntil: (d) => defaultLateUntil(d, true) },
+  ];
+}
 
 /** ما أُرسل — كما يردّه `TrainerAnnouncementService.list` */
 interface SentAnnouncement {
@@ -46,6 +57,9 @@ interface SentAnnouncement {
   total: number;
   read: number;
   seen: number;
+  /** ويصل بالبريد أيضا — وكم خرج بريدُه */
+  byEmail?: boolean;
+  emailed?: number;
 }
 
 /** من يصله بعد الإرسال — كما يُقرأ تحت ما أُرسل */
@@ -108,6 +122,7 @@ function SentRow({ a }: { a: SentAnnouncement }) {
           <p className="text-read font-black">{a.titleAr}</p>
           <p className="mt-1 text-read text-muted-foreground">أرسل في {fmtDateTimeAr(a.sentAt)}، ووصل حتّى الآن {trainersAr(a.total)}.</p>
           <p className="mt-1 text-read text-muted-foreground">{lateLineAr(a.lateJoinersUntil)}</p>
+          {a.byEmail && <p className="mt-1 text-read text-muted-foreground">وبالبريد أيضا: خرج بريده إلى {trainersAr(a.emailed ?? 0)}.</p>}
         </div>
         <Button size="sm" tone="secondary" aria-expanded={open} onClick={() => void toggle()}
           icon={open ? ChevronUp : ChevronDown}>
@@ -158,34 +173,48 @@ export default function TrainerAnnouncements() {
   const canAnnounce = user?.permissions.includes("staff.notify") ?? false;
   const [data, setData] = useState<{ audience: number; items: SentAnnouncement[] } | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
-  const [title, setTitle] = useState<string>(ANNOUNCEMENT_DRAFT.titleAr);
-  const [body, setBody] = useState<string>(ANNOUNCEMENT_DRAFT.bodyAr);
+  const drafts = useMemo(() => draftsFor(window.location.origin), []);
+  const [title, setTitle] = useState<string>(drafts[0].titleAr);
+  const [body, setBody] = useState<string>(drafts[0].bodyAr);
+  /* ويصل بالبريد أيضا — خياران بأثر كلٍّ، والنصُّ الجاهزُ يختار ما يناسبه */
+  const [byEmail, setByEmail] = useState(drafts[0].byEmail);
   const [asking, setAsking] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [sent, setSent] = useState<{ title: string; recipients: number } | null>(null);
+  const [sent, setSent] = useState<{ title: string; recipients: number; emailed: number | null } | null>(null);
   /* ومن يصير مدرّبا بعد الإرسال — خيارٌ بأثره، والمقترحُ: يصله حتّى يومٍ يُسمّى */
   const today = zonedDay(new Date());
   const [late, setLate] = useState(true);
-  const [until, setUntil] = useState(() => defaultLateUntil(today, true));
+  const [until, setUntil] = useState(() => drafts[0].lateUntil(today));
+  const [sentTitles, setSentTitles] = useState<ReadonlySet<string>>(() => new Set());
+  const fill = useCallback((d: Draft | null) => {
+    const day = zonedDay(new Date());
+    setTitle(d?.titleAr ?? "");
+    setBody(d?.bodyAr ?? "");
+    setByEmail(d?.byEmail ?? false);
+    setUntil(d ? d.lateUntil(day) : defaultLateUntil(day, false));
+  }, []);
+  /* ما في النموذج ساعةَ يعود الجلب — فلا يُبدَّل ما عدّله */
+  const fields = useRef({ title, body });
+  fields.current = { title, body };
 
   const load = useCallback(async () => {
     try {
       const r = await apiGet<{ audience: number; items: SentAnnouncement[] }>("/api/admin/trainer-announcements");
       setData(r);
       setOffline(null);
-      /* والنصُّ المقترحُ لمرّةٍ واحدة: إن أُرسل بعنوانه فلا يُعرض ثانيةً كأنّه لم يُرسَل —
-         ما لم يُمسّ منه حرفٌ في النموذج يُفرَغ، وما عُدّل يبقى كما كُتب */
-      if (r.items.some((a) => a.titleAr === ANNOUNCEMENT_DRAFT.titleAr)) {
-        const day = zonedDay(new Date());
-        setTitle((v) => (v === ANNOUNCEMENT_DRAFT.titleAr ? "" : v));
-        setBody((v) => (v === ANNOUNCEMENT_DRAFT.bodyAr ? "" : v));
-        setUntil((v) => (v === defaultLateUntil(day, true) ? defaultLateUntil(day, false) : v));
+      /* والنصُّ الجاهزُ لمرّةٍ واحدة: إن أُرسل بعنوانه فلا يُعرض ثانيةً كأنّه لم يُرسَل — ما لم يُمسّ منه حرفٌ في
+         النموذج يُبدَّل بأوّلِ ما لم يُرسَل، أو يُفرَغ، وما عُدّل يبقى كما كُتب */
+      const was = new Set(r.items.map((a) => a.titleAr));
+      setSentTitles(was);
+      const now = fields.current;
+      if (drafts.some((d) => was.has(d.titleAr) && d.titleAr === now.title && d.bodyAr === now.body)) {
+        fill(drafts.find((d) => !was.has(d.titleAr)) ?? null);
       }
     } catch (e) {
       setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل");
     }
-  }, []);
+  }, [drafts, fill]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -202,13 +231,14 @@ export default function TrainerAnnouncements() {
     setSending(true);
     setSendError(null);
     try {
-      const r = await apiPost<{ id: string; recipients: number }>("/api/admin/trainer-announcements", {
-        titleAr: t, bodyAr: b, lateJoinersUntil: late ? until : null,
+      const r = await apiPost<{ id: string; recipients: number; emailed?: number }>("/api/admin/trainer-announcements", {
+        titleAr: t, bodyAr: b, lateJoinersUntil: late ? until : null, byEmail,
       });
-      setSent({ title: t, recipients: r.recipients });
+      setSent({ title: t, recipients: r.recipients, emailed: byEmail ? r.emailed ?? 0 : null });
       setAsking(false);
       setTitle("");
       setBody("");
+      setByEmail(false);
       setLate(true);
       setUntil(defaultLateUntil(today, false));
       await load();
@@ -234,13 +264,17 @@ export default function TrainerAnnouncements() {
   return (
     <AdminLayout title="إعلانات للمدرّبين">
       <p className="mb-4 max-w-3xl text-read leading-7 text-muted-foreground">
-        يصل الإعلان كلّ مدرّب نشط: نافذة في بوّابته حتّى يضغط «قرأته» (ويمكنه تأجيلها)، وإشعار في الجرس، بلا بريد.
+        يصل الإعلان كلّ مدرّب نشط: نافذة في بوّابته حتّى يضغط «قرأته» (ويمكنه تأجيلها)، وإشعار في الجرس، وبالبريد إن اخترته.
         وتحت كلّ إعلان: من قرأ، ومن رآه ولم يؤكّد، ومن لم يفتح بوّابته بعد.
       </p>
 
       {sent && (
         <Inset tone="positive" role="status" className="mb-4 px-4 py-3 text-read">
-          أرسل «{sent.title}» إلى {trainersAr(sent.recipients)}. تابع من قرأه في «ما أرسل» أدناه.
+          أرسل «{sent.title}» إلى {trainersAr(sent.recipients)}.
+          {sent.emailed !== null && (sent.emailed === sent.recipients
+            ? " ووصل بريده إليهم جميعا."
+            : ` وخرج بريده إلى ${trainersAr(sent.emailed)} — ومن لم يصله: كتم إعلانات الأكاديمية، أو تعذّر بريده.`)}
+          {" "}تابع من قرأه في «ما أرسل» أدناه.
         </Inset>
       )}
 
@@ -250,10 +284,19 @@ export default function TrainerAnnouncements() {
             <Megaphone className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> إعلان جديد
           </h2>
           <p className="mt-1 text-read text-muted-foreground">
-            {title === ANNOUNCEMENT_DRAFT.titleAr
-              ? "فيه نصّ مقترح عن موعد بدء الشعب — عدّله أو امسحه واكتب غيره."
+            {drafts.some((d) => d.titleAr === title)
+              ? "فيه نص جاهز — عدله أو امسحه واكتب غيره."
               : "اكتب العنوان والنصّ، وتراه تحتهما كما سيراه المدرّب."}
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="نصوص جاهزة">
+            <span className="text-read text-muted-foreground">نصوص جاهزة:</span>
+            {drafts.map((d) => (
+              <Button key={d.key} size="sm" tone={title === d.titleAr ? "confirm" : "secondary"} aria-pressed={title === d.titleAr}
+                onClick={() => fill(d)}>
+                {d.labelAr}{sentTitles.has(d.titleAr) ? " (أرسل قبل)" : ""}
+              </Button>
+            ))}
+          </div>
           <div className="mt-3 grid gap-3">
             <label className="grid gap-1 text-fine font-bold text-muted-foreground">
               العنوان
@@ -279,8 +322,31 @@ export default function TrainerAnnouncements() {
                 <div className="mt-4"><AnnouncementBody text={b} /></div>
                 <p className="mt-6 text-read text-muted-foreground">وتحته زرّان: «قرأته» و«ذكّرني لاحقا».</p>
               </Inset>
+              {byEmail && (
+                <p className="mt-2 text-read text-muted-foreground">
+                  وفي البريد: العنوان نفسه والنص نفسه، والرابط في سطر وحده يصير زرا عنوانه السطر قبله.
+                </p>
+              )}
             </div>
           )}
+
+          {/* ═══ وكيف يصل — خياران بأثر كلٍّ (٢٨ أكتوبر ٢٠٢٦) ═══
+              «وتصلهم إيميلا ورسالةً على المنصّة». والبريدُ نسخةُ الجرس: من كتم «إعلانات الأكاديمية» لا يصله. */}
+          <fieldset className="mt-4 grid gap-2">
+            <legend className="mb-1 text-read font-bold text-foreground">كيف يصل؟</legend>
+            <label className="flex items-center gap-2 text-read text-foreground">
+              <input type="radio" name="channel" className="accent-teal" checked={byEmail} onChange={() => setByEmail(true)} />
+              في المنصة وبالبريد
+            </label>
+            <p className="ms-6 text-read leading-6 text-muted-foreground">
+              نافذة وجرس في بوابته، ورسالة إلى بريده. ومن كتم «إعلانات الأكاديمية» لا يصله البريد.
+            </p>
+            <label className="flex items-center gap-2 text-read text-foreground">
+              <input type="radio" name="channel" className="accent-teal" checked={!byEmail} onChange={() => setByEmail(false)} />
+              في المنصة وحدها
+            </label>
+            <p className="ms-6 text-read leading-6 text-muted-foreground">نافذة وجرس في بوابته، بلا بريد.</p>
+          </fieldset>
 
           {/* ═══ ومن يصير مدرّبا بعد الإرسال — خياران بأثر كلٍّ (٤ أكتوبر ٢٠٢٦) ═══
               «اعرضه لمن ينضمّ بعدُ أيضا». والبابُ إلى يومٍ يُسمّى لا بلا حدّ: نصيحةُ موسمٍ
@@ -338,6 +404,9 @@ export default function TrainerAnnouncements() {
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               {late ? `ومن يصير مدرّبا حتّى ${dayLabelAr(until)} يصله حين يفتح بوّابته.` : "ومن ينضمّ بعد الإرسال لا يصله."}
             </p>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              {byEmail ? "ويصله بالبريد أيضا، إلا من كتم إعلانات الأكاديمية." : "في المنصة وحدها، بلا بريد."}
+            </p>
             {sameTitle && (
               <p className="mt-2 text-read leading-6 text-gold-ink">
                 أرسلت إعلانا بهذا العنوان في {fmtDateTimeAr(sameTitle.sentAt)}، وقرأه {sameTitle.read} من {sameTitle.total}.
@@ -348,7 +417,7 @@ export default function TrainerAnnouncements() {
               <div>
                 <Button tone="confirm" loading={sending} onClick={() => void send()}>أرسله الآن</Button>
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  يصل الآن: نافذة في بوّابة كلّ منهم وإشعار في الجرس. ولا يمكن سحبه بعد الإرسال.
+                  يصل الآن: نافذة في بوّابة كلّ منهم وإشعار في الجرس{byEmail ? "، ورسالة إلى بريده" : ""}. ولا يمكن سحبه بعد الإرسال.
                 </p>
               </div>
               <div>
