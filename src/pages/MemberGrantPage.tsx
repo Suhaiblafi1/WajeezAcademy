@@ -51,7 +51,7 @@ import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import type { TimedSession } from "@/application/learning/cohort-overlap";
-import { grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
+import { GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
@@ -76,7 +76,8 @@ interface GrantCourse {
   sessions?: TimedSession[];
 }
 interface View {
-  campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
+  /** `soldOut`: نفدت أكوادُها والمنحةُ مفتوحة — فمن لا كودَ له يبقى عند سببه ولا يعود إلى النموذج كلَّ زيارة */
+  campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null; soldOut?: boolean };
   /** فصلُ الدورات المعروضة — الفصلُ القادمُ القريب (`grant-courses.service.ts#pool`) */
   termAr: string | null;
   openCourses: GrantCourse[];
@@ -203,8 +204,12 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   }, [view, stored, seeded, resumed]);
 
   /* ونسبةُ كوده إن كان له — كلُّ كودٍ يحمل نسبتَه يومَ أُعطي (`grant.service.ts`)، فإن غيّر صاحبُ المنصّة نسبةَ الحملة بعده
-     سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة. ومن لا كودَ له بعدُ يرى نسبةَ الحملة اليوم */
-  const pct = stored?.percentOff ?? view?.campaign.percentOff ?? 0;
+     سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة.
+     ولا خصمَ يُرى لمن لا منحةَ يستعملها (مراجعةُ ٢٨ أكتوبر ٢٠٢٦): من عبّأ النموذجَ والمنحةُ مغلقةٌ أو نفدت أكوادُها فلا كودَ له
+     ولا بريد، ومن انتهت منحتُه بعد يومها الأخير يُردّ كودُه عند الدفع — وكانت الصفحةُ تعرض لهم «$88» مشطوبا عنه «$160»
+     ويدفعون كاملا. فالخصمُ ما دام له كودٌ أو بريدٌ به والمنحةُ مفتوحة */
+  const grantOn = !!view?.campaign.open && !!(stored?.code || stored?.sentTo);
+  const pct = grantOn ? stored?.percentOff ?? view?.campaign.percentOff ?? 0 : 0;
   const max = view?.campaign.maxCourses ?? 4;
   const chosen = useMemo(
     () => picked.map((id) => view?.openCourses.find((x) => x.courseId === id)).filter((x): x is GrantCourse => !!x),
@@ -241,6 +246,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         ref: out.ref, code: out.grant?.code ?? null, sentTo: out.grant?.sentTo ?? null,
         name: form.fullName.trim(), email: form.email.trim(), interests, workField: form.workField,
         influencer: out.influencer?.code ?? null, percentOff: out.grant?.percentOff ?? null,
+        /* ومن عاد إلى النموذج (لا كودَ له بعد) لا يفقد ما اختاره قبله — ملفُّه نفسُه */
+        picks: stored?.ref === out.ref ? stored.picks : undefined,
       };
       saveStoredGrant(g, storeKey);
       setStored({ ...g, at: Date.now() });
@@ -301,12 +308,13 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const sharePath = forInfluencer && creditedCode ? `${INFLUENCER_GRANT_PATH}/${creditedCode}` : GRANT_SHARE_PATH;
   /* والرابطُ قصيرٌ من الخادم إن صنعه — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «الرابط يجب أن يكون قصيرا جدّا» */
   const shareLink = view.sharePath ? `https://${BARE_HOST}${view.sharePath}` : `${window.location.origin}${sharePath}`;
-  const shareText = grantShareAr(shareLink, pct, lastDayLong, !forInfluencer);
+  /* والهديّةُ بنسبة الحملة اليوم لا بنسبة كوده: الصديقُ يأخذ كودا جديدا بنسبة يومه */
+  const shareText = grantShareAr(shareLink, c.percentOff, lastDayLong, !forInfluencer);
 
   /* ─── الخطوة ٢: الكودُ واختيارُ الدورات ─── */
   /* ومن عبّأ النموذجَ والمنحةُ مغلقةٌ أو نفدت أكوادُها لم يأخذ كودا ولا بريدا — فإن فتحت يعود إلى النموذج ليأخذه، لا إلى
      الدورات بلا كودٍ فيدفع كاملا ويقال له «تجده في بريدك» ولم يصله شيء. ومن ردّه الخادمُ الآن يرى سببَه (`reasonAr`) */
-  if (stored && (stored.code || stored.sentTo || reasonAr || !c.open)) {
+  if (stored && (stored.code || stored.sentTo || reasonAr || !c.open || c.soldOut)) {
     /* ما اخترناه له أوّلا، ثمّ ما قال إنّه يريد تطويرَه */
     const mine = new Set(stored.interests);
     const ours = new Set(suggested);
@@ -322,7 +330,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       recordLink: grantRecordLink(BARE_HOST, stored.code ?? stored.ref), grantNameAr: nameAr,
     }));
     /* سطرُ الصندوق حين لا كود ولا بريد — سببُ الخادم، أو أنّها مغلقة. ولا فقرةٌ فارغةٌ حين لا شيء يقال */
-    const topNote = reasonAr ?? (c.open ? null : "المنحة مغلقة الآن");
+    const topNote = reasonAr ?? (!c.open ? GRANT_CLOSED_AR : c.soldOut ? GRANT_SOLD_OUT_AR : null);
     /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب
        هي الشيءَ الذي يراه الشخص، بتصميمٍ يبيّن الصورةَ بحجمٍ كبيرٍ عصريّ». والشاراتُ وسومٌ نصّيّةٌ أعلاها لا أقراصٌ تُشبه
        الأزرار («نقترحها لك يبدو زرّا»)، والسعرُ قيمتان بلا «قبل المنحة/بعد المنحة»: ما يدفعه كبيرا، وأصلُه مشطوبا */
@@ -361,7 +369,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               <span className="mt-0.5 block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
               <span className="mt-2 flex items-baseline gap-2">
                 <bdi dir="ltr" className="text-lg font-black">{money(grantPrice(x.price, pct))}</bdi>
-                <bdi dir="ltr" className="text-read text-muted-foreground line-through">{money(x.price)}</bdi>
+                {pct > 0 && <bdi dir="ltr" className="text-read text-muted-foreground line-through">{money(x.price)}</bdi>}
               </span>
               {clash && (
                 <span role="status" className="mt-2 flex items-start gap-1.5 text-read font-bold leading-6 text-gold-ink">
@@ -426,9 +434,12 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           ) : (
             topNote && <p className="text-read">{topNote}</p>
           )}
-          {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
+          {/* وصاحبُ الكود بعد يومها الأخير يُقال له إنّها أُغلقت — فلا يظنّ كودَه يُخصم عند الدفع */}
+          {(stored.code || stored.sentTo) && !c.open && <p className="mt-2 text-read font-bold">{GRANT_CLOSED_AR}</p>}
+          {/* والعدّادُ والحدُّ والهديّةُ لمن له منحةٌ يستعملها — ومن نفدت عنه لا يُقال له «تنتهي بعد يومين» ولا «أهدِها» (٢٨ أكتوبر ٢٠٢٦) */}
+          {grantOn && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
           {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
-          {c.open && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
+          {grantOn && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
           {/* وما يحصل عليه سطرٌ صغيرٌ تحت خطٍّ رفيع، بأيقونةٍ قبل كلّ بند — قرارُه (٢٧ أكتوبر ٢٠٢٦): «ضع أيقوناتٍ للمباشر وغيرها
               في نفس السطر.. تكون عصريّة». وكلُّ بندٍ لا ينقسم بين سطرين على الهاتف */}
           <p className="mx-auto mt-3 flex max-w-lg flex-wrap justify-center gap-x-4 gap-y-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">
@@ -500,19 +511,24 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             {/* ما يدفعه كبيرا، وقيمةُ منحته صغيرةً تحته — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦). والمبالغُ معزولةٌ فلا تنقلب */}
             <p className="text-lg font-black">
               {grantCountAr(chosen.length)} بـ<bdi dir="ltr">{money(payTotal)}</bdi>{" "}
-              <span className="text-read font-normal text-muted-foreground">بدل <bdi dir="ltr" className="line-through">{money(listTotal)}</bdi></span>
+              {grantOn && <span className="text-read font-normal text-muted-foreground">بدل <bdi dir="ltr" className="line-through">{money(listTotal)}</bdi></span>}
             </p>
-            <p className="mt-0.5 text-read text-muted-foreground">{GRANT_VALUE_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi> {GRANT_VALUE_PAID_AR}</p>
-            {/* وما بقي له ضمن منحته — فلا يترك منها شيئا (قرارُه: «اختر ٤ دوراتٍ بحدٍّ أقصى») */}
-            <p className="mt-1 text-read font-bold text-gold-ink">{grantRemainingAr(chosen.length, max)}</p>
-            <Button tone="confirm" className="mt-3 w-full" onClick={pay}>احصل على المنحة</Button>
+            {/* وقيمةُ المنحة وما بقي منها لمن له منحةٌ يستعملها — ومن لا منحةَ له يرى ما يدفعه وزرَّ الشراء وحدَهما */}
+            {grantOn && (
+              <>
+                <p className="mt-0.5 text-read text-muted-foreground">{GRANT_VALUE_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi> {GRANT_VALUE_PAID_AR}</p>
+                {/* وما بقي له ضمن منحته — فلا يترك منها شيئا (قرارُه: «اختر ٤ دوراتٍ بحدٍّ أقصى») */}
+                <p className="mt-1 text-read font-bold text-gold-ink">{grantRemainingAr(chosen.length, max)}</p>
+              </>
+            )}
+            <Button tone="confirm" className="mt-3 w-full" onClick={pay}>{grantOn ? "احصل على المنحة" : "اشتر الدورات"}</Button>
           </Card>
         )}
 
         {/* الإهداءُ صندوقٌ وحدَه خارجَ لوح الدفع — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «صندوقُ الإهداء يكون خارجَ صندوق
             الدفع، واجعل الكلمة: يحقّ لك أن تهدي هذه المنحة لأصدقائك (بحدٍّ أعلى ٣)». رسالةٌ جاهزةٌ في واتساب والبريد، فالصديقُ
-            يأخذ منحتَه لا كودَك (`grantShareAr`) */}
-        {c.open && (
+            يأخذ منحتَه لا كودَك (`grantShareAr`). ولمن له منحةٌ يستعملها وحدَه: من نفدت عنه لا يُهدي ما لا يأخذه صديقُه */}
+        {grantOn && (
           <Card className="mt-6 flex flex-col items-center gap-4 text-center sm:flex-row sm:text-start">
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold/10"><Gift className="h-6 w-6 text-gold-ink" aria-hidden="true" /></span>
             <span className="min-w-0 flex-1">
@@ -521,7 +537,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             </span>
             <span className="flex shrink-0 gap-2">
               <Button as="a" href={waShare(shareText)} target="_blank" rel="noreferrer" icon={Share2}>واتساب</Button>
-              <Button as="a" href={grantShareMailto(shareLink, pct, lastDayLong, !forInfluencer)} icon={Mail}>البريد</Button>
+              <Button as="a" href={grantShareMailto(shareLink, c.percentOff, lastDayLong, !forInfluencer)} icon={Mail}>البريد</Button>
             </span>
           </Card>
         )}
@@ -559,7 +575,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             email={session?.email ?? stored.email}
             kind="courses"
             initialCoupon={stored.code ?? ""}
-            grantPayTotal={payTotal}
+            grantPayTotal={grantOn ? payTotal : undefined}
             lines={chosen.map((x) => ({ courseId: x.courseId, name: x.titleAr, cohortId: x.cohortId }))}
             onClose={() => setBuyOpen(false)}
           />

@@ -124,7 +124,8 @@ export class GrantLandingService {
     ])
     return {
       /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
-      campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
+      /* و`soldOut`: نفدت أكوادُها والمنحةُ مفتوحة — فمن عبّأ ولم يأخذ كودا يبقى عند سببه، ويعود إلى النموذج حين تُزاد (٢٨ أكتوبر ٢٠٢٦) */
+      campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt, soldOut: s.left === 0 },
       sharePath: this.slug === MEMBER_GRANT_SLUG ? await this.shareLink(GRANT_SHARE_PATH) : null,
       termAr: open.termAr,
       openCourses: open.courses.map((c) => ({

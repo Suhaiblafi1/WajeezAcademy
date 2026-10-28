@@ -88,7 +88,8 @@ export default function GrantRegistrants() {
                 {view.rows.map((r) => {
                   const wa = waToPerson(r.phone, grantFollowupAr(r.fullName, r.influencer ? INFLUENCER_GRANT_NAME_AR : undefined));
                   /* ومن منحة المؤثّرين يقال ذلك أوّلَ «من أين»، وبكود مؤثّره */
-                  const from = [r.influencer && `منحة المؤثرين${r.influencerCode ? ` · كود ${r.influencerCode}` : ""}`, r.channel, r.wave && `دفعة ${r.wave}`];
+                  /* وقناةُ متابع المؤثّر هي كودُ مؤثّره نفسُه (`campaignTag`) — فلا تُعاد بعده */
+                  const from = [r.influencer && `منحة المؤثرين${r.influencerCode ? ` · كود ${r.influencerCode}` : ""}`, !r.influencer && r.channel, r.wave && `دفعة ${r.wave}`];
                   return (
                     <tr key={r.id} className="border-t border-border align-top">
                       <td className="p-2"><span className="font-bold">{r.fullName}</span><br /><span className="text-muted-foreground">{fmtDate(r.createdAt)}</span></td>

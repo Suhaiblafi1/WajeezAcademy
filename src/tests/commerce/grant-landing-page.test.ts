@@ -94,7 +94,8 @@ describe('بعد النموذج', () => {
   it('⚠️ دورات فقط — لا اقتراحات ولا مجموعات، ولكل دورة سعرها قيمتين بلا «قبل المنحة/بعد المنحة»', () => {
     expect(PAGE, 'عادت الاقتراحات').not.toMatch(/view\.pathways|\/api\/admin\/member-grant\/pathways|اقتراحات لك|اختر هذه الدورات/)
     /* ما يدفعه كبيرا وأصلُه مشطوبا بعده — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «فقط السعرُ قبل وبعد كقيم» */
-    expect(PAGE).toMatch(/<bdi dir="ltr" className="text-lg font-black">\{money\(grantPrice\(x\.price, pct\)\)\}<\/bdi>\s*<bdi dir="ltr" className="text-read text-muted-foreground line-through">\{money\(x\.price\)\}<\/bdi>/)
+    /* والمشطوبُ لمن له منحةٌ يستعملها وحدَه — بلا منحةٍ سعرٌ واحد (٢٨ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/<bdi dir="ltr" className="text-lg font-black">\{money\(grantPrice\(x\.price, pct\)\)\}<\/bdi>\s*\{pct > 0 && <bdi dir="ltr" className="text-read text-muted-foreground line-through">\{money\(x\.price\)\}<\/bdi>\}/)
     expect(PAGE, 'عادت «قبل المنحة/بعد المنحة»').not.toMatch(/قبل المنحة|بعد المنحة/)
   })
 
@@ -105,7 +106,7 @@ describe('بعد النموذج', () => {
       'اختر حتى 4 دورات، ويمكنك استبدالها لاحقا مع مستشارك.',
     ])
     const card = PAGE.slice(PAGE.indexOf(TOP_CARD), PAGE.indexOf('<h2 className="mt-6'))
-    expect(card).toMatch(/<GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}\s*\{c\.open && <p className="mt-0\.5 text-read text-muted-foreground">\{grantLimitAr\(max\)\}<\/p>\}/)
+    expect(card).toMatch(/<GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}\s*\{grantOn && <p className="mt-0\.5 text-read text-muted-foreground">\{grantLimitAr\(max\)\}<\/p>\}/)
     expect(PAGE.match(/grantLimitAr\(/g)?.length, 'الحد يقال مرتين').toBe(1)
     expect(PAGE, 'عادت فقرة الحد الطويلة').not.toMatch(/وهذا أقصى ما تغطيه منحتك|بعد استشارة مستشارك الخاص/)
   })
@@ -334,13 +335,30 @@ describe('بعد النموذج', () => {
 
   /* كلُّ كودٍ يحمل نسبتَه يومَ أُعطي — فإن غُيّرت نسبةُ الحملة بعده سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة (٢٧ أكتوبر ٢٠٢٦) */
   it('⚠️ الصفحة تسعر بنسبة كوده إن كان له — من النموذج ومن حسابه', () => {
-    expect(PAGE).toMatch(/const pct = stored\?\.percentOff \?\? view\?\.campaign\.percentOff \?\? 0;/)
+    expect(PAGE).toMatch(/const pct = grantOn \? stored\?\.percentOff \?\? view\?\.campaign\.percentOff \?\? 0 : 0;/)
     expect(PAGE).toMatch(/influencer: out\.influencer\?\.code \?\? null, percentOff: out\.grant\?\.percentOff \?\? null,/)
     expect(PAGE).toMatch(/saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null, percentOff: percentOff \?\? kept\.percentOff \}, storeKey\)/)
     const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', interests: [], at: Date.now() }
     expect(parseStoredGrant(JSON.stringify({ ...ok, percentOff: 60 }))?.percentOff).toBe(60)
     expect(parseStoredGrant(JSON.stringify({ ...ok, percentOff: 160 }))?.percentOff, 'نسبة بغير شكلها').toBeNull()
     expect(parseStoredGrant(JSON.stringify(ok))?.percentOff, 'حفظ قبل النسبة').toBeNull()
+  })
+
+  /* من لا منحةَ يستعملها لا يُرى خصما — عبّأ والمنحةُ مغلقةٌ أو نفدت، أو انتهت بعد يومها الأخير (مراجعةُ ٢٨ أكتوبر ٢٠٢٦):
+     كانت الصفحةُ تعرض «$88» مشطوبا عنه «$160» ولوحُ الدفع يقول «اكتب كود منحتك… تجده في بريدك»، ويدفع كاملا */
+  it('⚠️ بلا منحة يستعملها: لا سعر مشطوب ولا قيمة منحة ولا «اكتب كود منحتك» — وصاحب الكود بعد يومها يقال له إنها أغلقت', () => {
+    expect(PAGE).toMatch(/const grantOn = !!view\?\.campaign\.open && !!\(stored\?\.code \|\| stored\?\.sentTo\);/)
+    const sum = PAGE.slice(PAGE.indexOf('{grantCountAr(chosen.length)}'), PAGE.indexOf('</Card>', PAGE.indexOf('{grantCountAr(chosen.length)}')))
+    expect(sum).toMatch(/\{grantOn && <span className="text-read font-normal text-muted-foreground">بدل/)
+    expect(sum).toMatch(/\{grantOn && \(\s*<>\s*<p className="mt-0\.5 text-read text-muted-foreground">\{GRANT_VALUE_AR\}/)
+    expect(sum).toMatch(/\{grantOn \? "احصل على المنحة" : "اشتر الدورات"\}/)
+    expect(PAGE).toMatch(/\{\(stored\.code \|\| stored\.sentTo\) && !c\.open && <p className="mt-2 text-read font-bold">\{GRANT_CLOSED_AR\}<\/p>\}/)
+    /* ومن نفدت أكوادُها يبقى عند سببه — ويعود إلى النموذج حين تُزاد */
+    expect(PAGE).toMatch(/const topNote = reasonAr \?\? \(!c\.open \? GRANT_CLOSED_AR : c\.soldOut \? GRANT_SOLD_OUT_AR : null\);/)
+    expect(code('server/services/grant-landing.service.ts')).toMatch(/soldOut: s\.left === 0/)
+    /* وما اختاره قبل أن يعود إلى النموذج يبقى له */
+    expect(PAGE).toMatch(/picks: stored\?\.ref === out\.ref \? stored\.picks : undefined,/)
+    for (const t of ['اشتر الدورات']) expect(t).toBe(plainAr(t))
   })
 
   /* من حدّث الصفحةَ أو عاد إليها كان يجد الدوراتِ فارغة — وقد اختارها وحُفظت في ملفّه عندنا (٢٧ أكتوبر ٢٠٢٦) */
@@ -354,7 +372,7 @@ describe('بعد النموذج', () => {
 
   /* من عبّأ النموذجَ والمنحةُ مغلقةٌ أو نفدت أكوادُها لم يأخذ كودا ولا بريدا — فكان يجد الدوراتِ بلا كودٍ إن فتحت، ويدفع كاملا */
   it('⚠️ من لا كود له ولا بريد والمنحة مفتوحة يعود إلى النموذج — بما كتب أول مرة', () => {
-    expect(PAGE).toMatch(/if \(stored && \(stored\.code \|\| stored\.sentTo \|\| reasonAr \|\| !c\.open\)\) \{/)
+    expect(PAGE).toMatch(/if \(stored && \(stored\.code \|\| stored\.sentTo \|\| reasonAr \|\| !c\.open \|\| c\.soldOut\)\) \{/)
     expect(PAGE.match(/if \(stored\) \{/g) ?? [], 'عادت الدورات لكل من حفظ شيئا').toEqual([])
     expect(PAGE).toMatch(/return \{ fullName: was\?\.name \?\? "", phone: "", email: was\?\.email \?\? "", workField: was\?\.workField \?\? "", careerLevel: "" \};/)
     /* ويُقترح له من جديدٍ بما كتب الآن */
@@ -493,9 +511,10 @@ describe('بعد النموذج', () => {
     /* الرابطُ القصيرُ من الخادم إن صنعه، والطويلُ بوسمه إن لم يصنع — ومنحةُ المؤثّرين برابط مؤثّرها */
     expect(PAGE).toMatch(/const sharePath = forInfluencer && creditedCode \? `\$\{INFLUENCER_GRANT_PATH\}\/\$\{creditedCode\}` : GRANT_SHARE_PATH;/)
     expect(PAGE).toMatch(/const shareLink = view\.sharePath \? `https:\/\/\$\{BARE_HOST\}\$\{view\.sharePath\}` : `\$\{window\.location\.origin\}\$\{sharePath\}`;/)
-    expect(PAGE).toMatch(/const shareText = grantShareAr\(shareLink, pct, lastDayLong, !forInfluencer\);/)
+    /* بنسبة الحملة اليوم لا بنسبة كوده: الصديقُ يأخذ كودا جديدا بنسبة يومه (٢٨ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const shareText = grantShareAr\(shareLink, c\.percentOff, lastDayLong, !forInfluencer\);/)
     expect(PAGE).toMatch(/href=\{waShare\(shareText\)\}/)
-    expect(PAGE).toMatch(/href=\{grantShareMailto\(shareLink, pct, lastDayLong, !forInfluencer\)\}/)
+    expect(PAGE).toMatch(/href=\{grantShareMailto\(shareLink, c\.percentOff, lastDayLong, !forInfluencer\)\}/)
     expect(PAGE).toMatch(/import \{ waHref, waShare \} from "@\/application\/site\/whatsapp";/)
     expect(PAGE, 'عاد «ثلاثة أصدقاء»').not.toContain('ثلاثة أصدقاء')
     /* خارجَ لوح الدفع وبعده — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «صندوقُ الإهداء يكون خارجَ صندوق الدفع» */
@@ -506,6 +525,8 @@ describe('بعد النموذج', () => {
     const gift = PAGE.indexOf('{GRANT_GIFT_AR.title}')
     expect(gift, 'صندوق الهدية').toBeGreaterThan(from + panel.length)
     expect(PAGE.slice(gift)).toMatch(/^\{GRANT_GIFT_AR\.title\}<\/span>\s*<span className="block text-read text-muted-foreground">\{GRANT_GIFT_AR\.limit\}/)
+    /* ولمن له منحةٌ يستعملها وحدَه — من نفدت عنه لا يُهدي ما لا يأخذه صديقُه (٢٨ أكتوبر ٢٠٢٦) */
+    expect(PAGE.slice(PAGE.lastIndexOf('<Card', gift) - 40, PAGE.lastIndexOf('<Card', gift))).toMatch(/\{grantOn && \(\s*$/)
     /* والكودُ ظاهرٌ فوق، والعدّادُ فوق وحدَه — لا يُعادان في اللوح */
     expect(panel, 'عاد سطر الكود في اللوح').not.toMatch(/يوضع تلقائيا|stored\.code/)
     expect(panel, 'عاد العداد في اللوح').not.toContain('GrantCountdown')
@@ -519,7 +540,7 @@ describe('بعد النموذج', () => {
     /* قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «هنا يجب أن يكون تفصيلُ كم كانت الدورة، وبعد المنحة». ثمّ (٢٦ أكتوبر):
        «اجعل تفصيلَ الحساب مطويّا افتراضيّا.. أيُّ حسابٍ تقصد؟» — فطُوي للجميع وسُمّي «تفصيل السعر» */
     const BUY = code('src/components/BuyPanel.tsx')
-    expect(PAGE).toMatch(/initialCoupon=\{stored\.code \?\? ""\}\s*grantPayTotal=\{payTotal\}/)
+    expect(PAGE).toMatch(/initialCoupon=\{stored\.code \?\? ""\}\s*grantPayTotal=\{grantOn \? payTotal : undefined\}/)
     const fold = BUY.slice(BUY.lastIndexOf('<details', BUY.indexOf('تفصيل السعر')), BUY.indexOf('</details>', BUY.indexOf('تفصيل السعر')))
     expect(fold.match(/<details[^>]*>/)?.[0], 'التفصيل مفتوح افتراضا').toBe('<details className="group">')
     expect(fold, 'التفصيل بلا بند المنحة').toContain('quote.couponDiscount > 0')
@@ -651,7 +672,7 @@ describe('بعد النموذج', () => {
     expect(PAGE).not.toMatch(/"دقيقة"|"ثانية"/)
     expect(PAGE).toContain('تنتهي المنحة بعد {left}')
     expect(PAGE).toContain('آخر يوم: {fmtDateLong(')
-    expect(PAGE).toMatch(/\{c\.open && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}/)
+    expect(PAGE).toMatch(/\{grantOn && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}/)
     expect(PAGE.match(/<GrantCountdown /g)?.length, 'العداد في النموذج وتحت الكود وحدهما').toBe(2)
   })
 
@@ -663,7 +684,7 @@ describe('بعد النموذج', () => {
   it('⚠️ ولا عدد للمنح — العداد وآخر يوم وحدهما، والعدد لا يصل الزائر', () => {
     expect(PAGE).toMatch(/\? <GrantCountdown closesAt=\{c\.closesAt\} className="mt-4" \/>\s*: <p className="mt-3"><Chip tone="warn">المنح محدودة<\/Chip><\/p>/)
     expect(PAGE, 'عاد عدد المنح إلى الصفحة').not.toMatch(/\.left\b|بقي \$\{/)
-    expect(PAGE).toMatch(/campaign: \{ open: boolean; percentOff: number; maxCourses: number; closesAt: string \| null \};/)
+    expect(PAGE).toMatch(/campaign: \{ open: boolean; percentOff: number; maxCourses: number; closesAt: string \| null; soldOut\?: boolean \};/)
     expect(PAGE).toMatch(/>\{c\.open \? "احجز منحتي الآن" : "سجلني"\}<\/Button>/)
   })
 

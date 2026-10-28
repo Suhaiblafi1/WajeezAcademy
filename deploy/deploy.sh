@@ -155,6 +155,9 @@ $COMPOSE run --rm --no-deps app npx prisma migrate deploy \
   || fail "أخفقت الهجرة — الحاويات لم تُبدَّل بعد، والموقع القديم يعمل. راجع السجل ثم أعد."
 
 step "٦/٧ · تبديل الحاويات"
+# بصمةُ `Caddyfile` وسمٌ على حاوية Caddy (`compose.prod.yml`) — فإن تغيّر الملفُّ تغيّر وصفُها وأعاد `up -d` إنشاءَها
+# وحدَه، وإن لم يتغيّر بقيت تعمل. والشرحُ تحت.
+export CADDYFILE_SHA256="$(sha256sum deploy/Caddyfile | cut -d' ' -f1)"
 $COMPOSE up -d --remove-orphans
 
 # ── وإعادةُ تحميل Caddy صراحةً ──
@@ -187,17 +190,23 @@ $COMPOSE up -d --remove-orphans
 # و١٨:٥٠ يومَها، والنشرُ تلقائيٌّ بعد كلّ دمج — ومن ضغط «ادفع» فيها رأى
 # «تعذّر إتمام الشراء». و`Caddyfile` لا يتغيّر في أكثر النشرات.
 #
-# فتُحفظ بصمةُ الملفّ الذي أقلع به Caddy، ولا يُعاد إنشاؤه إلّا إن اختلفت أو لم
-# تكن له حاويةٌ تعمل. وما بقي يعمل يصل التطبيقَ الجديد: الاسمُ `app` يُحلّ عند كلّ
-# اتّصال، و`lb_try_duration` يُمسك الطلبَ ما دام يُبدَّل. والبصمةُ تُكتب بعد
-# الإنشاء لا قبله، فإنشاءٌ سقط يُعاد في النشر التالي.
+# فبصمةُ الملفّ وسمٌ على الحاوية نفسِها (`wajeez.caddyfile-sha256` في `compose.prod.yml`)، يُكتب حين تُنشأ: وصفُها
+# يتغيّر بتغيّر الملفّ فيعيد `up -d` إنشاءَها وحدَه، ولا يتغيّر بغيره فتبقى تعمل. وما بقي يعمل يصل التطبيقَ الجديد:
+# الاسمُ `app` يُحلّ عند كلّ اتّصال، و`lb_try_duration` يُمسك الطلبَ ما دام يُبدَّل.
+#
+# ── ولماذا وسمٌ على الحاوية لا ملفُّ بصمةٍ على القرص (٢٨ أكتوبر ٢٠٢٦) ──
+#
+# كانت البصمةُ في `~/.wajeez-caddyfile.sha256` — أي ما كتبه السكربتُ آخرَ مرّة، لا ما أقلع به Caddy. فرجوعٌ إلى
+# التزامٍ أقدم بسكربته القديم يعيد إنشاءَ Caddy على ملفٍّ قديم ولا يمسّ البصمة، ثمّ نشرُ الجديد يجدها مطابقةً فلا
+# يُنشئه: Caddy على إعدادٍ قديمٍ بلا إنذار — عطبُ `frame-src` نفسُه. والوسمُ يُقرأ من الحاوية التي تعمل فعلا.
+#
+# وما بعد `up -d` شبكةُ أمان: إن لم يكن الوسمُ على الحاوية بصمةَ الملفّ اليوم (أو لا حاويةَ تعمل) أُعيد إنشاؤها.
 #
 # والحارس: `caddy-recreate-on-change.test.ts` بين حرّاس النشر في `src/tests`
-caddy_sum="$(sha256sum deploy/Caddyfile | cut -d' ' -f1)"
-CADDY_STAMP="${WAJEEZ_CADDY_STAMP:-$HOME/.wajeez-caddyfile.sha256}"
-if [ "$(cat "$CADDY_STAMP" 2>/dev/null || true)" != "$caddy_sum" ] || [ -z "$($COMPOSE ps -q caddy 2>/dev/null || true)" ]; then
+caddy_id="$($COMPOSE ps -q caddy 2>/dev/null || true)"
+caddy_loaded="$( [ -n "$caddy_id" ] && docker inspect -f '{{ index .Config.Labels "wajeez.caddyfile-sha256" }}' "$caddy_id" 2>/dev/null || true)"
+if [ "$caddy_loaded" != "$CADDYFILE_SHA256" ]; then
   $COMPOSE up -d --force-recreate caddy
-  printf '%s\n' "$caddy_sum" > "$CADDY_STAMP"
 else
   echo "Caddyfile كما هو — Caddy يبقى يعمل بلا انقطاع"
 fi

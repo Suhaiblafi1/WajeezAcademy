@@ -565,7 +565,8 @@ export default function BuyPanel({
                 طبّق
               </button>
             </div>
-            {couponError && <p className="mt-1.5 text-read leading-6 text-gold-ink">{couponError}</p>}
+            {/* وحين بقي طلبٌ لم يكتمل دفعُه يقوله صندوقُه وحدَه — لا سطرُ الكود معه بالمعنى نفسِه مرّتين */}
+            {couponError && !unpaidLeft && <p className="mt-1.5 text-read leading-6 text-gold-ink">{couponError}</p>}
             {/* ومن جاء من صفحة المنحة بلا كودٍ مكتوب (عاد بعد أن أخذه، فأُرسل إلى بريده ولم يُعرض) — يُقال له ما يصير
                 إليه المبلغ بكوده، لا يُترك أمام سعرٍ كاملٍ يظنّه سعرَ المنحة */}
             {grantPayTotal !== undefined && quote && quote.grantPct === null && !couponError && !nothingLeft && (
@@ -601,8 +602,12 @@ export default function BuyPanel({
               </Card>
             ) : (
               <Card tone="accent" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                {/* ومن صفحة المنحة خياران لا واحد: الطلبُ المحجوزُ قد يكون بلا كود منحته (بدأه قبل أن يأخذه) فيُدفع كاملا —
+                    فيُقال له أنّه يكمله أو يلغيه ثمّ يعود فيشتري بمنحته، والفرقُ بينهما يراه في «فواتيري» (مراجعةُ ٢٨ أكتوبر ٢٠٢٦) */}
                 <p className="min-w-0 flex-1 text-read leading-6 text-teal-light-ink">
-                  لك طلب بهذه الدورات لم يكتمل دفعه. أكمله من «فواتيري».
+                  {grantPayTotal !== undefined
+                    ? "لك طلب بهذه الدورات لم يكتمل دفعه. من «فواتيري» تكمله، أو تلغيه ثم تعود فتشتري بمنحتك."
+                    : "لك طلب بهذه الدورات لم يكتمل دفعه. أكمله من «فواتيري»."}
                 </p>
                 <Button as={Link} to="/student/billing" tone="confirm" size="sm" icon={ReceiptText} onClick={onClose}>
                   افتح «فواتيري»
