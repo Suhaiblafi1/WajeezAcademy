@@ -55,8 +55,8 @@ async function learner(cohortId: string, status: string) {
   n += 1
   const email = `pts-l${n}-${STAMP}@test.local`
   const u = await prisma.user.create({ data: { email, displayName: `متعلّم ${n}`, passwordHash: 'x' } })
-  await prisma.enrollment.create({ data: { userId: u.id, cohortId, status } })
-  return { userId: u.id, email }
+  const e = await prisma.enrollment.create({ data: { userId: u.id, cohortId, status } })
+  return { userId: u.id, email, enrollmentId: e.id }
 }
 const session_ = (cohortId: string, startsAt: Date, over: Record<string, unknown> = {}) => prisma.cohortSession.create({
   data: { cohortId, title: `لقاء ${startsAt.toISOString()}`, startsAt, endsAt: new Date(startsAt.getTime() + 2 * H), ...over },
@@ -71,7 +71,7 @@ let solo = ''
 let shared = ''
 let empty = ''
 const s: Record<string, string> = {}
-const people: Record<string, { userId: string; email: string }> = {}
+const people: Record<string, { userId: string; email: string; enrollmentId: string }> = {}
 
 beforeAll(async () => {
   await setupTestDb()
@@ -128,6 +128,9 @@ beforeAll(async () => {
   await prisma.zoomMeeting.create({
     data: { sessionId: s.started, provider: 'zoom_api', meetingId: `pts-started-${STAMP}`, joinUrl: 'https://zoom.us/j/2', actualStartAt: new Date(Date.now() - 5 * 60_000) },
   })
+  /* وسُجّل فيه حضورٌ قبل موعده — كذلك */
+  s.attended = (await session_(solo, new Date(Date.now() + 2 * H), { approvalState: 'approved' })).id
+  await prisma.attendance.create({ data: { sessionId: s.attended, enrollmentId: people.seated!.enrollmentId, status: 'present' } })
 
   /* وشعبةٌ يشاركه فيها مدرّبٌ يبقى */
   shared = (await cohort('شعبة يشاركه فيها غيره')).id
@@ -158,7 +161,7 @@ describe('① الإنذارُ قبل الحذف', () => {
     expect(byId.get(solo)).toMatchObject({ title: 'شعبة يقودها وحده', learners: 2, upcoming: 3, keepsSessions: false })
     expect(byId.get(shared)).toMatchObject({ learners: 1, upcoming: 1, keepsSessions: true })
     expect(byId.has(empty), 'أُنذر بشعبةٍ لا طالبَ فيها').toBe(false)
-    expect(await prisma.cohortSession.count({ where: { id: { in: Object.values(s) } } }), 'قرأ الإنذارُ فكتب').toBe(8)
+    expect(await prisma.cohortSession.count({ where: { id: { in: Object.values(s) } } }), 'قرأ الإنذارُ فكتب').toBe(9)
   })
 
   it('⚠️ ولا يقرؤه إلّا من يملك الحذف', async () => {
@@ -179,7 +182,7 @@ describe('② والحذفُ يرفع لقاءاتِها القادمة من ك�
     /* وكما قال الإنذار: ثلاثةٌ من شعبته — وواحدٌ من شعبته التي بلا طلاب */
     expect(res).toMatchObject({ removedSessions: 4, clearedCohorts: 2 })
     const left = (await prisma.cohortSession.findMany({ where: { cohortId: solo }, select: { id: true } })).map((x) => x.id)
-    expect(left.sort(), 'بقي لقاءٌ قادمٌ لشعبةٍ بلا مدرّب — أو حُذف ما مضى أو ما انعقد').toEqual([s.past, s.placeholder, s.started].sort())
+    expect(left.sort(), 'بقي لقاءٌ قادمٌ لشعبةٍ بلا مدرّب — أو حُذف ما مضى أو ما انعقد أو ما فيه حضور').toEqual([s.past, s.placeholder, s.started, s.attended].sort())
     expect(await prisma.cohortSession.findUnique({ where: { id: s.empty } }), 'بقي لقاءُ شعبته التي بلا طلاب').toBeNull()
     expect((await cancels(s.empty!)).map((m) => m.to).sort()).toEqual([trainer.email, ...GUESTS].sort())
     expect(await prisma.enrollment.count({ where: { cohortId: solo, status: { not: 'dropped' } } }), 'أُسقط الطلاب').toBe(2)
