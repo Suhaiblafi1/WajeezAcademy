@@ -67,6 +67,13 @@ describe('طلبُ الشحن الذاهب إلى Stripe', () => {
     expect(sent!.body.get('line_items[0][price_data][unit_amount]')).toBe('2500')
   })
 
+  /* «لا يوجد لدينا كريبتو.. أعدها للوضع العادي» (صاحب المنصة، ٢٨ أكتوبر ٢٠٢٦): بلا هذا يعرض Stripe ما فتح في لوحته */
+  it('⚠️ الدفع بالبطاقة وحدها — لا بما فتح في لوحة Stripe', async () => {
+    await charge()
+    expect(sent!.body.getAll('payment_method_types[0]')).toEqual(['card'])
+    expect([...sent!.body.keys()].filter((k) => k.startsWith('payment_method_types')), 'طريقة دفع غير البطاقة').toEqual(['payment_method_types[0]'])
+  })
+
   it('رابطا العودة من عنوان الموقع، ويفترقان', async () => {
     await charge()
     const ok = sent!.body.get('success_url')!

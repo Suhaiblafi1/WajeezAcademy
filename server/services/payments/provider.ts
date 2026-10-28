@@ -149,8 +149,13 @@ export class StripeProvider implements PaymentProvider {
        يُمرَّر دائما — فيعود من ألغى الدفع إلى الصفحة نفسها التي يعود إليها من
        دفع، بلا ما يميّز الحالتين. */
     const withFlag = (flag: string) => `${base}${base.includes('?') ? '&' : '?'}${flag}`
+    /* ═══ والدفعُ بالبطاقة — لا بما يُفتح في لوحة Stripe (٢٨ أكتوبر ٢٠٢٦) ═══
+       كانت الجلسةُ بلا `payment_method_types`، فيعرض Stripe ما فُتح في لوحته. فظهرت للمشتري صفحةُ «Pay with Crypto»
+       وحدَها بلا بطاقة، وقال صاحبُ المنصّة: «لا يوجد لدينا كريبتو.. أعدها للوضع العادي». فالبطاقةُ مكتوبةٌ هنا،
+       ومعها Apple Pay وGoogle Pay (محافظُ البطاقة)، ولا يغيّرها مفتاحٌ في لوحةٍ أخرى. */
     const body = new URLSearchParams({
       mode: 'payment',
+      'payment_method_types[0]': 'card',
       success_url: withFlag('paid=1'),
       cancel_url: withFlag('cancelled=1'),
       'line_items[0][quantity]': '1',
