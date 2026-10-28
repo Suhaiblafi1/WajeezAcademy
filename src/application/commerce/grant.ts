@@ -41,15 +41,18 @@ export const grantPrice = (listPrice: number, percentOff: number): number =>
 
 export const GRANT_CLOSED_AR = 'المنحة مغلقة الآن'
 export const GRANT_SOLD_OUT_AR = 'انتهت المنح المتاحة'
-export const GRANT_USED_AR = 'استعمل هذا الكود من قبل. كل كود منحة يستعمل مرة واحدة.'
+/** الكودُ بلغ حدَّ دوراته — قرارُ صاحب المنصّة (٢٨ أكتوبر ٢٠٢٦): الحدُّ على الكود في كلّ مشترياته لا مرّةٌ واحدة */
+export const grantUsedUpAr = (n: number) => `استعملت كل دورات هذا الكود (${n}).`
 export const GRANT_ONCE_AR = 'استعملت منحة من قبل. المنحة مرة واحدة لكل متعلم.'
-export const GRANT_PENDING_AR = 'لك طلب لم يكتمل دفعه بهذا الكود. أكمله من «الفواتير».'
 export const GRANT_NOT_BETTER_AR = 'سعر الباقة في سلتك أقل من سعر المنحة، فلا تحتاج الكود. احتفظ به أو أعطه لغيرك.'
 export const grantMaxCoursesAr = (n: number) => `المنحة لـ${n} دورات بحد أقصى. احذف دورة من سلتك.`
+/** وما بقي منه أقلّ من حدّه — «بقي لك بهذا الكود دورتان» */
+export const grantCoursesLeftAr = (left: number) =>
+  `بقي لك بهذا الكود ${left === 1 ? 'دورة واحدة' : left === 2 ? 'دورتان' : `${left} دورات`}. احذف دورة من سلتك.`
 export const GRANT_CHECKOUT_ONLY_AR = 'كود المنحة يستعمل عند الشراء المباشر فقط، لا في موافقة الطلبات'
 
 /** أسبابُ ردّ كود المنحة — يُقال سببُها تحت خانة الكود ويُسعَّر الطلبُ بلا كود (`BuyPanel`) */
-export const GRANT_ERROR_CODES = ['grant_closed', 'grant_used', 'grant_once', 'grant_pending', 'grant_not_better', 'grant_max_courses'] as const
+export const GRANT_ERROR_CODES = ['grant_closed', 'grant_used', 'grant_once', 'grant_not_better', 'grant_max_courses'] as const
 
 /** «آخر يوم» من خانة تاريخ → أوّلُ اليوم الذي بعده بتوقيت عمّان، فيبقى الكودُ صالحا يومَه كلَّه.
     وكان بتوقيت الجهاز: من حفظ أيَّ إعدادٍ من جهازٍ بتوقيتٍ غيره (الخليج مثلا) نقل النهايةَ ساعاتٍ — فالحفظُ يرسلها

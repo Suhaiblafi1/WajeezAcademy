@@ -102,7 +102,7 @@ describe('② كود لكل صاحب نموذج بنسبة يومه', () => {
     expect(b.percentOff).toBe(55)
     const old = await prisma.coupon.findUniqueOrThrow({ where: { code: a.code } })
     expect(old.percentOff, 'غيرت النسبة الجديدة كودا أعطي قبلها').toBe(60)
-    expect(old.maxUses).toBe(1)
+    expect(old.maxUses, 'حد الكود عدد دوراته لا مرة واحدة').toBeNull()
     expect(old.restrictedToUserId, 'ربط الكود بحساب فلا ينقل').toBeNull()
     expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_settings', after: { path: ['percentOff'], equals: 55 } } })).toBeGreaterThan(0)
     expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_issue', meta: { path: ['code'], equals: b.code } } })).toBe(1)
@@ -170,14 +170,26 @@ describe('⑤ب وعلى أربع دورات بحد أقصى', () => {
   })
 })
 
-describe('⑥ ينقل ويستعمل مرة', () => {
-  it('⚠️ يستعمله غير صاحبه — ثم لا يستعمله ثالث، ولا يستعمله صاحبه في طلب ثان', async () => {
+/* «لماذا لا يقبل أن يستعمل الكود مرة أخرى إن اشترى دورة أو له طلب سابق؟ قلنا الحد الأعلى ٥ دورات على هذا الكود
+   نفسه» (صاحب المنصة، ٢٨ أكتوبر ٢٠٢٦) */
+describe('⑥ ينقل ويستعمل حتى حد دوراته', () => {
+  it('⚠️ طلبه المعلق بالكود يستبدل لا يمنع — والحد على الكود في كل مشترياته، ثم لا يستعمله أحد', async () => {
     const { code } = await grants.issue({ leadId: await lead() })
     const friend = await learner()
-    const out = await commerce.checkout(friend, [(await openCohort()).id], code)
-    expect(out.total).toBe(60)
-    await expect(commerce.quote(friend, [(await openCohort()).id], code)).rejects.toMatchObject({ code: 'grant_pending' })
-    await commerce.payOrder(out.orderId, friend, `grant-${out.orderId}`)
+    const stale = await commerce.checkout(friend, [(await openCohort()).id], code)
+    expect(stale.total).toBe(60)
+    /* صفحة دفع لم تكمل — ثم عاد يشتري بالكود نفسه */
+    expect((await commerce.quote(friend, [(await openCohort()).id], code)).total, 'رد بطلبه المعلق').toBe(60)
+    const first = await pay(friend, [(await openCohort()).id], code)
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: stale.orderId } })).status, 'بقي طلبه القديم يحجز').toBe('cancelled')
+    /* دورة من أربع، ثم دورتان — وبقيت واحدة */
+    await pay(friend, await cohorts(2, 100), code)
+    await expect(commerce.quote(friend, await cohorts(2, 100), code))
+      .rejects.toMatchObject({ code: 'grant_max_courses', message: 'بقي لك بهذا الكود دورة واحدة. احذف دورة من سلتك.' })
+    await pay(friend, [(await openCohort()).id], code)
+    expect(first.total).toBe(60)
+    /* بلغ حده: لا صاحبه ولا غيره */
+    await expect(commerce.quote(friend, [(await openCohort()).id], code)).rejects.toMatchObject({ code: 'grant_used' })
     const third = await learner()
     await expect(commerce.quote(third, [(await openCohort()).id], code)).rejects.toMatchObject({ code: 'grant_used' })
   })

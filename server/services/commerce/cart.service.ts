@@ -31,7 +31,7 @@ import { TrainerCodeBudgetService, type PurchaseLine } from '../trainer-code-bud
 import { budgetCovers, CODE_UNAVAILABLE_AR, MAX_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from '../registration-window'
 import { GrantService } from '../grant.service'
-import { GRANT_NOT_BETTER_AR, grantMaxCoursesAr } from '../../../src/application/commerce/grant'
+import { GRANT_NOT_BETTER_AR, grantCoursesLeftAr, grantMaxCoursesAr } from '../../../src/application/commerce/grant'
 
 export class CartService {
   private prisma: PrismaClient
@@ -399,10 +399,14 @@ export class CartService {
     }
     /* وكودُ منحةٍ سعرُ الباقة أقلُّ منه يُقال لصاحبه ولا يُحرق — فيحتفظ به أو يعطيه غيرَه */
     if (pricing.grantBeaten) throw new AuthError('grant_not_better', GRANT_NOT_BETTER_AR, 409)
-    /* وعلى عددٍ بحدٍّ — «يحقّ لك فقط ٤ دورات». والهديّةُ لا تُعدّ: سعرُها صفرٌ لا تقع عليه المنحة */
-    const grantCourses = coupon?.grantCode?.campaign.maxCourses
-    if (grantCourses !== undefined && pricing.paidCount > grantCourses) {
-      throw new AuthError('grant_max_courses', grantMaxCoursesAr(grantCourses), 409)
+    /* وعلى عددٍ بحدٍّ للكود كلِّه — «يحقّ لك فقط ٤ دورات»، ثمّ «٥ دورات على هذا الكود نفسِه» (٢٨ أكتوبر ٢٠٢٦):
+       ما بقي منه بعد مشترياته السابقة به (`coursesLeft`). والهديّةُ لا تُعدّ: سعرُها صفرٌ لا تقع عليه المنحة */
+    if (coupon?.grantCode) {
+      const max = coupon.grantCode.campaign.maxCourses
+      const left = await this.grants.coursesLeft(coupon, userId)
+      if (pricing.paidCount > left) {
+        throw new AuthError('grant_max_courses', left < max ? grantCoursesLeftAr(left) : grantMaxCoursesAr(max), 409)
+      }
     }
     /* ═══ ورصيدُه — يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦) ═══
 
