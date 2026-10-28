@@ -12,6 +12,9 @@ import { publicTrainerWhere, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible }
 import { photoPublicUrl } from './storage.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { cohortSummaryAr } from '../../src/application/learning/cohort-summary'
+import { termKey, termOf } from '../../src/application/terms/season'
+import { zonedDay } from '../../src/application/trainer/cohort-period'
+import type { TrainingSeason } from '../../src/application/trainer/application-options'
 import { asAudience } from '../../src/application/trainer/cohort-audience'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 
@@ -97,13 +100,31 @@ export class PublicCatalogService {
   /** رموزُ الدورات التي تُعرض في قوائم الموقع — ما له شعبةٌ أُعلنت ولم تنتهِ (`listedCohortWhere`).
       وصفحةُ الدورة نفسُها تبقى لمن يملك رابطَها: الإخفاءُ من القوائم والبحث لا من الموقع. */
   async listedCourseIds(now = new Date()): Promise<string[]> {
+    return (await this.listedCourses(now)).courseIds
+  }
+
+  /** والرموزُ مع فصول شعبها المعروضة — «C-BIZ-103» ← «2027-feb_apr».
+
+      ═══ لمَ الفصل (٢٨ أكتوبر ٢٠٢٦) ═══
+      قال صاحبُ المنصّة: «المساراتُ فيها دوراتٌ خارج فصل الشتاء». فالمسارُ العامُّ يُعرض حين تكون لكلّ دوراته
+      شعبةٌ **في فصله** (`listedWhole`)، لا شعبةٌ في أيّ فصل. والفصلُ من يوم بدء الشعبة بتوقيت عمّان — لا من
+      فصلها المسجَّل: شعبةٌ في صفّ الشتاء تبدأ في مارس خارجَ الشتاء عند من يشتريها. وبلا يومِ بدءٍ ففصلُها المسجَّل. */
+  async listedCourses(now = new Date()): Promise<{ courseIds: string[]; seasons: Record<string, string[]> }> {
     const rows = await this.prisma.cohort.findMany({
       where: listedCohortWhere(now),
-      distinct: ['courseId'],
-      select: { courseId: true },
+      select: { courseId: true, startsAt: true, term: { select: { year: true, season: true } } },
       orderBy: { courseId: 'asc' },
     })
-    return rows.map((r) => r.courseId)
+    const seasons: Record<string, string[]> = {}
+    for (const r of rows) {
+      const list = (seasons[r.courseId] ??= [])
+      const t = r.startsAt
+        ? termOf(new Date(`${zonedDay(r.startsAt)}T12:00:00Z`))
+        : r.term ? { year: r.term.year, season: r.term.season as TrainingSeason } : null
+      const key = t ? termKey(t.year, t.season) : null
+      if (key && !list.includes(key)) list.push(key)
+    }
+    return { courseIds: Object.keys(seasons), seasons }
   }
 
   /** الشعب المعروضة للزوار — مفتوحة أو ممتلئة أو جارية: السعر والموعد والمدرب */

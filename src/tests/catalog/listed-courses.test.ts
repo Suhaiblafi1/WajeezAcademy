@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { availabilityNoteAr, listedFirst, listedFromResponse, listedOnly, type ListedCourses } from '@/application/catalog/listed-courses'
+import { availabilityNoteAr, listedFirst, listedFromResponse, listedOnly, seasonsFromResponse, type ListedCourses } from '@/application/catalog/listed-courses'
 
 const rows = [{ id: 'C-A' }, { id: 'C-B' }, { id: 'C-C' }]
 const ready = (ids: string[]): ListedCourses => ({ state: 'ready', ids: new Set(ids) })
@@ -27,6 +27,14 @@ describe('المرشِّح', () => {
     expect(listedFromResponse({ courseIds: 'C-A' })).toBeNull()
     expect(listedFromResponse(null)).toBeNull()
     expect([...listedFromResponse({ courseIds: ['C-A', 3, '', 'C-B'] })!]).toEqual(['C-A', 'C-B'])
+  })
+
+  it('وفصولُ الشعب تُقرأ — وغيابُها `null` لا فصولٌ فارغةٌ تُخفي كلَّ مسار', () => {
+    expect(seasonsFromResponse({ courseIds: ['C-A'] })).toBeNull()
+    expect(seasonsFromResponse({ seasons: ['2026-nov_jan'] })).toBeNull()
+    const m = seasonsFromResponse({ seasons: { 'C-A': ['2026-nov_jan', 4, ''], 'C-B': 'x' } })!
+    expect([...m.get('C-A')!]).toEqual(['2026-nov_jan'])
+    expect(m.has('C-B')).toBe(false)
   })
 })
 

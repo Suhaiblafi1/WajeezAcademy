@@ -105,3 +105,28 @@ describe('دوراتُ قوائم الموقع — من فتح شعبتها إل
     expect(listed.filter((x) => x === id)).toHaveLength(1)
   })
 })
+
+/* ═══ وفصولُ شعبها (٢٨ أكتوبر ٢٠٢٦) ═══
+   المسارُ العامُّ يُعرض حين تكون لكلّ دوراته شعبةٌ في فصله (`listedWhole`). والفصلُ من يوم البدء بتوقيت عمّان. */
+describe('فصولُ الدورات المعروضة', () => {
+  it('⚠️ من يوم بدء الشعبة بتوقيت عمّان — منتصفُ ليل أوّل نوفمبر شتاءٌ وإن كان في UTC أكتوبر', async () => {
+    const id = await courseWith('S', { startsAt: new Date('2030-10-31T21:00:00Z'), endsAt: new Date('2031-01-20T00:00:00Z') })
+    const { courseIds, seasons } = await catalog.listedCourses()
+    expect(courseIds).toContain(id)
+    expect(seasons[id]).toEqual(['2030-nov_jan'])
+  })
+
+  it('وبلا يوم بدءٍ ففصلُها المسجَّل — والشعبتان في فصلين فصلان', async () => {
+    const termId = await term(-30, -1)
+    const t = await prisma.term.findUniqueOrThrow({ where: { id: termId } })
+    const id = await courseWith('R', { startsAt: null, termId })
+    const second = await prisma.cohort.create({
+      data: { courseId: id, title: 'شعبة الربيع', status: 'open', registrationOpen: true, price: 150, currency: 'USD', startsAt: new Date('2031-03-01T08:00:00Z'), endsAt: new Date('2031-04-01T08:00:00Z') },
+    })
+    await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: second.id, trainerId: profileId, status: 'approved', content: { kind: 'trainer', modules: [], resources: [] } },
+    })
+    const { seasons } = await catalog.listedCourses()
+    expect([...seasons[id]].sort()).toEqual([`${t.year}-nov_jan`, '2031-feb_apr'].sort())
+  })
+})

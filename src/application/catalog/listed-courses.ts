@@ -21,7 +21,12 @@
 export type ListedCourses =
   | { state: 'loading' }
   | { state: 'failed' }
-  | { state: 'ready'; ids: ReadonlySet<string> }
+  | {
+      state: 'ready'
+      ids: ReadonlySet<string>
+      /** فصولُ شعب كلّ دورةٍ معروضة — «2026-nov_jan». وغيابُه (خادمٌ أقدم) لا يُخفي مسارا */
+      seasons?: ReadonlyMap<string, ReadonlySet<string>>
+    }
 
 /** القائمةُ العامّةُ بلا ما لا شعبةَ له — والترتيبُ كما جاء */
 export function listedOnly<T extends { id: string }>(items: readonly T[], listed: ListedCourses): T[] {
@@ -36,11 +41,19 @@ export function listedOnly<T extends { id: string }>(items: readonly T[], listed
    بشرطٍ ثانٍ — بالجواب نفسِه: دورةٌ منه بلا شعبةٍ تُخفيه، وحين تُفتح يعود. والمجهولُ كالدورات:
    لا شيءَ قبل الجواب، والكلُّ إن تعذّر. */
 
-/** المساراتُ التي لكلّ دوراتها شعبةٌ معروضة — والترتيبُ كما جاء */
-export function listedWhole<T extends { courseIds: readonly string[] }>(items: readonly T[], listed: ListedCourses): T[] {
+/* ═══ وشعبتُها في فصل المسار (٢٨ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «المساراتُ فيها دوراتٌ خارج فصل الشتاء.. أبقِ المساراتِ الحاليّةَ التي فيها دوراتٌ
+   مستقبليّةٌ خارج فصل الشتاء مخفيّة». فكان «التفاوض» يُعرض ودورتُه الثانيةُ في ٢٠٢٨. فالمسارُ الذي يسمّي فصلَه
+   لا تكفيه شعبةٌ في أيّ فصل: يُشترط لكلّ دورةٍ منه شعبةٌ معروضةٌ **في فصله**. وإن عادت لدورةٍ شعبةٌ فيه عاد. */
+
+/** المساراتُ التي لكلّ دوراتها شعبةٌ معروضة — في فصلها إن سمّته — والترتيبُ كما جاء */
+export function listedWhole<T extends { courseIds: readonly string[]; season?: string | null }>(items: readonly T[], listed: ListedCourses): T[] {
   if (listed.state === 'loading') return []
   if (listed.state === 'failed') return [...items]
-  return items.filter((p) => p.courseIds.length > 0 && p.courseIds.every((id) => listed.ids.has(id)))
+  const inSeason = (id: string, season: string | null | undefined) =>
+    !season || !listed.seasons || (listed.seasons.get(id)?.has(season) ?? false)
+  return items.filter((p) => p.courseIds.length > 0 && p.courseIds.every((id) => listed.ids.has(id) && inSeason(id, p.season)))
 }
 
 /* ═══ وما يُقال عن حجم الكتالوج: ما يُعرض، وأنّه دفعةٌ أولى (٢١ أكتوبر ٢٠٢٦) ═══
@@ -66,6 +79,18 @@ export function listedFromResponse(raw: unknown): ReadonlySet<string> | null {
   const ids = (raw as { courseIds?: unknown } | null)?.courseIds
   if (!Array.isArray(ids)) return null
   return new Set(ids.filter((x): x is string => typeof x === 'string' && x.length > 0))
+}
+
+/** فصولُ الدورات من الجواب — وما ليس قائمةَ نصوصٍ يسقط، والجوابُ بلا فصولٍ `null` */
+export function seasonsFromResponse(raw: unknown): ReadonlyMap<string, ReadonlySet<string>> | null {
+  const seasons = (raw as { seasons?: unknown } | null)?.seasons
+  if (!seasons || typeof seasons !== 'object' || Array.isArray(seasons)) return null
+  const out = new Map<string, ReadonlySet<string>>()
+  for (const [id, keys] of Object.entries(seasons as Record<string, unknown>)) {
+    if (!Array.isArray(keys)) continue
+    out.set(id, new Set(keys.filter((x): x is string => typeof x === 'string' && x.length > 0)))
+  }
+  return out
 }
 
 /* ═══ والتشخيصُ: ما يُشترى الآن أوّلا (٢١ أكتوبر ٢٠٢٦) ═══
