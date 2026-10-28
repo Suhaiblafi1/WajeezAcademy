@@ -28,13 +28,15 @@ export function registerTrainerAnnouncementRoutes(app: FastifyInstance, prisma: 
 
   app.post('/api/admin/trainer-announcements', {
     preHandler: canAnnounce,
-    schema: { tags: ['trainer-announcements'], summary: 'إرسال إعلان إلى المدرّبين — نافذة في بوّابتهم وإشعار في الجرس' },
+    schema: { tags: ['trainer-announcements'], summary: 'إرسال إعلان إلى المدرّبين — نافذة في بوّابتهم وإشعار في الجرس، وبالبريد إن اختير' },
   }, async (req, reply) => {
     const body = z.object({
       titleAr: z.string().trim().min(3).max(ANNOUNCEMENT_TITLE_MAX),
       bodyAr: z.string().trim().min(10).max(ANNOUNCEMENT_BODY_MAX),
       /* آخرُ يومٍ يُكتب فيه من صار مدرّبا بعد الإرسال (بعمّان) — أو فارغٌ: الآن وحدَهم */
       lateJoinersUntil: z.string().nullable().optional(),
+      /* ويصل بالبريد أيضا — خيارُ المرسِل، وبلا ذكرٍ في المنصّة وحدَها كما كان */
+      byEmail: z.boolean().optional(),
     }).parse(req.body)
     const day = body.lateJoinersUntil ?? null
     if (day) {
@@ -42,7 +44,7 @@ export function registerTrainerAnnouncementRoutes(app: FastifyInstance, prisma: 
       if (problem) throw new AuthError('bad_late_until', problem, 422)
     }
     return reply.status(201).send(await svc.send(req.auth!.userId, {
-      titleAr: body.titleAr, bodyAr: body.bodyAr, lateJoinersUntil: day ? lateUntilInstant(day) : null,
+      titleAr: body.titleAr, bodyAr: body.bodyAr, lateJoinersUntil: day ? lateUntilInstant(day) : null, byEmail: body.byEmail ?? false,
     }))
   })
 

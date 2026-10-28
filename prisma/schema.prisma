@@ -4493,6 +4493,8 @@ model TrainerAnnouncement {
   /// آخرُ لحظةٍ يُكتب فيها من صار مدرّبا بعد الإرسال — حين يفتح بوّابتَه. وفارغٌ: من كانوا
   /// مدرّبين يومَ أُرسل وحدَهم. خيارُ المرسِل عند الإرسال (٤ أكتوبر ٢٠٢٦)
   lateJoinersUntil DateTime?
+  /// ويصل بالبريد أيضا — خيارُ المرسِل عند الإرسال (٢٨ أكتوبر ٢٠٢٦). ومن كُتب بعده من المنضمّين يصله بريدُه كذلك
+  byEmail          Boolean                        @default(false)
   recipients       TrainerAnnouncementRecipient[]
 
   @@index([sentAt])
@@ -4508,6 +4510,8 @@ model TrainerAnnouncementRecipient {
   userId         String              @db.Uuid
   seenAt         DateTime?
   readAt         DateTime?
+  /// متى خرج بريدُه — وفارغٌ: لم يُرسَل بالبريد، أو كتم «إعلانات الأكاديمية»، أو تعذّر
+  emailedAt      DateTime?
   announcement   TrainerAnnouncement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
   user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 

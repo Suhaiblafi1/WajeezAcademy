@@ -110,3 +110,62 @@ export function announcementToShow<T extends { id: string; readAt?: string | nul
   const waiting = items.filter((a) => !a.readAt && !opts.deferred(a.id))
   return waiting.length ? waiting[waiting.length - 1] : null
 }
+
+/* ═══ «بدأنا التسويق» — نصٌّ جاهزٌ ثانٍ، ويصل بالبريد أيضا (٢٨ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «جهّز رسالةً للمدرّبين نبلغهم أنّا بدأنا التسويق، وماذا يفعلون لنشر دوراتهم من قسم «شارك
+   دوراتك»، واستخدامِ الصور والنصوص إن أحبّ ذلك.. احترافيّةً واضحةً قصيرةً سهلةَ القراءة، وتصلهم إيميلا ورسالةً على
+   المنصّة». فالنصُّ هنا يُملأ به النموذج ويُعدَّل قبل أن يُرسَل — والإرسالُ بيد صاحب الحبّة كما كان (①). وتصل به
+   النافذةُ والجرسُ، والبريدُ إن اختاره المرسِل (`byEmail`).
+
+   والرابطُ في سطرٍ وحدَه: النافذةُ تجعله رابطا يُضغط (`LinkedText`)، والبريدُ يجعله زرّا عنوانُه السطرُ قبله
+   («افتح «شارك دوراتك»:») — `announcementParts`. والأصلُ (`origin`) من المتصفّح، فلا رابطَ لموقعٍ غيرِ الذي يرسل منه. */
+export function marketingDraft(origin: string) {
+  return {
+    titleAr: 'بدأنا تسويق دوراتكم — شاركوها الآن',
+    bodyAr: [
+      'الزملاء المدرّبون الكرام،',
+      'بدأنا حملة التسويق لدورات هذا الموسم. ودعوتكم أنتم أقوى ما يصل: من يعرفكم يثق بكم، ويسجّل حين تدعونه.',
+      'انشر دوراتك في دقيقة:\n1. افتح «شارك دوراتك» من قائمة بوّابتك.\n2. اختر نوع المنشور: «إعلان انضمامي» أو «دعوة لدوراتي».\n3. اختر المنصّة: واتساب، إنستغرام، لينكدإن، فيسبوك أو غيرها.\n4. اضغط «انشر» — الصورة والنص جاهزان، ومعهما كود خصم لمتابعيك.',
+      'والصور والنصوص لك إن أحببت: عدّل النص كما تشاء، أو انشر بصورك وأسلوبك، أو انسخ رابطك وحده.',
+      'ومن يسجّل من رابطك أو بكودك يحسب لك بأجر الإحالة، والخصم منّا لا يحسم منك شيء.',
+      `افتح «شارك دوراتك»:\n${origin}/trainer/share`,
+      'مع التقدير،\nإدارة أكاديمية وجيز',
+    ].join('\n\n'),
+  }
+}
+
+/** فقرةٌ من الإعلان كما يرسمها البريد — نصٌّ، أو قائمةٌ مرقّمة، أو زرٌّ برابطه */
+export type AnnouncementPart =
+  | { kind: 'p'; text: string }
+  | { kind: 'list'; items: string[] }
+  | { kind: 'cta'; label: string; href: string }
+
+const BARE_URL = /^https?:\/\/\S+$/
+const NUMBERED = /^\d+[.)]\s+/
+
+/** الإعلانُ فقراتٍ للبريد: الرابطُ في سطرٍ وحدَه زرٌّ عنوانُه ما قبله إن انتهى بنقطتين، والأسطرُ المرقّمةُ قائمة */
+export function announcementParts(body: string): AnnouncementPart[] {
+  const out: AnnouncementPart[] = []
+  for (const para of body.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)) {
+    const lines = para.split('\n').map((l) => l.trim()).filter(Boolean)
+    const last = lines[lines.length - 1]
+    if (BARE_URL.test(last)) {
+      const before = lines.slice(0, -1)
+      const head = before[before.length - 1]
+      const labelled = head?.endsWith(':')
+      const rest = labelled ? before.slice(0, -1) : before
+      if (rest.length) out.push({ kind: 'p', text: rest.join('\n') })
+      out.push({ kind: 'cta', label: labelled ? head.slice(0, -1).trim() : 'افتح الرابط', href: last })
+      continue
+    }
+    const at = lines.findIndex((l) => NUMBERED.test(l))
+    if (at >= 0 && lines.slice(at).every((l) => NUMBERED.test(l))) {
+      if (at > 0) out.push({ kind: 'p', text: lines.slice(0, at).join('\n') })
+      out.push({ kind: 'list', items: lines.slice(at).map((l) => l.replace(NUMBERED, '')) })
+      continue
+    }
+    out.push({ kind: 'p', text: lines.join('\n') })
+  }
+  return out
+}

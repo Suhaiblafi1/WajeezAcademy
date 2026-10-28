@@ -25,6 +25,13 @@
    الأكاديمية»؛ فمن كتمه سكت جرسُه وبقيت النافذة)، وأثرٌ باسم المرسِل. ولا بريد:
    الخيارُ الذي اختاره بلا بريد.
 
+   ── وبالبريد إن اختاره المرسِل (٢٨ أكتوبر ٢٠٢٦) ──
+
+   «وتصلهم إيميلا ورسالةً على المنصّة» — فصار البريدُ خيارا عند كلّ إرسال (`byEmail`)، لا عادةً تُفرض على كلّ
+   إعلان. ويصل كلَّ مستقبِلٍ بريدُه، ومن كُتب بعده من المنضمّين كذلك. والبريدُ نسخةُ الجرس: من كتم «إعلانات
+   الأكاديمية» لا يصله بريدُها (كما في `NotificationService.notify`). ويُكتب `emailedAt` لمن خرج بريدُه — فتقول
+   القائمةُ من وصله. وإخفاقُ البريد لا يُسقط الإرسال: النافذةُ والجرسُ وقعا. والرسالةُ محضةٌ (`announcementMail`).
+
    ── وما يقع بـ«قرأتُه» ──
 
    `readAt` في صفّه، وبندُ الجرس الذي يحمل الإعلانَ نفسَه يصير مقروءا — كي لا يبقى
@@ -33,10 +40,30 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { safeNotify } from './notification.service'
+import { publicSiteUrl, safeNotify, sendDirectEmail } from './notification.service'
+import { renderMail, type MailBlock, type MailDoc } from './mail-template'
 import {
-  ANNOUNCEMENT_BELL_BODY_AR, ANNOUNCEMENT_TEMPLATE_KEY,
+  ANNOUNCEMENT_BELL_BODY_AR, ANNOUNCEMENT_TEMPLATE_KEY, announcementParts,
 } from '../../src/application/trainer/announcement'
+import { categoryForTemplate } from '../../src/application/notifications/categories'
+
+/** ما يُرسَل به البريد — يُبدَّل في الاختبار فيُقرأ ما خرج */
+export type AnnouncementMailer = (to: string, subject: string, body: { text: string; html: string }) => Promise<boolean>
+
+const directMailer = (prisma: PrismaClient): AnnouncementMailer => async (to, subject, body) =>
+  (await sendDirectEmail(prisma, { to, subject, ...body })).status === 'sent'
+
+/** بريدُ الإعلان — عنوانُه عنوانُه، وفقراتُه كما كُتبت: الرابطُ زرٌّ، والمرقّمُ قائمة. وبلا رابطٍ فيه زرٌّ يفتحه في المنصّة */
+export function announcementMail(a: { id: string; titleAr: string; bodyAr: string }, site: string): { subject: string; doc: MailDoc } {
+  const parts = announcementParts(a.bodyAr)
+  const blocks: MailBlock[] = parts.map((p): MailBlock => (p.kind === 'cta'
+    ? { kind: 'cta', label: p.label, href: p.href }
+    : p.kind === 'list' ? { kind: 'list', items: p.items, numbered: true } : { kind: 'p', text: p.text }))
+  if (!parts.some((p) => p.kind === 'cta')) {
+    blocks.push({ kind: 'cta', label: 'افتحه في المنصة', href: `${site}/trainer/inbox?m=${encodeURIComponent(a.id)}` })
+  }
+  return { subject: a.titleAr, doc: { heading: a.titleAr, blocks } }
+}
 
 /** من تُفتح له بوّابةُ المدرّب فعلا — شروطُ `TrainerLayout` نفسُها */
 const AUDIENCE = {
@@ -47,8 +74,31 @@ const AUDIENCE = {
 
 export class TrainerAnnouncementService {
   private prisma: PrismaClient
-  constructor(prisma: PrismaClient) {
+  private mailer: AnnouncementMailer
+  constructor(prisma: PrismaClient, mailer?: AnnouncementMailer) {
     this.prisma = prisma
+    this.mailer = mailer ?? directMailer(prisma)
+  }
+
+  /** بريدُ مستقبِلٍ بإعلانه — ما لم يكتم «إعلانات الأكاديمية». ويُكتب `emailedAt` لمن خرج بريدُه */
+  private async email(userId: string, a: { id: string; titleAr: string; bodyAr: string }): Promise<boolean> {
+    const category = categoryForTemplate(ANNOUNCEMENT_TEMPLATE_KEY)
+    if (category?.silenceable) {
+      const pref = await this.prisma.notificationPreference.findUnique({
+        where: { userId_category_channel: { userId, category: category.key, channel: 'in_app' } },
+      })
+      if (pref && !pref.enabled) return false
+    }
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+    if (!user?.email) return false
+    const mail = announcementMail(a, publicSiteUrl())
+    const ok = await this.mailer(user.email, mail.subject, renderMail(mail.doc)).catch(() => false)
+    if (ok) {
+      await this.prisma.trainerAnnouncementRecipient.update({
+        where: { announcementId_userId: { announcementId: a.id, userId } }, data: { emailedAt: new Date() },
+      })
+    }
+    return ok
   }
 
   /** من يصله الإعلانُ لو أُرسل الآن — من تُفتح له بوّابةُ المدرّب فعلا */
@@ -67,7 +117,7 @@ export class TrainerAnnouncementService {
     })
   }
 
-  async send(actorId: string, input: { titleAr: string; bodyAr: string; lateJoinersUntil?: Date | null }) {
+  async send(actorId: string, input: { titleAr: string; bodyAr: string; lateJoinersUntil?: Date | null; byEmail?: boolean }) {
     const userIds = await this.audienceNow()
     if (userIds.length === 0) {
       throw new AuthError('no_recipients', 'لا مدرّب نشطا يصله الإعلان الآن — لم يرسل شيء', 409)
@@ -76,22 +126,28 @@ export class TrainerAnnouncementService {
       data: {
         titleAr: input.titleAr, bodyAr: input.bodyAr, sentBy: actorId,
         lateJoinersUntil: input.lateJoinersUntil ?? null,
+        byEmail: input.byEmail ?? false,
         recipients: { createMany: { data: userIds.map((userId) => ({ userId })) } },
       },
     })
     for (const userId of userIds) await this.bell(userId, a)
+    let emailed = 0
+    if (a.byEmail) for (const userId of userIds) if (await this.email(userId, a)) emailed += 1
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.announcement.send', entityType: 'trainer_announcement', entityId: a.id,
-      meta: { recipients: userIds.length, title: input.titleAr, lateJoinersUntil: a.lateJoinersUntil?.toISOString() ?? null },
+      meta: {
+        recipients: userIds.length, title: input.titleAr, lateJoinersUntil: a.lateJoinersUntil?.toISOString() ?? null,
+        byEmail: a.byEmail, emailed,
+      },
     })
-    return { id: a.id, recipients: userIds.length }
+    return { id: a.id, recipients: userIds.length, emailed }
   }
 
   /** من صار مدرّبا بعد إرسال إعلانٍ مفتوحٍ للمنضمّين — يُكتب حين يفتح بوّابتَه، ومعه جرسُه */
   private async enrollLate(userId: string) {
     const open = await this.prisma.trainerAnnouncement.findMany({
       where: { lateJoinersUntil: { gte: new Date() }, recipients: { none: { userId } } },
-      select: { id: true, titleAr: true },
+      select: { id: true, titleAr: true, bodyAr: true, byEmail: true },
     })
     if (open.length === 0) return
     if ((await this.prisma.user.count({ where: { id: userId, ...AUDIENCE } })) === 0) return
@@ -104,6 +160,7 @@ export class TrainerAnnouncementService {
         throw e
       }
       await this.bell(userId, a)
+      if (a.byEmail) await this.email(userId, a)
     }
   }
 
@@ -112,7 +169,7 @@ export class TrainerAnnouncementService {
     const [rows, audience] = await Promise.all([
       this.prisma.trainerAnnouncement.findMany({
         orderBy: { sentAt: 'desc' }, take: 50,
-        include: { recipients: { select: { seenAt: true, readAt: true } } },
+        include: { recipients: { select: { seenAt: true, readAt: true, emailedAt: true } } },
       }),
       this.audienceNow(),
     ])
@@ -123,6 +180,7 @@ export class TrainerAnnouncementService {
         total: recipients.length,
         read: recipients.filter((r) => r.readAt).length,
         seen: recipients.filter((r) => r.seenAt && !r.readAt).length,
+        emailed: recipients.filter((r) => r.emailedAt).length,
       })),
     }
   }
@@ -134,7 +192,7 @@ export class TrainerAnnouncementService {
       include: {
         recipients: {
           select: {
-            seenAt: true, readAt: true,
+            seenAt: true, readAt: true, emailedAt: true,
             user: { select: { id: true, displayName: true, email: true } },
           },
         },
@@ -148,7 +206,7 @@ export class TrainerAnnouncementService {
     return {
       id: a.id, titleAr: a.titleAr, bodyAr: a.bodyAr, sentAt: a.sentAt,
       recipients: rows.map((r) => ({
-        userId: r.user.id, name: r.user.displayName, email: r.user.email, seenAt: r.seenAt, readAt: r.readAt,
+        userId: r.user.id, name: r.user.displayName, email: r.user.email, seenAt: r.seenAt, readAt: r.readAt, emailedAt: r.emailedAt,
       })),
     }
   }
