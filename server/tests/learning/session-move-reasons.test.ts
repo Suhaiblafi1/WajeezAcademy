@@ -11,12 +11,13 @@
    ② وما لم يُعتمَد لم يره متعلّم — يُنقل بلا سبب.
    ③ وبطاقةُ الإدارة يقبلها المدرّب: يقرأ المتعلّمون سببَها بقلمها، ويُقال للمدرّب «بطلب الإدارة وقبلته».
    ④ وموعدٌ بلا تعارض: سببُه كما وقع — بلا «نقترح»، و«كان موعدها يتعارض» — في الرسالة وفي الجرس.
+   ④ب وجدولٌ سقط بعد أن نُقلت لقاءاتُه يعيدها إلى مواعيدها — والمعتمَدُ يعود بلا سبب نقلٍ يُطلب، ويُقال إنّه عاد.
    ⑤ والإدارةُ تنقل الشعبةَ بنفسها: كلُّ لقاءٍ «كان … وصار …» وسببُها، وللمدرّب «نقلته الإدارة».
    ⑥ واقتراحُ التأجيل يقبله المدرّب: سببُ الإدارة يصل المتعلّمين مع مواعيدهم الجديدة.
 
    ولا شبكةَ: لا اجتماعَ Zoom لهذه اللقاءات، فلا نداءَ يخرج. */
 
-import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it, vi } from 'vitest'
 import { plainExpect } from '../helpers/plain-expect'
 const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
@@ -29,6 +30,7 @@ import { CohortService } from '../../services/cohort.service'
 import { PlanEditService } from '../../services/plan-edit.service'
 import { CohortMoveService } from '../../services/cohort-move.service'
 import { CohortPostponeService } from '../../services/cohort-postpone.service'
+import { AssessmentService } from '../../services/assessment.service'
 import { SESSION_GUESTS } from '../../services/session-invite.service'
 import { whenAr } from '../../../src/application/learning/cohort-gate'
 import { CLASH_REASON_PREFIX } from '../../../src/application/terms/schedule-clash'
@@ -285,6 +287,43 @@ describe('④ موعدٌ بلا تعارض — سببُه كما وقع', () => 
     expect(told).toHaveLength(1)
     expect(told[0]!.body).toContain('صارت لقاءات شعبتك')
     expect(told[0]!.body).toContain('نقلته إدارة الأكاديمية: كان موعدها يتعارض مع «تحليل البيانات»')
+  })
+})
+
+describe('④ب وجدولٌ سقط بعد أن نُقلت لقاءاتُه — يعود كلُّه، ويُقال لهم إنّه عاد', () => {
+  it('⚠️ المعتمَدُ يعود إلى موعده بلا «اكتب سبب النقل» — ورسالتُه تقول إنّه عاد لا من نقله', async () => {
+    const c = await cast('السقوط')
+    const from = new Date(Date.now() + 12 * DAY)
+    const s = await approved(c, from)
+    const task = await prisma.cohortAssessment.create({
+      data: { cohortId: c.cohortId, title: 'واجب يتبع اللقاء', type: 'assignment', maxScore: 10, dueAt: new Date(from.getTime() + 4 * DAY) },
+    })
+    const plan = await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: c.cohortId, trainerId: c.trainer.profileId, status: 'approved', content: { kind: 'trainer', modules: [], resources: [] } as never },
+    })
+    const to = new Date(from.getTime() + 2 * H)
+    const edits = new PlanEditService(prisma)
+    await edits.proposeClashFree(adminId, plan.id, {
+      kind: 'schedule', weekday: 4, clock: '21:00',
+      moves: [{ sessionId: s.id, startsAt: to.toISOString(), endsAt: new Date(to.getTime() + 2 * H).toISOString() }],
+      tasks: [{ assessmentId: task.id, dueAt: new Date(to.getTime() + 4 * DAY).toISOString() }],
+    }, 'يوافق عطلة رسمية')
+    const card = await prisma.planEditSuggestion.findFirstOrThrow({ where: { planId: plan.id } })
+    /* يسقط موعدُ الواجب بعد أن نُقل اللقاء — عطبٌ لا يُفحص قبله */
+    const spy = vi.spyOn(AssessmentService.prototype, 'updateAssessment').mockRejectedValueOnce(new Error('انقطعت القاعدة'))
+    try {
+      await expect(edits.accept(c.trainer.userId, card.id)).rejects.toThrow('انقطعت القاعدة')
+    } finally { spy.mockRestore() }
+
+    expect((await prisma.cohortSession.findUniqueOrThrow({ where: { id: s.id } })).startsAt.toISOString(), 'بقي نصفُ جدول')
+      .toBe(from.toISOString())
+    const updates = (await mails(s.id, 'session.invite.update')).filter((m) => m.to === c.seated.email)
+    expect(updates, 'لم يُقل له إنّه عاد — بقي في تقويمه بموعدٍ لم يعد').toHaveLength(2)
+    const back = updates.find((m) => m.text.includes(`صار: ${whenAr(from)}`))
+    expect(back, 'لا رسالةَ تعيده إلى موعده').toBeDefined()
+    expect(back!.text).toContain(`كان: ${whenAr(to)}`)
+    expect(back!.text).toContain('تعذّر نقل جدول الشعبة كاملا، فعاد هذا اللقاء إلى موعده.')
+    expect(back!.text, 'نُسب العائدُ إلى سبب البطاقة').not.toContain('يوافق عطلة رسمية')
   })
 })
 

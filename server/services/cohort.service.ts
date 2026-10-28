@@ -1250,10 +1250,7 @@ export class CohortService {
   /** `quiet`: لا يُخبَر المتعلّمون بهذا اللقاء وحدَه — ينقل جدولا كاملا يُخبرهم به مرّةً بعده (`tellLearnersScheduleMoved`) */
   /** `why`: من طلب النقلَ ولماذا حين لا يكون المدرّبَ نفسَه — بطاقةُ الإدارة التي قبلها (`session-move.ts`).
       وبدونه فالسببُ ما كتبه المدرّبُ هنا (`reasonAr`) */
-  async trainerMoveSession(
-    userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date; reasonAr?: string },
-    opts: { preApproved?: boolean; quiet?: boolean; why?: MoveWhy } = {},
-  ) {
+  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date; reasonAr?: string }, opts: { preApproved?: boolean; quiet?: boolean; why?: MoveWhy } = {}) {
     const session = await this.assertTrainerMove(userId, sessionId, input)
     /* ═══ والمنقولُ داخلَ موعد محوره يبقى معتمَدا (٢٩ سبتمبر ٢٠٢٦) ═══
 
