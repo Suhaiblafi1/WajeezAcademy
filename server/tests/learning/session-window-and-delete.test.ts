@@ -152,7 +152,7 @@ describe('المنقولُ يرجع إلى انتظار الإدارة', () => {
     expect(await learnerSessionIds(), 'المتعلّمُ لا يرى لقاءً معتمَدا').toContain(made.session.id)
 
     await cohorts.trainerMoveSession(trainerUserId, made.session.id, {
-      startsAt: at(12), endsAt: until(12),
+      startsAt: at(12), endsAt: until(12), reasonAr: 'سفر طارئ',
     })
 
     const moved = await prisma.cohortSession.findUniqueOrThrow({ where: { id: made.session.id } })

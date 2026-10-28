@@ -65,6 +65,7 @@ import {
 import {
   TO_LADDER_WHY_AR, dayNoteAr, defaultMeetingAxes, fromClockNote, suggestedSessionTitle, toClockNote,
 } from "@/application/trainer/session-picker";
+import { MOVE_WHY_MAX, MOVE_WHY_MIN } from "@/application/learning/session-move";
 
 /** لقاءٌ كما تعرضه الورشة */
 export interface SlotSession {
@@ -75,6 +76,9 @@ export interface SlotSession {
 export interface RecordedRow {
   title: string; url?: string | null; noteAr?: string | null; moduleId?: string | null; opensAt?: string | null;
 }
+
+/** أهو في تقاويم متعلّميه؟ — فلا يُنقل بلا سبب يصلهم (`trainerMoveSession`) */
+const announcedOf = (s: SlotSession) => (s.approvalState ?? "approved") === "approved";
 
 /** اللحظةُ من يومٍ وساعةٍ بتوقيت الشعبة */
 const at = (date: string, clock: string) => {
@@ -161,18 +165,20 @@ export default function SlotSessions({
 
   /* ── تغييرُ موعد لقاءٍ قائم — من أيّام الموعد وحدَها ── */
   const [moving, setMoving] = useState<string | null>(null);
-  const [move, setMove] = useState({ date: "", from: "", to: "" });
+  const [move, setMove] = useState({ date: "", from: "", to: "", reason: "" });
   const MOVE_TO = useMemo(() => toSlotsFor(move.from), [move.from]);
   const startMove = (s: SlotSession) => {
     setMoving(moving === s.id ? null : s.id);
-    setMove({ date: "", from: "", to: "" });
+    setMove({ date: "", from: "", to: "", reason: "" });
   };
+  /* والمعتمَدُ يُنقل بسببه (٢٨ أكتوبر ٢٠٢٦): يصل متعلّميه مع «كان … وصار …» كما كتبه (`session-move.ts`) */
   const saveMove = async (s: SlotSession) => {
     setBusy(true);
     try {
       if (beforeWrite && !(await beforeWrite())) return;
       const moved = await apiPatch<{ approvalState?: string }>(`/api/trainer/sessions/${s.id}`, {
         startsAt: at(move.date, move.from), endsAt: at(move.date, move.to),
+        ...(announcedOf(s) ? { reasonAr: move.reason.trim() } : {}),
       });
       toast(moved?.approvalState === "approved"
         ? `غيّر موعد «${s.title}» وبقي معتمدا — ووصل متعلّميك موعده الجديد`
@@ -317,6 +323,7 @@ export default function SlotSessions({
               const pending = s.approvalState === "pending";
               const choices = [...new Set([...axes, ...(s.moduleIds ?? [])])];
               const moveTimed = Boolean(move.date && move.from && move.to);
+              const moveWhyMissing = announcedOf(s) && move.reason.trim().length < MOVE_WHY_MIN;
               return (
                 <Inset as="li" key={s.id} className="grid gap-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -368,8 +375,14 @@ export default function SlotSessions({
                       </div>
                       <NearbyDay nearby={nearby} day={move.date} />
                       {moveTimed && <NearbyWarn hits={nearbyHits(nearby, move.date, move.from, move.to)} />}
+                      {announcedOf(s) && (
+                        <StaffField label="لماذا تنقله؟" hint="يصل طلابك مع الموعد الجديد كما تكتبه.">
+                          <textarea rows={2} maxLength={MOVE_WHY_MAX} value={move.reason} aria-label={`سبب نقل «${s.title}»`}
+                            onChange={(e) => setMove({ ...move, reason: e.target.value })} className={staffControlCls} />
+                        </StaffField>
+                      )}
                       <div className="flex flex-wrap gap-2">
-                        <Button tone="confirm" size="sm" loading={busy} disabled={busy || !moveTimed} onClick={() => void saveMove(s)}>
+                        <Button tone="confirm" size="sm" loading={busy} disabled={busy || !moveTimed || moveWhyMissing} onClick={() => void saveMove(s)}>
                           احفظ الموعد الجديد
                         </Button>
                         <Button tone="ghost" size="sm" disabled={busy} onClick={() => setMoving(null)}>إلغاء</Button>

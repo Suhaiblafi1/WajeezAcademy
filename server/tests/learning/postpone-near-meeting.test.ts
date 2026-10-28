@@ -8,7 +8,8 @@
 
    ① المؤجَّلُ القريبُ داخلَ موعده يبقى معتمَدا، ويُنقل اجتماعُه في Zoom، ويصل
       مسجَّليه موعدُه الجديد — ولا يُنادى على الإدارة.
-   ② والبعيدُ والمقدَّمُ داخلَ موعده كذلك — ويُقال للمسجَّلين «قدّمه» لا «أجّله».
+   ② والبعيدُ والمقدَّمُ داخلَ موعده كذلك — ويُقال للمسجَّلين «تقدّم موعده» لا «تأخّر» (وكانت «قدّمه» و«أجّله»
+      حتّى صار الجرسُ يقول الموعدين وسببَ المدرّب، ٢٨ أكتوبر ٢٠٢٦).
    ③ وما خرج عن موعد محوره يعود إلى الانتظار كما قرّر ١٧ سبتمبر — واجتماعُه يُنقل
       معه مع ذلك.
    ④ وسقوطُ Zoom لا يُسقط النقل — ويُكتب في أثره.
@@ -86,8 +87,9 @@ async function approvedMeeting(hours: number, moduleId = 'PP-M1') {
   return s
 }
 
+/* والمعتمَدُ لا يُنقل بلا سبب يصل مسجَّليه (٢٨ أكتوبر ٢٠٢٦) */
 const move = (id: string, startsAt: Date, hours = 2) =>
-  cohorts.trainerMoveSession(trainerUserId, id, { startsAt, endsAt: new Date(startsAt.getTime() + hours * H) })
+  cohorts.trainerMoveSession(trainerUserId, id, { startsAt, endsAt: new Date(startsAt.getTime() + hours * H), reasonAr: 'سفر طارئ' })
 const pendingNotices = () => prisma.notification.count({ where: { templateKey: 'cohort.session.pending', userId: adminId } })
 /* بنودُ الجرس — وبجانب كلٍّ صفُّ بريدٍ منذ صار تغيّرُ الشعبة يُبرَد (`learner-email.ts`) */
 const toldLearners = (sessionId: string) => prisma.notification.findMany({
@@ -160,7 +162,7 @@ describe('① التأجيلُ القريبُ داخلَ موعده يبقى م�
     expect(await pendingNotices(), 'نُودي على الإدارة بتأجيلٍ لا يحتاجها').toBe(before)
     const told = await toldLearners(s.id)
     expect(told).toHaveLength(enrolled.length)
-    expect(told[0].body).toContain('أجّله مدرّبُك إلى')
+    expect(told[0].body).toContain('تأخّر موعده من')
     const meta = (await lastMoveAudit(s.id)).meta as { keptApproval: boolean; backToPending: boolean; zoomMoved: boolean }
     expect(meta).toMatchObject({ keptApproval: true, backToPending: false, zoomMoved: true })
   })
@@ -177,16 +179,17 @@ describe('② والبعيدُ والمقدَّمُ داخلَ موعده يبق
     expect(moved.approvalState, 'عاد البعيدُ داخلَ موعده إلى الانتظار').toBe('approved')
     expect(await pendingNotices(), 'نُودي على الإدارة بنقلٍ لا يحتاجها').toBe(before)
     expect(patches.find((p) => p.meetingId === `mtg-${STAMP}-${seq}`)?.body.start_time, 'بقي اجتماعُه على موعده القديم').toBe(to.toISOString())
-    expect((await toldLearners(s.id))[0]?.body).toContain('أجّله مدرّبُك إلى')
+    expect((await toldLearners(s.id))[0]?.body).toContain('تأخّر موعده من')
   })
 
-  it('⚠️ والمقدَّمُ داخلَ موعده يبقى معتمَدا — ويُقال «قدّمه» لا «أجّله»', async () => {
+  it('⚠️ والمقدَّمُ داخلَ موعده يبقى معتمَدا — ويُقال «تقدّم موعده» لا «تأخّر»', async () => {
     const s = await approvedMeeting(30)
     const moved = await move(s.id, new Date(s.startsAt.getTime() - 4 * H))
     expect(moved.approvalState, 'عاد المقدَّمُ داخلَ موعده إلى الانتظار').toBe('approved')
     const told = await toldLearners(s.id)
     expect(told).toHaveLength(enrolled.length)
-    expect(told[0].body, 'سُمّي التقديمُ تأجيلا').toContain('قدّمه مدرّبُك إلى')
+    expect(told[0].body, 'سُمّي التقديمُ تأجيلا').toContain('تقدّم موعده من')
+    expect(told[0].body, 'سُمّي التقديمُ تأجيلا').not.toContain('تأخّر')
   })
 })
 

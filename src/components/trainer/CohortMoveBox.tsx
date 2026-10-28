@@ -99,7 +99,7 @@ export default function CohortMoveBox({ cohortId, status, startsAt, proposedStar
   return (
     <Inset className="mt-3 grid gap-2 p-3">
       <p className="text-read leading-6 text-muted-foreground">
-        اختر الفصل واكتب السبب. لا يتغيّر شيء حتّى توافق الإدارة، ثم تنتقل المواعيد كلّها ويصل المتعلّمين الموعد الجديد.
+        اختر الفصل واكتب السبب. لا يتغيّر شيء حتّى توافق الإدارة، ثم تنتقل المواعيد كلّها ويصل المتعلّمين الموعد الجديد مع سببك.
       </p>
       <select aria-label="الفصل" value={pick} onChange={(e) => setPick(e.target.value)} className={`${controlCls} [&>option]:bg-surface`}>
         <option value="">اختر الفصل…</option>

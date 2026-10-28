@@ -68,6 +68,10 @@ export interface SchedulePlan {
 
 export type ScheduleProposal = { ok: true; edit: ScheduleEdit; reasonAr: string } | { ok: false; reasonAr: string }
 
+/** ما بين «ما هو الآن» و«ما نقترح» في سبب البطاقة — وبه يُقرأ سببُها بعد أن وقع: ما قبله وحدَه (`doneWhyAr`) */
+export const PROPOSAL_TAIL_AR = ' — نقترح '
+
+
 /* ─────────── أيّامٌ وساعات ─────────── */
 
 const weekdayOf = (day: string) => new Date(`${day}T12:00:00Z`).getUTCDay()
@@ -240,7 +244,7 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
   return {
     ok: true,
     edit: { kind: 'schedule', weekday: target.weekday, clock: target.clock, moves, tasks: taskMoves },
-    reasonAr: `${nowAr} — نقترح ${WEEKDAY_AR[target.weekday]} ${target.clock} كلّ أسبوع: ينتقل ${movedAr} من ${live.length}${tasksAr}، داخل مواعيد محاورها وبلا عطل.`,
+    reasonAr: `${nowAr}${PROPOSAL_TAIL_AR}${WEEKDAY_AR[target.weekday]} ${target.clock} كلّ أسبوع: ينتقل ${movedAr} من ${live.length}${tasksAr}، داخل مواعيد محاورها وبلا عطل.`,
   }
 }
 
@@ -289,6 +293,6 @@ export function proposeHourShift(input: Omit<ScheduleInput, 'target'> & { clock:
   return {
     ok: true,
     edit: { kind: 'schedule', weekday: days[0]!, clock: input.clock, days, moves, tasks: [] },
-    reasonAr: `${nowAr} — نقترح الساعة ${input.clock} في أيامها نفسها (${daysAr}): ينتقل ${movedAr} من ${live.length}، ولا يتغير يوم ولا موعد مهمة.`,
+    reasonAr: `${nowAr}${PROPOSAL_TAIL_AR}الساعة ${input.clock} في أيامها نفسها (${daysAr}): ينتقل ${movedAr} من ${live.length}، ولا يتغير يوم ولا موعد مهمة.`,
   }
 }

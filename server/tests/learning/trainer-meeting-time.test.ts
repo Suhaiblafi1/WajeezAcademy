@@ -26,8 +26,9 @@ const pendingNotices = () => prisma.notification.count({ where: { templateKey: '
 const session = (startsAt: Date, data: Record<string, unknown> = {}) => prisma.cohortSession.create({
   data: { cohortId, title: `لقاء ${startsAt.toISOString()}`, startsAt, endsAt: new Date(startsAt.getTime() + 2 * H), ...data },
 })
+/* والمعتمَدُ لا يُنقل بلا سبب يصل مسجَّليه (٢٨ أكتوبر ٢٠٢٦) — والمفحوصُ هنا الوقت */
 const move = (id: string, startsAt: Date) =>
-  cohorts.trainerMoveSession(trainerUserId, id, { startsAt, endsAt: new Date(startsAt.getTime() + 2 * H) })
+  cohorts.trainerMoveSession(trainerUserId, id, { startsAt, endsAt: new Date(startsAt.getTime() + 2 * H), reasonAr: 'سفر طارئ' })
 
 beforeAll(async () => {
   await setupTestDb()

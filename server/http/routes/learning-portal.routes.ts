@@ -21,6 +21,7 @@ import { RetrievalService } from '../../services/retrieval.service'
 import { ScenarioService } from '../../services/scenario.service'
 import { MAX_BODY_CHARS } from '../../services/module-authoring.service'
 import { PlanEditService } from '../../services/plan-edit.service'
+import { MOVE_WHY_MAX } from '../../../src/application/learning/session-move'
 import { TermClashService } from '../../services/term-clash.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
@@ -1130,6 +1131,8 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       endsAt: z.coerce.date().optional(),
       /* والنقلُ بابٌ ثانٍ إلى الطول: من نقل وقصّر تخطّى الحدَّ من حيث لا
          يُفحَص. والنهايةُ اختياريّةٌ هنا، فما لم تُرسَل لا طولَ يُفحَص. */
+      /* وسببُ النقل يقرؤه متعلّموه مع موعده الجديد — والمعتمَدُ لا يُنقل بدونه (`trainerMoveSession`، ٢٨ أكتوبر ٢٠٢٦) */
+      reasonAr: z.string().trim().max(MOVE_WHY_MAX).optional(),
     }).superRefine((b, ctx) => {
       if (b.endsAt && b.endsAt <= b.startsAt) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهاية اللقاء قبل بدايته', path: ['endsAt'] })

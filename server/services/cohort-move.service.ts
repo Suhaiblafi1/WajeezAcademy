@@ -25,6 +25,7 @@ import {
 } from '../../src/application/trainer/cohort-move'
 import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
 import { ensureTerm } from './term-ensure'
+import { moveWhy, type MoveWhy } from '../../src/application/learning/session-move'
 
 /** من يُبلَّغ بطلبٍ جديد — من يملك قرارَ الشعب */
 export const COHORT_MOVE_STAFF_ROLES = ['super_admin', 'academic_manager', 'operations_manager']
@@ -195,8 +196,9 @@ export class CohortMoveService {
     return out
   }
 
-  /** قرارُ الإدارة — والاعتمادُ وحده ينقل الشعبة */
-  async review(reviewerId: string, id: string, input: { action: 'approve' | 'reject'; comment?: string }, opts: { tellRequester?: boolean } = {}) {
+  /** قرارُ الإدارة — والاعتمادُ وحده ينقل الشعبة. و`byStaff`: الطلبُ طلبُ الإدارة نفسِها (`staffMove`) لا المدرّب —
+      فيقرأ المتعلّمون أنّ الإدارة نقلتها بسببها */
+  async review(reviewerId: string, id: string, input: { action: 'approve' | 'reject'; comment?: string }, opts: { tellRequester?: boolean; byStaff?: boolean } = {}) {
     const r = await this.prisma.cohortMoveRequest.findUnique({ where: { id } })
     if (!r) throw new AuthError('not_found', 'الطلب غير موجود', 404)
     if (r.status !== 'pending') throw new AuthError('not_pending', 'حسم هذا الطلب من قبل', 409)
@@ -237,7 +239,8 @@ export class CohortMoveService {
 
     if (input.action === 'approve') {
       await this.afterShift(reviewerId, r.cohortId, {
-        title, auditMeta: { requestId: id },
+        title, auditMeta: { requestId: id }, shiftMs,
+        why: moveWhy(opts.byStaff ? 'staff' : 'trainer', r.reason),
         noticeAr: (first) => `نقلت الشعبة إلى ${termLabelAr(target)}${first ? `، وأول لقاء فيها ${dayAr(first)}` : ''}. راجع جدولك.`,
       })
     }
@@ -338,9 +341,12 @@ export class CohortMoveService {
     }
   }
 
-  /* وما بعد الإزاحة: اجتماعاتُ Zoom ودعواتُ التقويم وخبرُ المتعلّمين — لا يُسقط إخفاقُها قرارا وقع */
+  /* وما بعد الإزاحة: اجتماعاتُ Zoom ودعواتُ التقويم وخبرُ المتعلّمين — لا يُسقط إخفاقُها قرارا وقع.
+     و`shiftMs` ما أُزيحت به — منه موعدُ كلّ لقاءٍ قبلها، و`why` من طلبها ولماذا (`session-move.ts`): تقولهما
+     رسالةُ التقويم لكلّ لقاء («كان … وصار …»)، ويقول السببَ الجرس (٢٨ أكتوبر ٢٠٢٦) */
   async afterShift(actorId: string | null, cohortId: string, opts: {
     title: string; auditMeta: Record<string, unknown>; noticeAr: (first: Date | undefined) => string
+    shiftMs: number; why: MoveWhy
   }): Promise<{ moved: number; failed: number }> {
     const sessions = await this.prisma.cohortSession.findMany({
       where: { cohortId, status: { notIn: ['done', 'cancelled'] } }, orderBy: { startsAt: 'asc' },
@@ -350,10 +356,11 @@ export class CohortMoveService {
       },
     })
     const zoom = await this.moveZoomMeetings(sessions)
-    /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه — ولا يُسقط إخفاقُها قرارا وقع */
+    /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه وتقول موعدَه قبل الإزاحة — ولا يُسقط إخفاقُها قرارا وقع */
     const invites = new SessionInviteService(this.prisma)
     for (const s of sessions) {
-      await invites.announce(s.id, 'update').catch((e: unknown) => console.error('[invite] تعذّرت كتابة تحديث الدعوة', e))
+      await invites.moved(s.id, new Date(s.startsAt.getTime() - opts.shiftMs), opts.why)
+        .catch((e: unknown) => console.error('[invite] تعذّرت كتابة تحديث الدعوة', e))
     }
     if (zoom.moved + zoom.failed > 0) {
       await recordAudit(this.prisma, {
@@ -365,7 +372,7 @@ export class CohortMoveService {
     const learners = await this.prisma.enrollment.findMany({
       where: { cohortId, status: { not: 'dropped' } }, select: { userId: true },
     })
-    const body = opts.noticeAr(first)
+    const body = `${opts.noticeAr(first)} ${opts.why.learnerAr}`
     /* والبريدُ يخرج معه من مفتاحه (`learner-email.ts`) — وكان هنا حلقةُ قناتين بلا مفتاح،
        فلا يفتح بندُ الجرس شيئا ولا يحمل البريدُ زرّا */
     for (const l of learners) {
@@ -403,7 +410,7 @@ export class CohortMoveService {
       actorId, action: 'cohort.move.request', entityType: 'cohort', entityId: cohortId,
       meta: { requestId: created.id, to: `${target.season}-${target.year}`, byStaff: true },
     })
-    const decided = await this.review(actorId, created.id, decision, { tellRequester: false })
+    const decided = await this.review(actorId, created.id, decision, { tellRequester: false, byStaff: true })
 
     const first = await this.prisma.cohortSession.findFirst({
       where: { cohortId, status: { notIn: ['cancelled'] } }, orderBy: { startsAt: 'asc' }, select: { startsAt: true },
