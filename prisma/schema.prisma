@@ -23,6 +23,9 @@ model User {
   createdAt            DateTime                   @default(now())
   updatedAt            DateTime                   @updatedAt
   suspendedAt          DateTime?
+  /// متى رُفعت لقاءاتُه من تقويمه وأُلغي رابطُه في Zoom لأنّ حسابَه أُوقف أو أُرشف (`AccountCalendarService`).
+  /// ويُمحى حين يعود فيصله جدولُ شعبه. وحسابٌ مغلقٌ بلا تاريخٍ هنا يلحقه العامل (٢٨ أكتوبر ٢٠٢٦)
+  calendarClosedAt     DateTime?
   /// حسابُ تجربةٍ تعلّمه الإدارة — لا يُعدّ طلبُه في «من ينتظر دورة بلا شعبة» (`test-account.ts`)
   isTestAccount        Boolean                    @default(false)
   /**

@@ -1446,6 +1446,24 @@ export async function runTrainerCalendars(prisma: PrismaClient, now = new Date()
   }
 }
 
+/* ═══ تقويمُ من أُغلق حسابُه أو عاد (٢٨ أكتوبر ٢٠٢٦) ═══
+   حسابٌ أُوقف أو أُرشف أو عاد بغير باب `AuthService` — إيقافُ التدريب ورفعُه، وإعادةُ المؤسِّسين عند الإقلاع، ومحوُ
+   الحسابات — وما أُغلق قبل هذا اليوم، وما فات بابَه بخطأٍ ابتُلع. والعلّةُ في `AccountCalendarService`. */
+export async function runAccountCalendars(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { AccountCalendarService } = await import('../services/account-calendar.service')
+  const { closed, reopened } = await new AccountCalendarService(prisma).sweep(now)
+  const said = [
+    ...(closed > 0 ? [`رفع من التقاويم لقاءات ${closed} حساب مغلق`] : []),
+    ...(reopened > 0 ? [`أعاد إلى التقاويم لقاءات ${reopened} حساب عاد`] : []),
+  ]
+  return {
+    job: 'account_calendars',
+    summaryAr: said.length === 0 ? 'لا حساب مغلق بقيت لقاءاته في تقويمه' : said.join('، و'),
+    done: closed + reopened, failed: 0, ms: Date.now() - started,
+  }
+}
+
 /* ═══ فصولُ الشعب التي سقطت «بلا فصل» (١٨ أكتوبر ٢٠٢٦) ═══
    العلّةُ في `server/services/term-ensure.ts`. يملأ ما سقط قبل الإصلاح، ويلتقط ما يفلت بعده. */
 export async function runAssignMissingTerms(prisma: PrismaClient): Promise<JobResult> {
@@ -1745,6 +1763,7 @@ export const JOBS = [
   { key: 'voided_session_invites', everyMs: 15 * 60_000, run: runVoidedSessionInvites, titleAr: 'رفع لقاءات الشعب الملغاة والمؤجلة من التقاويم' },
   /* كلَّ ربع ساعة: الجدولُ يصل مرّةً لكلّ إسناد، فالدورةُ بعد الأولى لا تجد شيئا */
   { key: 'trainer_calendars', everyMs: 15 * 60_000, run: runTrainerCalendars, titleAr: 'جدول لقاءات الشعبة في تقويم مدربها' },
+  { key: 'account_calendars', everyMs: 15 * 60_000, run: runAccountCalendars, titleAr: 'تقويم من أوقف حسابه أو أرشف' },
   { key: 'assign_missing_terms', everyMs: HOUR, run: runAssignMissingTerms, titleAr: 'تسمية فصل الشعب التي بلا فصل' },
   /* كلَّ ربع ساعة: المتابعةُ موعدٌ بالدقيقة، فتُذكَّر قبله بدورة (`FOLLOW_UP_LEAD_MINUTES`) */
   { key: 'advisor_reminders', everyMs: 15 * 60_000, run: runAdvisorReminders, titleAr: 'تذكير المستشارين بالتواصل والمتابعات' },

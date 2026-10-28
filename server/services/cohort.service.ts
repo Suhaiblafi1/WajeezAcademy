@@ -31,7 +31,7 @@ import {
 } from '../../src/application/trainer/axis-timeline'
 import { LEARNER_PLAN_QUERY } from './learner-gate'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
-import { COHORT_CANCELLED_AR, SEATED, SessionInviteService } from './session-invite.service'
+import { CLOSED_ACCOUNT, COHORT_CANCELLED_AR, SEATED, SessionInviteService } from './session-invite.service'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
 import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
 import { publishCohortTrainers } from './trainer-auto-publish'
@@ -2239,7 +2239,11 @@ export class CohortService {
     sessionId: string, meetingId: string, config: Awaited<ReturnType<typeof getZoomConfig>>,
   ): Promise<{ linked: number; reason: string | null }> {
     const learners = await this.prisma.enrollment.findMany({
-      where: { cohort: { sessions: { some: { id: sessionId } } }, status: { notIn: ['dropped', 'waitlisted'] } },
+      where: {
+        cohort: { sessions: { some: { id: sessionId } } }, status: { notIn: ['dropped', 'waitlisted'] },
+        /* ومن أُغلق حسابُه لا يُسجَّل — ويُعاد تسجيلُه حين يعود (`AccountCalendarService`) */
+        user: { status: { notIn: CLOSED_ACCOUNT } },
+      },
       select: { id: true, user: { select: { email: true, displayName: true } } },
     })
     let linked = 0
@@ -2306,21 +2310,25 @@ export class CohortService {
      · **وما أبى فيه Zoom يبقى قائما** — لا يُكتب ملغى ما لم يُلغَ، فتعيده الدورة.
        والاجتماعُ الذي حُذف من لوحته (`notFound`) لا تسجيلَ فيه يُدخل أحدا: تمّ. */
   async releaseSessionJoinLinks(
-    opts: { enrollmentId?: string } = {}, now = new Date(),
+    opts: { enrollmentId?: string; userId?: string } = {}, now = new Date(),
   ): Promise<{ cancelled: number; failed: number; reason: string | null }> {
     const links = await this.prisma.sessionJoinLink.findMany({
       where: {
         cancelledAt: null,
         ...(opts.enrollmentId ? { enrollmentId: opts.enrollmentId } : {}),
+        ...(opts.userId ? { enrollment: { userId: opts.userId } } : {}),
         meeting: { provider: 'zoom_api', meetingId: { not: null }, session: { startsAt: { gt: now } } },
       },
       select: {
         id: true, registrantId: true,
         meeting: { select: { meetingId: true, session: { select: { cohortId: true } } } },
-        enrollment: { select: { status: true, cohortId: true } },
+        enrollment: { select: { status: true, cohortId: true, user: { select: { status: true } } } },
       },
     })
-    const left = links.filter((l) => !(SEATED.includes(l.enrollment.status) && l.enrollment.cohortId === l.meeting.session.cohortId))
+    /* ومن أُغلق حسابُه تركه كذلك (٢٨ أكتوبر ٢٠٢٦، `AccountCalendarService`): جالسٌ في شعبته وبابُه مغلق، ورابطُه في
+       بريده يُدخله ما بقي تسجيلُه. ويُعاد إن عاد (`linkRegistrants`) */
+    const left = links.filter((l) => !(SEATED.includes(l.enrollment.status) && l.enrollment.cohortId === l.meeting.session.cohortId
+      && !CLOSED_ACCOUNT.includes(l.enrollment.user.status)))
     if (left.length === 0) return { cancelled: 0, failed: 0, reason: null }
     const config = await getZoomConfig(this.prisma)
     /* بلا مفاتيح لا إلغاءَ ممكنا — ولا يُعدّ إخفاقا يُكتب كلَّ ساعة: لوحةُ

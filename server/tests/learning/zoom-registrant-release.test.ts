@@ -11,12 +11,15 @@
       تسجيلَ من ترك قبل أن يوجد هذا. والاجتماعُ المحذوفُ عند Zoom تمّ.
    ④ ومن عاد إلى شعبته يُعاد تسجيلُه نفسُه برابطه — وإن أبى Zoom سُجّل من جديد.
    ⑤ والرابطُ الملغى لا تحمله دعوةٌ ولا جدول.
+   ⑥ ومن أُغلق حسابُه (٢٨ أكتوبر ٢٠٢٦) يُلغى تسجيلُه ولا يُسجَّل في جديد، ويُعاد برابطه حين يعود — وما أُغلق
+      بغير بابه تُلغيه الدورة.
 
    ولا شبكةَ هنا: `fetch` مُلتقَط، وكلُّ نداءٍ لحالة مسجَّلٍ يُعدّ. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { AuthService } from '../../services/auth.service'
 import { CohortService } from '../../services/cohort.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { SessionInviteService } from '../../services/session-invite.service'
@@ -328,5 +331,49 @@ describe('⑤ والرابطُ الملغى لا يُعطى أحدا', () => {
       expect(ics, `${m.purpose} يحمل رابطا أُلغي عند Zoom`).not.toContain(link!.joinUrl)
       expect(ics).toContain(`LOCATION:${shared}`)
     }
+  })
+})
+
+describe('⑥ ومن أُغلق حسابُه', () => {
+  it('⚠️ يُلغى تسجيلُه في كلّ اجتماعٍ مقبل، ولا يُسجَّل فيما يُعتمَد بعده — ويُعاد برابطه حين يعود', async () => {
+    const auth = new AuthService(prisma)
+    const c = await openCohort('شعبةُ الحساب الموقوف')
+    await approved(c, 30)
+    const who = await learner('account-off')
+    const stay = await enrollments.enroll(c, (await learner('account-stays')).id, null)
+    const e = await enrollments.enroll(c, who.id, null)
+    const [first] = await linksOf(e.id)
+
+    let n = statusCalls.length
+    await auth.suspend(who.id)
+    expect(callsSince(n)).toEqual([`cancel:${first!.meeting.meetingId}:${first!.registrantId}`])
+    expect((await linksOf(e.id))[0]!.cancelledAt, 'أُلغي عند Zoom ولم يُكتب').not.toBeNull()
+    for (const l of await linksOf(stay.id)) expect(l.cancelledAt, 'أُلغي تسجيلُ من بقي').toBeNull()
+
+    const later = await approved(c, 54)
+    expect((await linksOf(e.id)).some((l) => l.sessionId === later.id), 'سُجّل المغلقُ في اجتماعٍ جديد').toBe(false)
+    expect((await linksOf(stay.id)).some((l) => l.sessionId === later.id)).toBe(true)
+
+    n = statusCalls.length
+    await auth.reinstate(who.id)
+    expect(callsSince(n), 'لم يُعَد تسجيلُه نفسُه').toContain(`approve:${first!.meeting.meetingId}:${first!.registrantId}`)
+    const back = await linksOf(e.id)
+    expect(back.find((l) => l.sessionId === first!.sessionId)?.cancelledAt, 'عاد ورابطُه ملغًى').toBeNull()
+    expect(back.find((l) => l.sessionId === later.id)?.cancelledAt, 'لم يُسجَّل فيما اعتُمد في إيقافه').toBeNull()
+  })
+
+  it('⚠️ وما أُغلق بغير بابه تُلغي دورةُ العامل تسجيلَه — ولا تمسّ أحدا غيرَه', async () => {
+    const c = await openCohort('شعبةُ الإغلاق المباشر')
+    await approved(c, 30)
+    const who = await learner('closed-directly')
+    const stay = await enrollments.enroll(c, (await learner('open-stays')).id, null)
+    const e = await enrollments.enroll(c, who.id, null)
+    const [link] = await linksOf(e.id)
+    await prisma.user.update({ where: { id: who.id }, data: { status: 'archived' } })
+
+    const n = statusCalls.length
+    await runJob(prisma, 'revoke_left_registrants')
+    expect(callsSince(n), 'بقي المغلقُ يدخل — أو أُلغي غيرُه').toEqual([`cancel:${link!.meeting.meetingId}:${link!.registrantId}`])
+    for (const l of await linksOf(stay.id)) expect(l.cancelledAt).toBeNull()
   })
 })
