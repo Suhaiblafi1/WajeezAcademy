@@ -23,6 +23,15 @@ const applyBody = z.object({
   wave: z.string().max(40).nullable().optional(),
 })
 
+/* ═══ سقفُ نموذجَي المنحة: حاجزُ غَمرٍ لا حاجزُ ناس (٢٨ أكتوبر ٢٠٢٦) ═══
+   كان خمسةَ طلباتٍ لكلّ ربع ساعةٍ لكلّ عنوان. وهواتفُ زين وأورانج وأمنية تخرج كثيرا من عنوانٍ واحد، فسادسُ من عبّأ
+   النموذجَ من شبكته في ربع الساعة نفسِها يُردّ — عميلٌ حقيقيٌّ لا يأخذ كودَه. وهو بعينه ما أصلح التسجيلَ من قبل
+   (`registerRateMax` في `auth.routes.ts`). قرارُ صاحب المنصّة: «I don't care if everyone uses it and I can increase
+   the grants.. we are flexible and no limit»، وخُيّر بين ١٢٠ ورفعِه كلّيّا فاختار ١٢٠: لا يبلغه ناسٌ على شبكةٍ واحدة،
+   ويمنع من يرسل بالنموذج آلافَ الرسائل من نطاقنا إلى عناوينَ يكتبها — فيضعنا البريدُ في المزعج ولا يصل الناسَ كودُهم.
+   والمصيدةُ (`assertNotBot`) والتحقّقُ وسقفُ الأكواد باقية. */
+export const GRANT_FORM_RATE_MAX = 120
+
 export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const landing = new GrantLandingService(prisma)
   const influencers = new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG)
@@ -41,7 +50,7 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
   }, async () => landing.view())
 
   app.post('/api/public/grant', {
-    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+    config: { rateLimit: { max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' } },
     schema: { tags: ['public'], summary: 'نموذج المنحة: عميل محتمل وكوده، والدورات' },
   }, async (req, reply) => {
     assertNotBot(req.body)
@@ -58,7 +67,7 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
   })
 
   app.post('/api/public/grant/influencer', {
-    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+    config: { rateLimit: { max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' } },
     schema: { tags: ['public'], summary: 'نموذج منحة المؤثرين: كود المؤثر لازم، وعميل محتمل وكوده' },
   }, async (req, reply) => {
     assertNotBot(req.body)

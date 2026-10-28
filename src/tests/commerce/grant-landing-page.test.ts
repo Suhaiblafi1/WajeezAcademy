@@ -38,10 +38,13 @@ describe('الطريق والأبواب', () => {
     expect(APP).toMatch(/<Route path="\/grant\/build" element=\{<MemberGrantPage \/>\} \/>/)
     expect(PAGE, 'طريق العودة غير الطريق الذي يفتح الصفحة').toMatch(/const PICK_PATH = "\/grant\/build";/)
     expect(HTTP).toMatch(/registerPublicGrantRoutes\(app, prisma\)/)
-    expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant', \{\s*config: \{ rateLimit: \{ max: 5, timeWindow: '15 minutes' \} \}/)
+    /* وسقفُ النموذجين حاجزُ غَمرٍ لا حاجزُ ناس: ١٢٠ في ربع الساعة لكلّ عنوان — هواتفُ الشبكة الواحدة تخرج من عنوانٍ واحد،
+       وكان سادسُهم يُردّ. قرارُ صاحب المنصّة (٢٨ أكتوبر ٢٠٢٦): «Yes, 120» */
+    expect(ROUTES).toMatch(/^export const GRANT_FORM_RATE_MAX = 120$/m)
+    expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant', \{\s*config: \{ rateLimit: \{ max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' \} \}/)
     expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/advisor', \{\s*config: \{ rateLimit: \{ max: 3, timeWindow: '15 minutes' \} \}/)
     /* وباب منحة المؤثّرين ثالثُها، بالسقف نفسِه (٢٦ أكتوبر ٢٠٢٦) */
-    expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/influencer', \{\s*config: \{ rateLimit: \{ max: 5, timeWindow: '15 minutes' \} \}/)
+    expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/influencer', \{\s*config: \{ rateLimit: \{ max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' \} \}/)
     expect((ROUTES.match(/assertNotBot\(req\.body\)/g) ?? []).length, 'باب بلا مصيدة').toBe(3)
   })
 })
