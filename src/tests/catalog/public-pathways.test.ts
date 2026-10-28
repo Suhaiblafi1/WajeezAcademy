@@ -1,4 +1,5 @@
-/* المساراتُ العامّة — ثمانيةٌ من الدورات المفتوحة، تُعرض حين تكون لكلّ دوراتها شعبة (٢١ أكتوبر ٢٠٢٦).
+/* المساراتُ العامّة — ثمانيةٌ من الدورات المفتوحة، تُعرض حين تكون لكلّ دوراتها شعبة (٢١ أكتوبر ٢٠٢٦)،
+   وعشرةٌ شخصيّةٌ من دورات الشتاء، والمسارُ لا يُعرض إلّا ولكلّ دورةٍ منه شعبةٌ في فصله (٢٨ أكتوبر ٢٠٢٦).
 
    القرارُ والعلّةُ في `data/public-pathways.ts`. وهنا ما يُحرس:
    · بياناتُها: دوراتٌ موجودةٌ في الكتالوج، ومجالٌ وفئةٌ من رقاقات الموقع، ونصٌّ بلا تشكيل.
@@ -19,8 +20,8 @@ const ready = (ids: string[]): ListedCourses => ({ state: 'ready', ids: new Set(
 const allCourseIds = [...new Set(publicPathways.flatMap((p) => p.courseIds))]
 
 describe('بياناتُ المسارات العامّة', () => {
-  it('ثمانيةٌ بمعرّفاتٍ لا تتكرّر ولا تلتبس بمسار الكتالوج', () => {
-    expect(publicPathways).toHaveLength(8)
+  it('ثمانيةَ عشرَ بمعرّفاتٍ لا تتكرّر ولا تلتبس بمسار الكتالوج', () => {
+    expect(publicPathways).toHaveLength(18)
     const ids = publicPathways.map((p) => p.id)
     expect(new Set(ids).size).toBe(ids.length)
     for (const id of ids) expect(pathways.some((p) => p.id === id), `${id} معرّفُ مسارٍ في الكتالوج`).toBe(false)
@@ -72,23 +73,85 @@ describe('بياناتُ المسارات العامّة', () => {
 
 describe('متى يُعرض المسار', () => {
   it('⚠️ حين تكون لكلّ دوراته شعبة — ودورةٌ واحدةٌ بلا شعبةٍ تُخفيه', () => {
-    expect(listedWhole(publicPathways, ready(allCourseIds))).toHaveLength(8)
-    const biz = publicPathwayById('PP-BIZ')!
-    const shown = listedWhole(publicPathways, ready(allCourseIds.filter((id) => id !== biz.courseIds[3])))
+    expect(listedWhole(publicPathways, ready(allCourseIds))).toHaveLength(18)
+    /* «استراتيجية التسعير» في «من الفكرة إلى خطة عمل» وحدَه */
+    const shown = listedWhole(publicPathways, ready(allCourseIds.filter((id) => id !== 'C-BIZ-104')))
     expect(shown.map((p) => p.id)).not.toContain('PP-BIZ')
-    expect(shown).toHaveLength(7)
+    expect(shown).toHaveLength(17)
   })
 
   it('والدورةُ المشتركةُ تُخفي كلَّ مسارٍ هي فيه', () => {
-    /* «الإلقاء» في «الخطابة» و«انطلاقتك المهنية» معا */
+    /* «الإلقاء» في «الخطابة» و«انطلاقتك المهنية» و«وظيفتك الأولى» و«اظهر بثقة» */
     const shown = listedWhole(publicPathways, ready(allCourseIds.filter((id) => id !== 'C-COMX-103')))
-    expect(shown.map((p) => p.id)).not.toContain('PP-SPK')
-    expect(shown.map((p) => p.id)).not.toContain('PP-CAR')
+    for (const id of ['PP-SPK', 'PP-CAR', 'PP-FIRSTJOB', 'PP-VOICE']) expect(shown.map((p) => p.id)).not.toContain(id)
   })
 
-  it('وقبل الجواب لا شيء، وإن تعذّر فالثمانيةُ كلُّها', () => {
+  it('وقبل الجواب لا شيء، وإن تعذّر فكلُّها', () => {
     expect(listedWhole(publicPathways, { state: 'loading' })).toEqual([])
-    expect(listedWhole(publicPathways, { state: 'failed' })).toHaveLength(8)
+    expect(listedWhole(publicPathways, { state: 'failed' })).toHaveLength(18)
+  })
+})
+
+/* ═══ وشعبتُها في فصل المسار (٢٨ أكتوبر ٢٠٢٦) ═══
+   «أبقِ المساراتِ الحاليّةَ التي فيها دوراتٌ مستقبليّةٌ خارج فصل الشتاء مخفيّة». */
+describe('المسارُ في فصله', () => {
+  const WINTER = '2026-nov_jan'
+  /** الجوابُ بفصول شعبه — `{ دورة: [فصل…] }` */
+  const seasoned = (map: Record<string, string[]>): ListedCourses => ({
+    state: 'ready',
+    ids: new Set(Object.keys(map)),
+    seasons: new Map(Object.entries(map).map(([id, keys]) => [id, new Set(keys)])),
+  })
+
+  /* المعروضُ يومَ القرار كما قاله الخادم: أربعٌ وعشرون دورةً شعبتُها في الشتاء، وتسعٌ بعده */
+  const LATER: Record<string, string> = {
+    'C-BIZ-103': '2027-feb_apr', 'C-BIZ-104': '2027-feb_apr', 'C-CYB-106': '2027-feb_apr',
+    'C-CYB-104': '2027-may_jul', 'C-CYB-105': '2027-may_jul', 'C-NEG-104': '2027-may_jul',
+    'C-NEG-105': '2027-aug_oct', 'C-NEG-101': '2027-nov_jan', 'C-NEG-103': '2028-may_jul',
+  }
+  const WINTER_IDS = [
+    'C-AI-101', 'C-BIZ-101', 'C-BIZ-106', 'C-BIZ-108', 'C-COMX-103', 'C-COMX-104', 'C-COMX-107', 'C-COMX-108',
+    'C-CYB-101', 'C-CYB-107', 'C-FIN-101', 'C-FINM-107', 'C-HR-104', 'C-HR-105', 'C-JOB-104', 'C-MGR-101',
+    'C-MGR-107', 'C-MGR-108', 'C-MKT-101', 'C-MKT-103', 'C-MKT-106', 'C-PSY-109', 'C-SVC-101', 'C-WEL-102',
+  ]
+  const decisionDay = seasoned({
+    ...Object.fromEntries(WINTER_IDS.map((id) => [id, [WINTER]])),
+    ...Object.fromEntries(Object.entries(LATER).map(([id, key]) => [id, [key]])),
+    /* «العلاقات العامة» لها شعبتان: في الشتاء وفي الصيف */
+    'C-COMX-108': [WINTER, '2027-may_jul'],
+  })
+
+  it('⚠️ المساراتُ كلُّها لفصل الشتاء', () => {
+    for (const p of publicPathways) expect(p.season, p.id).toBe(WINTER)
+  })
+
+  it('⚠️ يومَ القرار: الجديدةُ العشرةُ تُعرض، وما فيه دورةٌ بعد الشتاء يُخفى', () => {
+    const shown = listedWhole(publicPathways, decisionDay).map((p) => p.id)
+    expect(shown).toEqual([
+      'PP-LAUNCH', 'PP-GROW', 'PP-FIRSTJOB', 'PP-LEAD', 'PP-PEOPLE', 'PP-VOICE', 'PP-FREELANCE', 'PP-TECH', 'PP-HOME', 'PP-SIDE',
+      'PP-CAR', 'PP-MKT',
+    ])
+    /* لها كلِّها شعبةٌ — في فصلٍ آخر */
+    for (const id of ['PP-BIZ', 'PP-SPK', 'PP-NEG', 'PP-CYB']) {
+      for (const c of publicPathwayById(id)!.courseIds) expect([...WINTER_IDS, ...Object.keys(LATER)], `${id}: ${c}`).toContain(c)
+      expect(shown, id).not.toContain(id)
+    }
+  })
+
+  it('⚠️ ويعود المسارُ وحدَه حين تُفتح لدورته شعبةٌ في الشتاء', () => {
+    const neg = publicPathwayById('PP-NEG')!
+    const back = seasoned(Object.fromEntries(neg.courseIds.map((id) => [id, [LATER[id], WINTER]])))
+    expect(listedWhole(publicPathways, back).map((p) => p.id)).toEqual(['PP-NEG'])
+  })
+
+  it('والخادمُ الأقدمُ بلا فصولٍ لا يُخفي مسارا', () => {
+    expect(listedWhole(publicPathways, ready(allCourseIds))).toHaveLength(18)
+  })
+
+  it('⚠️ ودوراتُ الجديدة كلُّها لها شعبةٌ في الشتاء يومَ بُنيت', () => {
+    for (const p of publicPathways.filter((x) => !['PP-BIZ', 'PP-MKT', 'PP-SPK', 'PP-NEG', 'PP-ENG', 'PP-CYB', 'PP-MGR', 'PP-CAR'].includes(x.id))) {
+      for (const id of p.courseIds) expect(WINTER_IDS, `${p.id}: ${id}`).toContain(id)
+    }
   })
 })
 

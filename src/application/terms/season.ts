@@ -80,6 +80,9 @@ export function termOf(date: Date): { year: number; season: TrainingSeason } {
   return { year: y, season: 'nov_jan' }
 }
 
+/** مفتاحُ الفصل نصّا — «2026-nov_jan» — يقرؤه الخادمُ والواجهةُ معا (موسمُ المسارات العامّة) */
+export const termKey = (year: number, season: TrainingSeason): string => `${year}-${season}`
+
 /* ═══ أفقُ العرض: الموسمُ الجاري وما يليه ═══
 
    شكا صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) من شاشة «المواسم والتقويم»: «ضع
