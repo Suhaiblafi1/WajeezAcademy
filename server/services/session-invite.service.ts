@@ -74,6 +74,12 @@ export const ACCOUNT_ARCHIVED_AR = 'أرشف حسابك. وتصلك مواعيد
 /** سببُ الرفع — واحدٌ للجميع، أو للمدرّب غيرُ ما للمتعلّم: «نقله مدرّبك» لا تُقال للمدرّب. وسببُ النقل كذلك (`moved`) */
 export type WithdrawWhy = string | { learnerAr: string; trainerAr: string }
 
+/** وحين يُحذف مدرّبٌ ولا مدرّبَ غيرُه في الشعبة — تُرفع لقاءاتُها القادمة (`CohortService.clearSessionsOfDeletedTrainer`) */
+export const TRAINER_DELETED_WHY: WithdrawWhy = {
+  learnerAr: 'رحل مدرّب الشعبة، فرفع هذا اللقاء. وتصلك مواعيدها الجديدة حين يسند إليها مدرّب.',
+  trainerAr: 'لم تعد مدرّب هذه الشعبة، فرفع هذا اللقاء من تقويمك.',
+}
+
 /** ما يُدعى إليه المسجَّل: مقعدٌ قائم — لا منتظرٌ في القائمة ولا من ترك */
 export const SEATED = ['enrolled', 'completed']
 

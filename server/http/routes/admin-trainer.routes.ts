@@ -130,6 +130,15 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      وحبّتُه منفصلة (`trainer.applications.purge`) لا تُمنح بالمراجعة: من
      يراجع ليس بالضرورة من يمحو. وهي عند مدير النظام وحده — ويستطيع أن
      يفوّضها لغيره من شاشة الصلاحيات إن أراد. */
+  /* وما يقع بالحذف على شعبه يُقرأ قبله — طلابُها ولقاءاتُها القادمة (٢٨ أكتوبر ٢٠٢٦، `purgeImpact`) */
+  app.get('/api/admin/trainer-applications/:reference/purge-impact', {
+    preHandler: requirePermission('trainer.applications.purge'),
+    schema: { tags: ['admin-trainers'], summary: 'ما يقع بحذف المدرّب على شعبه — قبل الحذف' },
+  }, async (req) => {
+    const { reference } = z.object({ reference: z.string().trim().min(3).max(60) }).parse(req.params)
+    return applications.purgeImpact(reference)
+  })
+
   app.delete('/api/admin/trainer-applications/:reference', {
     preHandler: requirePermission('trainer.applications.purge'),
     config: { rateLimit: { max: 20, timeWindow: '10 minutes' } },

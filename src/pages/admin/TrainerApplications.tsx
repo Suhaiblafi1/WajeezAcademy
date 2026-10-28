@@ -41,6 +41,8 @@ import ProposalsEditor from "./ProposalsEditor";
 import { teachableCountAr } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
+import PurgeImpact from "@/components/admin/PurgeImpact";
+import { countAr } from "@/application/text/count-ar";
 import { canRemindToBook, yearsLabel } from "@/application/trainer/application-options";
 import { awaitsBookingInvite } from "@/application/trainer/interview-invitation";
 import {
@@ -71,6 +73,8 @@ import { RUBRIC_AXES } from "@/application/trainer/rubric";
 import { preparingCoursesAr } from "@/application/trainer/pending-kind";
 /* الحالاتُ التي يقبل الخادمُ حذفَها — تُقرأ من مصدرها لا تُكتب هنا.
    ونسخةٌ ثانيةٌ تنحرف يوما فيَعِد الزرُّ بما يرفضه الخادم. */
+/** «رفع ٣ لقاءات» لا «٣ لقاء» — صيغةُ العدد (`count-ar.ts`) */
+const SESSION_COUNT_FORMS = { one: "لقاء", two: "لقاءين", few: "لقاءات", many: "لقاء" } as const;
 const PURGEABLE: string[] = [...PURGEABLE_STATUSES];
 
 /** من يُذكَّر بالحجز — المِحَكُّ من الوحدة المشتركة، وهو نفسُه الذي يحرس
@@ -918,10 +922,13 @@ function TrainerApplicationsPage() {
       const r = await apiDelete<{
         deletedDocuments: number; unremovedFiles: string[];
         deletedAccount: boolean; keptAccountReason: string | null;
+        removedSessions: number;
       }>(`/api/admin/trainer-applications/${encodeURIComponent(target.reference)}`, { reasonAr });
 
       const parts = [`حذف ${target.reference}`];
       if (r.deletedDocuments > 0) parts.push(`و${r.deletedDocuments} وثيقة`);
+      /* وما رُفع من لقاءات شعبه يُقال بعدده — كما قيل قبل الحذف (`PurgeImpact`) */
+      if (r.removedSessions > 0) parts.push(`ورفع ${countAr(r.removedSessions, SESSION_COUNT_FORMS)} من تقاويم طلابه`);
       if (r.deletedAccount) parts.push("وحسابه");
       else if (r.keptAccountReason) parts.push(`وبقي حسابه — ${r.keptAccountReason}`);
       toast(parts.join(" "));
@@ -2227,6 +2234,8 @@ function TrainerApplicationsPage() {
               {" "}و{purging.reviews.length} تقييما و{purging.interviews.length} مقابلة
               {" "}و{purging.statusHistory.length} انتقال حالة — ولا يمكن التراجع.
             </p>
+            {/* وشعبُه التي فيها طلاب تُقال قبل الضغط — وما يُرفع منها (٢٨ أكتوبر ٢٠٢٦، «Warn, remove for all») */}
+            <PurgeImpact reference={purging.reference} />
             {!PURGEABLE.includes(purging.status) && (
               <p className="mt-2 text-read leading-6 text-gold-ink">
                 وهو قيد النظر الآن («{STATUS_LABELS[purging.status] ?? purging.status}»)، فيرفض أوّلا ثمّ يحذف.
