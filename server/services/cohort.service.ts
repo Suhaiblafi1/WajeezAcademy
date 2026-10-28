@@ -32,6 +32,7 @@ import {
 import { LEARNER_PLAN_QUERY } from './learner-gate'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { CLOSED_ACCOUNT, COHORT_CANCELLED_AR, SEATED, SessionInviteService } from './session-invite.service'
+import { MOVE_WHY_MIN, moveWhy, type MoveWhy } from '../../src/application/learning/session-move'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
 import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
 import { publishCohortTrainers } from './trainer-auto-publish'
@@ -1247,7 +1248,9 @@ export class CohortService {
   /** المدرّبُ ينقل لقاءَه — لا يقترح نقله. و`preApproved` نقلٌ في بطاقةٍ اعتمدتها الإدارةُ قبل أن يقبلها
       (١٧ أكتوبر ٢٠٢٦، `PlanEditService.accept`): المعتمَدُ يبقى معتمَدا ولو خرج عن موعد محوره */
   /** `quiet`: لا يُخبَر المتعلّمون بهذا اللقاء وحدَه — ينقل جدولا كاملا يُخبرهم به مرّةً بعده (`tellLearnersScheduleMoved`) */
-  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }, opts: { preApproved?: boolean; quiet?: boolean } = {}) {
+  /** `why`: من طلب النقلَ ولماذا حين لا يكون المدرّبَ نفسَه — بطاقةُ الإدارة التي قبلها (`session-move.ts`).
+      وبدونه فالسببُ ما كتبه المدرّبُ هنا (`reasonAr`) */
+  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date; reasonAr?: string }, opts: { preApproved?: boolean; quiet?: boolean; why?: MoveWhy } = {}) {
     const session = await this.assertTrainerMove(userId, sessionId, input)
     /* ═══ والمنقولُ داخلَ موعد محوره يبقى معتمَدا (٢٩ سبتمبر ٢٠٢٦) ═══
 
@@ -1260,6 +1263,13 @@ export class CohortService {
        وسقط بابُ «اقترح موعدا» من قبل: من يملك النقلَ لا يستأذن فيه، والاعتمادُ —
        حيث يلزم — يقع بعدَه لا قبلَه. */
     const wasApproved = session.approvalState === 'approved'
+    /* ═══ ومن نقل المعتمَدَ يقول لماذا (٢٨ أكتوبر ٢٠٢٦) ═══
+       «These reasons that the student would read must be written by who has asked for the change» (صاحب المنصّة).
+       فالمعتمَدُ في تقاويم متعلّميه لا يُنقل بلا سبب: يكتبه المدرّبُ هنا، أو يأتي من بطاقة الإدارة التي قبلها
+       (`why`). ويصلهم مع «كان … وصار …». وما لم يُعتمَد بعدُ لم يره متعلّم — فلا سببَ يُطلب له. */
+    const typed = input.reasonAr?.trim() ?? ''
+    const why = opts.why ?? (typed.length >= MOVE_WHY_MIN ? moveWhy('trainer', typed) : null)
+    if (wasApproved && !why) throw new AuthError('reason_required', 'اكتب سبب النقل — يصل طلابك مع موعده الجديد', 422)
     /* وموعدُ محوره مكتوبٌ في الخطّة — أو مشتقٌّ من لقاءاتها المعتمَدة (١٧ أكتوبر ٢٠٢٦): ما بقي
        بين آخرِ لقاءٍ لما قبله وأوّلِ لقاءٍ لما بعده بقي في وقته */
     const shown = (session.cohort.plans[0]?.content ?? null) as Parameters<typeof planSlots>[0]
@@ -1298,6 +1308,7 @@ export class CohortService {
       actorId: userId, action: 'cohort.session.move', entityType: 'cohort_session', entityId: sessionId,
       meta: {
         from: session.startsAt, to: input.startsAt, cohortId: session.cohortId, backToPending, keptApproval: kept,
+        ...(why ? { whyAr: why.learnerAr } : {}),
         ...(resubmitted ? { resubmitted } : {}),
         ...(zoomMoved === null ? {} : { zoomMoved }),
       },
@@ -1309,31 +1320,32 @@ export class CohortService {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
     } else if (backToPending) {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
-      if (!opts.quiet) {
-        await this.tellCohortScheduleChanged(session.cohortId, session,
-          'نقله مدرّبك ويراجع الآن عند الإدارة. ويصلك موعده الجديد حين يعتمد.')
-      }
-      /* ويُرفع من تقاويمهم بموعده القديم — فلا يحضر أحدٌ ساعةً لم يعد فيها لقاء */
-      await this.inviteSafely('move-out', () => this.invites.withdraw(
+      /* ويُرفع من تقاويمهم بموعده القديم — فلا يحضر أحدٌ ساعةً لم يعد فيها لقاء. ومعه من نقله ولماذا (فوق) */
+      const mailed = await this.inviteSafely('move-out', () => this.invites.withdraw(
         {
           id: session.id, cohortId: session.cohortId, cohortTitle: session.cohort.title,
           title: session.title, startsAt: session.startsAt, endsAt: session.endsAt,
         },
         {
-          learnerAr: 'نقله مدرّبك ويراجع الآن عند الإدارة — وتصلك دعوته بموعده الجديد حين يعتمد.',
-          /* «نقله مدرّبك» لا تُقال للمدرّب في تقويمه — ومساعدُه لم ينقله */
-          trainerAr: 'نقل هذا اللقاء ويراجع الآن عند الإدارة. وتصلك دعوته بموعده الجديد حين يعتمد.',
+          learnerAr: `${why!.learnerAr} ويراجع الآن عند الإدارة — وتصلك دعوته بموعده الجديد حين يعتمد.`,
+          /* «نقله مدرّبك» لا تُقال للمدرّب في تقويمه — ومساعدُه لم ينقله (`moveWhy`) */
+          trainerAr: `${why!.trainerAr} ويراجع الآن عند الإدارة. وتصلك دعوته بموعده الجديد حين يعتمد.`,
         },
       ))
-    } else if (kept) {
-      /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه — يتحرّك الموعدُ في تقاويمهم لا يتكرّر */
-      await this.inviteSafely('move', () => this.invites.announce(sessionId, 'update'))
-      /* والمنقولُ معتمَدٌ في تقاويمهم — فيُقال لهم موعدُه الجديد لا «يُراجَع»،
-         وأنّه أُخّر أو قُدّم: التقديمُ أشدُّ على من رتّب يومَه، فلا يُسمّى تأجيلا */
-      const verb = moved.startsAt.getTime() < session.startsAt.getTime() ? 'قدّمه' : 'أجّله'
       if (!opts.quiet) {
         await this.tellCohortScheduleChanged(session.cohortId, session,
-          `${verb} مدرّبك إلى ${whenAr(moved.startsAt)} — ورابط الانضمام نفسه.`)
+          `${why!.learnerAr} ويراجع الآن عند الإدارة، ويصلك موعده الجديد حين يعتمد.`, { calendarMailed: mailed > 0 })
+      }
+    } else if (kept) {
+      /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه — يتحرّك الموعدُ في تقاويمهم لا يتكرّر، وتقول «كان … وصار …» وسببَه */
+      const mailed = await this.inviteSafely('move', () => this.invites.moved(sessionId, session.startsAt, why!))
+      /* والمنقولُ معتمَدٌ في تقاويمهم — فيُقال لهم موعدُه الجديد لا «يُراجَع»،
+         وأنّه أُخّر أو قُدّم: التقديمُ أشدُّ على من رتّب يومَه، فلا يُسمّى تأجيلا */
+      const earlier = moved.startsAt.getTime() < session.startsAt.getTime()
+      if (!opts.quiet) {
+        await this.tellCohortScheduleChanged(session.cohortId, session,
+          `${earlier ? 'تقدّم' : 'تأخّر'} موعده من ${whenAr(session.startsAt)} إلى ${whenAr(moved.startsAt)}. ${why!.learnerAr} ورابط الانضمام نفسه.`,
+          { calendarMailed: mailed > 0 })
       }
     }
     return moved
@@ -1487,15 +1499,17 @@ export class CohortService {
      والمفتاحُ `cohort.schedule_changed` قائمٌ ومسجَّلٌ في الوجهات والأصناف
      معا — وهو موضوعُه بالحرف: «تحرّكُ جدولِ الشعبة». فلا يُخترَع مفتاحٌ
      جديدٌ لِما له مفتاح. */
+  /** `calendarMailed`: خرجت رسالةُ التقويم لمسجَّليه بما يقوله الجرس — فلا تصلهم ثانيةٌ بالبريد (تحت) */
   private async tellCohortScheduleChanged(
     cohortId: string,
     session: { id: string; title: string },
     whyAr: string,
+    opts: { calendarMailed?: boolean } = {},
   ): Promise<number> {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true } })
     const recipients = await this.prisma.enrollment.findMany({
       where: { cohortId, status: { not: 'dropped' } },
-      select: { userId: true },
+      select: { userId: true, status: true },
     })
     for (const r of recipients) {
       await safeNotify(this.prisma, {
@@ -1504,6 +1518,11 @@ export class CohortService {
         title: `تغيّر موعد في ${cohort?.title ?? 'شعبتك'}`,
         body: `${session.title} — ${whyAr}`,
         data: { cohortId, sessionId: session.id },
+        /* ═══ رسالةٌ واحدةٌ لا اثنتان (٢٨ أكتوبر ٢٠٢٦) ═══
+           اختار صاحبُ المنصّة «One email»: رسالةُ التقويم تقول الموعدين والسببَ ويتحرّك بها الموعد، وكان
+           المفتاحُ يُخرج معها بريدا ثانيا بالخبر نفسِه (`learner-email.ts`). فمن وصلته — صاحبُ مقعدٍ قائم —
+           يبقى له الجرسُ وحدَه، ومن لا تصله رسالةُ التقويم (المنتظِرُ في القائمة) يبقى له البريد */
+        ...(opts.calendarMailed && SEATED.includes(r.status) ? { skipEmail: true } : {}),
       })
     }
     return recipients.length
@@ -1512,11 +1531,13 @@ export class CohortService {
   /* ═══ جدولٌ كاملٌ انتقل — يُخبَر به المتعلّمون مرّةً واحدة (٢٤ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: رسالةٌ واحدةٌ بدلَ رسالةٍ لكلّ لقاء. كان قبولُ جدولٍ ينقل أربعةَ لقاءاتٍ يرسل أربعةَ
      أجراسٍ وأربعةَ بُرُد. فالجدولُ يُنقل بهدوء (`quiet`)، ثمّ يقال لهم: اليومُ والساعةُ الجديدان، وأوّلُ لقاءٍ بهما. */
-  async tellLearnersScheduleMoved(cohortId: string, input: { weekday: number; clock: string; days?: readonly number[]; firstAt: Date | null; pending: number }) {
+  /** `whyAr`: من طلب النقلَ ولماذا (`session-move.ts`) — يُقال بعد الموعد الجديد */
+  async tellLearnersScheduleMoved(cohortId: string, input: { weekday: number; clock: string; days?: readonly number[]; firstAt: Date | null; pending: number; whyAr?: string }) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true } })
     const recipients = await this.prisma.enrollment.findMany({ where: { cohortId, status: { not: 'dropped' } }, select: { userId: true } })
     const title = `تغير موعد شعبتك «${cohort?.title ?? ''}»`
-    const body = scheduleMovedBodyAr({ ...input, firstAtAr: input.firstAt ? whenAr(input.firstAt) : null })
+    const moved = scheduleMovedBodyAr({ ...input, firstAtAr: input.firstAt ? whenAr(input.firstAt) : null })
+    const body = input.whyAr ? `${moved} ${input.whyAr}` : moved
     for (const r of recipients) {
       await safeNotify(this.prisma, {
         userId: r.userId, channel: 'in_app', audience: 'learner', templateKey: 'cohort.schedule_changed',

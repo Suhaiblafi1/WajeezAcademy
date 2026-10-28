@@ -193,7 +193,7 @@ describe('③ النقلُ داخلَ الموعد يحدّث الدعوةَ —
     vi.setSystemTime(new Date(Date.now() + 60_000))
     const to = new Date(s.startsAt.getTime() + 2 * H)
     try {
-      const moved = await cohorts.trainerMoveSession(trainerUserId, s.id, { startsAt: to, endsAt: new Date(to.getTime() + 2 * H) })
+      const moved = await cohorts.trainerMoveSession(trainerUserId, s.id, { startsAt: to, endsAt: new Date(to.getTime() + 2 * H), reasonAr: 'سفر طارئ' })
       expect(moved.approvalState, 'التأجيلُ القريبُ بلا موعدٍ لمحوره يبقى معتمَدا (٣ج)').toBe('approved')
     } finally { vi.useRealTimers() }
     const updates = await invitesFor(s.id, 'session.invite.update')
@@ -211,7 +211,7 @@ describe('④ العودةُ لانتظار الإدارة ترفعها من ا�
   it('⚠️ `CANCEL` لكلّ من دُعي — بموعدها القديم وسببِه', async () => {
     const s = await approvedSession(72)
     const to = new Date(s.startsAt.getTime() + 2 * H)
-    const moved = await cohorts.trainerMoveSession(trainerUserId, s.id, { startsAt: to, endsAt: new Date(to.getTime() + 2 * H) })
+    const moved = await cohorts.trainerMoveSession(trainerUserId, s.id, { startsAt: to, endsAt: new Date(to.getTime() + 2 * H), reasonAr: 'سفر طارئ' })
     expect(moved.approvalState, 'البعيدُ بلا موعدٍ لمحوره يعود للانتظار (٣ج)').toBe('pending')
     const cancels = await invitesFor(s.id, 'session.invite.cancel')
     expect(cancels.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())

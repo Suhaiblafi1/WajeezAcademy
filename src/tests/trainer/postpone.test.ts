@@ -96,7 +96,8 @@ describe('وشاشة المدرّب تقول ما حكم به الخادم', () 
      حالَ اللقاء كما عاد من النقل. ولو ثبتت رسالتُها لقالت «يعود للاعتماد» عن
      لقاءٍ بقي معتمَدا ووصل متعلّميه */
   it('⚠️ رسالة النقل من حال اللقاء العائد — لا نصّ واحد ثابت', () => {
-    expect(SCREEN).toMatch(/const moved = \(await apiPatch\(`\/api\/trainer\/sessions\/\$\{sessionId\}`, \{[\s\S]{0,240}\}\)\) as \{ approvalState\?: string \};/)
+    /* والمتنُ يحمل سببَ النقل منذ ٢٨ أكتوبر ٢٠٢٦ (`reasonAr`) — فاتّسع ما بين القوسين */
+    expect(SCREEN).toMatch(/const moved = \(await apiPatch\(`\/api\/trainer\/sessions\/\$\{sessionId\}`, \{[\s\S]{0,400}\}\)\) as \{ approvalState\?: string \};/)
     /* وكانت «أُجِّل الموعد» — والمنقولُ داخلَ موعده قد يُقدَّم */
     expect(SCREEN).toMatch(/\}, \(r\) => \(\(r as \{ approvalState\?: string \} \| null\)\?\.approvalState === "approved"\s*\? "نقل الموعد وبقي معتمدا/)
   })

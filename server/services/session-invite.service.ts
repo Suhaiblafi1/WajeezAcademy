@@ -19,7 +19,8 @@
    ═══ اللحظات ═══
 
    · يُعتمَد لقاءٌ، أو تجدوله الإدارةُ باجتماعه — دعوة (`announce(…, 'new')`).
-   · يُنقل وهو معتمَد، أو يصير له رابط — تحديثٌ بالمعرّف نفسِه (`'update'`).
+   · يُنقل وهو معتمَد — تحديثٌ بالمعرّف نفسِه يقول «كان … وصار …» وسببَه بقلم من طلبه (`moved`، ٢٨ أكتوبر ٢٠٢٦)،
+     فيتحرّك الموعدُ في تقويمه ولا يتكرّر. أو يصير له رابط — تحديثٌ بلا «كان» (`announce(…, 'update')`).
    · يُحذف، أو يعود لانتظار الإدارة — رفعٌ من التقويم (`withdraw`).
    · يصير لمتعلّمٍ مقعدٌ بعد أن اعتُمدت لقاءاتُ شعبته — رسالةٌ واحدةٌ بما بقي
      منها (`welcome`). ويتركه أو ينتقل منه — تُرفع من تقويمه وحدَه (`release`).
@@ -51,6 +52,7 @@ import { ACADEMY_CONTACT_EMAIL } from './integrations.service'
 import { publicSiteUrl } from './site-url'
 import { getZoomConfig, registerZoomParticipant, zoomReady } from './zoom.service'
 import { sessionInviteMail, sessionScheduleMail, type InviteAudience, type InviteKind } from './calendar/session-invite'
+import type { MoveWhy } from '../../src/application/learning/session-move'
 
 /** المدعوّان إلى كلّ لقاءٍ يُعتمَد — بقرار صاحب المنصّة (٢٩ سبتمبر ٢٠٢٦) */
 export const SESSION_GUESTS: readonly { email: string; name: string }[] = [
@@ -69,7 +71,7 @@ export const TRAINER_SUSPENDED_AR = 'أوقف تدريبك. وتصلك مواع�
 export const ACCOUNT_SUSPENDED_AR = 'أوقف حسابك. وتصلك مواعيد شعبك حين يرفع الإيقاف.'
 export const ACCOUNT_ARCHIVED_AR = 'أرشف حسابك. وتصلك مواعيد شعبك إن أعيد تنشيطه.'
 
-/** سببُ الرفع — واحدٌ للجميع، أو للمدرّب غيرُ ما للمتعلّم: «نقله مدرّبك» لا تُقال للمدرّب */
+/** سببُ الرفع — واحدٌ للجميع، أو للمدرّب غيرُ ما للمتعلّم: «نقله مدرّبك» لا تُقال للمدرّب. وسببُ النقل كذلك (`moved`) */
 export type WithdrawWhy = string | { learnerAr: string; trainerAr: string }
 
 /** ما يُدعى إليه المسجَّل: مقعدٌ قائم — لا منتظرٌ في القائمة ولا من ترك */
@@ -190,6 +192,17 @@ export class SessionInviteService {
 
   /** دعوةُ لقاءٍ معتمَد أو تحديثُها — لمسجَّليه ومدرّبيه وللعنوانَين. يعود بعدد ما كُتب */
   async announce(sessionId: string, kind: Exclude<InviteKind, 'cancel'>, now = new Date()): Promise<number> {
+    return this.announceAs(sessionId, kind, now)
+  }
+
+  /** نُقل لقاءٌ معتمَد: تحديثٌ بالمعرّف نفسِه يقول موعدَه قبلُ وبعدُ، ومن طلب النقلَ ولماذا — لكلٍّ بلغته */
+  async moved(sessionId: string, fromStartsAt: Date, why: MoveWhy, now = new Date()): Promise<number> {
+    return this.announceAs(sessionId, 'update', now, { fromStartsAt, why })
+  }
+
+  private async announceAs(
+    sessionId: string, kind: Exclude<InviteKind, 'cancel'>, now: Date, move?: { fromStartsAt: Date; why: MoveWhy },
+  ): Promise<number> {
     const s = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
       select: {
@@ -206,7 +219,7 @@ export class SessionInviteService {
       id: s.id, cohortId: s.cohortId, cohortTitle: s.cohort.title,
       title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
     }
-    return this.send(snap, kind, s.zoom, undefined, now)
+    return this.send(snap, kind, s.zoom, move?.why, now, move?.fromStartsAt)
   }
 
   /** رفعُه من تقاويم من دُعي — يُنادى قبل حذف صفّه، فبعد الحذف لا مرجع */
@@ -451,10 +464,13 @@ export class SessionInviteService {
   private async enqueueInvite(
     snap: InvitedSession, kind: InviteKind, to: { email: string; name?: string | null },
     join: { url: string; personal: boolean } | null, pageUrl: string, whyAr: string | undefined, now: Date,
-    audience: InviteAudience = 'learner',
+    audience: InviteAudience = 'learner', movedFrom?: Date,
   ): Promise<void> {
+    /* والسببُ سببُ رفعٍ في الرفع، وسببُ نقلٍ في التحديث — ولا «كان» بلا سبب */
     const mail = sessionInviteMail({
-      kind, session: snap, cohortTitle: snap.cohortTitle, to, join, pageUrl, cancelWhyAr: whyAr, audience, now,
+      kind, session: snap, cohortTitle: snap.cohortTitle, to, join, pageUrl, audience, now,
+      ...(kind === 'cancel' ? { cancelWhyAr: whyAr } : {}),
+      ...(kind === 'update' && movedFrom && whyAr ? { moved: { fromStartsAt: movedFrom, whyAr } } : {}),
     })
     await enqueueMail(this.prisma, {
       to: to.email, subject: mail.subject, text: mail.text, html: mail.html,
@@ -465,6 +481,7 @@ export class SessionInviteService {
 
   private async send(
     snap: InvitedSession, kind: InviteKind, zoom: MeetingRef | null, why: WithdrawWhy | undefined, now: Date,
+    movedFrom?: Date,
   ): Promise<number> {
     const site = publicSiteUrl()
     let queued = 0
@@ -473,7 +490,7 @@ export class SessionInviteService {
       audience: InviteAudience = 'learner',
     ) => {
       const whyAr = typeof why === 'object' ? (audience === 'trainer' ? why.trainerAr : why.learnerAr) : why
-      await this.enqueueInvite(snap, kind, to, join, pageUrl, whyAr, now, audience)
+      await this.enqueueInvite(snap, kind, to, join, pageUrl, whyAr, now, audience, movedFrom)
       queued += 1
     }
 

@@ -20,6 +20,9 @@ const base = {
   now: NOW,
 }
 const PERSONAL = { url: 'https://zoom.us/w/123?tk=personal', personal: true }
+/** نُقل من موعده قبل يوم — ومعه سببُه بقلم من طلبه (٢٨ أكتوبر ٢٠٢٦) */
+const WAS = new Date(AT.getTime() - 24 * 3_600_000)
+const MOVED = { fromStartsAt: WAS, whyAr: 'نقله مدرّبك، وكتب: «سفر طارئ».' }
 /** الأسطرُ تُطوى عند ٧٥ ثمانيّة (`foldIcsLine`) — فتُفرَد قبل أن يُطابَق سطرٌ طويل */
 const unfold = (ics: string) => ics.replace(/\r\n /g, '')
 /** معرّفاتُ الأحداث **سطرا كاملا**. كان الفحصُ `toContain('UID:…')` فمرّ معرّفٌ
@@ -76,13 +79,39 @@ describe('الدعوة', () => {
 describe('التحديث والرفع', () => {
   it('⚠️ التحديثُ بالمعرّف نفسِه ورقمٍ أعلى — فيتحرّك الموعدُ في التقويم ولا يتكرّر', () => {
     const first = sessionInviteMail({ ...base, kind: 'new', join: PERSONAL })
-    const later = sessionInviteMail({ ...base, kind: 'update', join: PERSONAL, now: new Date(NOW.getTime() + 60_000) })
+    const later = sessionInviteMail({ ...base, kind: 'update', join: PERSONAL, moved: MOVED, now: new Date(NOW.getTime() + 60_000) })
     const seq = (ics: string) => Number(/SEQUENCE:(\d+)/.exec(ics)?.[1])
     expect(uids(later.ics), 'التحديثُ بمعرّفٍ آخر — موعدٌ ثانٍ في التقويم').toEqual(uids(first.ics))
     expect(uids(later.ics)).toEqual([sessionInviteUid('sess-1')])
     expect(seq(later.ics)).toBeGreaterThan(seq(first.ics))
     expect(later.subject).toMatch(/^تغيّر موعد/)
     expect(later.text).toContain('بقي رابطُ الدخول نفسُه')
+  })
+
+  it('⚠️ والمنقولُ يقول «كان … وصار …» وسببَه بقلم من طلبه — في الرسالة وفي التقويم (٢٨ أكتوبر ٢٠٢٦)', () => {
+    const m = sessionInviteMail({ ...base, kind: 'update', join: PERSONAL, moved: MOVED })
+    expect(m.text, 'لا يُقال من أيّ موعدٍ نُقل').toContain(`كان: ${whenAr(WAS)}`)
+    expect(m.text).toContain(`صار: ${whenAr(AT)} — بتوقيت عمّان`)
+    expect(m.text, 'لا يُقال لماذا نُقل').toContain('نقله مدرّبك، وكتب: «سفر طارئ».')
+    expect(m.html).toContain('سفر طارئ')
+    expect(unfold(m.ics), 'من فتح الموعدَ في تقويمه لا يرى لماذا تحرّك').toContain(`كان ${whenAr(WAS)} بتوقيت عمّان. نقله مدرّبك، وكتب: «سفر طارئ».`)
+    expect(m.ics).toContain('DTSTART:20990303T150000Z')
+  })
+
+  it('⚠️ وتحديثٌ بلا نقلٍ — صار له رابط — لا يقول «تغيّر موعد»: موعدُه لم يتغيّر', () => {
+    const linked = sessionInviteMail({ ...base, kind: 'update', join: { url: 'https://zoom.us/j/9', personal: false } })
+    expect(linked.subject).toMatch(/^تحديث: /)
+    expect(linked.subject).not.toContain('تغيّر')
+    /* و«ويتحدّث وحده إن تغيّر» في تذييل كلّ دعوة — فالمفحوصُ القولُ إنّه تغيّر، لا الكلمة */
+    expect(linked.text).not.toContain('تغيّر موعد')
+    expect(linked.text).not.toContain('تغيّر الموعد')
+    expect(linked.text).not.toContain('كان:')
+    expect(linked.text).toContain(`${whenAr(AT)} — بتوقيت عمّان`)
+    expect(linked.text).toContain('https://zoom.us/j/9')
+    /* و«كان» لا تُقال لدعوةٍ جديدةٍ ولو حُملت عليها */
+    const fresh = sessionInviteMail({ ...base, kind: 'new', join: PERSONAL, moved: MOVED })
+    expect(fresh.text).not.toContain('كان:')
+    expect(fresh.text).not.toContain('سفر طارئ')
   })
 
   it('والرقمُ من الساعة لا من عدّاد — يعلو أبدا ولا يُحفظ', () => {
@@ -181,10 +210,11 @@ describe('والمدرّبُ لا رابطَ له — يبدأ اللقاءَ م
   })
 
   it('⚠️ والتحديثُ لا يقول له «بقي رابط الدخول نفسه» — لا رابطَ له', () => {
-    const u = sessionInviteMail({ ...trainer, kind: 'update' })
+    const u = sessionInviteMail({ ...trainer, kind: 'update', moved: { fromStartsAt: WAS, whyAr: 'نقلته بطلبك، وكتبت لطلابك: «سفر طارئ».' } })
     expect(u.subject).toMatch(/^تغيّر موعد/)
     expect(u.text).not.toContain('رابط الدخول')
     expect(u.text).toContain('صفحة شعبتك')
+    expect(u.text).toContain('نقلته بطلبك، وكتبت لطلابك: «سفر طارئ».')
   })
 
   it('⚠️ وجدولُ ما بقي بلا روابط — وسطرٌ واحدٌ يقول أين يبدأ كلَّ لقاء', () => {

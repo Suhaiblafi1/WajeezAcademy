@@ -27,16 +27,20 @@ import { fmtDateTimeAr } from "@/utils/format";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import ConfirmAction from "@/components/ConfirmAction";
 import Button from "@/components/ui/Button";
-import { controlCls } from "@/components/FormKit";
+import { areaCls, controlCls } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 import { openableRecordings } from "@/application/learning/recording-href";
 import { sessionEnd } from "@/application/trainer/axis-timeline";
+import { MOVE_WHY_MAX, MOVE_WHY_MIN } from "@/application/learning/session-move";
 
 /** آخرُ لحظةٍ في اللقاء — بالقاعدة التي يحكم بها الخادم (`sessionEnd`) */
 const sessionEndMs = (s: { startsAt: string; endsAt: string | null }) => sessionEnd(s).getTime();
 
 /** مرجعٌ ثابتٌ للحقل الفارغ — كائنٌ جديدٌ في كلّ تصيير يُعيد بناءَ الحقل */
-const EMPTY_MOVE = { date: "", from: "", to: "" };
+const EMPTY_MOVE = { date: "", from: "", to: "", reason: "" };
+
+/** أهو في تقاويم متعلّميه؟ — المعتمَد، وما سبق عمودَ الاعتماد معتمَدٌ بحكمه */
+const announcedOf = (s: { approvalState?: string | null }) => (s.approvalState ?? "approved") === "approved";
 
 /* صيغةُ العدد لا تُرتجَل: «١١٨ دقيقةٌ» و«١ حاضر» يقرؤهما المدرّبُ في كلّ لقاء */
 const MINUTE_FORMS = { one: "دقيقة", two: "دقيقتان", few: "دقائق", many: "دقيقة" } as const;
@@ -123,12 +127,15 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
   /* ═══ إلّا ما بقي داخلَ موعد محوره (٢٩ سبتمبر ٢٠٢٦) ═══ — «free it, keep it
      inside the axis window»: يبقى معتمَدا ويصل متعلّميه. والخادمُ يحكم بحدوده
      (`postpone.ts`)، والشاشةُ تقول ما حكم به لا ما تظنّه. */
-  const moveSession = (sessionId: string) =>
+  /* ═══ والمعتمَدُ يُنقل بسببه (٢٨ أكتوبر ٢٠٢٦) ═══ — يصل متعلّميه مع «كان … وصار …» كما كتبه
+     (`session-move.ts`). وما لم يُعتمَد لم يره أحد، فلا سببَ يُطلب له */
+  const moveSession = (sessionId: string, announced: boolean) =>
     act(async () => {
       const moved = (await apiPatch(`/api/trainer/sessions/${sessionId}`, {
         /* بتوقيت الشعبة لا بتوقيت المتصفّح — والتهيئةُ أدناه بالتوقيت نفسِه */
         startsAt: zonedAt(moveForm.date, moveForm.from).toISOString(),
         endsAt: zonedAt(moveForm.date, moveForm.to).toISOString(),
+        ...(announced ? { reasonAr: moveForm.reason.trim() } : {}),
       })) as { approvalState?: string };
       setMoveFor(null);
       setMoveForm(EMPTY_MOVE);
@@ -278,6 +285,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
                         date: zonedDay(s.startsAt),
                         from: zonedClock(s.startsAt),
                         to: zonedClock(s.endsAt ?? s.startsAt),
+                        reason: "",
                       });
                     }} className="min-h-9">
                     <CalendarDays className="h-3 w-3" /> انقل الموعد
@@ -316,9 +324,18 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
                         onChange={(e) => setMoveForm((f) => ({ ...f, to: e.target.value }))} className={`${controlCls} text-left`} />
                     </div>
                   </div>
+                  {announcedOf(s) && (
+                    <div>
+                      <label htmlFor={`mv-r-${s.id}`} className="mb-1 block text-read font-bold text-muted-foreground">لماذا تنقله؟</label>
+                      <textarea id={`mv-r-${s.id}`} rows={2} maxLength={MOVE_WHY_MAX} value={moveForm.reason}
+                        onChange={(e) => setMoveForm((f) => ({ ...f, reason: e.target.value }))} className={areaCls} />
+                      <p className="mt-1 text-read text-muted-foreground">يصل طلابك مع الموعد الجديد كما تكتبه.</p>
+                    </div>
+                  )}
                   <Button tone="confirm" size="sm" type="button"
-                    disabled={busy || !moveForm.date || !moveForm.from || moveForm.to <= moveForm.from}
-                    onClick={() => void moveSession(s.id)} className="disabled:cursor-not-allowed">
+                    disabled={busy || !moveForm.date || !moveForm.from || moveForm.to <= moveForm.from
+                      || (announcedOf(s) && moveForm.reason.trim().length < MOVE_WHY_MIN)}
+                    onClick={() => void moveSession(s.id, announcedOf(s))} className="disabled:cursor-not-allowed">
                     انقله
                   </Button>
                   {!!moveForm.from && moveForm.to <= moveForm.from && (

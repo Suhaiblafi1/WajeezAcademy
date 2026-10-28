@@ -33,6 +33,7 @@ import { AssessmentService } from './assessment.service'
 import { CohortService } from './cohort.service'
 import { CohortPlanService, resolvePeriod, type PlanStatus, type TrainerPlanContent } from './cohort-plan.service'
 import { proposeSchedule, type ScheduleEdit } from '../../src/application/trainer/schedule-proposal'
+import { MOVE_UNDONE, moveWhy, type MoveWhy } from '../../src/application/learning/session-move'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import {
   applyContentEdit, attachmentSnapshot, attachmentsAfter, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameEdit, sameSnapshot, scheduleChainProblem, schedulePlanContent, scheduleSnapshot,
@@ -536,7 +537,7 @@ export class PlanEditService {
     })
     if (claimed.count !== 1) throw new AuthError('edit_decided', 'قرّر في هذا التعديل من قبل', 409)
     try {
-      await this.apply(userId, row.cohortId, edit, r, onApproved)
+      await this.apply(userId, row.cohortId, edit, r, onApproved, moveWhy('accepted', row.reasonAr))
     } catch (e) {
       await this.prisma.planEditSuggestion.update({ where: { id }, data: { status: 'pending', decidedAt: null, decidedBy: null } })
       throw e
@@ -558,7 +559,8 @@ export class PlanEditService {
       : this.plans.savePlan(userId, cohortId, content)
   }
 
-  private async apply(userId: string, cohortId: string, edit: PlanEdit, r: Rows, onApproved: OnApproved | null) {
+  /** `why`: سببُ البطاقة بقلم من كتبها — يقرؤه المتعلّمون مع موعد ما تنقله (`session-move.ts`) */
+  private async apply(userId: string, cohortId: string, edit: PlanEdit, r: Rows, onApproved: OnApproved | null, why: MoveWhy) {
     const preApproved = onApproved !== null
     if (editsContent(edit)) {
       const next = applyContentEdit(r.content, edit)
@@ -585,7 +587,7 @@ export class PlanEditService {
         return
       }
       case 'session_move':
-        await this.cohorts.trainerMoveSession(userId, edit.sessionId, { startsAt: new Date(edit.startsAt), endsAt: new Date(edit.endsAt) }, { preApproved })
+        await this.cohorts.trainerMoveSession(userId, edit.sessionId, { startsAt: new Date(edit.startsAt), endsAt: new Date(edit.endsAt) }, { preApproved, why })
         return
       /* ومرفقُ المهمّة بباب تعديلها نفسِه — فبعد أوّل اعتمادٍ طلبٌ ينتظر الإدارة، إلّا على خطّته المعتمدة (⑤) */
       case 'task_attachment': {
@@ -627,7 +629,7 @@ export class PlanEditService {
       case 'note':
         return
       case 'schedule':
-        await this.applySchedule(userId, cohortId, edit, r, onApproved)
+        await this.applySchedule(userId, cohortId, edit, r, onApproved, why)
         return
     }
   }
@@ -637,7 +639,7 @@ export class PlanEditService {
      أوّلا بفحص باب النقل نفسِه (`assertTrainerMove`: موعدُ الشعبة، وتعارضُه مع شعبه الأخرى) — فإن لم يصحّ
      واحدٌ لم يُنقل شيء. ثمّ تُنقل بالباب (واجتماعُها معها)، ثمّ مواعيدُ المهامّ ببابها. وإن سقط شيءٌ بعد
      ذلك لعطبٍ لا يُفحص قبله أُعيد ما نُقل قبله إلى ما كان — فلا يبقى نصفُ جدول. */
-  private async applySchedule(userId: string, cohortId: string, edit: Extract<PlanEdit, { kind: 'schedule' }>, r: Rows, onApproved: OnApproved | null) {
+  private async applySchedule(userId: string, cohortId: string, edit: Extract<PlanEdit, { kind: 'schedule' }>, r: Rows, onApproved: OnApproved | null, why: MoveWhy) {
     const done: (() => Promise<unknown>)[] = []
     const preApproved = onApproved !== null
     let tell: Parameters<CohortService['tellLearnersScheduleMoved']>[1] | null = null
@@ -658,11 +660,12 @@ export class PlanEditService {
       /* بهدوء: لا يُخبَر المتعلّمون بكلّ لقاءٍ وحدَه — يُخبَرون بالجدول كلِّه مرّةً بعده (٢٤ أكتوبر ٢٠٢٦) */
       for (const m of edit.moves) {
         const was = r.sessions.find((x) => x.id === m.sessionId)!
-        const moved = await this.cohorts.trainerMoveSession(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) }, { preApproved, quiet: true })
+        const moved = await this.cohorts.trainerMoveSession(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) }, { preApproved, quiet: true, why })
         if (moved.approvalState !== 'approved') pending += 1
+        /* والعائدُ إلى موعده لا يُنسب نقلُه إلى سبب البطاقة — سقط الجدولُ فعاد (`MOVE_UNDONE`) */
         done.push(() => this.cohorts.trainerMoveSession(userId, m.sessionId, {
           startsAt: new Date(was.startsAt), ...(was.endsAt ? { endsAt: new Date(was.endsAt) } : {}),
-        }, { preApproved, quiet: true }))
+        }, { preApproved, quiet: true, why: MOVE_UNDONE }))
       }
       tell = edit.moves.length === 0 ? null : {
         weekday: edit.weekday, clock: edit.clock, ...(edit.days ? { days: edit.days } : {}), pending,
@@ -679,8 +682,8 @@ export class PlanEditService {
         ? new AuthError(e.code, `لم ينقل شيء من الجدول — ${e.message}`, e.status)
         : e
     }
-    /* وانتقل الجدولُ كلُّه — فيُخبَر متعلّموه مرّةً واحدة */
-    if (tell) await this.cohorts.tellLearnersScheduleMoved(cohortId, tell)
+    /* وانتقل الجدولُ كلُّه — فيُخبَر متعلّموه مرّةً واحدة، ومعه سببُه */
+    if (tell) await this.cohorts.tellLearnersScheduleMoved(cohortId, { ...tell, whyAr: why.learnerAr })
   }
 
   /** يرفضه — وله أن يقول لماذا */

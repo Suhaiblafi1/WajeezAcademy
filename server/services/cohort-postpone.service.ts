@@ -24,6 +24,7 @@ import { UPCOMING_STATUSES } from '../../src/application/learning/upcoming-cohor
 import {
   academyMonth, deadlineProblemAr, declinedReasonAr, expiredReasonAr, shiftByWeeks, weeksToNextMonth,
 } from '../../src/application/trainer/postpone-offer'
+import { moveWhy } from '../../src/application/learning/session-move'
 
 const DAY_MS = 86_400_000
 
@@ -198,8 +199,10 @@ export class CohortPostponeService {
         actorId: userId, action: 'cohort.postpone.accept', entityType: 'cohort', entityId: offer.cohortId,
         meta: { offerId, shiftDays: offer.shiftDays },
       })
+      /* وسببُ الإدارة في اقتراحها يقرؤه المتعلّمون مع مواعيدهم الجديدة — هي من طلبت، والمدرّبُ قبل (`session-move.ts`) */
       await moves.afterShift(userId, offer.cohortId, {
         title: offer.cohort.title, auditMeta: { offerId },
+        shiftMs: offer.shiftDays * DAY_MS, why: moveWhy('accepted', offer.reasonAr),
         noticeAr: (first) => `تأجلت الشعبة${first ? `، وأول لقاء فيها ${dayAr(first)}` : ''}. راجع جدولك.`,
       })
       await notifyRole(this.prisma, COHORT_MOVE_STAFF_ROLES, {

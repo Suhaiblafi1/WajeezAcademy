@@ -181,13 +181,13 @@ export default function PostponeMonthBox({ onChanged, onFlash }: {
                 className={`${staffControlCls} text-left`} />
             </label>
             <label>
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">السبب — يصل المدرب كما هو</span>
+              <span className="mb-1.5 block text-read font-bold text-muted-foreground">السبب — يصل المدرب كما هو، ويقرؤه الطلاب إن قبل</span>
               <textarea value={reason} onChange={(e) => { setReason(e.target.value); setConfirming(false); }} rows={2} className={staffAreaCls} />
             </label>
           </div>
 
           <Inset as="ul" className="space-y-1 text-read">
-            <li><b>يقبل:</b> تتحرك كل مواعيد الشعبة بنفس اليوم والساعة، ويصل المتعلمين الموعد الجديد.</li>
+            <li><b>يقبل:</b> تتحرك كل مواعيد الشعبة بنفس اليوم والساعة، ويصل المتعلمين الموعد الجديد مع السبب.</li>
             <li><b>لا يقبل:</b> تتوقف الشعبة الآن، ويصل متعلميها الخبر.</li>
             <li><b>لا يرد حتى المهلة:</b> تتوقف الشعبة تلقائيا.</li>
           </Inset>

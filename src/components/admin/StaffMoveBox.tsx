@@ -63,7 +63,7 @@ export default function StaffMoveBox({ cohortId, status, startsAt, onDone }: {
   return (
     <Inset className="grid w-full gap-2 p-3">
       <p className="text-read leading-6 text-muted-foreground">
-        تنتقل المواعيد كلها واللقاءات وروابطها، ويصل المتعلمين ومدربها الموعد الجديد.
+        تنتقل المواعيد كلها واللقاءات وروابطها، ويصل المتعلمين ومدربها الموعد الجديد مع السبب.
       </p>
       <select aria-label="الموسم" value={pick} onChange={(e) => setPick(e.target.value)} className={`${controlCls} [&>option]:bg-surface`}>
         <option value="">اختر الموسم…</option>

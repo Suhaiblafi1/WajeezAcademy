@@ -155,11 +155,13 @@ describe('② ورفعُ ما نقله أو حذفه لا يقول له «نقل
     const c = await cohortWith(t, 'شعبة النقل')
     const s = await announced(c.id, 300)
     const at = new Date(s.startsAt.getTime() + 2 * H)
-    const moved = await cohorts.trainerMoveSession(t.userId, s.id, { startsAt: at, endsAt: new Date(at.getTime() + 2 * H) })
+    const moved = await cohorts.trainerMoveSession(t.userId, s.id, { startsAt: at, endsAt: new Date(at.getTime() + 2 * H), reasonAr: 'سفر طارئ' })
     expect(moved.approvalState, 'البعيدُ بلا موعدٍ لمحوره يعود للانتظار').toBe('pending')
 
+    /* وله «نقلته بطلبك» وما كتبه لطلابه (٢٨ أكتوبر ٢٠٢٦، `session-move.ts`) */
     const [mine] = await mails({ to: t.email, batchId: s.id, purpose: 'session.invite.cancel' })
-    expect(mine!.text).toContain('نقل هذا اللقاء ويراجع الآن عند الإدارة')
+    expect(mine!.text).toContain('نقلته بطلبك، وكتبت لطلابك: «سفر طارئ».')
+    expect(mine!.text).toContain('ويراجع الآن عند الإدارة')
     expect(mine!.text).not.toContain('نقله مدرّبك')
     const [learner] = await mails({ to: c.learners[0]!.email, batchId: s.id, purpose: 'session.invite.cancel' })
     expect(learner!.text).toContain('نقله مدرّبك')

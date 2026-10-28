@@ -23,7 +23,10 @@
      يحوّلها لصاحبه: الملفُّ بالتوقيت العالميّ (`ics.ts`).
    · **والمدرّبُ لا رابطَ له** (`audience: 'trainer'`، ٢٧ أكتوبر ٢٠٢٦): رابطُ المشارك يُدخله
      مشاركا لا مضيفا، ورابطُ المضيف يُطلب لحظةَ الضغط ولا يُرسَل (`trainerHostStart`). فيُقال له
-     أين يبدؤه: صفحةُ شعبته — لا «صفحة رحلتك» ولا «بقي رابطُ الدخول نفسُه». */
+     أين يبدؤه: صفحةُ شعبته — لا «صفحة رحلتك» ولا «بقي رابطُ الدخول نفسُه».
+   · **والمنقولُ يقول «كان … وصار …» وسببَه** (`moved`، ٢٨ أكتوبر ٢٠٢٦): «We have changed the session time from X
+     to Y, and we should write the reason». والسببُ بقلم من طلب النقل، ولكلٍّ بلغته (`session-move.ts`). وتحديثٌ
+     بلا نقلٍ — صار له رابط — لا يقول «تغيّر موعد»: كان يقولها لموعدٍ لم يتغيّر. */
 
 import { buildIcs, buildIcsBundle, type IcsEvent } from './ics'
 import { renderMail, type MailBlock, type MailRich } from '../mail-template'
@@ -49,8 +52,15 @@ export interface SessionInviteInput {
   pageUrl: string
   /** سببُ الرفع من التقويم — يُقال في الرسالة */
   cancelWhyAr?: string
+  /** نُقل اللقاء: موعدُه قبل النقل، ومن طلبه ولماذا بلغة من يقرأ — للتحديث وحدَه */
+  moved?: SessionMove
   audience?: InviteAudience
   now?: Date
+}
+
+export interface SessionMove {
+  fromStartsAt: Date
+  whyAr: string
 }
 
 export interface SessionInviteMail {
@@ -83,6 +93,7 @@ const TRAINER_START_AR = 'تبدأ اللقاء مضيفا من صفحة شعب�
 function sessionEvent(
   session: SessionInviteInput['session'], cohortTitle: string,
   join: SessionInviteInput['join'], pageUrl: string, now: Date, audience: InviteAudience = 'learner',
+  movedAr?: string,
 ): IcsEvent {
   const end = session.endsAt ?? new Date(session.startsAt.getTime() + MIN_SESSION_MS)
   return {
@@ -92,6 +103,7 @@ function sessionEvent(
     durationMinutes: Math.max(15, Math.round((end.getTime() - session.startsAt.getTime()) / 60_000)),
     description: [
       `لقاء مباشر في «${cohortTitle}» — أكاديمية وجيز.`,
+      ...(movedAr ? [movedAr] : []),
       join
         ? `رابط الدخول: ${join.url}`
         : audience === 'trainer' ? `${TRAINER_START_AR}: ${pageUrl}` : `رابط الدخول في صفحة رحلتك: ${pageUrl}`,
@@ -109,11 +121,14 @@ export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail 
   const { session, join } = input
   const trainer = input.audience === 'trainer'
   const when = whenAr(session.startsAt)
+  /* والنقلُ يُقال في التحديث وحدَه — ودعوةٌ جديدةٌ أو رفعٌ لا «كان» لهما */
+  const moved = input.kind === 'update' ? input.moved : undefined
+  const was = moved ? whenAr(moved.fromStartsAt) : null
 
   const subject = input.kind === 'new'
     ? `دعوة: ${session.title} — ${when}`
     : input.kind === 'update'
-      ? `تغيّر موعد: ${session.title} — ${when}`
+      ? moved ? `تغيّر موعد: ${session.title} — ${when}` : `تحديث: ${session.title} — ${when}`
       : `ألغي من تقويمك: ${session.title}`
 
   const blocks: MailBlock[] = []
@@ -127,10 +142,13 @@ export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail 
       rows: [
         { label: 'اللقاء', value: session.title },
         { label: 'الشعبة', value: input.cohortTitle },
-        { label: 'الموعد', value: `${when} — بتوقيت عمّان` },
+        ...(was
+          ? [{ label: 'كان', value: was }, { label: 'صار', value: `${when} — بتوقيت عمّان` }]
+          : [{ label: 'الموعد', value: `${when} — بتوقيت عمّان` }]),
       ],
     })
-    if (input.kind === 'update' && !trainer) {
+    if (moved) blocks.push({ kind: 'p', text: moved.whyAr })
+    if (moved && !trainer) {
       blocks.push({ kind: 'p', text: 'تغيّر الموعد وبقي رابط الدخول نفسه.' })
     }
     if (join) {
@@ -151,14 +169,17 @@ export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail 
     heading: input.kind === 'new'
       ? `لقاء مباشر في «${input.cohortTitle}»`
       : input.kind === 'update'
-        ? `تغيّر موعد «${session.title}»`
+        ? moved ? `تغيّر موعد «${session.title}»` : `تحديث «${session.title}»`
         : `ألغي «${session.title}» من تقويمك`,
-    preheader: input.kind === 'cancel' ? (input.cancelWhyAr ?? 'رفع هذا اللقاء من الجدول.') : `${when} بتوقيت عمّان`,
+    preheader: input.kind === 'cancel'
+      ? (input.cancelWhyAr ?? 'رفع هذا اللقاء من الجدول.')
+      : was ? `من ${was} إلى ${when} بتوقيت عمّان` : `${when} بتوقيت عمّان`,
     blocks,
   })
 
   const ics = buildIcs({
-    ...sessionEvent(session, input.cohortTitle, join, input.pageUrl, now, input.audience),
+    ...sessionEvent(session, input.cohortTitle, join, input.pageUrl, now, input.audience,
+      moved ? `كان ${was} بتوقيت عمّان. ${moved.whyAr}` : undefined),
     ...(input.kind === 'cancel' ? { description: input.cancelWhyAr ?? 'رفع هذا اللقاء من الجدول.' } : {}),
     attendee: { name: input.to.name ?? undefined, email: input.to.email, rsvp: false },
     cancelled: input.kind === 'cancel',
