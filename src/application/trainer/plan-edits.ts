@@ -189,7 +189,8 @@ export function planEditStep(edit: PlanEdit): ReviewSection {
     case 'cohort_title': return 'identity'
     case 'workbook_replace': case 'workbook_change': return 'workbooks'
     case 'note': return edit.step === 'general' ? 'identity' : edit.step
-    case 'schedule': return 'sessions'
+    /* ومدّةٌ بلا لقاءٍ ينقله في «المعلومات الأساسيّة» — حيث يكتب المدرّبُ مدّتَه (٣١ أكتوبر ٢٠٢٦) */
+    case 'schedule': return edit.moves.length > 0 ? 'sessions' : 'identity'
     default: return 'assignments'
   }
 }
@@ -433,7 +434,8 @@ export function rowEditProblem(edit: PlanEdit, c: EditableContent): string | nul
       return null
     }
     case 'schedule': {
-      if (edit.moves.length === 0) return 'جدول بلا لقاء ينقل'
+      /* وبلا لقاءٍ ينقله يصحّ إن حمل حدودَ الخطّة وحدَها — مدّةٌ تمتدّ لمهامَّ بعد نهايتها (٣١ أكتوبر ٢٠٢٦) */
+      if (edit.moves.length === 0 && !edit.plan) return 'جدول بلا لقاء ينقل'
       if (new Set(edit.moves.map((m) => m.sessionId)).size !== edit.moves.length) return 'لقاء منقول مرّتين في الجدول نفسه'
       for (const m of edit.moves) {
         if (!isInstant(m.startsAt) || !isInstant(m.endsAt)) return 'موعد لقاء في الجدول ليس لحظة مقروءة'
@@ -986,6 +988,8 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
           afterAr: span(s.startsOn, s.endsOn),
         })
       }
+      /* وبلا لقاءٍ ينقله لا يُقال «جدول ثابت» بيومٍ وساعةٍ لم يمسّهما — يُقال ما يمسّ: المدّةُ ومواعيدُ المحاور */
+      if (edit.moves.length === 0) return view(edit.plan?.slots?.length ? 'مدة الشعبة ومواعيد المحاور' : 'مدة الشعبة', rows)
       return view(`جدول ثابت: ${scheduleSlotsAr(edit)} كلّ أسبوع`, rows)
     }
     case 'note': {
