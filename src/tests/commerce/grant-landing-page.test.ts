@@ -15,6 +15,7 @@ import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -98,7 +99,8 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'عادت الاقتراحات').not.toMatch(/view\.pathways|\/api\/admin\/member-grant\/pathways|اقتراحات لك|اختر هذه الدورات/)
     /* ما يدفعه كبيرا وأصلُه مشطوبا بعده — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «فقط السعرُ قبل وبعد كقيم» */
     /* والمشطوبُ لمن له منحةٌ يستعملها وحدَه — بلا منحةٍ سعرٌ واحد (٢٨ أكتوبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/<bdi dir="ltr" className="text-lg font-black">\{money\(grantPrice\(x\.price, pct\)\)\}<\/bdi>\s*\{pct > 0 && <bdi dir="ltr" className="text-read text-muted-foreground line-through">\{money\(x\.price\)\}<\/bdi>\}/)
+    expect(PAGE).toMatch(/const pay = grantPrice\(x\.price, pct\);/)
+    expect(PAGE).toMatch(/<bdi dir="ltr" className="text-lg font-black">\{money\(pay\)\}<\/bdi>\s*\{pct > 0 && <bdi dir="ltr" className="text-read text-muted-foreground line-through">\{money\(x\.price\)\}<\/bdi>\}/)
     expect(PAGE, 'عادت «قبل المنحة/بعد المنحة»').not.toMatch(/قبل المنحة|بعد المنحة/)
   })
 
@@ -230,7 +232,8 @@ describe('بعد النموذج', () => {
     const picker = PAGE.slice(PAGE.indexOf('<h2 className="mt-6'), PAGE.indexOf('view.openCourses.length === 0'))
     expect(picker, 'البنود تحت العنوان لا في الصندوق').not.toContain('GRANT_GAINS_AR')
     expect(PAGE, 'عاد صندوق Zoom الكبير').not.toMatch(/كل الدورات مباشرة على Zoom|تسجيل كل لقاء/)
-    expect(PAGE).toMatch(/تبدأ \{cohortDayAr\(x\.startsAt\)\} · مباشرة على Zoom/)
+    /* وبعدد لقاءاتها المباشرة إن كانت لها، وإلّا «مباشرة على Zoom» (٣١ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/تبدأ \{cohortDayAr\(x\.startsAt\)\} · \{meetings > 0 \? `\$\{grantSessionsAr\(meetings\)\} على Zoom` : "مباشرة على Zoom"\}/)
   })
 
   it('⚠️ ما يريد تطويره أولا — وكل على ترتيبه', () => {
@@ -345,6 +348,35 @@ describe('بعد النموذج', () => {
     expect(parseStoredGrant(JSON.stringify({ ...ok, percentOff: 60 }))?.percentOff).toBe(60)
     expect(parseStoredGrant(JSON.stringify({ ...ok, percentOff: 160 }))?.percentOff, 'نسبة بغير شكلها').toBeNull()
     expect(parseStoredGrant(JSON.stringify(ok))?.percentOff, 'حفظ قبل النسبة').toBeNull()
+  })
+
+  /* «كيف نُري الناسَ قيمةَ المنحة… ماذا سيخرجون به من كلّ دورة؟ لا أريد صفحةً طويلة» — واختار صاحبُ المنصّة أربعا (٣١ أكتوبر ٢٠٢٦) */
+  it('⚠️ القيمة بما يخرج به: الوعد تحت كل اسم، ولقاءاتها وثمن اللقاء، و«ما ستخرج به»، وما يخسره إن تأخر', () => {
+    const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf('</label>', PAGE.indexOf('const row = ')))
+    /* ١) الوعدُ بعد الاسم والمدرّب وقبل الموعد — ظاهرٌ في الصفّ لا وراء «نبذة» */
+    const title = card.indexOf('{x.titleAr}</span>'), promise = card.indexOf('{sum?.aboutAr && ('), when = card.indexOf('تبدأ {cohortDayAr(x.startsAt)}')
+    expect(promise, 'لا وعد في الصف').toBeGreaterThan(title)
+    expect(promise, 'الوعد بعد الموعد').toBeLessThan(when)
+    /* ٣) ثمنُ اللقاء مقرَّبا إلى فوق، وبلا لقاءاتٍ لا يقال */
+    expect(PAGE).toMatch(/const perMeeting = grantPerSession\(pay, meetings\);/)
+    expect(card).toMatch(/\{perMeeting !== null && <span className="text-read text-muted-foreground">· <bdi dir="ltr">\{money\(perMeeting\)\}<\/bdi> للقاء<\/span>\}/)
+    expect(grantPerSession(80, 8)).toBe(10)
+    expect(grantPerSession(80, 6), 'قيل أقل مما يدفع').toBe(14)
+    expect(grantPerSession(80, 0)).toBeNull()
+    expect([1, 2, 4, 16].map(grantSessionsAr)).toEqual(['لقاء مباشر واحد', 'لقاءان مباشران', '4 لقاءات مباشرة', '16 لقاء مباشرا'])
+    /* ٤) «ما ستخرج به» من المختار — بطاقةٌ غيرُ عالقة قبل اللوح العالق، بوعد كلٍّ ولقاءاتها ومدرّبيها وشهادتها */
+    const out = PAGE.indexOf('{GRANT_OUTCOMES_TITLE_AR}'), sticky = PAGE.indexOf('className="sticky bottom-3')
+    expect(out, 'لا «ما ستخرج به»').toBeGreaterThan(-1)
+    expect(out, '«ما ستخرج به» بعد اللوح العالق').toBeLessThan(sticky)
+    expect(PAGE.slice(PAGE.lastIndexOf('<Card', out), out), '«ما ستخرج به» عالقة').not.toMatch(/sticky/)
+    expect(PAGE).toMatch(/\{grantShortTitleAr\(x\.titleAr\)\}<\/span>\{x\.summary\?\.aboutAr \? `: \$\{x\.summary\.aboutAr\}` : ""\}/)
+    expect(PAGE).toMatch(/chosenMeetings > 0 \? grantSessionsAr\(chosenMeetings\) : null,\s*chosenTrainers > 0 \? grantTrainersAr\(chosenTrainers\) : null,/)
+    expect(grantShortTitleAr('دورة الضرائب في الأردن تطبيقيا: ضريبة الدخل')).toBe('الضرائب في الأردن تطبيقيا')
+    /* ٢) وما يخسره إن تأخّر — في اللوح العالق لمن له منحة، بلا مبلغ */
+    const stickyCard = PAGE.slice(sticky, PAGE.indexOf('</Card>', sticky))
+    expect(stickyCard).toMatch(/\{lastDayShort && <p className="mt-0\.5 text-read text-muted-foreground">\{grantUntilAr\(lastDayShort\)\}<\/p>\}/)
+    expect(grantUntilAr('7 نوفمبر')).toBe('المنحة حتى 7 نوفمبر، وبعدها تعود لسعرها')
+    for (const t of [grantUntilAr('7 نوفمبر'), GRANT_OUTCOMES_TITLE_AR, ...[1, 2, 4, 16].map(grantSessionsAr), 'للقاء']) expect(t).toBe(plainAr(t))
   })
 
   /* من لا منحةَ يستعملها لا يُرى خصما — عبّأ والمنحةُ مغلقةٌ أو نفدت، أو انتهت بعد يومها الأخير (مراجعةُ ٢٨ أكتوبر ٢٠٢٦):
@@ -467,7 +499,8 @@ describe('بعد النموذج', () => {
     expect(after).toMatch(/<button\s+type="button" aria-expanded=\{open\} aria-controls=\{sumId\} onClick=\{\(\) => setSummaryOf\(open \? null : x\.courseId\)\}/)
     expect(after).toMatch(/\{open \? "إخفاء النبذة" : "نبذة عن الدورة"\}\s*<ChevronDown className=\{`h-4 w-4 transition \$\{open \? "rotate-180" : ""\}`\}/)
     expect(after).toMatch(/\{open && \(\s*<div id=\{sumId\}/)
-    expect(after).toMatch(/\{sum\.aboutAr && <p>\{sum\.aboutAr\}<\/p>\}/)
+    /* ووعدُها ظاهرٌ تحت اسمها لا في النبذة — فلا يُعاد فيها (٣١ أكتوبر ٢٠٢٦) */
+    expect(after, 'عاد الوعد إلى النبذة').not.toMatch(/sum\.aboutAr/)
     expect(after).toMatch(/<p className="font-bold">أهدافها<\/p>/)
     expect(after).toMatch(/<span className="font-bold">لمن هي: <\/span>\{sum\.audienceAr\}/)
     /* ورابطٌ واحدٌ في الصفّ كلِّه: «المزيد» داخلَ النبذة، في نافذةٍ جديدة */
@@ -486,7 +519,9 @@ describe('بعد النموذج', () => {
     expect(grantCourseSummary({ ...v, shortPromiseAr: null })?.aboutAr, 'بلا وعد يقال الوصف').toBe('وصف')
     expect(grantCourseSummary({ shortPromiseAr: ' ', descriptionAr: null, audienceAr: '', objectives: [] }), 'سهم بلا نبذة').toBeNull()
     expect(grantCourseSummary(null)).toBeNull()
-    expect(PAGE, 'السهم يظهر بلا نبذة').toMatch(/\{sum && \(/)
+    /* والسهمُ لأهدافها ولمن هي — ووعدُها وحدَه ظاهرٌ فوقُ فلا سهمَ له */
+    expect(PAGE).toMatch(/const more = !!sum && \(sum\.goalsAr\.length > 0 \|\| !!sum\.audienceAr\);/)
+    expect(PAGE, 'السهم يظهر بلا نبذة').toMatch(/\{sum && more && \(/)
   })
 
   it('⚠️ «يحق لك أن تهدي هذه المنحة لأصدقائك» — صندوق وحده خارج لوح الدفع، برسالة جاهزة في واتساب والبريد', () => {

@@ -68,6 +68,32 @@ export function grantRemainingAr(picked: number, max: number): string {
 export const GRANT_VALUE_AR = 'قيمة منحتك'
 export const GRANT_VALUE_PAID_AR = 'تدفعها الأكاديمية عنك'
 
+/* ═══ قيمةُ المنحة بما يخرج به لا بسعرها وحدَه (٣١ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة: «كيف نُري الناسَ قيمةَ المنحة فيُقبلوا عليها — ماذا سيخرجون به من كلّ دورة؟ لا أريد صفحةً طويلة».
+   وعُرضت عليه أفكارٌ فاختار أربعا معا:
+   ١) **ما يخرج به تحت اسم كلّ دورة**، ظاهرا لا وراء «نبذة» — وعدُها المختصرُ موجودٌ لكلّ دورة («تخرج بخطّة…»).
+   ٢) **ما يخسره لا ما يوفّره وحدَه**: «المنحة حتى 7 نوفمبر، وبعدها تعود لسعرها».
+   ٣) **السعرُ بجانب وقته المباشر**: «8 لقاءات مباشرة» و«$10 للقاء» — فيصغر المبلغُ أمام ما يأخذه.
+   ٤) **«ما ستخرج به»** من الدورات التي اختارها، بعددِ لقاءاتها ومدرّبيها وشهادتها — لا مجموعٌ ماليٌّ وحدَه. */
+
+/** «8 لقاءات مباشرة» و«لقاءان مباشران» و«16 لقاء مباشرا» — العددُ مع معدوده */
+export function grantSessionsAr(n: number): string {
+  if (n === 1) return 'لقاء مباشر واحد'
+  if (n === 2) return 'لقاءان مباشران'
+  return n >= 3 && n <= 10 ? `${n} لقاءات مباشرة` : `${n} لقاء مباشرا`
+}
+
+/** ما يدفعه عن اللقاء الواحد — مقرَّبا إلى الدولار فوقه، فلا يُقال أقلُّ ممّا يدفع. وبلا لقاءاتٍ معتمَدةٍ لا يُقال شيء */
+export function grantPerSession(pay: number, sessions: number): number | null {
+  return sessions > 0 ? Math.ceil(pay / sessions) : null
+}
+
+/** ما يخسره إن تأخّر — «المنحة حتى 7 نوفمبر، وبعدها تعود لسعرها». بلا مبلغ: خصمُ الباقة بعدها قد يُنقص السعرَ الكامل */
+export const grantUntilAr = (lastDay: string): string => `المنحة حتى ${lastDay}، وبعدها تعود لسعرها`
+
+export const GRANT_OUTCOMES_TITLE_AR = 'ما ستخرج به'
+
 /** «دورة واحدة» و«دورتان» و«4 دورات» و«11 دورة» — العددُ مع معدوده */
 export function grantCountAr(n: number): string {
   if (n === 1) return 'دورة واحدة'
@@ -239,15 +265,16 @@ export function suggestCourses(
   return out.map((c) => c.courseId)
 }
 
+/** اسمُ الدورة قصيرا يُعرف به: ما قبل النقطتين بلا «دورة» في أوّله — «تحليلات الموارد البشرية» لا العنوانُ كلُّه بوعده */
+export const grantShortTitleAr = (t: string): string => t.split(/[:：]/)[0].replace(/^دورة\s+/, '').trim() || t
+
 /** «تتعارض مع «X».» — لدورةٍ اختارها بعد دورةٍ تتعارض معها، فورَ اختيارها. قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «إذا كانت
     تتعارض يقولها: تتعارض مع التي قبلها، واجعل الرسالةَ واضحةً وسهلةَ القراءة، ليست فيها معلوماتٌ مكرّرة». ثمّ في اليوم نفسِه:
     «خفّف نصَّ التعارض.. قل تتعارض فقط بدون في كم لقاء» — فلا عددَ ولا أوّلَ لقاء. ومع أقربِ ما قبلها تعارضا، والقرارُ له */
 export function grantClashAr<T extends { courseId: string; cohortId: string; titleAr: string; sessions?: readonly TimedSession[] }>(
   course: T, before: readonly T[],
 ): string | null {
-  /* والاسمُ قصيرٌ يُعرف به: ما قبل النقطتين بلا «دورة» — «تحليلات الموارد البشرية» لا العنوانُ كلُّه بوعده */
-  const short = (t: string) => t.split(/[:：]/)[0].replace(/^دورة\s+/, '').trim() || t
-  const timed = (x: T) => ({ cohortId: x.cohortId, courseId: x.courseId, titleAr: short(x.titleAr), sessions: x.sessions ?? [] })
+  const timed = (x: T) => ({ cohortId: x.cohortId, courseId: x.courseId, titleAr: grantShortTitleAr(x.titleAr), sessions: x.sessions ?? [] })
   const hit = clashesOf(timed(course), before.map(timed))[0]
   return hit ? `تتعارض مع «${hit.with.titleAr}».` : null
 }

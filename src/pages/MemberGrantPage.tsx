@@ -56,7 +56,7 @@ import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode }
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
-  type GrantPathOption,
+  type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
 } from "@/application/commerce/grant-landing";
 import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
@@ -335,6 +335,16 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     }));
     /* سطرُ الصندوق حين لا كود ولا بريد — سببُ الخادم، أو أنّها مغلقة. ولا فقرةٌ فارغةٌ حين لا شيء يقال */
     const topNote = reasonAr ?? (!c.open ? GRANT_CLOSED_AR : c.soldOut ? GRANT_SOLD_OUT_AR : null);
+    /* آخرُ يومٍ قصيرا («7 نوفمبر») — لسطر ما يخسره إن تأخّر */
+    const lastDayShort = c.closesAt ? cohortDayAr(new Date(new Date(c.closesAt).getTime() - 1), { day: "numeric", month: "long" }) : null;
+    /* وتحت «ما ستخرج به»: لقاءاتُها كلُّها ومدرّبوها وشهادتُها — ما يأخذه لا ما يدفعه */
+    const chosenMeetings = chosen.reduce((n, x) => n + (x.sessions?.length ?? 0), 0);
+    const chosenTrainers = new Set(chosen.map((x) => x.trainer?.id).filter(Boolean)).size;
+    const outcomeExtras = [
+      chosenMeetings > 0 ? grantSessionsAr(chosenMeetings) : null,
+      chosenTrainers > 0 ? grantTrainersAr(chosenTrainers) : null,
+      GRANT_GAINS_AR.find((g) => g.id === "certificate")?.title ?? null,
+    ].filter(Boolean).join(" · ");
     /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب
        هي الشيءَ الذي يراه الشخص، بتصميمٍ يبيّن الصورةَ بحجمٍ كبيرٍ عصريّ». والشاراتُ وسومٌ نصّيّةٌ أعلاها لا أقراصٌ تُشبه
        الأزرار («نقترحها لك يبدو زرّا»)، والسعرُ قيمتان بلا «قبل المنحة/بعد المنحة»: ما يدفعه كبيرا، وأصلُه مشطوبا */
@@ -344,7 +354,12 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       const seats = seatsLeftAr(x.seatsLeft);
       const tag = ours.has(x.courseId) ? "نقترحها لك" : fits(x) > 0 ? "يناسب ما تريد تطويره" : null;
       const sum = x.summary ?? null;
-      const open = sum !== null && summaryOf === x.courseId;
+      /* و«نبذة» لأهدافها ولمن هي — وعدُها ظاهرٌ فوقُ، فلا نبذةَ إن لم يكن لها غيرُه */
+      const more = !!sum && (sum.goalsAr.length > 0 || !!sum.audienceAr);
+      const open = more && summaryOf === x.courseId;
+      const meetings = x.sessions?.length ?? 0;
+      const pay = grantPrice(x.price, pct);
+      const perMeeting = grantPerSession(pay, meetings);
       const sumId = `sum-${x.courseId}`;
       /* وتعارضُها مع ما اختاره قبلها — يُقال فورَ اختيارها، ولا يمنعه */
       const clash = on ? grantClashAr(x, chosen.slice(0, chosen.findIndex((c) => c.courseId === x.courseId))) : null;
@@ -370,10 +385,18 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               )}
               <span className="block font-bold leading-6">{x.titleAr}</span>
               {x.trainer && <span className="mt-0.5 block text-read font-bold text-teal-light-ink">مع {x.trainer.name}</span>}
-              <span className="mt-0.5 block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
-              <span className="mt-2 flex items-baseline gap-2">
-                <bdi dir="ltr" className="text-lg font-black">{money(grantPrice(x.price, pct))}</bdi>
+              {/* وما يخرج به أوّلَ ما يُقرأ بعد اسمها ومدرّبها — لا وراء «نبذة» (٣١ أكتوبر ٢٠٢٦): الناسُ يشترون ما سيقدرون عليه لا عنوانا */}
+              {sum?.aboutAr && (
+                <span className="mt-1 flex items-start gap-1.5 text-read leading-6">
+                  <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />{sum.aboutAr}
+                </span>
+              )}
+              {/* وعددُ لقاءاتها المباشرة — ووقتُه بجانب سعره، فيصغر المبلغُ أمام ما يأخذه */}
+              <span className="mt-0.5 block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · {meetings > 0 ? `${grantSessionsAr(meetings)} على Zoom` : "مباشرة على Zoom"}</span>
+              <span className="mt-2 flex flex-wrap items-baseline gap-x-2">
+                <bdi dir="ltr" className="text-lg font-black">{money(pay)}</bdi>
                 {pct > 0 && <bdi dir="ltr" className="text-read text-muted-foreground line-through">{money(x.price)}</bdi>}
+                {perMeeting !== null && <span className="text-read text-muted-foreground">· <bdi dir="ltr">{money(perMeeting)}</bdi> للقاء</span>}
               </span>
               {clash && (
                 <span role="status" className="mt-2 flex items-start gap-1.5 text-read font-bold leading-6 text-gold-ink">
@@ -382,7 +405,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               )}
             </span>
           </label>
-          {sum && (
+          {sum && more && (
             <>
               <button
                 type="button" aria-expanded={open} aria-controls={sumId} onClick={() => setSummaryOf(open ? null : x.courseId)}
@@ -393,7 +416,6 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               </button>
               {open && (
                 <div id={sumId} className="mt-1 space-y-3 text-read leading-6">
-                  {sum.aboutAr && <p>{sum.aboutAr}</p>}
                   {sum.goalsAr.length > 0 && (
                     <div>
                       <p className="font-bold">أهدافها</p>
@@ -510,6 +532,22 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           </>
         )}
 
+        {/* «ما ستخرج به» من الدورات التي اختارها — بوعد كلٍّ منها، وعددِ لقاءاتها ومدرّبيها وشهادتها (٣١ أكتوبر ٢٠٢٦).
+            بطاقةٌ غيرُ عالقة: اللوحُ العالقُ تحتها يبقى قصيرا على الهاتف */}
+        {chosen.length > 0 && (
+          <Card className="mt-6">
+            <p className="font-black">{GRANT_OUTCOMES_TITLE_AR}</p>
+            <ul className="mt-2 space-y-2 text-read leading-6">
+              {chosen.map((x) => (
+                <li key={x.courseId} className="flex items-start gap-2">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+                  <span><span className="font-bold">{grantShortTitleAr(x.titleAr)}</span>{x.summary?.aboutAr ? `: ${x.summary.aboutAr}` : ""}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 border-t border-border pt-3 text-read text-muted-foreground">{outcomeExtras}</p>
+          </Card>
+        )}
         {chosen.length > 0 && (
           <Card tone="solid" className="sticky bottom-3 mt-4 text-center shadow-lg">
             {/* ما يدفعه كبيرا، وقيمةُ منحته صغيرةً تحته — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦). والمبالغُ معزولةٌ فلا تنقلب */}
@@ -521,6 +559,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             {grantOn && (
               <>
                 <p className="mt-0.5 text-read text-muted-foreground">{GRANT_VALUE_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi> {GRANT_VALUE_PAID_AR}</p>
+                {/* وما يخسره إن تأخّر — أقوى ممّا يوفّره (٣١ أكتوبر ٢٠٢٦) */}
+                {lastDayShort && <p className="mt-0.5 text-read text-muted-foreground">{grantUntilAr(lastDayShort)}</p>}
                 {/* وما بقي له ضمن منحته — فلا يترك منها شيئا (قرارُه: «اختر ٤ دوراتٍ بحدٍّ أقصى») */}
                 <p className="mt-1 text-read font-bold text-gold-ink">{grantRemainingAr(chosen.length, max)}</p>
               </>
