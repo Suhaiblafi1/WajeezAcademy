@@ -7,7 +7,9 @@
 
    ① المدرّبُ ينقل لقاءه المعتمَد: لا يُنقل بلا سبب، وبه تصل رسالةُ التقويم «كان … وصار …» وسببَه — للمتعلّم
       «نقله مدرّبك، وكتب»، وللمدرّب «نقلته بطلبك» — ولا بريدَ ثانٍ لمن وصلته، والمنتظِرُ في القائمة يبقى له بريدُه.
-   ①ب ونقلٌ يعيده إلى انتظار الإدارة: يُرفع من التقاويم بما كتبه المدرّب، ولا بريدَ ثانٍ لصاحب المقعد.
+   ①ب ونقلٌ يعيده إلى انتظار الإدارة: يُرفع من التقاويم بما كتبه المدرّب، ولا بريدَ ثانٍ لصاحب المقعد. وحين تعتمده
+      الإدارةُ تقول دعوتُه «كان … وصار …» وسببَه وأنّه اعتُمد — لا دعوةً جديدة ولا «لقاء جديد» (٣١ أكتوبر ٢٠٢٦). وما
+      أعاده المدرّبُ إلى موعده الأوّل وهو ينتظر يُدعى إليه كما كان.
    ② وما لم يُعتمَد لم يره متعلّم — يُنقل بلا سبب.
    ③ وبطاقةُ الإدارة يقبلها المدرّب: يقرأ المتعلّمون سببَها بقلمها، ويُقال للمدرّب «بطلب الإدارة وقبلته».
    ④ وموعدٌ بلا تعارض: سببُه كما وقع — بلا «نقترح»، و«كان موعدها يتعارض» — في الرسالة وفي الجرس.
@@ -206,6 +208,40 @@ describe('①ب ونقلٌ يعيده إلى انتظار الإدارة — ي�
     expect(bell?.body).toContain('نقله مدرّبك، وكتب: «تغير موعد عملي». ويراجع الآن عند الإدارة')
     expect(await bells(c.seated.userId, 'email'), 'وصله الخبرُ مرّتين: رسالةُ الرفع وبريدُ الجرس').toHaveLength(0)
     expect(await bells(c.waiting.userId, 'email'), 'سكت عن المنتظِر بريدُه الوحيد').toHaveLength(1)
+
+    /* ═══ ثمّ تعتمده الإدارة — «كان … وصار …» وسببُه، وأنّه اعتُمد ═══
+       بلا اجتماع Zoom (لقاءٌ حضوريّ) — فلا يقف الاعتمادُ على مفاتيحه هنا */
+    await prisma.cohortSession.update({ where: { id: s.id }, data: { wantsMeeting: false } })
+    await cohorts.decideSession(adminId, s.id, true)
+    expect(await mails(s.id, 'session.invite.new'), 'عاد بدعوةٍ جديدةٍ كأنّه لم يكن').toHaveLength(0)
+    const back = await mailTo(s.id, 'session.invite.update', c.seated.email)
+    expect(back.subject).toMatch(/^تغيّر موعد/)
+    expect(back.text).toContain(`كان: ${whenAr(from)}`)
+    expect(back.text).toContain(`صار: ${whenAr(to)} — بتوقيت عمّان`)
+    expect(back.text, 'لم يُقل لماذا نُقل وأنّه اعتُمد').toContain('نقله مدرّبك، وكتب: «تغير موعد عملي». واعتمدته الإدارة.')
+    expect((await mailTo(s.id, 'session.invite.update', c.trainer.email)).text).toContain('نقلته بطلبك، وكتبت لطلابك: «تغير موعد عملي». واعتمدته الإدارة.')
+    expect((await mails(s.id, 'session.invite.update')).map((m) => m.to), 'وصل المنتظِرَ في القائمة').not.toContain(c.waiting.email)
+    const told = await bells(c.seated.userId, 'in_app')
+    expect(told.at(-1)?.body).toContain(`تأخّر موعده من ${whenAr(from)} إلى ${whenAr(to)}. نقله مدرّبك، وكتب: «تغير موعد عملي». واعتمدته الإدارة.`)
+    expect(await prisma.notification.count({ where: { userId: c.seated.userId, templateKey: 'cohort.session.scheduled' } }), 'قيل «لقاء جديد» عن لقاءٍ نُقل').toBe(0)
+    expect(await bells(c.seated.userId, 'email'), 'وصله الخبرُ مرّتين: الدعوةُ وبريدُ الجرس').toHaveLength(0)
+    /* وما حُفظ للاعتماد يُمحى بعده — فلا يُقال «كان» ثانيةً عن نقلٍ مضى */
+    const after = await prisma.cohortSession.findUniqueOrThrow({ where: { id: s.id } })
+    expect([after.movedFromAt, after.moveWhy]).toEqual([null, null])
+  })
+
+  it('⚠️ وما أعاده المدرّبُ إلى موعده الأوّل وهو ينتظر — يُدعى إليه كما كان، بلا «كان»', async () => {
+    const c = await cast('العائد إلى موعده')
+    const from = new Date(Date.now() + 80 * H)
+    const s = await approved(c, from)
+    const to = new Date(from.getTime() + 3 * H)
+    await cohorts.trainerMoveSession(c.trainer.userId, s.id, { startsAt: to, endsAt: new Date(to.getTime() + 2 * H), reasonAr: 'تغير موعد عملي' })
+    /* ينتظر — فيُنقل بلا سبب */
+    await cohorts.trainerMoveSession(c.trainer.userId, s.id, { startsAt: from, endsAt: new Date(from.getTime() + 2 * H) })
+    await prisma.cohortSession.update({ where: { id: s.id }, data: { wantsMeeting: false } })
+    await cohorts.decideSession(adminId, s.id, true)
+    expect(await mails(s.id, 'session.invite.update'), 'قيل «كان X وصار X»').toHaveLength(0)
+    expect((await mailTo(s.id, 'session.invite.new', c.seated.email)).text).not.toContain('كان:')
   })
 })
 

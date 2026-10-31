@@ -4,7 +4,7 @@
    `server/tests/learning/session-move-reasons.test.ts`. */
 
 import { describe, expect, it } from 'vitest'
-import { MOVE_UNDONE, doneWhyAr, moveWhy } from '../../application/learning/session-move'
+import { MOVE_UNDONE, approvedMoveWhy, doneWhyAr, moveWhy, readMoveWhy } from '../../application/learning/session-move'
 import { CLASH_REASON_PREFIX } from '../../application/terms/schedule-clash'
 import { PROPOSAL_TAIL_AR } from '../../application/trainer/schedule-proposal'
 
@@ -43,5 +43,22 @@ describe('ما كتبته الإدارة', () => {
   it('والجدولُ الذي سقط نصفُه فعاد — لا يُنسب نقلُه إلى أحد', () => {
     expect(MOVE_UNDONE.learnerAr).not.toMatch(/مدرّبك|الإدارة/)
     expect(MOVE_UNDONE.learnerAr).toContain('عاد هذا اللقاء إلى موعده')
+  })
+})
+
+describe('ونقلٌ عاد ينتظر الإدارة ثمّ اعتمدته (٣١ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ سببُه كما كُتب ومعه أنّه اعتُمد — لكلٍّ بلغته', () => {
+    expect(approvedMoveWhy(moveWhy('trainer', 'سفر طارئ'))).toEqual({
+      learnerAr: 'نقله مدرّبك، وكتب: «سفر طارئ». واعتمدته الإدارة.',
+      trainerAr: 'نقلته بطلبك، وكتبت لطلابك: «سفر طارئ». واعتمدته الإدارة.',
+    })
+  })
+
+  it('⚠️ وما حُفظ على اللقاء يُقرأ — وما لا يُقرأ لا يُختلَق', () => {
+    const why = moveWhy('trainer', 'سفر طارئ')
+    expect(readMoveWhy(JSON.parse(JSON.stringify(why)))).toEqual(why)
+    for (const bad of [null, undefined, 'نص', { learnerAr: 'وحده' }, { learnerAr: '', trainerAr: 'x' }, { learnerAr: 1, trainerAr: 2 }]) {
+      expect(readMoveWhy(bad), JSON.stringify(bad)).toBeNull()
+    }
   })
 })
