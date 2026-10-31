@@ -8,7 +8,7 @@ const fmtDay = (d: Date) => d.toISOString().slice(0, 10)
 
 import { notifyIfPurchasable } from './catalog-readiness.service'
 import { DEFAULT_COHORT_CAPACITY, OPEN_GAP } from '../../src/application/learning/open-gaps'
-import type { PrismaClient, Prisma } from '@prisma/client'
+import { Prisma, type PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { awaitingTrainerPlan, planApprovedOnce } from './registration-window'
@@ -32,7 +32,7 @@ import {
 import { LEARNER_PLAN_QUERY } from './learner-gate'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { CLOSED_ACCOUNT, COHORT_CANCELLED_AR, SEATED, SessionInviteService, TRAINER_DELETED_WHY } from './session-invite.service'
-import { MOVE_WHY_MIN, moveWhy, type MoveWhy } from '../../src/application/learning/session-move'
+import { MOVE_WHY_MIN, approvedMoveWhy, moveWhy, readMoveWhy, type MoveWhy } from '../../src/application/learning/session-move'
 import { removableOnTrainerDelete } from './trainer-delete-sessions'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
 import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
@@ -1374,6 +1374,8 @@ export class CohortService {
         endsAt: input.endsAt,
         ...(backToPending || resubmitted ? { approvalState: 'pending', approvedAt: null, approvedBy: null } : {}),
         ...(resubmitted ? { status: 'scheduled', reviewNote: null } : {}),
+        /* ويُحفظ موعدُه في تقاويمهم وسببُ نقله — فتقول دعوتُه حين يُعتمد «كان … وصار …» وسببَه (`decideSession`) */
+        ...(backToPending ? { movedFromAt: session.startsAt, moveWhy: why as unknown as Prisma.InputJsonValue } : {}),
       },
     })
     /* واجتماعُه يُنقل معه — معتمَدا بقي أو منتظِرا: الاعتمادُ يعيد استعمالَ
@@ -2171,7 +2173,10 @@ export class CohortService {
   async decideSession(actorId: string, sessionId: string, approve: boolean, note?: string, opts: { quiet?: boolean } = {}) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, cohortId: true, title: true, startsAt: true, approvalState: true, wantsMeeting: true, placeholder: true, zoom: { select: { id: true } } },
+      select: {
+        id: true, cohortId: true, title: true, startsAt: true, approvalState: true, wantsMeeting: true, placeholder: true,
+        movedFromAt: true, moveWhy: true, zoom: { select: { id: true } },
+      },
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
     if (session.approvalState !== 'pending') {
@@ -2209,17 +2214,36 @@ export class CohortService {
 
     const approved = await this.prisma.cohortSession.update({
       where: { id: sessionId },
-      data: { approvalState: 'approved', approvedBy: actorId, approvedAt: new Date(), reviewNote: null },
+      data: {
+        approvalState: 'approved', approvedBy: actorId, approvedAt: new Date(), reviewNote: null,
+        movedFromAt: null, moveWhy: Prisma.DbNull,
+      },
     })
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.session.approve', entityType: 'cohort_session', entityId: sessionId,
       meta: { cohortId: session.cohortId, hasMeeting: Boolean(zoom) },
     })
-    const notified = await this.notifyCohortOfSession(session.cohortId, approved, zoom)
-    /* ═══ ودعوةُ التقويم — لمسجَّليه وللعنوانَين (٢٩ سبتمبر ٢٠٢٦) ═══
-       بعد الاجتماع وروابط المسجَّلين (`attachApiZoom` أعلاه) لا قبلها: الدعوةُ تحمل
-       رابطَ كلٍّ منهم. والقاعدةُ في `session-invite.service.ts`. */
-    await this.inviteSafely('approve', () => this.invites.announce(sessionId, 'new'))
+    /* ═══ ونقلٌ عاد ينتظر الإدارة — دعوتُه «كان … وصار …» وسببُه، لا دعوةٌ جديدة (٣١ أكتوبر ٢٠٢٦) ═══
+       رُفع من تقاويمهم ساعةَ نُقل بسببه (`trainerMoveSession`)، فيعود إليها بالمعرّف نفسِه يقول من أيّ موعدٍ نُقل
+       ولماذا، وأنّ الإدارة اعتمدته (`approvedMoveWhy`). والجرسُ يقول إنّ موعده تغيّر لا «لقاء جديد». وما عاد إلى
+       موعده الأوّل وهو ينتظر يُدعى إليه كما كان. */
+    const why = readMoveWhy(session.moveWhy)
+    const from = session.movedFromAt
+    let notified: number
+    if (why && from && from.getTime() !== approved.startsAt.getTime()) {
+      const told = approvedMoveWhy(why)
+      const mailed = await this.inviteSafely('approve-moved', () => this.invites.moved(sessionId, from, told))
+      const earlier = approved.startsAt.getTime() < from.getTime()
+      notified = await this.tellCohortScheduleChanged(session.cohortId, session,
+        `${earlier ? 'تقدّم' : 'تأخّر'} موعده من ${whenAr(from)} إلى ${whenAr(approved.startsAt)}. ${told.learnerAr}`,
+        { calendarMailed: mailed > 0 })
+    } else {
+      notified = await this.notifyCohortOfSession(session.cohortId, approved, zoom)
+      /* ═══ ودعوةُ التقويم — لمسجَّليه وللعنوانَين (٢٩ سبتمبر ٢٠٢٦) ═══
+         بعد الاجتماع وروابط المسجَّلين (`attachApiZoom` أعلاه) لا قبلها: الدعوةُ تحمل
+         رابطَ كلٍّ منهم. والقاعدةُ في `session-invite.service.ts`. */
+      await this.inviteSafely('approve', () => this.invites.announce(sessionId, 'new'))
+    }
     /* وأوّلُ لقاءٍ يُعتمَد من جدول المدرّب يرفع الجدولَ المبدئيّ — فلا يرى
        المسجَّلون جدولين معا: مثالَ الإدارة ومواعيدَ مدرّبهم. */
     if (!session.placeholder) await this.clearPlaceholders(actorId, session.cohortId)

@@ -71,3 +71,20 @@ export const MOVE_UNDONE: MoveWhy = {
   learnerAr: 'تعذّر نقل جدول الشعبة كاملا، فعاد هذا اللقاء إلى موعده.',
   trainerAr: 'تعذّر نقل الجدول كاملا، فعاد هذا اللقاء إلى موعده.',
 }
+
+/* ═══ ونقلٌ عاد ينتظر الإدارة ثمّ اعتمدته (٣١ أكتوبر ٢٠٢٦) ═══
+   رُفع من تقاويمهم ساعةَ نُقل بسببه، ويُحفظ معه موعدُه قبل النقل وسببُه (`CohortSession.movedFromAt` و`moveWhy`).
+   فحين يُعتمد تقول دعوتُه «كان … وصار …» وسببَه كما كُتب، ومعه أنّه اعتُمد — لا دعوةً جديدةً كأنّه لم يكن. */
+
+/** سببُ النقل كما حُفظ على اللقاء — وما لا يُقرأ منه لا يُختلَق */
+export function readMoveWhy(json: unknown): MoveWhy | null {
+  const w = json as Partial<MoveWhy> | null
+  return w && typeof w.learnerAr === 'string' && typeof w.trainerAr === 'string' && w.learnerAr && w.trainerAr
+    ? { learnerAr: w.learnerAr, trainerAr: w.trainerAr }
+    : null
+}
+
+/** وسببُه حين تعتمده الإدارة — كما كُتب، ومعه أنّه اعتُمد */
+export function approvedMoveWhy(why: MoveWhy): MoveWhy {
+  return { learnerAr: `${why.learnerAr} واعتمدته الإدارة.`, trainerAr: `${why.trainerAr} واعتمدته الإدارة.` }
+}

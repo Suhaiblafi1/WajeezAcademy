@@ -3088,6 +3088,14 @@ model CohortSession {
   /// أربعة عشر يوما: فشعبةٌ أُلغيت بعد أسبوعين من اعتماد لقاءاتها بقيت لقاءاتُها في التقاويم.
   calendarAnnouncedAt DateTime?
   calendarWithdrawnAt DateTime?
+  /// ═══ نُقل وهو معتمَدٌ فعاد ينتظر الإدارة — موعدُه في تقاويمهم قبل النقل (٣١ أكتوبر ٢٠٢٦) ═══
+  ///
+  /// نقله المدرّبُ خارجَ موعد محوره فرُفع من تقاويمهم بسببه (`trainerMoveSession`). وكان اعتمادُه بعدها يرسل
+  /// دعوةً جديدةً كأنّه لم يكن — فلا يعرف الطالبُ أنّه هو نفسُه بموعدٍ آخر. فاختار صاحبُ المنصّة أن تقول
+  /// دعوتُه حين يُعتمد «كان … وصار …» وسببَه (`decideSession`). يُكتبان عند النقل، ويُمحيان عند الاعتماد.
+  movedFromAt    DateTime?
+  /// ومن نقله ولماذا — لكلٍّ بلغته (`MoveWhy` في `session-move.ts`)
+  moveWhy        Json?
   createdAt      DateTime                   @default(now())
   cohort         Cohort                     @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   zoom           ZoomMeeting?
