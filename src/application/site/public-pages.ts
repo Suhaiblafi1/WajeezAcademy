@@ -185,6 +185,12 @@ export const PUBLIC_PAGES: PublicPage[] = [
     priority: 0.5,
   },
   {
+    path: '/join-influencer',
+    title: 'انضم كمؤثر',
+    description: 'منحة مؤثرين وجيز: متابعوك يتعلمون بخصم بكودك، ولك عمولة عن كل شراء. اقرأ الاتفاق وقدم طلبك.',
+    priority: 0.5,
+  },
+  {
     path: '/verify',
     title: 'التحقق من الشهادات',
     description:

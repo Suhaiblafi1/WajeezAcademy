@@ -189,22 +189,43 @@ export class InfluencerService {
     return { userId, created, inviteSent }
   }
 
-  /** دفعةٌ دُفعت له من عمولته */
-  async recordPayout(id: string, input: { amount: number; noteAr?: string | null }, actorId: string) {
+  /** دفعةٌ دُفعت له من عمولته.
+
+      ═══ وما زاد على رصيده سلفةٌ تُختار، لا تُمنع ولا تقع سهوا (٣١ أكتوبر ٢٠٢٦) ═══
+
+      كان المبلغُ يُقبل أيّا كان، فيصير الرصيدُ سالبا بخطأٍ في رقمٍ ولا يقول أحدٌ شيئا. ومنعُه يسدّ بابا قد يُقصد —
+      دفعةٌ مقدّمةٌ قبل أن تُستحقّ — وقرارُ صاحب المنصّة «لا إجبارَ على فعل: الفرقُ والخياراتُ وأثرُ كلٍّ». فما زاد على
+      الرصيد يُردّ بـ`payout_exceeds_balance` يقول الرصيدَ وأنّه يُسجَّل سلفة، والشاشةُ تعرض الخيارين: «سجلها سلفة»
+      (`advance: true`) أو «عدل المبلغ». والسلفةُ تُكتب في الأثر، ويقال له في بريده إنّها سلفة. */
+  async recordPayout(id: string, input: { amount: number; noteAr?: string | null; advance?: boolean }, actorId: string) {
     if (!(input.amount > 0)) throw new AuthError('bad_amount', 'المبلغ أكبر من صفر', 400)
     const inf = await this.prisma.influencer.findUnique({ where: { id }, select: { id: true } })
     if (!inf) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
     const amount = round2(input.amount)
+    const before = await this.statement(id)
+    const advance = amount > before.totals.balance
+    if (advance && input.advance !== true) {
+      throw new AuthError(
+        'payout_exceeds_balance',
+        `رصيده ${fmtMoney(before.totals.balance, before.currency)} والمبلغ ${fmtMoney(amount, before.currency)}. إن سجلته فالزائد سلفة، ويصير رصيده ${fmtMoney(round2(before.totals.balance - amount), before.currency)}.`,
+        409,
+      )
+    }
     const row = await this.prisma.influencerPayout.create({
       data: { influencerId: id, amount, currency: LEDGER_CURRENCY, noteAr: input.noteAr?.trim().slice(0, 300) || null, recordedBy: actorId },
     })
     await recordAudit(this.prisma, {
       actorId, action: 'influencer.payout', entityType: 'influencer', entityId: id,
-      meta: { payoutId: row.id, amount, currency: row.currency },
+      meta: {
+        payoutId: row.id, amount, currency: row.currency,
+        ...(advance ? { advance: true, balanceBefore: before.totals.balance, advanceAmount: round2(amount - Math.max(0, before.totals.balance)) } : {}),
+      },
     })
     const st = await this.statement(id)
     await this.tellInfluencer(id, 'سجلنا دفعة من عمولتك — أكاديمية وجيز', [
-      `سجلنا دفعة ${fmtMoney(amount, row.currency)} من عمولتك${row.noteAr ? ` (${row.noteAr})` : ''}.`,
+      advance
+        ? `سجلنا دفعة ${fmtMoney(amount, row.currency)}${row.noteAr ? ` (${row.noteAr})` : ''}، وما زاد منها على رصيدك سلفة من عمولتك القادمة.`
+        : `سجلنا دفعة ${fmtMoney(amount, row.currency)} من عمولتك${row.noteAr ? ` (${row.noteAr})` : ''}.`,
       `رصيدك الآن: ${fmtMoney(st.totals.balance, st.currency)}.`,
     ])
     return st

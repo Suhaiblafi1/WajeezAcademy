@@ -182,6 +182,9 @@ const PHRASES: Record<string, string> = {
   'influencer.update': 'تعديل مؤثر أو عمولته أو إيقافه',
   'influencer.account': 'ربط مؤثر بحساب أو إنشاء حساب له',
   'influencer.payout': 'تسجيل دفعة لمؤثر من عمولته',
+  /* وطلبُ الانضمام مؤثّرا (٣١ أكتوبر ٢٠٢٦) — القبولُ يكتب كودَه وعمولتَه وينشئ حسابَه بدعوة */
+  'influencer.application.approve': 'قبول طلب انضمام مؤثر وإنشاء كوده وحسابه',
+  'influencer.application.reject': 'الاعتذار عن طلب انضمام مؤثر',
   'advisor.case.grant_followup': 'فتح حالة متابعة لمن عبأ نموذج المنحة ولم يشتر',
   'coupon.grant_reminder': 'تذكير من أخذ كود المنحة ولم يشتر قبل انتهائها',
   'coupon.grant_registrant_removed': 'حذف مدير شخصا من قائمة من عبأ نموذج المنحة',
@@ -571,7 +574,7 @@ const WORDS: Record<string, string> = {
   term: 'فصل دراسيّ', accounts: 'حسابات', platform: 'المنصّة',
   content_change_request: 'طلب تغيير محتوى',
   version: 'إصدار', certificate: 'شهادة', trainer: 'مدرّب', trainer_compensation: 'تعويض مدرّب',
-  trainer_payout: 'مستحقّ مدرّب', advisor_payout: 'كشف عمولة مستشار', advisor_application: 'طلب انضمام مستشار', grant_campaign: 'حملة منحة', influencer: 'مؤثر', lead: 'عميل محتمل', application: 'طلب انضمام', contract: 'عقد', invitation: 'دعوة',
+  trainer_payout: 'مستحقّ مدرّب', advisor_payout: 'كشف عمولة مستشار', advisor_application: 'طلب انضمام مستشار', influencer_application: 'طلب انضمام مؤثر', grant_campaign: 'حملة منحة', influencer: 'مؤثر', lead: 'عميل محتمل', application: 'طلب انضمام', contract: 'عقد', invitation: 'دعوة',
   profile: 'ملفّ', document: 'وثيقة', interview: 'مقابلة', demo: 'حصّة تجريبيّة', review: 'مراجعة',
   change: 'اقتراح تعديل', course_proposal: 'اقتراح دورة',
   trainer_course_decisions: 'ملفّ قرارات دورات المدرّبين', path: 'مسار', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلب تسجيل',

@@ -112,6 +112,22 @@ export class StaffInboxService {
       })
     }
 
+    /* ── وطلباتُ الانضمام مؤثّرا (٣١ أكتوبر ٢٠٢٦) — لمن يملك المؤثّرين بأكوادهم وعمولاتهم ── */
+    if (can('commerce.manage')) {
+      const waiting = await this.prisma.influencerApplication.findMany({
+        where: { status: 'submitted' }, orderBy: { createdAt: 'asc' }, take: 5, select: { fullName: true },
+      })
+      push({
+        key: 'influencer_applications',
+        titleAr: 'طلبات انضمام مؤثرين',
+        whyAr: 'من تقدم ليكون مؤثرا ينتظر قبوله بكوده أو الاعتذار له',
+        count: await this.prisma.influencerApplication.count({ where: { status: 'submitted' } }),
+        href: '/admin/influencer-grant',
+        severity: 'attention',
+        sample: waiting.map((w) => w.fullName),
+      })
+    }
+
     /* «اقتراحاتُ تأجيلٍ تنتظر قرارك» ذهبت مع طابورها (٢٧ أكتوبر ٢٠٢٦، المرحلة السادسة — ج):
        لا يُقترح تأجيلُ لقاءٍ منذ ١٧ سبتمبر ٢٠٢٦ — المدرّبُ ينقله بنفسه. */
     if (can('cohort.manage')) {

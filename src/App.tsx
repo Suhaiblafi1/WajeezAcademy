@@ -81,6 +81,7 @@ const AdminPlanCurriculum = lazy(() => import('./pages/admin/PlanCurriculumPage'
 const AdminTrainerAnnouncements = lazy(() => import('./pages/admin/TrainerAnnouncements'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinAdvisor = lazy(() => import('./pages/JoinAdvisor'))
+const JoinInfluencer = lazy(() => import('./pages/JoinInfluencer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
 const SharedDossier = lazy(() => import('./pages/SharedDossier'))
@@ -225,6 +226,7 @@ export default function App() {
           <Route path="/g/:key" element={<GrantRecordLinkPage />} />
           <Route path="/join-trainer" element={<JoinTrainer />} />
           <Route path="/join-advisor" element={<JoinAdvisor />} />
+          <Route path="/join-influencer" element={<JoinInfluencer />} />
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
           {/* رابطُ بريد التأكيد يوثّق العنوان — صفحةٌ عامّة بلا جلسة */}
           <Route path="/join-trainer/verify" element={<JoinTrainerVerify />} />
