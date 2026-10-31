@@ -23,7 +23,7 @@ import { proposeHourShift, proposeSchedule, type ScheduleEdit } from '../../src/
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import { scheduleChainProblem, type PlanEdit } from '../../src/application/trainer/plan-edits'
 import {
-  CLASH_REASON_PREFIX, linkWhyAr, planClashFree, rejectedScope, slotAr, type ClashCohort, type NearbyTime, type ClashCourse, type ClashInterval, type ClashRow, type RejectedSlot, type WeeklySlot,
+  CLASH_REASON_PREFIX, clashLines, linkWhyAr, planClashFree, rejectedScope, slotAr, type ClashCohort, type NearbyTime, type ClashCourse, type ClashInterval, type ClashRow, type RejectedSlot, type WeeklySlot,
 } from '../../src/application/terms/schedule-clash'
 import { CLASH_TEMPLATE_KEY, clashBellBodyAr, clashBellTitleAr, clashMailAr } from '../../src/application/terms/clash-message'
 import { courseTitleAr } from '../../src/application/catalog/course-title'
@@ -99,7 +99,7 @@ export interface ClashView {
   cohorts: number
   clashesBefore: number
   /** التعارضاتُ الآن بأسماء الدورات */
-  pairs: { aTitleAr: string; bTitleAr: string; whyAr: string; firstAt: string; count: number }[]
+  pairs: { aTitleAr: string; bTitleAr: string; whyAr: string; firstAt: string; count: number; sections: number }[]
   rows: ClashViewRow[]
   toSend: number
 }
@@ -266,9 +266,8 @@ export class TermClashService {
       termTitleAr: l.term.titleAr,
       cohorts: l.cohorts.length,
       clashesBefore: p.before.length,
-      pairs: p.before.map((x) => ({
-        aTitleAr: titleOf(x.a), bTitleAr: titleOf(x.b), whyAr: x.whyAr, firstAt: new Date(x.firstAt).toISOString(), count: x.count,
-      })),
+      /* سطرٌ واحدٌ للدورتين نفسيهما وإن تعارضت منهما شعبٌ عدّة (`clashLines`) */
+      pairs: clashLines(p.before, titleOf).map((x) => ({ ...x, firstAt: new Date(x.firstAt).toISOString() })),
       rows,
       toSend: p.rows.filter((r) => r.action === 'move').length,
     }

@@ -28,7 +28,7 @@ interface Row {
 }
 interface View {
   termId: string; termTitleAr: string; cohorts: number; clashesBefore: number;
-  pairs: { aTitleAr: string; bTitleAr: string; whyAr: string; firstAt: string; count: number }[];
+  pairs: { aTitleAr: string; bTitleAr: string; whyAr: string; firstAt: string; count: number; sections: number }[];
   rows: Row[]; toSend: number;
 }
 
@@ -131,6 +131,7 @@ export default function TermClashes() {
                   <li key={i} className="text-read leading-6 text-muted-foreground">
                     <span className="font-bold text-foreground">«{p.aTitleAr}» و«{p.bTitleAr}»</span> — {p.whyAr} · من {fmtDateAr(p.firstAt)}
                     {p.count > 1 && ` · ${n(p.count, "لقاء", "لقاءان", "لقاءات", "لقاء")}`}
+                    {p.sections > 1 && ` · ${p.sections === 2 ? "في شعبتين" : p.sections <= 10 ? `في ${p.sections} شعب` : `في ${p.sections} شعبة`}`}
                   </li>
                 ))}
               </ul>

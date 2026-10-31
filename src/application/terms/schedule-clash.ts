@@ -150,6 +150,27 @@ export function findClashes(cohorts: readonly ClashCohort[], courses: ReadonlyMa
   return out.sort((x, y) => x.firstAt - y.firstAt || x.a.localeCompare(y.a) || x.b.localeCompare(y.b))
 }
 
+/* ═══ وسطرٌ واحدٌ للدورتين نفسيهما (٣١ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «ادمج سطورَ التعارض المكرّرة». شعبتان من دورةٍ تتعارضان مع الدورة نفسِها كانتا سطرين بنصٍّ
+   واحد — فيُقرآن تكرارا. فالسطرُ للدورتين وسببِ الربط، ومعه كم زوجَ شعبٍ يتعارض، ومجموعُ لقاءاتها، وأوّلُها */
+export interface ClashLine { aTitleAr: string; bTitleAr: string; whyAr: string; firstAt: number; count: number; sections: number }
+
+export function clashLines(pairs: readonly ClashPair[], titleOf: (cohortId: string) => string): ClashLine[] {
+  const out = new Map<string, ClashLine>()
+  for (const p of pairs) {
+    const a = titleOf(p.a)
+    const b = titleOf(p.b)
+    const key = `${[a, b].sort().join('\u0000')}\u0000${p.whyAr}`
+    const line = out.get(key)
+    if (line) {
+      line.count += p.count
+      line.sections += 1
+      line.firstAt = Math.min(line.firstAt, p.firstAt)
+    } else out.set(key, { aTitleAr: a, bTitleAr: b, whyAr: p.whyAr, firstAt: p.firstAt, count: p.count, sections: 1 })
+  }
+  return [...out.values()].sort((x, y) => x.firstAt - y.firstAt)
+}
+
 /* ─────────── موعدُ الشعبة الغالب، والمواعيدُ المرشَّحة ─────────── */
 
 /** يومُها وساعتُها الأكثرُ تكرارا — والتعادلُ لأسبقهما */
