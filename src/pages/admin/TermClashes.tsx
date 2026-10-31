@@ -109,8 +109,15 @@ export default function TermClashes() {
             </p>
             <p className="mt-3 text-read font-bold text-foreground">
               {view.cohorts} شعبة · {view.clashesBefore === 0 ? "لا تعارض الآن" : `${n(view.clashesBefore, "تعارض واحد", "تعارضان", "تعارضات", "تعارضا")} الآن`}
-              {" · "}{moves.length === 0 ? "لا شعبة تحتاج نقلا" : `${n(moves.length, "شعبة واحدة تنتقل", "شعبتان تنتقلان", "شعب تنتقل", "شعبة تنتقل")}`}
+              {" · "}{moves.length > 0 ? n(moves.length, "شعبة واحدة تنتقل", "شعبتان تنتقلان", "شعب تنتقل", "شعبة تنتقل")
+                : view.clashesBefore === 0 ? "لا شعبة تحتاج نقلا" : "لا شعبة تنتقل"}
+              {stuck.length > 0 && <>{" · "}<a href="#stuck" className="text-gold-ink underline">{n(stuck.length, "شعبة واحدة عالقة", "شعبتان عالقتان", "شعب عالقة", "شعبة عالقة")}</a></>}
             </p>
+            {/* ═══ والعالقُ يُعدّ في الرأس (٣١ أكتوبر ٢٠٢٦) ═══ كان يقول «لا شعبة تحتاج نقلا» وفوقه ٤٨ تعارضا —
+                وهي عالقةٌ لا مستغنيةٌ عن النقل. فيُقال كم علق، ويُدلّ على سبب كلٍّ أسفلَ الصفحة */}
+            {moves.length === 0 && stuck.length > 0 && (
+              <p className="mt-1 text-read text-muted-foreground">سبب كل شعبة عالقة في «ما لم يحل» أسفل الصفحة.</p>
+            )}
             {moves.length > 0 && (
               <p className="mt-1 text-read text-muted-foreground">ترسل كل اقتراح وحده من «ما نقترحه». يصل مدربه بريد وإشعار، وبطاقة يقبلها أو يرفضها بسبب.</p>
             )}
@@ -182,7 +189,7 @@ export default function TermClashes() {
 
           {stuck.length > 0 && (
             <Card as="section">
-              <h3 className="text-read font-black">ما لم يحل</h3>
+              <h3 id="stuck" className="scroll-mt-4 text-read font-black">ما لم يحل</h3>
               <ul className="mt-2 space-y-2">
                 {stuck.map((r) => (
                   <li key={r.cohortId} className="text-read leading-6">
