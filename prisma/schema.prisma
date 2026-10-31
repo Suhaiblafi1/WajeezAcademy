@@ -4304,6 +4304,40 @@ model InfluencerPayout {
   @@index([influencerId, paidAt])
 }
 
+/// طلبُ الانضمام مؤثّرا — من صفحة «انضم كمؤثر» (`influencer-application.service.ts`).
+/// يُقبَل بكوده وعمولته فيُنشأ المؤثّرُ وحسابُه بدعوة، أو يُعتذَر له.
+model InfluencerApplication {
+  id                String    @id @default(uuid()) @db.Uuid
+  /// `WJ-IN-<سنة>-<أربعة أرقام>` — يصله في بريد الاستلام
+  reference         String    @unique
+  fullName          String
+  /// بحروفٍ صغيرة — به يُعرف الطلبُ القائم وحسابُه
+  email             String
+  phoneCountryCode  String?
+  phone             String
+  /// حساباتُه: `[{ platform, url, followers }]` — بشكل حسابات المستشار
+  accounts          Json      @default("[]")
+  /// متابعو حساباته — به يُرتَّب الطابور
+  reachTotal        Int       @default(0)
+  /// سطرٌ: كيف سينشر كودَه
+  pitchAr           String
+  /// الشروطُ التي قبلها بنصّها وأرقامِ يومها
+  termsAr           String[]  @default([])
+  termsAcceptedAt   DateTime
+  status            String    @default("submitted") // submitted | approved | rejected
+  decidedBy         String?   @db.Uuid
+  decidedAt         DateTime?
+  /// سببُ الاعتذار إن كُتب — يصله في رسالته
+  decisionNoteAr    String?
+  /// المؤثّرُ الذي أُنشئ له يومَ قُبل — بكوده وعمولته هناك
+  influencerId      String?   @db.Uuid
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
 /// طلبُ مستشارٍ يحتاج قرارَ الإدارة — خصمٌ أو تعديلُ خطّة.
 ///
 /// دورُ المستشار مبيعاتٌ في وجهه الأوّل، ومتابعةٌ أكاديمية في الثاني. وفي

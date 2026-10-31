@@ -37,6 +37,8 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
       { label: 'انضم كمدرب', to: '/join-trainer' },
       /* ومستشارا (٢٧ أكتوبر ٢٠٢٦، المرحلة السابعة) — بابُ التقديم في التذييل كباب المدرّب */
       { label: 'انضم كمستشار', to: '/join-advisor' },
+      /* ومؤثّرا (٣١ أكتوبر ٢٠٢٦) — صفحةُ اتّفاق «منحة مؤثرين وجيز» ونموذجُها */
+      { label: 'انضم كمؤثر', to: '/join-influencer' },
     ],
   },
   {

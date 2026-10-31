@@ -2,9 +2,12 @@
 
    قرارُ صاحب المنصّة: «كيف أضيف اسمَ المؤثّر… لكلّ مؤثّرٍ كودٌ خاصٌّ فيه». فهنا: يُضاف باسمه وكوده وعمولته وبريده
    (فيُنشأ له حسابٌ بدعوة، أو يُربط بحسابه إن كان له)، ثمّ لكلٍّ صفٌّ بأرقامه، ويُفتح فيرى من اشترى بكوده، ويُسجَّل
-   ما دُفع له. والكودُ لا يتغيّر بعد إضافته — هو في رابطه المنشور. والعلّةُ في `server/services/influencer.service.ts`. */
+   ما دُفع له. والكودُ لا يتغيّر بعد إضافته — هو في رابطه المنشور. والعلّةُ في `server/services/influencer.service.ts`.
 
-import { useCallback, useEffect, useState } from "react";
+   وفوقها طلباتُ الانضمام من «انضم كمؤثر» (`InfluencerApplications.tsx`، ٣١ أكتوبر ٢٠٢٦): يُقبَل منها بكوده وعمولته
+   فيصير صفّا هنا. والدفعةُ الزائدةُ على رصيده تُعرض بخيارَيها — «سجلها سلفة» أو «عدل المبلغ» — لا تُمنع (`recordPayout`). */
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -17,6 +20,7 @@ import { staffControlCls } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
+import InfluencerApplications from "./InfluencerApplications";
 
 interface Totals { signups: number; codes: number; buyers: number; sales: number; earned: number; paid: number; balance: number }
 interface Influencer {
@@ -67,6 +71,8 @@ export default function InfluencersPanel() {
 
   return (
     <>
+      <InfluencerApplications onApproved={load} />
+
       <h2 className="mt-6 text-lg font-black">المؤثرون</h2>
       <p className="mt-1 text-read text-muted-foreground">
         لكل مؤثر كود ورابط. من يعبئ النموذج بكوده يأخذ كود منحة، ومن يشتري به تحسب للمؤثر عمولته من سعر الدورات قبل الخصم.
@@ -116,6 +122,9 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [confirm, setConfirm] = useState<null | "commission" | "active" | "payout">(null);
+  /* ما قاله الخادمُ حين زاد المبلغُ على رصيده — وتحته الخياران: سلفةٌ أو تعديلُ المبلغ */
+  const [over, setOver] = useState<string | null>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
   const loadStatement = useCallback(async () => {
@@ -126,6 +135,21 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
   const commissionNum = Number(commission);
   const commissionOk = Number.isInteger(commissionNum) && commissionNum >= 0 && commissionNum <= 100;
   const amountNum = Number(amount);
+
+  /* الدفعةُ — وما زاد على رصيده يعود بـ`payout_exceeds_balance` فيُعرض خياراه، لا يُسجَّل ولا يُمنع (`recordPayout`) */
+  const pay = async (advance: boolean) => {
+    setBusy(true);
+    try {
+      await apiPost(`/api/admin/influencers/${x.id}/payouts`, { amount: amountNum, noteAr: note.trim() || null, ...(advance ? { advance: true } : {}) });
+      toast(advance ? "سجلت الدفعة سلفة" : "سجلت الدفعة");
+      setAmount(""); setNote(""); setOver(null); setConfirm(null);
+      await onChanged(); await loadStatement();
+    } catch (e) {
+      setConfirm(null);
+      if (e instanceof ApiError && e.code === "payout_exceeds_balance") setOver(e.message);
+      else toastError(errAr(e, "تعذر تسجيل الدفعة"));
+    } finally { setBusy(false); }
+  };
 
   const run = async (fn: () => Promise<unknown>, doneAr: string, failAr: string) => {
     setBusy(true);
@@ -177,13 +201,22 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
 
           <div className="flex flex-wrap items-end gap-3">
             <label className="grid gap-1 text-read">دفعة دفعت له
-              <input type="number" min={0} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} dir="ltr" className={staffControlCls} />
+              <input ref={amountRef} type="number" min={0} step="0.01" value={amount} onChange={(e) => { setAmount(e.target.value); setOver(null); }} dir="ltr" className={staffControlCls} />
             </label>
             <label className="grid gap-1 text-read">ملاحظة
               <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="مثلا تحويل بنكي" className={staffControlCls} />
             </label>
             <Button size="sm" disabled={busy || !(amountNum > 0)} onClick={() => setConfirm("payout")}>سجل الدفعة</Button>
           </div>
+          {over && (
+            <Inset role="alert" tone="warn" className="space-y-3 px-4 py-3 text-read">
+              <p>المبلغ أكبر من رصيده. {over}</p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" tone="confirm" disabled={busy} loading={busy} onClick={() => void pay(true)}>سجلها سلفة</Button>
+                <Button size="sm" tone="secondary" disabled={busy} onClick={() => { setOver(null); amountRef.current?.focus(); }}>عدل المبلغ</Button>
+              </div>
+            </Inset>
+          )}
 
           {st && (
             st.rows.length === 0 ? (
@@ -245,7 +278,7 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
       )}
       {confirm === "payout" && (
         <ConfirmAction tone="default" titleAr="تسجيل دفعة للمؤثر" confirmLabelAr="سجل" busy={busy} onCancel={() => setConfirm(null)}
-          onConfirm={() => void run(async () => { await apiPost(`/api/admin/influencers/${x.id}/payouts`, { amount: amountNum, noteAr: note.trim() || null }); setAmount(""); setNote(""); }, "سجلت الدفعة", "تعذر تسجيل الدفعة")}>
+          onConfirm={() => void pay(false)}>
           <p>تسجل دفعة <bdi dir="ltr">{money(amountNum)}</bdi> لـ{x.nameAr}، فينقص رصيده إلى <bdi dir="ltr">{money(x.totals.balance - amountNum)}</bdi>. ويراها في حسابه.</p>
         </ConfirmAction>
       )}

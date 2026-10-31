@@ -19,6 +19,7 @@ import { registerAdminAdvisorPayoutRoutes } from './routes/admin-advisor-payouts
 import { registerAdminGrantRoutes } from './routes/admin-grant.routes'
 import { registerPublicGrantRoutes } from './routes/public-grant.routes'
 import { registerInfluencerRoutes } from './routes/influencer.routes'
+import { registerInfluencerApplicationRoutes } from './routes/influencer-applications.routes'
 import { registerModuleAuthoringRoutes } from './routes/module-authoring.routes'
 import { registerCatalogRoutes } from './routes/catalog.routes'
 import { registerPublishingRoutes } from './routes/publishing.routes'
@@ -310,6 +311,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerAdminGrantRoutes(app, prisma)
   registerPublicGrantRoutes(app, prisma)
   registerInfluencerRoutes(app, prisma)
+  registerInfluencerApplicationRoutes(app, prisma)
   registerModuleAuthoringRoutes(app, prisma)
   registerCatalogRoutes(app, prisma)
   registerPublishingRoutes(app, prisma)

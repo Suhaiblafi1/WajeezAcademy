@@ -64,6 +64,7 @@ const PAGES: PageSpec[] = [
   { path: '/join-trainer', labelAr: 'انضمام المدربين' },
   /* ونموذجُ المستشار (٢٧ أكتوبر ٢٠٢٦): صفوفُ حساباتٍ ومجموعاتٍ تُضاف وتُحذف — وأزرارُ حذفها صغيرةٌ على الهاتف */
   { path: '/join-advisor', labelAr: 'انضمام المستشارين' },
+  { path: '/join-influencer', labelAr: 'انضمام المؤثرين' },
   { path: '/student', labelAr: 'لوحة المتعلم', as: 'learner' },
   { path: '/student/review', labelAr: 'مراجعتي', as: 'learner' },
   { path: '/admin/catalog', labelAr: 'إدارة الكتالوج', as: 'admin' },

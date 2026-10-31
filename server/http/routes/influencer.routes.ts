@@ -97,7 +97,10 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
     preHandler: canManage,
     schema: { tags: ['admin-commerce'], summary: 'تسجيل دفعة دفعت للمؤثر من عمولته' },
   }, async (req, reply) => {
-    const body = z.object({ amount: z.number().positive().max(1_000_000), noteAr: z.string().max(300).nullable().optional() }).parse(req.body)
+    /* وما زاد على رصيده يُردّ بخيارَيه حتّى يُرسَل `advance: true` — والعلّةُ في `recordPayout` */
+    const body = z.object({
+      amount: z.number().positive().max(1_000_000), noteAr: z.string().max(300).nullable().optional(), advance: z.boolean().optional(),
+    }).parse(req.body)
     return reply.status(201).send(await influencers.recordPayout(id.parse(req.params).id, body, req.auth!.userId))
   })
 

@@ -177,6 +177,9 @@ const HIGH: readonly string[] = [
   'advisor_payout.generate', 'advisor_payout.approve', 'advisor_payout.pay', 'advisor_payout.cancel',
   /* وعمولةُ المؤثّر: دفعةٌ دُفعت له، وعمولتُه أو إيقافُ كوده، وحسابُه يُنشأ أو يُربط (٢٦ أكتوبر ٢٠٢٦) */
   'influencer.payout', 'influencer.update', 'influencer.account',
+  /* وطلبُ الانضمام مؤثّرا (٣١ أكتوبر ٢٠٢٦): القبولُ يفتح له كودا وحسابا بعمولة، والاعتذارُ يحسم طلبه —
+     وكلاهما يصله بريدا من معالجه */
+  'influencer.application.approve', 'influencer.application.reject',
   /* شهادتُه — دعوى مستقلّةٌ على صاحبها */
   'certificate.issue', 'certificate.revoke',
   /* وخطابُ التوصية معها — يُضاف إلى سجلّه ويُتحقَّق منه برقمه (`endorsement.service.ts`) */
