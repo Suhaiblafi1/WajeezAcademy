@@ -231,6 +231,34 @@ describe('③ والجدولُ بحدوده على خطّةٍ معتمدة — �
   })
 })
 
+describe('③ب ومدّةٌ بلا لقاءٍ ينقله — تمتدّ لمهامَّ بعد نهايتها (٣١ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ يُرفع بلا لقاء، وقبولُه يمدّ آخرَ يومٍ في الخطّة والشعبة — ولا لقاءَ يتحرّك', async () => {
+    const d = await cohortOf('د', 'b', { end: '2027-01-08' })
+    const [id] = await upload(d.planId, [{
+      kind: 'schedule', reasonAr: 'مهامّ بعد نهاية الشعبة', weekday: 0, clock: '19:00',
+      moves: [], tasks: [], plan: { endsOn: '2027-01-30' },
+    }])
+    await approve(d.planId)
+    const r = await accept(id!, 'b')
+    expect(r.statusCode, r.body).toBe(200)
+    const plan = await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: d.planId } })
+    expect((plan.content as { endsOn: string }).endsOn).toBe('2027-01-30')
+    const cohort = await prisma.cohort.findUniqueOrThrow({ where: { id: d.cohortId } })
+    expect(cohort.endsAt!.toISOString() >= '2027-01-30', 'لم تمتدّ مدّةُ الشعبة').toBe(true)
+    const moved = await prisma.cohortSession.findMany({ where: { cohortId: d.cohortId } })
+    expect(moved.map((s) => s.startsAt.toISOString()).sort()).toEqual(d.sessions.map((s) => s.startsAt.toISOString()).sort())
+  })
+
+  it('⚠️ وبلا لقاءٍ ولا حدود خطّةٍ يُردّ الملفّ كلُّه', async () => {
+    const d = await cohortOf('ه', 'b')
+    const r = await call('POST', `/api/admin/cohort-plans/${d.planId}/edits`, 'admin', {
+      items: [{ kind: 'schedule', reasonAr: 'فارغ', weekday: 0, clock: '19:00', moves: [], tasks: [] }],
+    })
+    expect(r.statusCode).toBe(422)
+    expect(r.body).toMatch(/بلا لقاء/)
+  })
+})
+
 describe('④ ومراجعةٌ تُفتح بعد الاعتماد تحمل ما بقي', () => {
   let e: Awaited<ReturnType<typeof cohortOf>>
   let id = ''

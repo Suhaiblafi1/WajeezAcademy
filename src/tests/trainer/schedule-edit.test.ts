@@ -127,6 +127,34 @@ describe('①ج ويحمل حدود الخطّة التي يحتاجها — آ�
   })
 })
 
+describe('①د ومدّةٌ بلا لقاءٍ ينقله — مهامُّ بعد نهاية الشعبة (٣١ أكتوبر ٢٠٢٦)', () => {
+  /* شعبةٌ تنتهي ١٠ يناير ومهامُّها إلى ٣٠ منه: قرارُ صاحب المنصّة «Extend the cohort to 30 Jan» — بطاقةٌ تمدّ المدّةَ وحدَها */
+  const P = {
+    modules: C.modules, resources: [], startsOn: '2026-12-01', endsOn: '2027-01-10',
+    slots: [{ moduleIds: ['M3'], startsOn: '2027-01-04', endsOn: '2027-01-10' }],
+  }
+  const only = (plan: NonNullable<Extract<PlanEdit, { kind: 'schedule' }>['plan']>) => schedule({ moves: [], tasks: [], plan })
+  it('⚠️ يمرّ بحدود الخطّة وحدَها — وبلاها يبقى «جدول بلا لقاء»', () => {
+    expect(rowEditProblem(only({ endsOn: '2027-01-30' }), P)).toBeNull()
+    expect(rowEditProblem(schedule({ moves: [], tasks: [] }), P)).toMatch(/بلا لقاء/)
+    expect(rowEditProblem(only({ endsOn: '2026-11-01' }), P)).toMatch(/قبل أولها/)
+  })
+  it('⚠️ عنوانه ما يمسّه لا «جدول ثابت» بيومٍ لم يمسّه — وفي «المعلومات الأساسيّة»', () => {
+    const edit = only({ endsOn: '2027-01-30' })
+    const snap = scheduleSnapshot(edit, sessions, tasks, P)
+    if (!snap.ok) throw new Error(snap.problemAr)
+    const v = planEditView(edit, snap.value, ctx)
+    expect(v.titleAr).toBe('مدة الشعبة')
+    expect(v.rows).toEqual([expect.objectContaining({ labelAr: 'آخر يوم في مدة الشعبة', beforeAr: '10 يناير', afterAr: '30 يناير' })])
+    expect(planEditStep(edit)).toBe('identity')
+    const both = only({ endsOn: '2027-01-30', slots: [{ moduleIds: ['M3'], startsOn: '2027-01-04', endsOn: '2027-01-30' }] })
+    const bothSnap = scheduleSnapshot(both, sessions, tasks, P)
+    if (!bothSnap.ok) throw new Error(bothSnap.problemAr)
+    expect(planEditView(both, bothSnap.value, ctx).titleAr).toBe('مدة الشعبة ومواعيد المحاور')
+    expect(planEditStep(schedule())).toBe('sessions')
+  })
+})
+
 describe('② ويفحص قبل أن يحفظ', () => {
   it('⚠️ لا جدول فارغ، ولا لقاء مرّتين، ولا لحظة غير مقروءة، ولا نهاية قبل بداية', () => {
     expect(rowEditProblem(schedule(), C)).toBeNull()

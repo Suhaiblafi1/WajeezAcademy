@@ -149,7 +149,8 @@ export const planEditItem = z.discriminatedUnion('kind', [
     kind: z.literal('schedule'), ...meta,
     weekday: z.number().int().min(0).max(6),
     clock: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-    moves: z.array(z.object({ sessionId: z.string().uuid(), startsAt: instant, endsAt: instant }).strict()).min(1).max(40),
+    /* وبلا لقاءٍ ينقله إن حمل حدودَ الخطّة — يُفحص مع البند (`rowEditProblem`) */
+    moves: z.array(z.object({ sessionId: z.string().uuid(), startsAt: instant, endsAt: instant }).strict()).max(40),
     tasks: z.array(z.object({ assessmentId: z.string().uuid(), dueAt: instant }).strict()).max(40),
     /* وحدودُ الخطّة التي يحتاجها (١٣ أكتوبر ٢٠٢٦): آخرُ يومٍ في المدّة، ومواعيدُ المحاور التي ينقلها */
     plan: z.object({
