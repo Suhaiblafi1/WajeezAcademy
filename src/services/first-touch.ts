@@ -35,3 +35,9 @@ export function captureFirstTouch(): void {
 export function firstTouch(): FirstTouch | null {
   return stored();
 }
+
+/** هذه الزيارةُ نفسُها — متى فُتحت الصفحةُ ومن أين، بلا أن تُحفظ. تُرسَل مع نموذج المنحة (`MemberGrantPage`) */
+export function pageTouchNow(): FirstTouch | null {
+  if (typeof window === "undefined") return null;
+  return touchFromLocation(window.location.search, document.referrer, window.location.hostname, window.location.pathname, new Date());
+}

@@ -57,7 +57,7 @@ export const GRANT_FOLLOWUP_HOURS = 1
 /** أقصى ما يُفتح في دورةٍ واحدة — فلا تُغرق دفعةٌ كبيرةٌ المستشارين في ساعة */
 const FOLLOWUP_BATCH = 200
 
-const BOUGHT = ['paid', 'partially_refunded']
+export const BOUGHT = ['paid', 'partially_refunded']
 /** الحملتان — يُتابَع من عبّأ أيَّهما */
 const GRANT_SLUGS: GrantSlug[] = [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG]
 const OPEN_CASE = ['closed', 'enrolled', 'not_interested']
@@ -65,7 +65,7 @@ const OPEN_CASE = ['closed', 'enrolled', 'not_interested']
 export type RegistrantState = 'bought' | 'pending' | 'none'
 
 /** بريدُ من دفع شيئا من هذه العناوين — يشتري بلا كودٍ أحيانا، أو بكودٍ غير كوده */
-async function paidEmails(prisma: PrismaClient, emails: string[]): Promise<Set<string>> {
+export async function paidEmails(prisma: PrismaClient, emails: string[]): Promise<Set<string>> {
   if (emails.length === 0) return new Set()
   const rows = await prisma.order.findMany({
     where: { status: { in: BOUGHT }, user: { email: { in: emails } } },
@@ -75,7 +75,7 @@ async function paidEmails(prisma: PrismaClient, emails: string[]): Promise<Set<s
 }
 
 /** اسمُ كلِّ دورةٍ من آخر نسخةٍ لها — كما في دورات المنحة (`grant-courses.service.ts`) */
-async function courseTitles(prisma: PrismaClient, ids: string[]): Promise<Map<string, string>> {
+export async function courseTitles(prisma: PrismaClient, ids: string[]): Promise<Map<string, string>> {
   if (ids.length === 0) return new Map()
   const rows = await prisma.course.findMany({
     where: { id: { in: ids } },
@@ -91,10 +91,15 @@ export async function grantRegistrants(prisma: PrismaClient) {
     select: {
       id: true, fullName: true, phone: true, email: true, workField: true, careerLevel: true, interests: true,
       channel: true, wave: true, createdAt: true, grantPicks: true, campaign: true, influencer: { select: { code: true } },
-      grantCode: { select: { coupon: { select: { code: true, orders: { select: { status: true } } } } } },
+      firstTouch: true, pageTouch: true, pageOpenedAt: true,
+      grantCode: { select: { coupon: { select: { code: true, active: true, orders: { select: { status: true } } } } } },
       cases: {
         where: { status: { notIn: OPEN_CASE } },
-        select: { assignments: { where: { unassignedAt: null }, select: { advisor: { select: { displayName: true } } } } },
+        select: {
+          assignments: { where: { unassignedAt: null }, select: { advisor: { select: { displayName: true } } } },
+          /* ومكالمتُه القادمة — موعدٌ يُقرأ في ملفّه مع رسائله (`grant-registrants.service.ts`) */
+          followUps: { where: { doneAt: null }, orderBy: { scheduledAt: 'asc' }, take: 1, select: { scheduledAt: true, channel: true } },
+        },
       },
     },
   })
@@ -114,6 +119,9 @@ export async function grantRegistrants(prisma: PrismaClient) {
       code: l.grantCode?.coupon.code ?? null, state,
       picks: l.grantPicks.map((id) => titles.get(id) ?? id),
       advisor: l.cases[0] ? (l.cases[0].assignments[0]?.advisor.displayName ?? 'بلا مستشار بعد') : null,
+      campaign: l.campaign, codeActive: l.grantCode?.coupon.active ?? null,
+      firstTouch: l.firstTouch, pageTouch: l.pageTouch, pageOpenedAt: l.pageOpenedAt,
+      nextCall: l.cases[0]?.followUps[0] ?? null,
     }
   })
 }

@@ -39,6 +39,7 @@ import { mintShortLink } from './short-link.service'
 import { publicSiteUrl } from './site-url'
 import { PUBLIC_SESSIONS_CAP, PUBLIC_SESSION_WHERE } from './public-catalog.service'
 import { normalizePhone } from '../../src/application/advisor/guest-contact'
+import { cleanTouch } from '../../src/application/marketing/signup-source'
 import {
   CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, WORK_FIELDS, campaignTag, grantCourseSummary, leadProfileAr,
   type GrantCourseSummary,
@@ -60,6 +61,8 @@ export interface GrantApplyInput {
   wave?: string | null
   /** كودُ المؤثّر — لازمٌ في منحة المؤثّرين، ولا يُقرأ في الأولى */
   influencerCode?: string | null
+  /** ما أرسله المتصفّح عن زيارتيه: التي فتح فيها صفحةَ المنحة، وأوّلُ زيارةٍ للموقع — يُنظَّف قبل أن يُكتب (`cleanTouch`) */
+  source?: { page?: unknown; first?: unknown } | null
 }
 
 const OPEN_CASE = { notIn: ['closed', 'enrolled', 'not_interested'] }
@@ -199,11 +202,16 @@ export class GrantLandingService {
       where: { campaign: this.slug, erasedAt: null, OR: [{ phone }, { email }] },
       orderBy: { createdAt: 'asc' },
     })
+    /* ومتى فتح صفحةَ المنحة ومن أين — ليُعرف مصدرُه في قائمة من عبّأ (`grant-registrants.ts`) */
+    const pageTouch = cleanTouch(input.source?.page)
+    const firstTouch = cleanTouch(input.source?.first)
     const lead = had ?? await this.prisma.lead.create({
       data: {
         fullName, email, phone, source: 'campaign', campaign: this.slug, consentAr: GRANT_CONSENT_AR,
         channel: named ? campaignTag(named.code) : campaignTag(input.channel), wave: campaignTag(input.wave), workField: input.workField,
         careerLevel, interests, influencerId: named?.id ?? null,
+        pageTouch: pageTouch ? { ...pageTouch } : undefined, firstTouch: firstTouch ? { ...firstTouch } : undefined,
+        pageOpenedAt: pageTouch?.at && Date.parse(pageTouch.at) <= now.getTime() ? new Date(pageTouch.at) : null,
       },
     })
     if (!had) {

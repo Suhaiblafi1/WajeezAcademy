@@ -21,6 +21,8 @@ const applyBody = z.object({
   interests: z.array(z.string().trim().max(80)).max(10).optional(),
   channel: z.string().max(40).nullable().optional(),
   wave: z.string().max(40).nullable().optional(),
+  /* زيارتاه — تُنظَّفان في الخدمة حقلا حقلا (`cleanTouch`)، فلا يُفحص هنا إلّا أنّهما شيءٌ أو لا شيء */
+  source: z.object({ page: z.unknown().optional(), first: z.unknown().optional() }).nullable().optional(),
 })
 
 /* ═══ سقفُ نموذجَي المنحة: حاجزُ غَمرٍ لا حاجزُ ناس (٢٨ أكتوبر ٢٠٢٦) ═══

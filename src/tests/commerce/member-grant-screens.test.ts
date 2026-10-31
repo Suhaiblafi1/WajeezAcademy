@@ -90,12 +90,13 @@ describe('نتائج الحملة', () => {
 describe('من عبأ النموذج', () => {
   it('⚠️ قائمة بالأسماء في شاشة المنحة — ببحث وزر واتساب ورسالة جاهزة، وبابها بصلاحية الكوبونات', () => {
     expect(PAGE).toMatch(/<GrantRegistrants \/>/)
-    expect(REG).toMatch(/apiGet<Registrant\[\]>\("\/api\/admin\/member-grant\/registrants"\)/)
+    expect(REG).toMatch(/apiGet<List>\("\/api\/admin\/member-grant\/registrants"\)/)
     expect(REG).toMatch(/<ListToolbar q=\{q\}/)
     expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.influencer \? INFLUENCER_GRANT_NAME_AR : undefined\)\)/)
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/registrants', \{\s*preHandler: canManage/)
-    /* ومتابعُ المؤثّر قناتُه كودُ مؤثّره نفسُه — فلا يُعاد في «من أين» بعد «كود …» (٢٨ أكتوبر ٢٠٢٦) */
-    expect(REG).toMatch(/const from = \[r\.influencer && `منحة المؤثرين\$\{r\.influencerCode \? ` · كود \$\{r\.influencerCode\}` : ""\}`, !r\.influencer && r\.channel, r\.wave && `دفعة \$\{r\.wave\}`\];/)
+    /* ومتابعُ المؤثّر قناتُه كودُ مؤثّره نفسُه — فلا يُعاد في «المصدر» بعد «كود …» (٢٨ أكتوبر ٢٠٢٦). وصار العمودُ «المصدر»
+       (٣١ أكتوبر ٢٠٢٦)، وحارسُه على السلوك في `grant-registrants.test.ts` */
+    expect(REG).toMatch(/<span className="font-bold">\{r\.source\.labelAr\}<\/span>/)
     for (const t of ['من عبأ النموذج', 'اشترى', 'ينتظر الدفع', 'لم يشتر بعد', 'واتساب', grantFollowupAr('سارة'), grantFollowupAr('سارة', GRANT.INFLUENCER_GRANT_NAME_AR), 'منحة المؤثرين']) {
       expect(t).toBe(plainAr(t))
     }
