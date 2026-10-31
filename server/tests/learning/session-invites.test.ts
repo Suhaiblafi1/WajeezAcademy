@@ -14,7 +14,8 @@
    ② والمدعوُّ بعنوانه يُسجَّل في Zoom مرّةً، وتحديثُ الدعوة يحمل رابطَه نفسَه.
    ③ والنقلُ داخلَ الموعد يحدّث الدعوةَ بالمعرّف نفسِه ورقمٍ أعلى.
    ④ والعودةُ لانتظار الإدارة ترفعها من التقويم بموعدها القديم.
-   ⑤ والحذفُ يرفعها قبل أن يُمحى صفُّه — والمنتظِرُ لم يُدعَ إليه أحدٌ فلا يُرفع.
+   ⑤ والحذفُ يرفعها قبل أن يُمحى صفُّه — والمنتظِرُ لم يُدعَ إليه أحدٌ فلا يُرفع. ورسالةُ الرفع خبرُ صاحب المقعد
+      الوحيد: لا بريدَ ثانٍ معها، والمنتظِرُ في القائمة يبقى له بريدُه، وإن لم تُكتب بقي البريدُ (٣١ أكتوبر ٢٠٢٦).
    ⑥ ولا دعوةَ لمثالٍ مبدئيّ ولا لما مضى.
    ⑦ وما جدولته الإدارةُ، ورابطٌ أُلصق — كلٌّ يدعو أو يحدّث. (وكان معهما «اعتمادُ تأجيلٍ اقتُرح» — خرج
       الاقتراحُ وطابورُه، ٢٧ أكتوبر ٢٠٢٦.)
@@ -239,6 +240,50 @@ describe('⑤ الحذفُ يرفعها قبل أن يُمحى صفُّه', () =
     const s = await pendingSession(97)
     await cohorts.trainerDeleteSession(trainerUserId, s.id)
     expect(await invitesFor(s.id)).toHaveLength(0)
+  })
+
+  /* ═══ ورسالةٌ واحدةٌ لا اثنتان (٣١ أكتوبر ٢٠٢٦) ═══
+     كان صاحبُ المقعد يصله الخبرُ مرّتين: بريدُ الجرس («ألغي هذا اللقاء») ورسالةُ الرفع بالجملة نفسِها. واختار
+     صاحبُ المنصّة علاجَ النقل نفسَه («One email»): «Yes». */
+  /** ما قيل لمتعلّمٍ عن هذا اللقاء بعينه — جرسُه أو بريدُه — لا عن لقاءٍ غيره في الشعبة نفسِها */
+  const toldOf = (userId: string, sessionId: string, channel: 'in_app' | 'email') => prisma.notification.count({
+    where: { userId, channel, templateKey: 'cohort.schedule_changed', data: { path: ['sessionId'], equals: sessionId } },
+  })
+
+  it('⚠️ ولا بريدَ ثانٍ لصاحب المقعد — رسالةُ الرفع خبرُه والجرسُ يبقى، والمنتظِرُ في القائمة يبقى له بريدُه', async () => {
+    const s = await approvedSession(98)
+    await cohorts.trainerDeleteSession(trainerUserId, s.id)
+    const cancelled = (await invitesFor(s.id, 'session.invite.cancel')).map((r) => r.to)
+    for (const seated of [learner.a, learner.b]) {
+      expect(cancelled, 'لم تصله رسالةُ الرفع').toContain(seated.email)
+      expect(await toldOf(seated.id, s.id, 'in_app'), 'غاب الجرسُ عن صاحب المقعد').toBe(1)
+      expect(await toldOf(seated.id, s.id, 'email'), 'وصله الخبرُ مرّتين: رسالةُ الرفع وبريدُ الجرس').toBe(0)
+    }
+    /* والمنتظِرُ لا دعوةَ له تُرفع — فبريدُ الجرس خبرُه الوحيد */
+    expect(cancelled).not.toContain(learner.waiting.email)
+    expect(await toldOf(learner.waiting.id, s.id, 'in_app')).toBe(1)
+    expect(await toldOf(learner.waiting.id, s.id, 'email'), 'سكت عن المنتظِر بريدُه الوحيد').toBe(1)
+    expect(await toldOf(learner.dropped.id, s.id, 'in_app'), 'أُخبر المنسحب').toBe(0)
+  })
+
+  it('⚠️ وإن لم تُكتب رسالةُ الرفع بقي البريدُ لصاحب المقعد — واحدةٌ لا صفر', async () => {
+    const s = await approvedSession(99)
+    const failed = vi.spyOn(SessionInviteService.prototype, 'withdraw').mockRejectedValueOnce(new Error('طابور البريد معطّل'))
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let calls = 0
+    try {
+      await cohorts.trainerDeleteSession(trainerUserId, s.id)
+      calls = failed.mock.calls.length
+    } finally {
+      failed.mockRestore()
+      quiet.mockRestore()
+    }
+    expect(calls, 'لم يُنادَ رفعُ الدعوة').toBe(1)
+    expect(await prisma.cohortSession.findUnique({ where: { id: s.id } }), 'أوقف إخفاقُ البريد الحذفَ').toBeNull()
+    expect(await invitesFor(s.id, 'session.invite.cancel')).toHaveLength(0)
+    for (const seated of [learner.a, learner.b]) {
+      expect(await toldOf(seated.id, s.id, 'email'), 'لم يصله خبرُ الإلغاء بأيّ بريد').toBe(1)
+    }
   })
 })
 
