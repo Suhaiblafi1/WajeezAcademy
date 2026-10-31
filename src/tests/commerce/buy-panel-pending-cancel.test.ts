@@ -59,3 +59,15 @@ describe('لوح الشراء · تعثر صفحة الدفع يظهر زري ا
     expect(fail.indexOf('setError(', re), 'الخطأ يقال قبل التسعير فيمحى').toBeGreaterThan(re)
   })
 })
+
+describe('لوح الشراء · جلسة انتهت عند الخادم', () => {
+  it('⚠️ ٤٠١ في التسعير يمحو نسخة الجهاز ويعطي باب الدخول بالعودة إلى الصفحة', () => {
+    const refresh = code.slice(code.indexOf('const refresh = useCallback'), code.indexOf('useEffect(() => { void refresh(applied); }'))
+    const on401 = refresh.slice(refresh.indexOf('status === 401'))
+    expect(refresh, 'لا يفرق ٤٠١ عن غيره').toMatch(/e\.status === 401/)
+    expect(on401, 'نسخة الجهاز تبقى').toMatch(/clearLocalSession\(\)/)
+    expect(on401, 'لا باب دخول').toMatch(/setSignedOut\(true\)/)
+    expect(code, 'باب الدخول لا يعود إلى الصفحة').toMatch(/\/auth\?next=\$\{encodeURIComponent/)
+    expect(code, 'باب الدخول لا يظهر').toMatch(/\{signedOut && \(/)
+  })
+})

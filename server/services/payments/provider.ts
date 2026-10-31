@@ -6,6 +6,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { PaymentConfig } from '../integrations.service'
 import { publicSiteUrl } from '../notification.service'
+import { CHECKOUT_HOLD_MS } from '../commerce/seat-hold'
 
 export interface ChargeInput {
   invoiceNumber: string
@@ -163,6 +164,11 @@ export class StripeProvider implements PaymentProvider {
       'line_items[0][price_data][unit_amount]': String(toMinor(input.amount, input.currency)),
       'line_items[0][price_data][product_data][name]': `${input.descriptionAr} — ${input.invoiceNumber}`,
       'metadata[invoiceNumber]': input.invoiceNumber,
+      /* ═══ وصفحةُ الدفع تُغلق بمهلة المقعد — لا بعد يوم (٣١ أكتوبر ٢٠٢٦) ═══
+         كانت بلا `expires_at`، فتبقى صفحةُ Stripe تقبل الدفعَ ٢٤ ساعة، والطلبُ يُلغى بعد ساعةٍ ويذهب مقعدُه. فمن دفع
+         بعدها دفع عن طلبٍ ملغى. فتُغلق الصفحةُ بعد ساعة، والعاملُ لا يُلغي طلبا صفحةُ دفعه ما زالت مفتوحة
+         (`reclaimAbandonedOrders`). وأقلُّ ما يقبله Stripe نصفُ ساعة. */
+      expires_at: String(Math.floor(Date.now() / 1000) + Math.round(CHECKOUT_HOLD_MS / 1000)),
     })
     const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',

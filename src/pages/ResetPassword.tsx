@@ -9,6 +9,7 @@ import { KeyRound, ShieldCheck } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, permissionMessage } from "@/services/api";
+import { clearLocalSession } from "@/services/auth";
 
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Surface";
@@ -33,6 +34,8 @@ export default function ResetPassword() {
     setError(null);
     try {
       await apiPost("/api/auth/password/reset", { token, newPassword: password });
+      /* التعيينُ يُخرجه من كلّ أجهزته عند الخادم — فتُمحى نسخةُ هذا الجهاز أيضا، وإلّا فتحت الصفحاتُ له ما يردّه الخادمُ بـ٤٠١ */
+      clearLocalSession();
       setDone(true);
     } catch (err) {
       setError(permissionMessage(err, "تعذّر تعيين كلمة المرور."));

@@ -17,7 +17,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
-import { GrantService } from '../../services/grant.service'
+import { GrantService, learnerGrant } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
 import { InfluencerService } from '../../services/influencer.service'
 import { openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
@@ -174,6 +174,21 @@ describe('⑤ وما رد ينقصها بنسبته', () => {
     st = await influencers.statement(id)
     expect(st.rows[0]).toMatchObject({ commission: 0, stateAr: 'رد المبلغ' })
     expect(st.totals).toMatchObject({ buyers: 0, earned: 0 })
+    expect(st.totals.sales, 'المبيعات تعد ما رد كله').toBe(0)
+  })
+})
+
+describe('⑤ب من اشترى مرتين بكوده مشتر واحد', () => {
+  it('⚠️ طلبان من متابع واحد: «اشتروا» واحد، والمبيعات والعمولة عن الطلبين', async () => {
+    const id = await addInfluencer('TWICE')
+    const out = await landing.apply(person({ influencerCode: 'TWICE' }))
+    const buyer = await learner()
+    await pay(buyer, [await openCohort(100)], out.grant!.code!)
+    await pay(buyer, [await openCohort(100)], out.grant!.code!)
+    const st = await influencers.statement(id)
+    expect(st.rows).toHaveLength(2)
+    expect(st.totals.buyers, 'عد الطلبات لا الناس').toBe(1)
+    expect(st.totals).toMatchObject({ sales: 200, earned: 30 })
   })
 })
 
@@ -200,6 +215,28 @@ describe('⑦ منحة واحدة لكل متعلم على الحملتين', ()
     await addInfluencer('ONCE')
     const out = await landing.apply(person({ influencerCode: 'ONCE' }))
     await expect(commerce.checkout(buyer, [await openCohort(100)], out.grant!.code!)).rejects.toMatchObject({ code: 'grant_once' })
+  })
+})
+
+describe('⑦ب من عبأ النموذجين — يطبق في حسابه ما يستعمل الآن، لا أقدمهما', () => {
+  it('⚠️ أغلقت منحة وجيز بعد نموذجه — فيطبق كود مؤثره، وحين تفتح الاثنتان يطبق الأكبر خصما', async () => {
+    const memberLanding = new GrantLandingService(prisma)
+    await members.update({ active: true, maxCodes: null, closesAt: null }, ownerId)
+    await grant.update({ active: true }, ownerId)
+    await addInfluencer('BOTHFORMS')
+    const email = `both-forms-${STAMP}@test.local`
+    const userId = (await auth.register(email, 'Learner#12345', 'من عبأ النموذجين')).userId
+    const first = await memberLanding.apply(person({ email }))
+    /* والنموذجُ الثاني برقمٍ آخر — فلا يُطابَق على عميل الأوّل */
+    const second = await landing.apply(person({ email, influencerCode: 'BOTHFORMS' }))
+    expect(first.grant?.code && second.grant?.code, 'لم يعط النموذجان كودين').toBeTruthy()
+
+    await members.update({ active: false }, ownerId)
+    expect(await learnerGrant(prisma, userId), 'أقدم النموذجين مغلق فلم يطبق كود المؤثر المفتوح')
+      .toMatchObject({ code: second.grant!.code, percentOff: 45 })
+
+    await members.update({ active: true }, ownerId)
+    expect(await learnerGrant(prisma, userId), 'لم يطبق الأكبر خصما').toMatchObject({ code: first.grant!.code, percentOff: 60 })
   })
 })
 

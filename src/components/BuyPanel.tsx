@@ -48,6 +48,7 @@ import RegistrationClosedNotice from "@/components/RegistrationClosedNotice";
 import LiveSessionDates from "@/components/LiveSessionDates";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { apiPost, ApiError } from "@/services/api";
+import { clearLocalSession } from "@/services/auth";
 import { readReferral } from "@/application/commerce/referral";
 import { clearPendingCheckout } from "@/services/pending-checkout";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
@@ -224,6 +225,11 @@ export default function BuyPanel({
   const [error, setError] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  /* ═══ وجلسةٌ انتهت عند الخادم — زرُّ دخولٍ لا جملةٌ بلا باب (٣١ أكتوبر ٢٠٢٦) ═══
+     الصفحةُ تقرأ اسمَه من الجهاز، فمن انتهت جلستُه أو غيّر كلمةَ مروره (فخرج من كلّ أجهزته) فُتح له اللوحُ كأنّه داخل،
+     فردّ التسعيرُ ٤٠١ وقيل له «سجّل الدخول أولا» ولا زرَّ يدخل به. فتُمحى نسخةُ الجهاز، ويُعطى بابَ الدخول ويعود إلى صفحته. */
+  const [signedOut, setSignedOut] = useState(false);
+  const loginHref = `/auth?next=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}`;
 
   useEffect(() => { track("buy_panel_opened", { courses: lines.length }); }, [lines.length]);
 
@@ -299,6 +305,11 @@ export default function BuyPanel({
         return;
       }
       setQuote(null);
+      if (e instanceof ApiError && e.status === 401) {
+        clearLocalSession();
+        setSignedOut(true);
+        return;
+      }
       setError(e instanceof ApiError ? e.message : "تعذّر تسعير طلبك — أعد المحاولة");
     } finally {
       setQuoting(false);
@@ -830,6 +841,12 @@ export default function BuyPanel({
             )}
 
             {/* ولا «وثّق بريدك» هنا: الدفعُ أوّلا والتوثيقُ بعده في بوّابته (٢٦ أكتوبر ٢٠٢٦، `commerce.service`) */}
+            {signedOut && (
+              <Card tone="accent" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <p className="min-w-0 flex-1 text-read leading-6 text-teal-light-ink">انتهت جلستك. ادخل مرة أخرى لتكمل الشراء.</p>
+                <Button as="a" href={loginHref} tone="confirm" size="sm">ادخل</Button>
+              </Card>
+            )}
             {error && (
               <Inset as="p" tone="danger" className="mt-3 px-3 py-2 text-read leading-5 text-red-200">
                 {error}

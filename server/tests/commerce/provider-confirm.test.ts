@@ -82,8 +82,12 @@ const atCheckout = async (tag: string) => {
 }
 
 const orderOf = (id: string) => prisma.order.findUniqueOrThrow({ where: { id }, include: { invoice: { include: { payments: true } } } })
-const age = (orderId: string, hours: number) =>
-  prisma.order.update({ where: { id: orderId }, data: { createdAt: new Date(Date.now() - hours * 3_600_000) } })
+/** طلبٌ قديم — وصفحةُ دفعه فُتحت معه، فهي مغلقةٌ عند Stripe بعد ساعة (`expires_at`) */
+const age = async (orderId: string, hours: number) => {
+  const at = new Date(Date.now() - hours * 3_600_000)
+  await prisma.payment.updateMany({ where: { invoice: { orderId } }, data: { createdAt: at } })
+  return prisma.order.update({ where: { id: orderId }, data: { createdAt: at } })
+}
 
 describe('سؤالُ المزوّد حين لا يصل حدثُه', () => {
   it('المزوّدُ يقول «دُفع» ⇒ يُسوّى الطلبُ ويُسجَّل صاحبُه', async () => {
@@ -122,6 +126,37 @@ describe('سؤالُ المزوّد حين لا يصل حدثُه', () => {
   })
 })
 
+describe('الحدثُ يُسوّي الدفعةَ بما اقتُطع — لا بعملة الفاتورة', () => {
+  it('⚠️ دفع ٢٠٠ دولار بالدرهم: الدفعةُ الناجحةُ بالدرهم، ودفعةٌ واحدةٌ لا اثنتان', async () => {
+    const userId = (await auth.register('confirm-aed@test.local', 'Buyer#12345', 'مشترٍ')).userId
+    const cohortId = (await prisma.cohort.create({
+      data: {
+        plans: { create: await approvedTrainerPlan(prisma) },
+        courseId: 'C-BIZ-101', title: 'شعبة بالدرهم', status: 'open', registrationOpen: true,
+        financialReady: true, price: 200, currency: 'USD', capacity: 20,
+      },
+    })).id
+    const out = await commerce.checkout(userId, [cohortId])
+    const charged = await commerce.payOrder(out.orderId, userId, 'confirm-aed', 'AED')
+    expect(charged.currency).toBe('AED')
+    const order = await orderOf(out.orderId)
+    const t = Math.floor(Date.now() / 1000)
+    const body = JSON.stringify({
+      id: `evt_aed_${out.orderId}`, type: 'checkout.session.completed',
+      data: { object: { id: charged.providerRef, metadata: { invoiceNumber: order.invoice!.number } } },
+    })
+    const sig = `t=${t},v1=${createHmac('sha256', WEBHOOK_SECRET).update(`${t}.${body}`).digest('hex')}`
+    await commerce.handleWebhook('stripe', body, sig)
+    const after = await orderOf(out.orderId)
+    expect(after.status).toBe('paid')
+    const ok = after.invoice!.payments.filter((p) => p.status === 'succeeded')
+    expect(ok, 'دفعتان عن مالٍ واحد').toHaveLength(1)
+    expect(ok[0].currency, 'سُجّلت بعملة الفاتورة لا بما اقتُطع').toBe('AED')
+    expect(Number(ok[0].amount)).toBe(Number(charged.amount))
+    expect(after.invoice!.payments.filter((p) => p.status === 'pending'), 'بقيت المعلّقةُ معلّقة').toHaveLength(0)
+  })
+})
+
 describe('المشغّلُ يسأل قبل أن يُلغي «المهجور»', () => {
   it('المدفوعُ عند المزوّد يُسوّى لا يُلغى', async () => {
     const { orderId } = await atCheckout('worker-paid')
@@ -129,6 +164,14 @@ describe('المشغّلُ يسأل قبل أن يُلغي «المهجور»', 
     stripeSays = 'paid'
     await reclaimAbandonedOrders(prisma)
     expect((await orderOf(orderId)).status, 'أُلغي طلبٌ دفعه صاحبُه ببطاقته').toBe('paid')
+  })
+
+  it('⚠️ وطلبٌ قديمٌ فتح صاحبُه صفحةَ دفعه للتوّ («أكمل الدفع») لا يُلغى وصفحتُه مفتوحة', async () => {
+    const { userId, orderId } = await atCheckout('worker-resumed')
+    await age(orderId, 3)
+    await commerce.payOrder(orderId, userId, `confirm-worker-resumed-again`)
+    await reclaimAbandonedOrders(prisma)
+    expect((await orderOf(orderId)).status, 'أُلغي طلبٌ صفحةُ دفعه مفتوحة').toBe('pending_payment')
   })
 
   it('وما لم يُدفع يُلغى كما كان — ويؤرشف طلبُه وفاتورتُه', async () => {

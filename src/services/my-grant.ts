@@ -30,3 +30,10 @@ export function useMyGrant(): MyGrant | null {
   }, []);
   return grant;
 }
+
+/** كم دورةً بقيت على كود صاحب الحساب في هذه المنحة — ولا عددَ إن كان كودُه من الأخرى أو لا كودَ له.
+    تسألها صفحةُ المنحة فيصير حدُّ اختياره ما بقي له، لا حدَّ الحملة كلَّه (٣١ أكتوبر ٢٠٢٦) */
+export function coursesLeftOn(grant: MyGrant | null, grantNameAr: string): number | null {
+  if (!grant?.code || grant.nameAr !== grantNameAr || grant.left === undefined) return null;
+  return grant.left;
+}

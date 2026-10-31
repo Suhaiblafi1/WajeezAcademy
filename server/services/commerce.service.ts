@@ -748,14 +748,33 @@ export class CommerceService {
             where: { provider, providerRef: payload.providerRef ?? '', status: 'pending' }, include: { invoice: true },
           }))?.invoice ?? null
       if (invoice && invoice.status !== 'paid') {
-        await this.prisma.payment.create({
-          data: {
-            invoiceId: invoice.id, provider, amount: num(invoice.amount), currency: invoice.currency,
-            status: 'succeeded', providerRef: payload.providerRef, idempotencyKey: `wh-${provider}-${payload.eventId}`,
-            succeededAt: new Date(),
-          },
+        /* ═══ الدفعةُ بما اقتُطع — لا بما في الدفتر (٣١ أكتوبر ٢٠٢٦) ═══
+           كان الحدثُ يُنشئ دفعةً ثانيةً بمبلغ الفاتورة وعملتها (الدولار)، ودفعةُ `payOrder` المعلَّقةُ — وفيها ما
+           اقتُطع فعلا بالدرهم أو الريال — تبقى «معلَّقة» أبدا. فإيصالُه بغير ما في كشف بطاقته، وردُّ تلك الدفعة يطلب من
+           المزوّد ١٠٠ بعملة البطاقة (١٠٠ درهم عن ٣٦٧). فالمعلَّقةُ نفسُها تصير ناجحة — وبشرط حالتها، كتأكيد المزوّد
+           (`confirmWithProvider`)، فلا يُسوّي الحدثُ والتأكيدُ في اللحظة نفسِها مرّتين. */
+        const pendings = await this.prisma.payment.findMany({
+          where: { invoiceId: invoice.id, provider, status: 'pending' }, orderBy: { createdAt: 'desc' },
         })
-        await this.settleOrder(invoice.orderId, null)
+        const pending = pendings.find((p) => !!payload.providerRef && p.providerRef === payload.providerRef) ?? pendings[0]
+        let settle = false
+        if (pending) {
+          const moved = await this.prisma.payment.updateMany({
+            where: { id: pending.id, status: 'pending' },
+            data: { status: 'succeeded', providerRef: payload.providerRef || pending.providerRef, succeededAt: new Date() },
+          })
+          settle = moved.count > 0
+        } else if (await this.prisma.payment.count({ where: { invoiceId: invoice.id, status: 'succeeded' } }) === 0) {
+          await this.prisma.payment.create({
+            data: {
+              invoiceId: invoice.id, provider, amount: num(invoice.amount), currency: invoice.currency,
+              status: 'succeeded', providerRef: payload.providerRef, idempotencyKey: `wh-${provider}-${payload.eventId}`,
+              succeededAt: new Date(),
+            },
+          })
+          settle = true
+        }
+        if (settle) await this.settleOrder(invoice.orderId, null)
       }
     }
     await this.prisma.paymentWebhookEvent.update({

@@ -37,6 +37,7 @@ import { Link, useParams } from "react-router";
 import { Award, Check, ChevronDown, Clock, Copy, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
+import { coursesLeftOn, useMyGrant } from "@/services/my-grant";
 import { useHoneypot } from "@/components/HoneypotField";
 import { toast, toastError } from "@/components/Toast";
 import Modal from "@/components/Modal";
@@ -170,7 +171,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const numbers = useWhatsAppNumbers();
 
   /* الدوراتُ المختارة بترتيب اختيارها — من كلّ ما يُشترى اليوم */
-  const [picked, setPicked] = useState<string[]>([]);
+  const [allPicked, setPicked] = useState<string[]>([]);
   /* ما اخترناه له سلفا — يبقى أعلى القائمة بشارته وإن حذفه، فلا تقفز الصفوفُ تحت يده */
   const [suggested, setSuggested] = useState<string[]>([]);
   /* نبذةُ أيِّ دورةٍ مفتوحةٌ الآن — واحدةٌ في كلّ مرّة، فتبقى القائمةُ مرتّبة */
@@ -213,7 +214,14 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
      ويدفعون كاملا. فالخصمُ ما دام له كودٌ أو بريدٌ به والمنحةُ مفتوحة */
   const grantOn = !!view?.campaign.open && !!(stored?.code || stored?.sentTo);
   const pct = grantOn ? stored?.percentOff ?? view?.campaign.percentOff ?? 0 : 0;
-  const max = view?.campaign.maxCourses ?? 4;
+  /* ═══ ومن اشترى بكوده قبلُ يختار ما بقي له — لا الحدَّ كلَّه (٣١ أكتوبر ٢٠٢٦) ═══
+     الكودُ يُستعمل حتى حدّ دوراته في كلّ المشتريات (`coursesLeft`)، والصفحةُ كانت تعرض الحدَّ كاملا لمن عاد بعد شرائه:
+     يختار أربعا وقد بقيت له اثنتان، فيرى سعرَ المنحة، ثمّ يردّ الخادمُ الكودَ فيُسعَّر بلا منحة. فما بقي على كوده من حسابه
+     (`learnerGrant`) هو الحدّ، إن كان كودُه من هذه المنحة نفسِها */
+  const mine = useMyGrant();
+  const max = Math.min(view?.campaign.maxCourses ?? 4, coursesLeftOn(mine, nameAr) ?? Number.POSITIVE_INFINITY);
+  /* وما اختاره قبل أن يُعرف ما بقي له يُقصّ عند الحدّ — في العرض لا بأثرٍ يكتب الحالة */
+  const picked = useMemo(() => (allPicked.length > max ? allPicked.slice(0, max) : allPicked), [allPicked, max]);
   const chosen = useMemo(
     () => picked.map((id) => view?.openCourses.find((x) => x.courseId === id)).filter((x): x is GrantCourse => !!x),
     [picked, view],

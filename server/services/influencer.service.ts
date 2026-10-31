@@ -263,12 +263,17 @@ export class InfluencerService {
       }
     })).sort((a, b) => b.at.getTime() - a.at.getTime())
     const earned = round2(rows.reduce((s, r) => s + r.commission, 0))
+    const buyerCount = new Set(codes.flatMap((g) => g.coupon.orders
+      .filter((o) => o.status !== 'refunded' && !(inf?.userId && o.userId === inf.userId))
+      .map((o) => o.userId))).size
     const paidOut = round2(payouts.reduce((s, p) => s + num(p.amount), 0))
     return {
       currency: LEDGER_CURRENCY,
       totals: {
-        signups, codes: codes.length, buyers: rows.filter((r) => !r.refunded && !r.own).length,
-        sales: round2(rows.reduce((s, r) => s + (r.own ? 0 : r.listTotal), 0)), earned, paid: paidOut, balance: round2(earned - paidOut),
+        /* «اشتروا» أناسٌ لا طلبات (٣١ أكتوبر ٢٠٢٦): الكودُ يُستعمل في أكثر من طلبٍ حتى حدّه، فمن اشترى مرّتين كان
+           يُعدّ مشتريَين. و«المبيعات» بلا ما رُدّ كلُّه — كما «اشتروا» و«ما استحققت» — فلا يختلف رقمان في لوحٍ واحد */
+        signups, codes: codes.length, buyers: buyerCount,
+        sales: round2(rows.reduce((s, r) => s + (r.own || r.refunded ? 0 : r.listTotal), 0)), earned, paid: paidOut, balance: round2(earned - paidOut),
       },
       rows,
       payouts: payouts.map((p) => ({ id: p.id, amount: num(p.amount), currency: p.currency, noteAr: p.noteAr, paidAt: p.paidAt })),

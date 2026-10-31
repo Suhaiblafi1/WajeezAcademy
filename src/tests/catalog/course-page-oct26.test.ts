@@ -65,7 +65,8 @@ describe('③ زر إلى «تعلمي»', () => {
     expect(box).toMatch(/onClick=\{\(\) => void cancelPending\(o\.orderId\)\}>\s*ألغ الطلب/)
     expect(box, 'عادت الإحالة إلى «فواتيري»').not.toMatch(/student\/billing/)
     expect(buy).toMatch(/apiPost<PayResult>\(`\/api\/learner\/orders\/\$\{orderId\}\/pay`/)
-    expect(buy).toMatch(/await apiPost\(`\/api\/learner\/orders\/\$\{orderId\}\/cancel`, \{\}\);\s*await refresh\(applied\);/)
+    /* ثمّ يُعاد التسعيرُ — بالكود الذي رُدّ بسبب هذا الطلب إن كان (٣١ أكتوبر ٢٠٢٦، `buy-panel-pending-cancel.test.ts`) */
+    expect(buy).toMatch(/await apiPost\(`\/api\/learner\/orders\/\$\{orderId\}\/cancel`, \{\}\);\s*setCouponError\(null\);\s*const again = applied \|\| rejectedCode\.current;[\s\S]{0,200}?await refresh\(applied\);/)
     /* ولا يقوله سطرُ الكود معه مرّةً ثانية */
     expect(buy).toMatch(/\{couponError && !unpaidLeft && <p/)
   })
