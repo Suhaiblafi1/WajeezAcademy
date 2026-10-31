@@ -57,6 +57,14 @@ describe('طلبُ الشحن الذاهب إلى Stripe', () => {
     expect(sent!.body.get('line_items[0][price_data][currency]')).toBe('jod')
   })
 
+  it('⚠️ وصفحةُ الدفع تُغلق بعد ساعة — بمهلة المقعد لا بيوم Stripe', async () => {
+    const before = Math.floor(Date.now() / 1000)
+    await charge()
+    const at = Number(sent!.body.get('expires_at'))
+    expect(at - before).toBeGreaterThanOrEqual(3600)
+    expect(at - before).toBeLessThanOrEqual(3605)
+  })
+
   it('والدولارُ بالسنت — مئةٌ لا ألف', async () => {
     await charge({ amount: 25, currency: 'USD' })
     expect(sent!.body.get('line_items[0][price_data][unit_amount]')).toBe('2500')

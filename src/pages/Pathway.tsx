@@ -1126,6 +1126,7 @@ export default function PathwayPage() {
         <Modal onClose={() => setPendingCheckout(null)} label="سجّل لإتمام الشراء" panelClassName="w-full max-w-md">
           <AuthGate
             message="التصفح مفتوح بلا تسجيل، والتسجيل فقط لإتمام الشراء وربطه بحسابك."
+            initialMode="signup"
             source="checkout_gate"
             verifyLater
             onDone={() => {

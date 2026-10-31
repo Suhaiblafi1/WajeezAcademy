@@ -296,14 +296,27 @@ export async function learnerGrant(prisma: PrismaClient, userId: string, now = n
   })
   let coupon = used?.coupon ?? null
   if (!coupon) {
+    /* ═══ ومن عبّأ النموذجين — يُختار منهما ما يُستعمل الآن، لا أقدمُهما (٣١ أكتوبر ٢٠٢٦) ═══
+       كان يُقرأ أقدمُ نموذجٍ وحدَه: فمن عبّأ «منحة وجيز» ثمّ أُغلقت، ثمّ عبّأ نموذجَ مؤثّرٍ مفتوحا، لم يُطبَّق له
+       شيءٌ في صفحات الدورات فدفع السعرَ كاملا. ومن عبّأ نموذجَ المؤثّر أوّلا طُبّق له الخصمُ الأصغر. فيُقرأ النموذجان،
+       ويُترك ما أُغلقت حملتُه أو بلغ حدَّه، ويُختار الأكبرُ خصما (والأقدمُ عند التساوي). */
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
-    const lead = user?.email
-      ? await prisma.lead.findFirst({
+    const leads = user?.email
+      ? await prisma.lead.findMany({
         where: { erasedAt: null, email: user.email.toLowerCase(), grantCode: { isNot: null } },
         orderBy: { createdAt: 'asc' },
         select: { id: true, grantCode: { select: { coupon: { select: LEARNER_COUPON } } } },
       })
-      : null
+      : []
+    let lead: (typeof leads)[number] | null = null
+    for (const l of leads) {
+      const c = l.grantCode?.coupon
+      const camp = c?.grantCode?.campaign
+      if (!c || !camp || !isOpen(camp, now)) continue
+      if ((await new GrantService(prisma).coursesLeft(c)) <= 0) continue
+      if (!lead || (c.percentOff ?? 0) > (lead.grantCode?.coupon?.percentOff ?? 0)) lead = l
+    }
+    lead ??= leads[0] ?? null
     coupon = lead?.grantCode?.coupon ?? null
     if (lead && coupon) {
       const claimed = await prisma.auditEvent.count({ where: { action: 'coupon.grant_claim', entityId: lead.id, actorId: userId } })

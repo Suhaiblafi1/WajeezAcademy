@@ -967,6 +967,12 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
   const commerce = new CommerceService(prisma)
   for (const order of stale) {
     if ((order.invoice?.payments ?? []).length > 0) { withPayment++; continue }
+    /* ═══ وصفحةُ دفعٍ ما زالت مفتوحة لا يُلغى طلبُها (٣١ أكتوبر ٢٠٢٦) ═══
+       المهلةُ من إنشاء الطلب، و«أكمل الدفع» يفتح صفحةً جديدة: من ضغطه في الدقيقة الخامسة والخمسين كان طلبُه يُلغى بعد
+       دقائق وصفحتُه مفتوحة. وصفحةُ Stripe تُغلق بعد ساعةٍ من فتحها (`expires_at`)، فما فُتح بعد حدّ المهلة ينتظر إغلاقَها. */
+    if (order.invoice && await prisma.payment.count({
+      where: { invoiceId: order.invoice.id, status: 'pending', createdAt: { gt: cutoff } },
+    }) > 0) continue
     /* ═══ ويُسأل المزوّدُ قبل الإلغاء (٢٦ أكتوبر ٢٠٢٦) ═══
 
        «مهجورٌ» كان يعني «لم يصل حدثُ دفعه» — وحدثٌ لم يصل لا يعني أنّ البطاقة لم تُقتطع.

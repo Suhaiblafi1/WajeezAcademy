@@ -294,15 +294,29 @@ export async function sendGrantReminders(
    ولا يقع إلّا مرّة: يُشترط أن تكون النهايةُ ما زالت التي قبل القرار. فإن غيّرها أحدٌ من شاشتها بعدُ لم تُمسّ. */
 export const GRANT_CLOSE_FIX = { from: '2026-10-31T21:00:00.000Z', to: '2026-10-30T21:00:00.000Z' } as const
 
+const GRANT_CLOSE_FIX_REASON = 'قرار صاحب المنصة (24 أكتوبر 2026): آخر يوم للمنحة 30 أكتوبر'
+
+/* ═══ ومرّةً واحدةً حقّا — بأثرها لا بقيمتها (٣١ أكتوبر ٢٠٢٦) ═══
+
+   كان شرطُ «مرّة» أن تكون القيمةُ ما زالت التي قبل القرار. والعاملُ يدور كلَّ ساعة، فمن أعاد القيمةَ نفسَها من
+   شاشتها بعدُ — مدّ المنحةَ إلى ٣١ أكتوبر، أو جعل حدَّها ٥ بقراره (٢٨ أكتوبر) — أُعيدت خلال ساعةٍ وكُتب الأثرُ
+   باسم قراره القديم. فالشرطُ الآن أثرُ التصحيح نفسِه: وقع مرّةً فلا يقع بعدها، وما يكتبه صاحبُ المنصّة يبقى. */
+async function fixedBefore(prisma: PrismaClient, campaignId: string, reason: string): Promise<boolean> {
+  return (await prisma.auditEvent.count({
+    where: { action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: campaignId, actorId: null, reason },
+  })) > 0
+}
+
 export async function applyGrantCloseFix(prisma: PrismaClient, fix: { from: string; to: string } = GRANT_CLOSE_FIX): Promise<boolean> {
   const c = await prisma.grantCampaign.findUnique({ where: { slug: MEMBER_GRANT_SLUG }, select: { id: true, closesAt: true } })
   if (!c?.closesAt || c.closesAt.toISOString() !== fix.from) return false
+  if (await fixedBefore(prisma, c.id, GRANT_CLOSE_FIX_REASON)) return false
   await prisma.$transaction(async (tx) => {
     await tx.grantCampaign.update({ where: { id: c.id }, data: { closesAt: new Date(fix.to) } })
     await recordAudit(tx, {
       actorId: null, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
       before: { closesAt: fix.from }, after: { closesAt: fix.to },
-      reason: 'قرار صاحب المنصة (24 أكتوبر 2026): آخر يوم للمنحة 30 أكتوبر',
+      reason: GRANT_CLOSE_FIX_REASON,
     })
   })
   return true
@@ -314,16 +328,18 @@ export async function applyGrantCloseFix(prisma: PrismaClient, fix: { from: stri
    القولَ وحدَه — فلا تقول الصفحةُ ٤ وتقبل ٥. والحدُّ نفسُه يُفحص عند الدفع (`maxCourses` في `grant.service.ts`).
    ولا يقع إلّا مرّة: يُشترط أن يكون الحدُّ ما زال ٥. فإن غيّره أحدٌ من شاشته بعدُ لم يُمسّ. */
 export const GRANT_COURSES_FIX = { from: 5, to: 4 } as const
+const GRANT_COURSES_FIX_REASON = 'قرار صاحب المنصة (24 أكتوبر 2026): المنحة تغطي 4 دورات بحد أقصى'
 
 export async function applyGrantCoursesFix(prisma: PrismaClient, fix: { from: number; to: number } = GRANT_COURSES_FIX): Promise<boolean> {
   const c = await prisma.grantCampaign.findUnique({ where: { slug: MEMBER_GRANT_SLUG }, select: { id: true, maxCourses: true } })
   if (!c || c.maxCourses !== fix.from) return false
+  if (await fixedBefore(prisma, c.id, GRANT_COURSES_FIX_REASON)) return false
   await prisma.$transaction(async (tx) => {
     await tx.grantCampaign.update({ where: { id: c.id }, data: { maxCourses: fix.to } })
     await recordAudit(tx, {
       actorId: null, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
       before: { maxCourses: fix.from }, after: { maxCourses: fix.to },
-      reason: 'قرار صاحب المنصة (24 أكتوبر 2026): المنحة تغطي 4 دورات بحد أقصى',
+      reason: GRANT_COURSES_FIX_REASON,
     })
   })
   return true

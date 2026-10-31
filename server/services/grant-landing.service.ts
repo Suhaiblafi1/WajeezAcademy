@@ -46,7 +46,7 @@ import {
   type GrantCourseSummary,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
-import { INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
+import { GRANT_ONCE_AR, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
 import { INFLUENCER_CODE_BAD_AR, INFLUENCER_GRANT_PATH, influencerLink, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
 import { shortLinkPath } from '../../src/application/links/short-link'
 import { fmtDate } from '../../src/application/text/format-ar'
@@ -229,11 +229,24 @@ export class GrantLandingService {
     /* المؤثّرُ الذي يُحسب له: من جاء بكوده أوّلَ مرّة — وعمولتُه كما هي اليوم، تُكتب في كوده إن أُعطي الآن */
     const credited = !forInfluencer ? null
       : !lead.influencerId || lead.influencerId === named!.id ? named
-        : await this.prisma.influencer.findUnique({ where: { id: lead.influencerId }, select: { id: true, nameAr: true, code: true, commissionPercent: true } })
+        /* والأوّلُ إن كان ما زال نشطا — من أُوقف لا يُكتب له كودٌ جديد ولا عمولتُه، فيُحسب لمن جاء بكوده الآن (٣١ أكتوبر ٢٠٢٦) */
+        : await this.prisma.influencer.findFirst({ where: { id: lead.influencerId, active: true }, select: { id: true, nameAr: true, code: true, commissionPercent: true } }) ?? named
 
     let grant: { code: string | null; sentTo: string | null; percentOff: number; closesAt: Date | null } | null = null
     let reasonAr: string | null = null
-    try {
+    /* ═══ ومن اشترى بالمنحة الأخرى لا يُعطى كودَ هذه (٣١ أكتوبر ٢٠٢٦) ═══
+       منحةٌ واحدةٌ لكلّ متعلّم على الحملتين معا، والدفعُ يردّ الكودَ الثاني (`grant_once` في `assertUsable`). وكانت الصفحةُ
+       تعطيه كودا وتعرض له أسعارَها، ثمّ يُردّ عند الدفع — ويُعدّ في «سجّلوا» عند مؤثّره. فيُقال له السببُ هنا. والمدفوعُ
+       وحدَه: من ترك طلبا بلا دفعٍ لا يُردّ به */
+    const usedOther = await this.prisma.order.findFirst({
+      where: {
+        user: { email }, status: { in: ['paid', 'partially_refunded'] },
+        coupon: { grantCode: { campaign: { slug: { not: this.slug } } } },
+      },
+      select: { id: true },
+    })
+    if (usedOther) reasonAr = GRANT_ONCE_AR
+    else try {
       const g = await this.grants.issue({ leadId: lead.id, influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent } : null }, now)
       const to = lead.email ?? email
       await this.mailCode(to, lead.fullName, g.code, g.percentOff, g.closesAt, credited?.code ?? null)
@@ -353,7 +366,8 @@ export class GrantLandingService {
           ] },
           { kind: 'cta', label: 'اختر دوراتك', href: url },
           { kind: 'p', text: 'لقاءات مباشرة على Zoom مع مدربين معتمدين، وتطبيقات عملية، وشهادة ورسالة توصية لمن يلتزم.' },
-          { kind: 'note', text: 'الكود يستعمل مرة واحدة، ويمكنك أن تهديه لغيرك.' },
+          /* لا «مرّةً واحدة»: الكودُ يُستعمل في أكثر من طلبٍ حتى حدّ دوراته — قرارُ صاحب المنصّة (٢٨ أكتوبر ٢٠٢٦، `coursesLeft`) */
+          { kind: 'note', text: 'يمكنك أن تستعمل الكود في أكثر من طلب حتى حد دوراته، أو أن تهديه لغيرك.' },
         ],
       }),
     })
