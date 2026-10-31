@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  candidateSlots, clashWhyAr, findClashes, hourSlots, levelRank, linkWhyAr, mainSlot, nearbyAt, nearbyOnDay, nearbySpanAr, nearbyWarnAr, planClashFree,
+  candidateSlots, clashLines, clashWhyAr, findClashes, hourSlots, levelRank, linkWhyAr, mainSlot, nearbyAt, nearbyOnDay, nearbySpanAr, nearbyWarnAr, planClashFree,
   rejectedScope, slotAr, weekdaysOf, withRejectReason, type NearbyTime,
   SCHEDULE_REJECT_REASONS, type BuildSchedule, type ClashCohort, type ClashCourse, type WeeklySlot,
 } from '@/application/terms/schedule-clash'
@@ -90,6 +90,19 @@ describe('التعارضات القائمة', () => {
   it('ولا تعارض بين غير المربوطتين، ولا بين شعبتي الدورة نفسها', () => {
     expect(findClashes([cohort('1', 'A', weekly('2026-12-06', '19:00')), cohort('2', 'C', weekly('2026-12-06', '19:00'))], courses)).toEqual([])
     expect(findClashes([cohort('1', 'A', weekly('2026-12-06', '19:00')), cohort('2', 'A', weekly('2026-12-06', '19:00'))], courses)).toEqual([])
+  })
+
+  it('⚠️ وشعبتان من دورة تتعارضان مع الدورة نفسها سطر واحد — بعدد الشعب واللقاءات', () => {
+    /* «ادمج سطور التعارض المكرّرة» (٣١ أكتوبر ٢٠٢٦) */
+    const cohorts = [
+      cohort('1', 'A', weekly('2026-12-06', '19:00')),
+      cohort('2', 'A', weekly('2026-12-06', '19:00', 2)),
+      cohort('3', 'B', weekly('2026-12-06', '19:00')),
+    ]
+    const titleOf = (id: string) => courses.get(cohorts.find((c) => c.cohortId === id)!.courseId)!.titleAr
+    const lines = clashLines(findClashes(cohorts, courses), titleOf)
+    expect(lines).toHaveLength(1)
+    expect([lines[0]!.sections, lines[0]!.count]).toEqual([2, 6])
   })
 
   it('واللقاءان المتتاليان بلا تداخل ليسا تعارضا', () => {
