@@ -3830,6 +3830,8 @@ model Lead {
   pageTouch          Json?
   /// متى فتح صفحةَ المنحة — من `pageTouch.at`، عمودا ليُرتَّب ويُعدّ به
   pageOpenedAt       DateTime?
+  /// زياراتُه لصفحة المنحة قبل النموذج — من فتح الرابط ولم يعبّئ يبقى فيها بلا عميل (`grant-visit.service.ts`)
+  grantVisits        GrantVisit[]
   createdAt          DateTime      @default(now())
   user               User?         @relation("LeadUser", fields: [userId], references: [id])
   cases              AdvisorCase[]
@@ -5110,4 +5112,30 @@ model PlacementQuestion {
   updatedAt    DateTime  @updatedAt
 
   @@index([subject, status, level])
+}
+
+/// من فتح صفحةَ المنحة — زائرٌ واحدٌ لكلّ متصفّحٍ في كلّ حملة، عبّأ النموذجَ أم لم يعبّئه (٣١ أكتوبر ٢٠٢٦).
+/// بلا اسمٍ ولا عنوان: رقمٌ عشوائيٌّ يحفظه متصفّحُه، ومن أين جاء. وبه تُقرأ «فتح الرابط ← عبّأ ← اشترى» (`grant-visit.service.ts`)
+model GrantVisit {
+  id             String    @id @default(uuid()) @db.Uuid
+  /// الحملة — `wajeez-members` أو `wajeez-influencers`
+  campaign       String
+  /// رقمٌ عشوائيٌّ من متصفّحه — لا يُشتقّ من شيءٍ فيه
+  visitorId      String    @db.Uuid
+  /// الزيارةُ الأولى لصفحة المنحة، وأوّلُ زيارةٍ للموقع — مُنظَّفتين (`cleanTouch`)
+  pageTouch      Json?
+  firstTouch     Json?
+  /// كودُ المؤثّر في الرابط إن طابق مؤثّرا نشطا
+  influencerCode String?
+  firstAt        DateTime  @default(now())
+  lastAt         DateTime  @default(now())
+  /// كم مرّةً فتح الصفحة
+  visits         Int       @default(1)
+  /// من عبّأ النموذجَ بعدها — يُربط حين يعبّئه من المتصفّح نفسِه
+  leadId         String?   @db.Uuid
+  lead           Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@unique([campaign, visitorId])
+  @@index([campaign, firstAt])
+  @@index([leadId])
 }

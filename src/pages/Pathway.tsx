@@ -38,7 +38,7 @@ import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { publicPathwayById } from "@/data/public-pathways";
-import { swapCandidates } from "@/application/catalog/pathway-swap";
+import { restoredSwaps, swapCandidates } from "@/application/catalog/pathway-swap";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-prices";
@@ -150,15 +150,24 @@ export default function PathwayPage() {
   const editable = Boolean(adopted);
   /* المسار الجاهز = أربعُ أساسيات + ثلاثُ مساندات. أمّا الخطّة المعتمَدة من
      التشخيص فتبقى كما اعتُمدت: هناك تُبنى من القياس لا من حزمةٍ جاهزة. */
+  /* ومن خرج قبل الدفع وعاد يجد ما استبدله وما أضافه (`restoredSwaps`) — مشتقٌّ من الشراء المحفوظ لا حالٌ تُنسخ،
+     فيظهر حين يصل الكتالوج. والخطّةُ المعتمَدةُ لا تحتاجه: استبدالُها محفوظٌ فيها لحظةَ وقوعه. */
+  const restored = useMemo(() => {
+    void catalogVersion;
+    if (!resumed?.intent.courseIds || !pathway || adopted) return null;
+    return restoredSwaps(resumed.intent.courseIds, readyPathwayCourseIds(pathway.id).length);
+  }, [resumed, pathway, adopted, catalogVersion]);
   const baseIds = useMemo(
-    () => edits?.courseIds ?? custom?.chosenIds ?? (pathway ? readyPathwayCourseIds(pathway.id) : []),
-    [edits, custom, pathway],
+    () => edits?.courseIds ?? custom?.chosenIds ?? restored?.base ?? (pathway ? readyPathwayCourseIds(pathway.id) : []),
+    [edits, custom, restored, pathway],
   );
   /* ═══ ودورةٌ واحدةٌ يضيفها فوق مساره، يختارها من ثلاث (٢٦ أكتوبر ٢٠٢٦) ═══
      «اسمح لمن يشتري مسارا أن يضيف دورةً واحدةً فقط، واقترح له ثلاثَ دوراتٍ ليختار منها» (صاحب المنصّة).
      فكان «أضف دورة» لمن له خطّةٌ من التشخيص وحدَه، حتّى ستٍّ — والمسارُ الجاهزُ ستٌّ أصلا فلا يُضاف إليه شيء.
      فصار لكلّ مشترٍ: إضافةٌ واحدةٌ فوق مساره (`extraId`) من ثلاثٍ لها شعبٌ مفتوحة، تدخل السعرَ والدفعَ معه. */
-  const [extraId, setExtraId] = useState<string | null>(null);
+  /* و`undefined` ما لم يختر بعدُ في هذه الزيارة — فتبقى إضافةُ الشراء المحفوظ */
+  const [extraPicked, setExtraId] = useState<string | null | undefined>(undefined);
+  const extraId = extraPicked === undefined ? restored?.extra ?? null : extraPicked;
   const courseIds = useMemo(
     () => (extraId && !baseIds.includes(extraId) ? [...baseIds, extraId] : baseIds),
     [baseIds, extraId],
@@ -387,7 +396,8 @@ export default function PathwayPage() {
       hostPathwayId: adopted?.hostPathwayId ?? pathway?.id ?? "",
       composed: adopted?.composed ?? false,
       nameAr: adopted?.nameAr ?? pathway?.name ?? "خطّتي",
-      courseIds,
+      /* ما في اللوح لا ما على الصفحة: العائدُ من التوثيق يُفتح لوحُه قبل أن تُستعاد دوراتُه عليها */
+      courseIds: intent.courseIds ?? courseIds,
     });
     setSyncing(false);
     /* الشراءُ قبل المنصّة لا بعدها.
@@ -554,7 +564,9 @@ export default function PathwayPage() {
                     swapForId,
                     pool: swapChoices.map((s) => ({ id: s.courseId, name: courseById(s.courseId)?.name ?? s.courseId, note: s.noteAr })),
                     introAr: "لك أن تستبدل أي دورة بأخرى، وخاصة التي تتعارض مواعيدها. العدد ثابت، فخصم المسار باق.",
-                    onReset: edits ? () => { setEdits(null); setSwapForId(null); } : undefined,
+                    onReset: baseIds.join() !== readyPathwayCourseIds(pathway.id).join()
+                      ? () => { setEdits({ courseIds: readyPathwayCourseIds(pathway.id) }); setSwapForId(null); }
+                      : undefined,
                     minReached: true,
                     maxReached: true,
                     onSwapToggle: setSwapForId,

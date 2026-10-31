@@ -137,7 +137,9 @@ describe('حدود التخصيص', () => {
      «اسمح لمن يشتري مسارا أن يضيف دورةً واحدةً فقط، واقترح له ثلاثَ دوراتٍ ليختار منها» (صاحب المنصّة).
      نُسخ به «حتّى ستّ» في المحرّر. والواحدةُ بنيةٌ لا شرط: مكانٌ واحدٌ (`extraId`) يُبدَّل ولا يُضاف إليه. */
   it('⚠️ دورة واحدة فوق المسار — مكان واحد يبدل، والمحرر لا يضيف', () => {
-    expect(PATHWAY).toMatch(/const \[extraId, setExtraId\] = useState<string \| null>\(null\)/)
+    /* قيمةٌ واحدة — و`undefined` ما لم يختر في الزيارة فتبقى إضافةُ الشراء المحفوظ (٣١ أكتوبر ٢٠٢٦، `restoredSwaps`) */
+    expect(PATHWAY).toMatch(/const \[extraPicked, setExtraId\] = useState<string \| null \| undefined>\(undefined\)/)
+    expect(PATHWAY).toMatch(/const extraId = extraPicked === undefined \? restored\?\.extra \?\? null : extraPicked/)
     expect(PATHWAY).toMatch(/extraId && !baseIds\.includes\(extraId\) \? \[\.\.\.baseIds, extraId\] : baseIds/)
     expect(PATHWAY).toMatch(/maxReached: true/)
     expect(PATHWAY, 'عادت الإضافة إلى قائمة المحرر').not.toMatch(/commit\(\[\.\.\.(?:base|course)Ids, id\]\)/)

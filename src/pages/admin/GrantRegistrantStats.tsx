@@ -6,7 +6,8 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { conversionAr, type Count, type RegistrantStats } from "@/application/commerce/grant-registrants";
+import { conversionAr, funnelAr, type Count, type GrantFunnel, type RegistrantStats } from "@/application/commerce/grant-registrants";
+import { fmtDate } from "@/application/text/format-ar";
 import { Card, Inset } from "@/components/ui/Surface";
 
 /** «28/10» من «2026-10-28» — بلا علامات اتّجاه، فالمحورُ يساريّ */
@@ -53,7 +54,46 @@ function Bars({ title, items, max = 8, buy = true }: { title: string; items: Cou
   );
 }
 
-export default function GrantRegistrantStats({ s, filtered }: { s: RegistrantStats; filtered: boolean }) {
+/* ─────────── من فتح الرابط ← عبّأ ← اشترى — لكلّ الزوار لا للتصفية: من لم يعبّئ لا حالَ له ولا مجال (`grant-visit.service.ts`) ─────────── */
+function Funnel({ f }: { f: GrantFunnel }) {
+  if (!f.since || f.visitors === 0) {
+    return <p className="text-read text-muted-foreground">من فتح الرابط ولم يعبئ يعد من الآن، ويظهر هنا بعد أول زيارة.</p>;
+  }
+  const steps = [
+    { label: "فتح الرابط", n: f.visitors },
+    { label: "عبأ النموذج", n: f.filled },
+    { label: "اشترى", n: f.bought },
+  ];
+  return (
+    <div>
+      <p className="font-bold">من فتح الرابط — منذ {fmtDate(f.since)}</p>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {steps.map((x, i) => (
+          <Tile key={x.label} label={x.label} value={x.n} note={i === 0 ? "كل الزوار" : `${f.visitors > 0 ? Math.round((x.n / f.visitors) * 100) : 0}% ممن فتح`} />
+        ))}
+      </div>
+      {f.bySource.length > 0 && (
+        <ul className="mt-3 grid gap-1.5 text-read">
+          {f.bySource.map((c) => (
+            <li key={c.key}>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="truncate">{c.labelAr}</span>
+                <span className="shrink-0 text-muted-foreground">{funnelAr(c)}</span>
+              </div>
+              <div className="mt-0.5 flex h-1.5 overflow-hidden rounded-full bg-border">
+                <div className="h-1.5 bg-teal" style={{ width: `${(c.filled / f.visitors) * 100}%` }} />
+                <div className="h-1.5 bg-teal/40" style={{ width: `${((c.visitors - c.filled) / f.visitors) * 100}%` }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-1 text-read text-muted-foreground">الغامق من عبأ، والفاتح من فتح ولم يعبئ.</p>
+    </div>
+  );
+}
+
+export default function GrantRegistrantStats({ s, filtered, funnel }: { s: RegistrantStats; filtered: boolean; funnel: GrantFunnel }) {
   const [open, setOpen] = useState(true);
   const peakDay = Math.max(1, ...s.byDay.map((d) => d.n));
   const peakHour = Math.max(1, ...s.byHour.map((h) => h.n));
@@ -66,7 +106,7 @@ export default function GrantRegistrantStats({ s, filtered }: { s: RegistrantSta
       </button>
       {open && (
         <div className="mt-3 grid gap-5">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Tile label="عبأ النموذج" value={s.total} />
             <Tile label="أخذ كودا" value={s.withCode} />
             <Tile label="اشترى" value={s.bought} note={`${s.boughtPct}% من الكل`} />
@@ -75,11 +115,13 @@ export default function GrantRegistrantStats({ s, filtered }: { s: RegistrantSta
             <Tile label="له مستشار" value={s.withAdvisor} />
             <Tile label="منحة وجيز" value={s.member} note={`ومؤثرين ${s.influencer}`} />
             <Tile
-              label="من فتح الرابط للتعبئة"
+              label="من فتح الرابط إلى التعبئة"
               value={s.openToFormMedianMin === null ? "—" : `${s.openToFormMedianMin} د`}
-              note={s.opened > 0 ? `وسيط ${s.opened} شخصا` : "يعرف لمن عبأ من الآن"}
+              note={s.opened > 0 ? `الوسيط، من ${s.opened}` : "يعرف لمن عبأ من الآن"}
             />
           </div>
+
+          <Funnel f={funnel} />
 
           <div className="grid gap-5 md:grid-cols-2">
             <Bars title="من أين جاؤوا — ومن اشترى" items={s.bySource} />
@@ -98,7 +140,7 @@ export default function GrantRegistrantStats({ s, filtered }: { s: RegistrantSta
               <p className="font-bold">التعبئة باليوم{s.byDay.length > days.length ? " — آخر ٢١ يوما" : ""}</p>
               <div className="mt-2 flex h-28 items-end gap-1" dir="ltr">
                 {days.map((d) => (
-                  <div key={d.day} className="flex flex-1 flex-col items-center gap-1" title={`${d.day}: ${d.n}`}>
+                  <div key={d.day} className="flex max-w-12 flex-1 flex-col items-center gap-1" title={`${d.day}: ${d.n}`}>
                     <span className="text-fine text-muted-foreground">{d.n}</span>
                     <div className="w-full rounded-t bg-teal" style={{ height: `${Math.max(4, (d.n / peakDay) * 72)}px` }} />
                     <span className="text-fine text-muted-foreground">{dayLabel(d.day)}</span>
@@ -114,7 +156,7 @@ export default function GrantRegistrantStats({ s, filtered }: { s: RegistrantSta
               {s.byHour.map((h) => (
                 <div key={h.hour} className="flex flex-1 flex-col items-center gap-1" title={`${h.hour}:00 — ${h.n}`}>
                   <div className="w-full rounded-t bg-gold" style={{ height: `${h.n === 0 ? 1 : Math.max(4, (h.n / peakHour) * 56)}px` }} />
-                  <span className="text-fine text-muted-foreground">{h.hour % 3 === 0 ? h.hour : ""}</span>
+                  <span className="h-4 text-fine text-muted-foreground">{h.hour % 3 === 0 ? h.hour : ""}</span>
                 </div>
               ))}
             </div>

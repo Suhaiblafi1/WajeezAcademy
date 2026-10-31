@@ -41,3 +41,18 @@ export function pageTouchNow(): FirstTouch | null {
   if (typeof window === "undefined") return null;
   return touchFromLocation(window.location.search, document.referrer, window.location.hostname, window.location.pathname, new Date());
 }
+
+const VISITOR_KEY = "wajeez_visitor";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** رقمٌ عشوائيٌّ لهذا المتصفّح — يُعدّ به من فتح صفحةَ المنحة مرّةً واحدة (`grant-visit.service.ts`).
+    لا يُشتقّ من شيءٍ في الجهاز، ومن مُنعت عنده الذاكرةُ يأخذ رقما جديدا كلَّ مرّة */
+export function visitorId(): string {
+  const had = safeGet(VISITOR_KEY);
+  if (had && UUID_RE.test(had)) return had;
+  const fresh = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (Number(c) ^ (Math.random() * 16) >> (Number(c) / 4)).toString(16));
+  safeSet(VISITOR_KEY, fresh);
+  return fresh;
+}

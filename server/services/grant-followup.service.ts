@@ -44,12 +44,17 @@ import { recordAudit } from './audit'
 import { AdvisorService } from './advisor.service'
 import { liveChannels } from './notification.service'
 import { enqueueMail } from './outbox.service'
-import { renderMail } from './mail-template'
+import { renderMail, type MailBlock } from './mail-template'
 import { publicSiteUrl } from './site-url'
+import { GrantCoursesService } from './grant-courses.service'
 import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
 import { influencerLink } from '../../src/application/commerce/influencer'
-import { grantCallDueAt, grantDaysLeftAr, leadProfileAr } from '../../src/application/commerce/grant-landing'
-import { fmtDateLong } from '../../src/application/text/format-ar'
+import {
+  GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, GRANT_VALUE_AR, grantCallDueAt, grantDaysLeftAr, grantPicksLink, grantPicksPreheaderAr,
+  grantShortTitleAr, leadProfileAr,
+} from '../../src/application/commerce/grant-landing'
+import { grantPrice } from '../../src/application/commerce/grant'
+import { fmtDateLong, fmtMoney } from '../../src/application/text/format-ar'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
 
 /** بعد كم ساعةٍ من النموذج تُفتح حالةُ من لم يشترِ — ساعةٌ يشتري فيها وحدَه، ثمّ مكالمةٌ في الساعة الثانية */
@@ -207,7 +212,7 @@ export async function sendGrantReminders(
     },
     orderBy: { createdAt: 'asc' },
     select: {
-      id: true, fullName: true, email: true,
+      id: true, fullName: true, email: true, grantPicks: true,
       influencer: { select: { code: true } },
       grantCode: { select: { coupon: { select: {
         code: true, percentOff: true,
@@ -217,6 +222,8 @@ export async function sendGrantReminders(
   })
   const paid = await paidEmails(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
 
+  /* ودوراتُ المنحة اليوم بسعرها — فما اختاره يُسمّى بما يُشترى منه الآن، وما أُغلقت شعبتُه لا يُذكر */
+  const pool = new Map((await new GrantCoursesService(prisma).openCourses(now)).courses.map((c) => [c.courseId, c]))
   const lastDay = new Date(closesAt.getTime() - 1)
   const days = Math.round((Date.parse(zonedDay(lastDay)) - Date.parse(zonedDay(now))) / DAY) + 1
   const subject = grantDaysLeftAr(days)
@@ -225,30 +232,52 @@ export async function sendGrantReminders(
     const coupon = lead.grantCode?.coupon
     if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase())) continue
     const pct = coupon.percentOff ?? campaign.percentOff
+    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant`
+    const lastDayRow = days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]
+    /* ما اختاره هو ممّا يُشترى اليوم — بسعر كلٍّ بعد منحته، ومجموعِها وقيمةِ منحته، وزرٍّ يعيده إلى اختياره (٣١ أكتوبر ٢٠٢٦) */
+    const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
+    const listTotal = mine.reduce((sum, c) => sum + c.price, 0)
+    const payTotal = grantPrice(listTotal, pct)
+    const blocks: MailBlock[] = mine.length > 0
+      ? [
+          { kind: 'p', text: GRANT_PICKS_INTRO_AR },
+          { kind: 'list', numbered: true, items: mine.map((c) => `${grantShortTitleAr(c.courseTitleAr)}: ${fmtMoney(grantPrice(c.price, pct))} بدل ${fmtMoney(c.price)}`) },
+          { kind: 'facts', rows: [
+            { label: 'تدفع', value: `${fmtMoney(payTotal)} بدل ${fmtMoney(listTotal)}` },
+            { label: GRANT_VALUE_AR, value: fmtMoney(listTotal - payTotal) },
+            { label: 'كود منحتك', value: coupon.code },
+            ...lastDayRow,
+          ] },
+          { kind: 'cta', label: GRANT_PICKS_CTA_AR, href: grantPicksLink(base, mine.map((c) => c.courseId)) },
+          { kind: 'note', text: 'وإن لم تحتجها، يمكنك أن تهدي الكود لغيرك.' },
+        ]
+      : [
+          { kind: 'p', text: `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom مع مدربين معتمدين.` },
+          { kind: 'facts', rows: [
+            { label: 'كود منحتك', value: coupon.code },
+            /* وفي آخر يومٍ لا يُكرَّر: عنوانُه «اليوم آخر يوم لمنحتك» */
+            ...lastDayRow,
+          ] },
+          /* ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — برابط مؤثّره */
+          { kind: 'cta', label: 'اختر دوراتك', href: base },
+          { kind: 'note', text: 'وإن لم تحتجها، يمكنك أن تهدي الكود لغيرك.' },
+        ]
     await prisma.$transaction(async (tx) => {
       await recordAudit(tx, {
         action: 'coupon.grant_reminder', entityType: 'lead', entityId: lead.id,
-        meta: { stage: due.stage, campaign: slug },
+        meta: { stage: due.stage, campaign: slug, picks: mine.length },
       })
       /* بقالب الأكاديمية لا نصّا خاما — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «رسالةُ البريد يجب أن تكون احترافيّة» */
       await enqueueMail(tx, {
         to: lead.email!, purpose: 'grant.reminder', subject,
         ...renderMail({
           greetingName: lead.fullName,
-          /* المنحةُ بنسبتها لا بما يبقى — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، كسطر الصفحة الأولى */
-          preheader: `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`,
+          /* المنحةُ بنسبتها لا بما يبقى — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، كسطر الصفحة الأولى. ومن اختار: ما اختاره وقيمتُه */
+          preheader: mine.length > 0
+            ? grantPicksPreheaderAr(mine.length, fmtMoney(listTotal - payTotal))
+            : `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`,
           heading: subject,
-          blocks: [
-            { kind: 'p', text: `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom مع مدربين معتمدين.` },
-            { kind: 'facts', rows: [
-              { label: 'كود منحتك', value: coupon.code },
-              /* وفي آخر يومٍ لا يُكرَّر: عنوانُه «اليوم آخر يوم لمنحتك» */
-              ...(days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]),
-            ] },
-            /* ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — برابط مؤثّره */
-            { kind: 'cta', label: 'اختر دوراتك', href: lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant` },
-            { kind: 'note', text: 'وإن لم تحتجها، يمكنك أن تهدي الكود لغيرك.' },
-          ],
+          blocks,
         }),
       })
     })

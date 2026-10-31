@@ -23,10 +23,12 @@ import { AuthService } from '../../services/auth.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService, grantResults, maskEmail } from '../../services/grant-landing.service'
 import { CommerceService } from '../../services/commerce.service'
-import { grantRegistrants } from '../../services/grant-followup.service'
+import { grantRegistrants, sendGrantReminders } from '../../services/grant-followup.service'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 import { courseDomain } from '../../../src/application/catalog/course-domain'
 import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { grantShortTitleAr } from '../../../src/application/commerce/grant-landing'
+import { fmtMoney } from '../../../src/application/text/format-ar'
 
 let prisma: PrismaClient
 let grants: GrantService
@@ -392,5 +394,44 @@ describe('⑩ وما اختاره من دورات يحفظ في ملفه', () =>
       await grants.update({ active: true, percentOff: 60, maxCodes: null, maxCourses: 4, closesAt: null }, ownerId)
     }
     await expect(landing.savePicks('00000000-0000-4000-8000-000000000000', [a], NOW)).rejects.toMatchObject({ code: 'not_found' })
+  })
+})
+
+/* «Reminder with their picks» — قرارُ صاحب المنصّة (٣١ أكتوبر ٢٠٢٦): كثيرون يأخذون الكودَ ويختارون ثمّ يخرجون */
+describe('⑪ والتذكير بما اختاره هو', () => {
+  it('⚠️ يسمي دوراته بسعرها بعد منحته ومجموعها، وزره يعيده إلى اختياره — ومن لم يختر يصله كما كان', async () => {
+    const [a, b] = [nextCourse(), nextCourse()]
+    await cohort(a)
+    await cohort(b)
+    const picker = person()
+    const chose = await landing.apply(picker)
+    await landing.savePicks(chose.ref, [a, b], NOW)
+    const idle = person()
+    await landing.apply(idle)
+
+    const had = await prisma.integrationSetting.findUnique({ where: { provider: 'email' }, select: { enabled: true, config: true } })
+    const on = { enabled: true, config: { apiKey: 'test-key', fromEmail: 'no-reply@test.local' } }
+    await prisma.integrationSetting.upsert({ where: { provider: 'email' }, update: on, create: { provider: 'email', ...on } })
+    const closesAt = new Date(NOW.getTime() + 3 * DAY)
+    await grants.update({ closesAt }, ownerId)
+    try {
+      await sendGrantReminders(prisma, new Date(closesAt.getTime() - 62 * 3_600_000))
+      const titleOf = async (id: string) => (await prisma.courseVersion.findFirstOrThrow({ where: { courseId: id }, orderBy: { version: 'desc' } })).titleAr
+      const mail = await prisma.outboxMail.findFirstOrThrow({ where: { to: picker.email, purpose: 'grant.reminder' } })
+      for (const id of [a, b]) {
+        expect(mail.text, 'لم يسم دورته').toContain(`${grantShortTitleAr(await titleOf(id))}: ${fmtMoney(60)} بدل ${fmtMoney(150)}`)
+      }
+      expect(mail.text, 'لم يقل مجموعها').toContain(`${fmtMoney(120)} بدل ${fmtMoney(300)}`)
+      expect(mail.text, 'لم يقل قيمة منحته').toContain(fmtMoney(180))
+      expect(mail.text).toContain('أكمل حجزك')
+      expect(mail.text, 'زره لا يعيده إلى اختياره').toContain(`/grant?picks=${a},${b}`)
+      const plain = await prisma.outboxMail.findFirstOrThrow({ where: { to: idle.email, purpose: 'grant.reminder' } })
+      expect(plain.text, 'من لم يختر').toContain('اختر دوراتك')
+      expect(plain.text).not.toContain('أكمل حجزك')
+    } finally {
+      await grants.update({ closesAt: null }, ownerId)
+      if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
+      else await prisma.integrationSetting.delete({ where: { provider: 'email' } })
+    }
   })
 })
