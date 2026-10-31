@@ -94,6 +94,34 @@ export const grantUntilAr = (lastDay: string): string => `المنحة حتى ${
 
 export const GRANT_OUTCOMES_TITLE_AR = 'ما ستخرج به'
 
+/* ═══ والتذكيرُ بما اختاره هو (٣١ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة عن أفكارٍ أخرى للقيمة، فاختار «Reminder with their picks»: كثيرون يأخذون الكود ويختارون ثمّ يخرجون.
+   فبريدُ التذكير قبل انتهاء المنحة يسمّي الدوراتِ التي اختارها هو (تُحفظ في ملفّه، `savePicks`)، بسعر كلٍّ بعد منحته
+   ومجموعِها وقيمةِ منحته وآخرِ يوم — وزرُّه يعيده إلى اختياره نفسِه (`?picks=`) ولو فتحه من جهازٍ آخر. ومن لم يختر بعدُ
+   يصله التذكيرُ كما كان. */
+export const GRANT_PICKS_PARAM = 'picks'
+const PICK_ID_RE = /^[A-Za-z0-9_-]{1,40}$/
+const PICKS_LINK_MAX = 20
+
+/** رابطُ صفحة منحته وما اختاره فيه — `…/grant?picks=C-1,C-2`. وما ليس معرّفا بشكله لا يُكتب فيه */
+export function grantPicksLink(base: string, courseIds: readonly string[]): string {
+  const ids = courseIds.filter((id) => PICK_ID_RE.test(id)).slice(0, PICKS_LINK_MAX)
+  if (ids.length === 0) return base
+  return `${base}${base.includes('?') ? '&' : '?'}${GRANT_PICKS_PARAM}=${ids.join(',')}`
+}
+
+/** ما في الرابط من اختياره — معرّفاتٌ بشكلها وحدَها، بلا تكرار، وعشرون بحدٍّ أقصى. والصفحةُ تقصّها على حدّ المنحة */
+export function parsePicksParam(search: string): string[] {
+  const raw = new URLSearchParams(search).get(GRANT_PICKS_PARAM) ?? ''
+  return [...new Set(raw.split(',').map((x) => x.trim()).filter((x) => PICK_ID_RE.test(x)))].slice(0, PICKS_LINK_MAX)
+}
+
+/** سطرُ ما يُرى قبل فتح البريد — «ما اخترته: 3 دورات، ومنحتك تدفع عنك $330.00.» */
+export const grantPicksPreheaderAr = (n: number, value: string): string => `ما اخترته: ${grantCountAr(n)}، ومنحتك تدفع عنك ${value}.`
+export const GRANT_PICKS_INTRO_AR = 'هذه الدورات التي اخترتها، بسعرها بعد منحتك:'
+export const GRANT_PICKS_CTA_AR = 'أكمل حجزك'
+
 /** «دورة واحدة» و«دورتان» و«4 دورات» و«11 دورة» — العددُ مع معدوده */
 export function grantCountAr(n: number): string {
   if (n === 1) return 'دورة واحدة'
