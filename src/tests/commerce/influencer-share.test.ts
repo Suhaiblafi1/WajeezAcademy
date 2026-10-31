@@ -35,7 +35,10 @@ describe('نص المنحة لكل منصة', () => {
   it('⚠️ «الكود الخاص بي» وعدد الدورات وآخر يوم — والمنحة بنسبتها لا بما يبقى', () => {
     const t = grantShareText('whatsapp', g)
     expect(t).toContain('الكود الخاص بي: *SARA*')
-    expect(t).toContain('تصل إلى *45٪* من سعر الدورات')
+    expect(t).toContain('تصل إلى *45٪* على دورات أكاديمية وجيز')
+    /* وأوّلُه كلامُ المؤثّر لجمهوره بكلمات صاحب المنصّة (٣١ أكتوبر ٢٠٢٦) */
+    expect(t.startsWith('إلى محبي الدورات التدريبية وعشاق التدريب العملي والمباشر عبر منصة احترافية')).toBe(true)
+    expect(t).toContain('أبشركم اليوم بمنحة خاصة لمتابعيني')
     expect(t).toContain('اختر حتى 4 دورات')
     expect(t).toContain('آخر يوم: 30 أكتوبر')
     expect(t, 'عاد «تدفع ...٪ فقط»').not.toMatch(/تدفع|55٪/)
@@ -49,7 +52,7 @@ describe('نص المنحة لكل منصة', () => {
     expect(t.startsWith('مرحبا،')).toBe(true)
     expect(t.trim().endsWith('سارة الخطيب')).toBe(true)
     expect(t, 'وسوم في بريد').not.toContain('#')
-    expect(grantEmailSubject(g)).toBe('منحة من أكاديمية وجيز — تصل إلى 45٪ من سعر الدورات')
+    expect(grantEmailSubject(g)).toBe('منحة خاصة لمتابعيني — تصل إلى 45٪ على دورات أكاديمية وجيز')
     const q = new URLSearchParams(grantShareUrl('email', g)!.slice('mailto:?'.length))
     expect(q.get('subject')).toBe(grantEmailSubject(g))
     expect(q.get('body')).toBe(t)
@@ -194,4 +197,20 @@ describe('عشرة تصاميم: صورة المؤثر في تصميمه وحد�
     expect(code('src/pages/student/Account.tsx')).toMatch(/const r = await uploadAccountAvatar\(blob\);/)
     expect(page).toMatch(/useState<string \| null>\(me\.photoUrl\)/)
   })
+
+  /* «جميع التصاميم فيها نص كثير وتقليدية… ما قل ودل… صور المدربين على شكل دوائر، ولا داعي أن نقول 24 دورة و14 مدربا —
+     أرقام ليست بفخرة… صورة الإنفلونسر وتحتها منحة خاصة لمتابعيني 45٪» (صاحب المنصة، ٣١ أكتوبر ٢٠٢٦) */
+  it('⚠️ بلا أرقام عدد في التصاميم، والمدربون دوائر، وتصميمه الخاص «منحة خاصة لمتابعيني» بملصق النسبة', () => {
+    const art = code('src/components/influencer/grant-art.ts')
+    const drawing = art.slice(art.indexOf('async function drawPersonal('), art.indexOf('export function grantDesigns('))
+    expect(drawing.length, 'لم يقرأ قسم الرسم').toBeGreaterThan(1000)
+    expect(drawing, 'عاد عدد المدربين أو الدورات إلى تصميم').not.toMatch(/trainerTotal|coursesAr\(|trainersCountAr\(|\$\{d\.courses\.length\}/)
+    const trainers = drawing.slice(drawing.indexOf('async function drawTrainers('), drawing.indexOf('\n}', drawing.indexOf('async function drawTrainers(')))
+    expect(trainers).toMatch(/circleCluster\(ctx, imgs,/)
+    expect(art).toMatch(/function circlePhoto\([\s\S]*?ctx\.arc\(cx, cy, inner, 0, Math\.PI \* 2\)\s*ctx\.clip\(\)/)
+    const personal = drawing.slice(drawing.indexOf('async function drawPersonal('), drawing.indexOf('\n}', drawing.indexOf('async function drawPersonal(')))
+    expect(personal).toMatch(/headline\(ctx, 'منحة خاصة لمتابعيني'/)
+    expect(personal).toMatch(/sticker\(ctx, [^)]*d\.percentOff/)
+  })
 })
+

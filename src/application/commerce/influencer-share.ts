@@ -5,7 +5,12 @@
    وآخرُ يومٍ لها، والكودُ الخاصّ به — والرابطُ صفحةُ منحته (`/grant/i/<كوده>`) لا دورات مدرّب.
 
    والمنحةُ بنسبتها لا بما يبقى («تصل إلى ٤٥٪» لا «تدفع ٥٥٪») — قرارُه (٢٥ أكتوبر ٢٠٢٦) كسطر صفحتها. و«٪» العربيّةُ
-   لا «%»: اللاتينيّةُ تنقلب في السطر العربيّ. والحارس: `src/tests/commerce/influencer-share.test.ts`. */
+   لا «%»: اللاتينيّةُ تنقلب في السطر العربيّ. والحارس: `src/tests/commerce/influencer-share.test.ts`.
+
+   ═══ وافتتاحُه بكلام المؤثّر لجمهوره (٣١ أكتوبر ٢٠٢٦) ═══
+   قال صاحبُ المنصّة: «تخيّل المؤثّرَ يريد أن يقول لجمهوره: إلى محبّي الدورات التدريبيّة وإلى عشّاق التدريب العمليّ
+   والتدريب المباشر عبر منصّةٍ احترافيّة، أبشّركم اليوم أنّي سأقدّم منحةً لكلّ من يستخدم هذا الرابط من متابعيني»،
+   و«منحتي لكم تصل إلى ٤٥… بل أمنحكم منحةً تصل قيمتُها ٤٥٪ على دورات وجيز بسبب انطلاقتها الأولى». فهذا أوّلُه. */
 
 import { waShare } from '../site/whatsapp'
 import type { SharePlatform } from '../trainer/share-kit'
@@ -24,10 +29,17 @@ export interface GrantShareInput {
 
 const HASH = '#أكاديمية_وجيز #منحة #تعلم'
 
-/** ما في المنحة — سطرٌ لكلّ ميزة */
-function points(g: GrantShareInput, bold: (t: string) => string): string[] {
+/** الافتتاح — كلامُه لجمهوره */
+function opener(g: GrantShareInput, bold: (t: string) => string): string[] {
   return [
-    `✅ تصل إلى ${bold(`${g.percentOff}٪`)} من سعر الدورات`,
+    'إلى محبي الدورات التدريبية وعشاق التدريب العملي والمباشر عبر منصة احترافية 👇',
+    `أبشركم اليوم بمنحة خاصة لمتابعيني تصل إلى ${bold(`${g.percentOff}٪`)} على دورات أكاديمية وجيز، بمناسبة انطلاقتها الأولى 🎉`,
+  ]
+}
+
+/** ما في المنحة — سطرٌ لكلّ ميزة */
+function points(g: GrantShareInput): string[] {
+  return [
     `📚 اختر حتى ${g.maxCourses} دورات`,
     '💻 لقاءات مباشرة على Zoom، وشهادة موثقة لكل دورة',
     ...(g.lastDayAr ? [`🗓 آخر يوم: ${g.lastDayAr}`] : []),
@@ -42,22 +54,21 @@ export function grantShareText(platform: SharePlatform, g: GrantShareInput): str
   const codeLine = `🎟 الكود الخاص بي: ${b(g.code)}`
 
   if (platform === 'x') {
-    return [`منحة من أكاديمية وجيز تصل إلى ${g.percentOff}٪ من سعر الدورات 🎁`, `🎟 بالكود ${g.code}`, 'احجز منحتك 👇', g.url].join('\n')
+    return [`أبشركم بمنحة خاصة لمتابعيني تصل إلى ${g.percentOff}٪ على دورات أكاديمية وجيز 🎁`, `🎟 بالكود ${g.code}`, 'احجز منحتك 👇', g.url].join('\n')
   }
   if (platform === 'email') {
     return [
       'مرحبا،', '',
-      'يسعدني أن أهديك منحة من أكاديمية وجيز:', '',
-      ...points(g, b), '',
+      ...opener(g, b), '',
+      ...points(g), '',
       `الكود الخاص بي: ${g.code}`, '',
       'احجز منحتك من هنا:', g.url, '',
       'أتمنى أن تفيدك،', g.nameAr,
     ].join('\n')
   }
-  const opener = wa ? ['مرحبا 👋', 'عندي لكم منحة من أكاديمية وجيز 🎁'] : ['يسعدني أن أشارككم منحة من أكاديمية وجيز 🎁']
   return [
-    ...opener, '',
-    ...points(g, b), '',
+    ...opener(g, b), '',
+    ...points(g), '',
     codeLine, '',
     ...(social ? ['🔗 الرابط في البايو', '', HASH] : ['احجز منحتك 👇', g.url]),
     ...(platform === 'linkedin' ? ['', '#أكاديمية_وجيز #تطوير_مهني'] : []),
@@ -66,7 +77,7 @@ export function grantShareText(platform: SharePlatform, g: GrantShareInput): str
 
 /** عنوانُ البريد */
 export function grantEmailSubject(g: GrantShareInput): string {
-  return `منحة من أكاديمية وجيز — تصل إلى ${g.percentOff}٪ من سعر الدورات`
+  return `منحة خاصة لمتابعيني — تصل إلى ${g.percentOff}٪ على دورات أكاديمية وجيز`
 }
 
 /** بابُ المنصّة — أو `null` لما لا بابَ له من موقع (إنستغرام وتيك توك) */
