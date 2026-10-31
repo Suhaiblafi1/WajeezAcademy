@@ -578,6 +578,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               </p>
             )}
 
+            {/* والشروطُ في لسانٍ جديد: كانت تفتح مكانَ النافذة فيضيع ما كتبه — والشراءُ الذي جاء منه */}
             {mode === "signup" && (
               <Inset as="label" htmlFor="auth-consent" className="flex cursor-pointer items-start gap-2.5">
                 <input
@@ -591,11 +592,11 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
                 <span className="text-fine leading-relaxed text-muted-foreground">
                   أوافق على{" "}
-                  <Link to="/p/terms" className="font-bold text-foreground underline underline-offset-4 hover:text-teal-light-ink">
+                  <Link to="/p/terms" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground underline underline-offset-4 hover:text-teal-light-ink">
                     شروط الاستخدام
                   </Link>{" "}
                   و
-                  <Link to="/p/privacy" className="font-bold text-foreground underline underline-offset-4 hover:text-teal-light-ink">
+                  <Link to="/p/privacy" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground underline underline-offset-4 hover:text-teal-light-ink">
                     سياسة الخصوصية
                   </Link>
                 </span>
@@ -613,9 +614,12 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               </Inset>
             )}
 
+            {/* ═══ والزرُّ لا يُطفأ بلا سبب (٣١ أكتوبر ٢٠٢٦) ═══
+                كان مطفأً ما لم يكتمل النموذج — فمن لم يعلّم الموافقةَ أو كتب حرفا واحدا من اسمه رأى زرّا باهتا لا يقول شيئا،
+                ورسائلُ `submit` لا تُبلَغ أبدا. فيُطفأ في الإرسال وحدَه، والنقرُ يقول ما ينقص. */}
             <button
               type="submit"
-              disabled={busy || !formValid}
+              disabled={busy}
               className="h-12 w-full rounded-2xl bg-gold text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {busy ? "لحظات…" : mode === "signup" ? "أنشئ حسابي وابدأ" : "ادخل إلى حسابي"}

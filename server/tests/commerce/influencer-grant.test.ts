@@ -23,7 +23,7 @@ import { InfluencerService } from '../../services/influencer.service'
 import { openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { approvedPlanBy, approvedTrainerPlan } from '../helpers/approved-trainer'
 import { PHOTO_KEY_PREFIX } from '../../services/storage.service'
-import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { GRANT_ONCE_AR, INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -215,6 +215,28 @@ describe('⑦ منحة واحدة لكل متعلم على الحملتين', ()
     await addInfluencer('ONCE')
     const out = await landing.apply(person({ influencerCode: 'ONCE' }))
     await expect(commerce.checkout(buyer, [await openCohort(100)], out.grant!.code!)).rejects.toMatchObject({ code: 'grant_once' })
+
+    /* ونموذجُ المؤثّر نفسُه لا يعطيه كودا بأسعارٍ يُردّ عنها عند الدفع — يُقال له السبب (٣١ أكتوبر ٢٠٢٦) */
+    const email = (await prisma.user.findUniqueOrThrow({ where: { id: buyer }, select: { email: true } })).email
+    const again = await landing.apply(person({ email, influencerCode: 'ONCE' }))
+    expect(again.grant, 'أعطي كود منحة ثانية لمن اشترى بالأولى').toBeNull()
+    expect(again.reasonAr).toBe(GRANT_ONCE_AR)
+  })
+})
+
+describe('⑦ج مؤثر أوقف لا يحسب له كود جديد', () => {
+  it('⚠️ عبأ بكود مؤثر والمنحة مغلقة، ثم أوقف المؤثر وفتحت — فعبأ بكود آخر: الكود لمن جاء بكوده الآن', async () => {
+    const stopped = await addInfluencer('WASFIRST')
+    const now = await addInfluencer('NOWACTIVE')
+    const p = person({ influencerCode: 'WASFIRST' })
+    await grant.update({ active: false }, ownerId)
+    const closed = await landing.apply(p)
+    expect(closed.grant, 'أعطي كود والمنحة مغلقة').toBeNull()
+    await influencers.update(stopped, { active: false }, ownerId)
+    await grant.update({ active: true }, ownerId)
+    const out = await landing.apply({ ...p, influencerCode: 'NOWACTIVE' })
+    const issued = await prisma.grantCode.findFirstOrThrow({ where: { coupon: { code: out.grant!.code! } }, select: { influencerId: true } })
+    expect(issued.influencerId, 'حسب الكود لمؤثر موقوف').toBe(now)
   })
 })
 
