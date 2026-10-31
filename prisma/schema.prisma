@@ -3824,6 +3824,12 @@ model Lead {
   grantPicks         String[]      @default([])
   /// متى اختارها آخرَ مرّة
   grantPicksAt       DateTime?
+  /// أوّلُ زيارةٍ للموقع قبل النموذج — ما حفظه متصفّحُه (`signup-source.ts`)، مُنظَّفا (٣١ أكتوبر ٢٠٢٦)
+  firstTouch         Json?
+  /// والزيارةُ التي فتح فيها صفحةَ المنحة نفسَها: متى، ومن أين أُحيل، وبأيّ وسم (`grant-registrants.ts`)
+  pageTouch          Json?
+  /// متى فتح صفحةَ المنحة — من `pageTouch.at`، عمودا ليُرتَّب ويُعدّ به
+  pageOpenedAt       DateTime?
   createdAt          DateTime      @default(now())
   user               User?         @relation("LeadUser", fields: [userId], references: [id])
   cases              AdvisorCase[]
@@ -4880,6 +4886,8 @@ model OutboxMail {
 
   @@index([status, createdAt])
   @@index([batchId])
+  /// ما وصل عنوانا بعينه — يُقرأ في ملفّ من عبّأ نموذج المنحة (`grant-registrants.service.ts`)
+  @@index([to])
 }
 
 model ShortLink {

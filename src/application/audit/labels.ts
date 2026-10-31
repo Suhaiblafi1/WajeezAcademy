@@ -184,6 +184,8 @@ const PHRASES: Record<string, string> = {
   'influencer.payout': 'تسجيل دفعة لمؤثر من عمولته',
   'advisor.case.grant_followup': 'فتح حالة متابعة لمن عبأ نموذج المنحة ولم يشتر',
   'coupon.grant_reminder': 'تذكير من أخذ كود المنحة ولم يشتر قبل انتهائها',
+  'coupon.grant_registrant_removed': 'حذف مدير شخصا من قائمة من عبأ نموذج المنحة',
+  'coupon.grant_message': 'رسالة بريد كتبها مدير لمن عبأ نموذج المنحة',
   /* طلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦) — القبولُ يفعّل حسابَه بنسبته في خطوةٍ واحدة */
   'advisor.application.approve': 'قبول طلب انضمام مستشار وتفعيل حسابه',
   'advisor.application.reject': 'الاعتذار عن طلب انضمام مستشار',

@@ -84,6 +84,33 @@ function idleGuestWhere(cutoff: Date): Prisma.LeadWhereInput {
   }
 }
 
+/** ما يُمحى من حالات العميل المحتمل بعد محو اسمه ورقمه — تُغلق المفتوحةُ ويُمحى كلُّ نصٍّ حرٍّ فيها وأجراسُها.
+    وتناديه أيضا يدُ المدير حين يحذف من عبّأ نموذج المنحة (`grant-registrants.service.ts`)، بنصٍّ يقول من حذف. */
+export async function eraseLeadCases(tx: Prisma.TransactionClient, id: string, textAr: string): Promise<string[]> {
+  const caseIds = (await tx.advisorCase.findMany({ where: { leadId: id }, select: { id: true } })).map((c) => c.id)
+  await tx.advisorCase.updateMany({ where: { leadId: id, status: { notIn: CLOSED_STATUSES } }, data: { status: 'closed' } })
+  await tx.advisorCase.updateMany({
+    where: { leadId: id }, data: { diagnosticSnapshot: Prisma.DbNull, nextAction: null, nextFollowUpAt: null },
+  })
+  if (caseIds.length > 0) {
+    const inCases = { caseId: { in: caseIds } }
+    await tx.contactEvent.updateMany({ where: inCases, data: { summary: textAr } })
+    await tx.advisorNote.updateMany({ where: inCases, data: { body: textAr } })
+    await tx.followUp.updateMany({ where: inCases, data: { note: null } })
+    await tx.advisorTask.updateMany({ where: inCases, data: { title: textAr } })
+    await tx.advisorRequest.updateMany({ where: inCases, data: { reasonAr: textAr, decisionNoteAr: null } })
+    await tx.notification.deleteMany({
+      where: {
+        OR: caseIds.flatMap((caseId) => [
+          { data: { path: ['caseId'], equals: caseId } },
+          { data: { path: ['otherCaseId'], equals: caseId } },
+        ]),
+      },
+    })
+  }
+  return caseIds
+}
+
 export async function eraseIdleGuests(prisma: PrismaClient, now = new Date()): Promise<{ erased: number }> {
   const cutoff = new Date(now.getTime() - GUEST_IDLE_DAYS * DAY_MS)
   const leads = await prisma.lead.findMany({
@@ -99,27 +126,7 @@ export async function eraseIdleGuests(prisma: PrismaClient, now = new Date()): P
       })
       if (count === 0) return false
 
-      const caseIds = (await tx.advisorCase.findMany({ where: { leadId: id }, select: { id: true } })).map((c) => c.id)
-      await tx.advisorCase.updateMany({ where: { leadId: id, status: { notIn: CLOSED_STATUSES } }, data: { status: 'closed' } })
-      await tx.advisorCase.updateMany({
-        where: { leadId: id }, data: { diagnosticSnapshot: Prisma.DbNull, nextAction: null, nextFollowUpAt: null },
-      })
-      if (caseIds.length > 0) {
-        const inCases = { caseId: { in: caseIds } }
-        await tx.contactEvent.updateMany({ where: inCases, data: { summary: ERASED_TEXT_AR } })
-        await tx.advisorNote.updateMany({ where: inCases, data: { body: ERASED_TEXT_AR } })
-        await tx.followUp.updateMany({ where: inCases, data: { note: null } })
-        await tx.advisorTask.updateMany({ where: inCases, data: { title: ERASED_TEXT_AR } })
-        await tx.advisorRequest.updateMany({ where: inCases, data: { reasonAr: ERASED_TEXT_AR, decisionNoteAr: null } })
-        await tx.notification.deleteMany({
-          where: {
-            OR: caseIds.flatMap((caseId) => [
-              { data: { path: ['caseId'], equals: caseId } },
-              { data: { path: ['otherCaseId'], equals: caseId } },
-            ]),
-          },
-        })
-      }
+      const caseIds = await eraseLeadCases(tx, id, ERASED_TEXT_AR)
       for (const caseId of caseIds) {
         await recordAudit(tx, {
           action: 'advisor.case.guest_erased', entityType: 'advisor_case', entityId: caseId,
