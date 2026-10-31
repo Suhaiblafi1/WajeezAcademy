@@ -3,13 +3,14 @@
    لصفحة دفع مستضافة عند المزود، والتسوية تصل عبر webhook موقَّت لا برجوع المتصفح. */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CircleSlash, CreditCard, LifeBuoy, Loader2, ReceiptText, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleSlash, CreditCard, LifeBuoy, Loader2, ReceiptText, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
 import { fmtSession } from "@/application/text/format-ar";
 import { toast, toastError } from '@/components/Toast';
 import { openRefundTicket, refundable, refundRequestHref } from "@/application/student/refund-request";
+import { splitOrders } from "@/application/student/billing-view";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -69,6 +70,9 @@ export default function Billing() {
   const [busy, setBusy] = useState<string | null>(null);
   /* تذاكرُه — ليُعرف أنّ له طلبَ استردادٍ مفتوحا فلا يُعرض عليه زرٌّ ثانٍ. وفشلُها لا يُسقط الفواتير */
   const [tickets, setTickets] = useState<TicketLite[]>([]);
+  /* الملغى مطويٌّ عند كلّ فتح — «للترتيب» */
+  const [showCancelled, setShowCancelled] = useState(false);
+  const { live, cancelled } = splitOrders(rows);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -124,6 +128,99 @@ export default function Billing() {
     finally { setBusy(null); }
   };
 
+  /* بطاقةُ الطلب — واحدةٌ للقائم وللملغى إذا فُتح */
+  const orderCard = (o: Order) => (
+    <Panel as="article" key={o.id}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-black">{o.items.map((i) => i.titleAr ?? i.title ?? "عنصر").join(" · ") || "طلب"}</p>
+          <p className="mt-1 text-read leading-5 text-muted-foreground">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-fine">{o.invoice?.number ?? `${o.id.slice(0, 8)}…`}</span></p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-muted-foreground">{o.currency}</span></span>
+          <span className={`rounded-full border px-3 py-1 text-fine font-bold ${o.status === "paid" ? "border-emerald-400/30 text-emerald-300" : "border-gold/40 text-gold-ink"}`}>
+            {ORDER_STATUS[o.status] ?? o.status}
+          </span>
+        </div>
+      </div>
+
+      {/* والمهلةُ تُقال (١٩ أكتوبر ٢٠٢٦): ساعةٌ لمن اشترى بنفسه، ويومان لما حجزه الفريق —
+          وبعدها يُلغى الطلبُ ويُفرَج عن المقعد. وكان يُلغى ولا يُقال متى */}
+      {isUnpaid(o.status) && o.payBy && (
+        <p className="mt-3 text-read leading-6 font-bold text-gold-ink">
+          ادفع قبل {fmtSession(o.payBy)}، وبعدها يفرج عن المقعد لغيرك.
+        </p>
+      )}
+      {isUnpaid(o.status) && provider.driver !== "manual" && (
+        <div className="mt-4">
+          <Button tone="primary" disabled={busy === o.id} onClick={() => void pay(o)}>
+            {busy === o.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
+            {PAY_LABEL[provider.driver] ?? PAY_LABEL.test}
+          </Button>
+          {provider.driver !== "test" && (
+            <p className="mt-2 flex items-center gap-1.5 text-read text-muted-foreground">
+              <ShieldCheck className="h-3 w-3 text-teal-ink" />
+              تدفع في صفحة المزود — بطاقتك لا تمر بخوادمنا، ويفتح وصولك فور تأكيده.
+            </p>
+          )}
+        </div>
+      )}
+      {isUnpaid(o.status) && (
+        <Button tone="secondary" size="sm" disabled={busy === o.id} onClick={() => void cancel(o)} className="mt-3">
+          <CircleSlash className="h-3 w-3" /> ألغ الطلب وفكّ حجز مقعدي
+        </Button>
+      )}
+      {isUnpaid(o.status) && provider.driver === "manual" && (
+        <Inset as="p" tone="warn" className="mt-4 px-4 py-2.5 text-read leading-5 font-bold text-gold-ink">
+          {PAY_LABEL.manual}
+        </Inset>
+      )}
+
+      {o.invoice && (
+        <Card className="mt-4 bg-paper/20">
+          <p className="flex items-center justify-between text-read leading-5 font-bold text-muted-foreground">
+            <span>الفاتورة — {INV_STATUS[o.invoice.status] ?? o.invoice.status}</span>
+            <span>{o.invoice.amount} {o.invoice.currency}</span>
+          </p>
+          {o.invoice.payments.length > 0 && (
+            <ul className="mt-2 space-y-1.5">
+              {o.invoice.payments.map((p) => (
+                <li key={p.id} className="flex flex-wrap items-center gap-2 text-read text-muted-foreground">
+                  <CreditCard className="h-3 w-3 text-muted-foreground/50" />
+                  دفعة {p.amount} {o.invoice!.currency} — {PAYMENT_STATUS[p.status] ?? "حالها غير معروفة"}
+                  <span className="text-muted-foreground">({p.methodNote || PROVIDER_AR[p.provider] || "دفع"})</span>
+                  {p.refunds.map((r) => (
+                    <span key={r.id} className="flex items-center gap-1 rounded-full border border-gold/30 px-2 py-0.5 text-fine text-gold-ink">
+                      <RotateCcw className="h-2.5 w-2.5" /> استرداد {r.amount} — {REFUND_STATUS[r.status] ?? "حاله غير معروف"}
+                    </span>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+
+      {/* ═══ وللمدفوع بابُ استرداد (٢٠ أكتوبر ٢٠٢٦) — تذكرةٌ برقم فاتورته (`refund-request.ts`) ═══ */}
+      {refundable(o.status) && o.invoice && (() => {
+        const open = openRefundTicket(o.invoice.number, tickets);
+        return open ? (
+          <Inset as="p" tone="warn" className="mt-3 flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-read leading-6">
+            طلب استردادك مفتوح عند الدعم.
+            <Link to="/student/support" className="font-bold text-teal-light-ink underline">افتح التذكرة</Link>
+          </Inset>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Button as={Link} tone="secondary" size="sm" icon={LifeBuoy} to={refundRequestHref(o.invoice.number)}>
+              اطلب استردادا
+            </Button>
+            <Link to="/p/refund" className="text-read text-muted-foreground underline hover:text-foreground">سياسة الاسترداد</Link>
+          </div>
+        );
+      })()}
+    </Panel>
+  );
+
   return (
     <PortalLayout title="فواتيري وطلباتي">
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
@@ -140,97 +237,18 @@ export default function Billing() {
         </Panel>
       ) : (
         <div className="space-y-4">
-          {rows.map((o) => (
-            <Panel as="article" key={o.id}>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-black">{o.items.map((i) => i.titleAr ?? i.title ?? "عنصر").join(" · ") || "طلب"}</p>
-                  <p className="mt-1 text-read leading-5 text-muted-foreground">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-fine">{o.invoice?.number ?? `${o.id.slice(0, 8)}…`}</span></p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-muted-foreground">{o.currency}</span></span>
-                  <span className={`rounded-full border px-3 py-1 text-fine font-bold ${o.status === "paid" ? "border-emerald-400/30 text-emerald-300" : "border-gold/40 text-gold-ink"}`}>
-                    {ORDER_STATUS[o.status] ?? o.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* والمهلةُ تُقال (١٩ أكتوبر ٢٠٢٦): ساعةٌ لمن اشترى بنفسه، ويومان لما حجزه الفريق —
-                  وبعدها يُلغى الطلبُ ويُفرَج عن المقعد. وكان يُلغى ولا يُقال متى */}
-              {isUnpaid(o.status) && o.payBy && (
-                <p className="mt-3 text-read leading-6 font-bold text-gold-ink">
-                  ادفع قبل {fmtSession(o.payBy)}، وبعدها يفرج عن المقعد لغيرك.
-                </p>
-              )}
-              {isUnpaid(o.status) && provider.driver !== "manual" && (
-                <div className="mt-4">
-                  <Button tone="primary" disabled={busy === o.id} onClick={() => void pay(o)}>
-                    {busy === o.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
-                    {PAY_LABEL[provider.driver] ?? PAY_LABEL.test}
-                  </Button>
-                  {provider.driver !== "test" && (
-                    <p className="mt-2 flex items-center gap-1.5 text-read text-muted-foreground">
-                      <ShieldCheck className="h-3 w-3 text-teal-ink" />
-                      تدفع في صفحة المزود — بطاقتك لا تمر بخوادمنا، ويفتح وصولك فور تأكيده.
-                    </p>
-                  )}
-                </div>
-              )}
-              {isUnpaid(o.status) && (
-                <Button tone="secondary" size="sm" disabled={busy === o.id} onClick={() => void cancel(o)} className="mt-3">
-                  <CircleSlash className="h-3 w-3" /> ألغ الطلب وفكّ حجز مقعدي
-                </Button>
-              )}
-              {isUnpaid(o.status) && provider.driver === "manual" && (
-                <Inset as="p" tone="warn" className="mt-4 px-4 py-2.5 text-read leading-5 font-bold text-gold-ink">
-                  {PAY_LABEL.manual}
-                </Inset>
-              )}
-
-              {o.invoice && (
-                <Card className="mt-4 bg-paper/20">
-                  <p className="flex items-center justify-between text-read leading-5 font-bold text-muted-foreground">
-                    <span>الفاتورة — {INV_STATUS[o.invoice.status] ?? o.invoice.status}</span>
-                    <span>{o.invoice.amount} {o.invoice.currency}</span>
-                  </p>
-                  {o.invoice.payments.length > 0 && (
-                    <ul className="mt-2 space-y-1.5">
-                      {o.invoice.payments.map((p) => (
-                        <li key={p.id} className="flex flex-wrap items-center gap-2 text-read text-muted-foreground">
-                          <CreditCard className="h-3 w-3 text-muted-foreground/50" />
-                          دفعة {p.amount} {o.invoice!.currency} — {PAYMENT_STATUS[p.status] ?? "حالها غير معروفة"}
-                          <span className="text-muted-foreground">({p.methodNote || PROVIDER_AR[p.provider] || "دفع"})</span>
-                          {p.refunds.map((r) => (
-                            <span key={r.id} className="flex items-center gap-1 rounded-full border border-gold/30 px-2 py-0.5 text-fine text-gold-ink">
-                              <RotateCcw className="h-2.5 w-2.5" /> استرداد {r.amount} — {REFUND_STATUS[r.status] ?? "حاله غير معروف"}
-                            </span>
-                          ))}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Card>
-              )}
-
-              {/* ═══ وللمدفوع بابُ استرداد (٢٠ أكتوبر ٢٠٢٦) — تذكرةٌ برقم فاتورته (`refund-request.ts`) ═══ */}
-              {refundable(o.status) && o.invoice && (() => {
-                const open = openRefundTicket(o.invoice.number, tickets);
-                return open ? (
-                  <Inset as="p" tone="warn" className="mt-3 flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-read leading-6">
-                    طلب استردادك مفتوح عند الدعم.
-                    <Link to="/student/support" className="font-bold text-teal-light-ink underline">افتح التذكرة</Link>
-                  </Inset>
-                ) : (
-                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <Button as={Link} tone="secondary" size="sm" icon={LifeBuoy} to={refundRequestHref(o.invoice.number)}>
-                      اطلب استردادا
-                    </Button>
-                    <Link to="/p/refund" className="text-read text-muted-foreground underline hover:text-foreground">سياسة الاسترداد</Link>
-                  </div>
-                );
-              })()}
-            </Panel>
-          ))}
+          {live.length === 0 && (
+            <Card className="text-read text-muted-foreground">لا طلبات قائمة الآن.</Card>
+          )}
+          {live.map(orderCard)}
+          {/* والملغى مطويٌّ بعدده (`billing-view.ts`) — يُفتح لمن أراده، ولا يُحذف */}
+          {cancelled.length > 0 && (
+            <Button type="button" tone="ghost" size="sm" aria-expanded={showCancelled} onClick={() => setShowCancelled(!showCancelled)}>
+              {showCancelled ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {showCancelled ? "إخفاء الطلبات الملغاة" : `الطلبات الملغاة (${cancelled.length})`}
+            </Button>
+          )}
+          {showCancelled && cancelled.map(orderCard)}
         </div>
       )}
 
