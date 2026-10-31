@@ -65,7 +65,7 @@ import { waHref, waShare } from "@/application/site/whatsapp";
 import { useWhatsAppNumbers } from "@/services/whatsapp";
 import { CONTACT } from "@/data/stories";
 import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
-import { firstTouch, pageTouchNow } from "@/services/first-touch";
+import { firstTouch, pageTouchNow, visitorId } from "@/services/first-touch";
 
 interface GrantCourse {
   courseId: string; titleAr: string; cohortId: string; startsAt: string | null; seatsLeft?: number | null; price: number; domainAr?: string;
@@ -166,6 +166,13 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [busy, setBusy] = useState(false);
   /* متى فتح هذه الصفحة ومن أين — يُرسَل مع النموذج فيُعرف في قائمة من عبّأ مصدرُه ووقتُ فتحه الرابط (`grant-registrants.ts`) */
   const [opened] = useState(pageTouchNow);
+  /* ويُعدّ من فتحها وإن لم يعبّئ — مرّةً مع كلّ فتح، والخادمُ يجمع المتصفّحَ الواحدَ في صفّ (`grant-visit.service.ts`) */
+  const [visitor] = useState(visitorId);
+  useEffect(() => {
+    void apiPost("/api/public/grant/visit", {
+      campaign: forInfluencer ? "influencer" : "member", visitorId: visitor, code: urlCode, source: { page: opened, first: firstTouch() },
+    }).catch(() => {});
+  }, [forInfluencer, visitor, urlCode, opened]);
   /* رقمُ مستشار المنحة من شاشة الربط (`grant_advisor`) — لا حرفٌ في الشيفرة */
   const numbers = useWhatsAppNumbers();
 
@@ -245,7 +252,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     try {
       const out = await apiPost<ApplyResult>(forInfluencer ? "/api/public/grant/influencer" : "/api/public/grant", {
         ...form, careerLevel: form.careerLevel || null, interests, ...campaignParams(window.location.search), website: hp.value,
-        source: { page: opened, first: firstTouch() },
+        source: { page: opened, first: firstTouch() }, visitorId: visitor,
         ...(forInfluencer ? { influencerCode: influencerCode.trim() } : {}),
       });
       const g = {

@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
-  SOURCE_GROUP_AR, conversionAr, messageParagraphs, registrantSource, registrantStats, type StatRow,
+  SOURCE_GROUP_AR, conversionAr, funnelAr, grantFunnel, messageParagraphs, registrantSource, registrantStats, type StatRow,
 } from '@/application/commerce/grant-registrants'
 import { plainAr } from '@/application/text/plain-ar'
 
@@ -86,6 +86,25 @@ describe('② الإحصاءات', () => {
     ])
     expect(s.mails).toMatchObject({ total: 2, sent: 1, failed: 1, queued: 0 })
     expect(s.mails.byPurpose.map((c) => c.labelAr)).toEqual(['كود المنحة', 'تذكير قبل انتهاء المنحة'])
+  })
+})
+
+describe('⑤ من فتح الرابط ← عبأ ← اشترى', () => {
+  it('⚠️ لكل مصدر: كم فتح، وكم عبأ منهم، وكم اشترى — وباليوم، ومن أول زيارة', () => {
+    const f = grantFunnel([
+      { group: 'trainer', day: '2026-10-30', filled: true, state: 'bought' },
+      { group: 'trainer', day: '2026-10-30', filled: false, state: null },
+      { group: 'trainer', day: '2026-10-31', filled: true, state: 'none' },
+      { group: 'direct', day: '2026-10-31', filled: false, state: null },
+    ], '2026-10-30T06:00:00.000Z')
+    expect(f).toMatchObject({ since: '2026-10-30T06:00:00.000Z', visitors: 4, filled: 2, bought: 1, filledPct: 50 })
+    expect(f.bySource).toEqual([
+      { key: 'trainer', labelAr: SOURCE_GROUP_AR.trainer, visitors: 3, filled: 2, bought: 1 },
+      { key: 'direct', labelAr: SOURCE_GROUP_AR.direct, visitors: 1, filled: 0, bought: 0 },
+    ])
+    expect(funnelAr(f.bySource[0])).toBe('فتح 3 · عبأ 2 (67%) · اشترى 1')
+    expect(f.byDay).toEqual([{ day: '2026-10-30', visitors: 2, filled: 1 }, { day: '2026-10-31', visitors: 2, filled: 1 }])
+    expect(grantFunnel([], null)).toMatchObject({ since: null, visitors: 0, filledPct: 0 })
   })
 })
 

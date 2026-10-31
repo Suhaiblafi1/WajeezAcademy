@@ -31,10 +31,11 @@ import { renderMail } from './mail-template'
 import { liveChannels } from './notification.service'
 import { eraseLeadCases, ERASED_NAME_AR } from './guest-erasure.service'
 import { BOUGHT, GRANT_REMINDERS, grantRegistrants } from './grant-followup.service'
+import { grantVisitFunnel } from './grant-visit.service'
 import { cleanTouch, storedSource, type FirstTouch } from '../../src/application/marketing/signup-source'
 import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG } from '../../src/application/commerce/grant'
 import {
-  GRANT_MESSAGE_MAX_TO, MAIL_STATE_AR, SOURCE_GROUP_AR, conversionAr, mailPurposeAr, messageParagraphs, registrantSource, registrantStats,
+  GRANT_MESSAGE_MAX_TO, MAIL_STATE_AR, SOURCE_GROUP_AR, conversionAr, funnelAr, mailPurposeAr, messageParagraphs, registrantSource, registrantStats,
   type MailState, type RegistrantSource, type Upcoming,
 } from '../../src/application/commerce/grant-registrants'
 import { zonedClock, zonedDay } from '../../src/application/trainer/cohort-period'
@@ -146,7 +147,9 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
       upcoming,
     }
   })
-  return { mailOn, rows }
+  /* ومن فتح الرابطَ ولم يعبّئ — «فتح ← عبّأ ← اشترى» لكلّ مصدر (`grant-visit.service.ts`) */
+  const funnel = await grantVisitFunnel(prisma, new Map(rows.map((r) => [r.id, r.state])))
+  return { mailOn, rows, funnel }
 }
 
 export type FullRegistrant = Awaited<ReturnType<typeof registrantsFull>>['rows'][number]
@@ -157,7 +160,7 @@ const STATE_AR: Record<string, string> = { bought: 'اشترى', pending: 'ين�
 const stamp = (d: Date | string | null | undefined) => (d ? `${zonedDay(d)} ${zonedClock(d)}` : '')
 
 export async function registrantsXlsx(prisma: PrismaClient, now = new Date()): Promise<Buffer> {
-  const { rows } = await registrantsFull(prisma, now)
+  const { rows, funnel } = await registrantsFull(prisma, now)
   const wb = new ExcelJS.Workbook()
   const head = (ws: ExcelJS.Worksheet) => { ws.getRow(1).font = { bold: true }; ws.views = [{ rightToLeft: true, state: 'frozen', ySplit: 1 }] }
 
@@ -240,6 +243,13 @@ export async function registrantsXlsx(prisma: PrismaClient, now = new Date()): P
   const block = (title: string, list: { labelAr: string; n: number; bought: number }[]) => {
     section(title)
     for (const c of list) stats.addRow({ k: c.labelAr, n: c.n, b: conversionAr(c) })
+  }
+  if (funnel.visitors > 0) {
+    section(`من فتح الرابط — منذ ${zonedDay(funnel.since!)}`)
+    stats.addRow({ k: 'فتح صفحة المنحة', n: funnel.visitors })
+    stats.addRow({ k: 'عبأ النموذج منهم', n: funnel.filled, b: `${funnel.filledPct}%` })
+    stats.addRow({ k: 'اشترى منهم', n: funnel.bought })
+    for (const c of funnel.bySource) stats.addRow({ k: c.labelAr, n: c.visitors, b: funnelAr(c) })
   }
   block('المصدر', s.bySource)
   block('مجال العمل', s.byField)

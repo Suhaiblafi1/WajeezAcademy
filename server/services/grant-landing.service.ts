@@ -40,6 +40,7 @@ import { publicSiteUrl } from './site-url'
 import { PUBLIC_SESSIONS_CAP, PUBLIC_SESSION_WHERE } from './public-catalog.service'
 import { normalizePhone } from '../../src/application/advisor/guest-contact'
 import { cleanTouch } from '../../src/application/marketing/signup-source'
+import { linkGrantVisit } from './grant-visit.service'
 import {
   CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, WORK_FIELDS, campaignTag, grantCourseSummary, leadProfileAr,
   type GrantCourseSummary,
@@ -63,6 +64,8 @@ export interface GrantApplyInput {
   influencerCode?: string | null
   /** ما أرسله المتصفّح عن زيارتيه: التي فتح فيها صفحةَ المنحة، وأوّلُ زيارةٍ للموقع — يُنظَّف قبل أن يُكتب (`cleanTouch`) */
   source?: { page?: unknown; first?: unknown } | null
+  /** رقمُ متصفّحه العشوائيّ — به يُربط بزيارته لصفحة المنحة (`grant-visit.service.ts`) */
+  visitorId?: string | null
 }
 
 const OPEN_CASE = { notIn: ['closed', 'enrolled', 'not_interested'] }
@@ -214,6 +217,9 @@ export class GrantLandingService {
         pageOpenedAt: pageTouch?.at && Date.parse(pageTouch.at) <= now.getTime() ? new Date(pageTouch.at) : null,
       },
     })
+    if (input.visitorId) {
+      await linkGrantVisit(this.prisma, this.slug, input.visitorId, lead.id, { page: pageTouch, first: firstTouch, influencerCode: named?.code ?? null }, now)
+    }
     if (!had) {
       await recordAudit(this.prisma, {
         action: 'coupon.grant_apply', entityType: 'lead', entityId: lead.id, ip,
