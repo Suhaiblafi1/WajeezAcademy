@@ -9,6 +9,7 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { assertNotBot } from '../honeypot'
 import { GrantLandingService } from '../../services/grant-landing.service'
+import { learnerGrant } from '../../services/grant.service'
 import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 import { requireAuth } from '../auth-plugin'
 
@@ -44,6 +45,12 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     const { campaign } = z.object({ campaign: z.enum(['member', 'influencer']) }).parse(req.query)
     return (campaign === 'influencer' ? influencers : landing).myCode(req.auth!.userId, req.ip)
   })
+
+  /* وكودُ منحته في حسابه — لوحتُه تعرضه، ولوحُ الشراء يطبّقه وحده عند أيّ شراء (`learnerGrant`) */
+  app.get('/api/learner/my-grant', {
+    preHandler: requireAuth,
+    schema: { tags: ['commerce'], summary: 'كود منحة صاحب الحساب وما بقي من دوراته — ليطبق تلقائيا عند الشراء' },
+  }, async (req) => learnerGrant(prisma, req.auth!.userId))
 
   app.get('/api/public/grant', {
     schema: { tags: ['public'], summary: 'حال منحة وجيز ودوراتها بفصلها' },

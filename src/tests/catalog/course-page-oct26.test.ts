@@ -50,21 +50,35 @@ describe('② ما يرافق الدورة سطر واحد', () => {
 describe('③ زر إلى «تعلمي»', () => {
   it('⚠️ حين لا شيء يشترى: رابط إلى /student/learning في الصندوق نفسه', () => {
     const buy = code('src/components/BuyPanel.tsx')
-    const box = buy.slice(buy.indexOf('{nothingLeft && ('), buy.indexOf('{nothingLeft && (') + 700)
+    const box = buy.slice(buy.indexOf('{nothingLeft && !unpaidLeft && ('), buy.indexOf('{nothingLeft && !unpaidLeft && (') + 700)
     expect(box).toMatch(/<Button as=\{Link\} to="\/student\/learning"/)
   })
 
-  /* ومن عاد من صفحة الدفع دون أن يدفع لا يقال له «لك بالفعل» — بل ما بقي، وبابُه (٢٧ أكتوبر ٢٠٢٦) */
-  it('⚠️ وطلب لم يكتمل دفعه: «فواتيري» لا «تعلّمي»', () => {
+  /* ومن عاد من صفحة الدفع دون أن يدفع لا يقال له «لك بالفعل» — بل ما بقي، وبابُه (٢٧ أكتوبر ٢٠٢٦)، ثمّ «اترك له الخيار أن
+     يكمل الدفع من خلال نفس المكان» (صاحب المنصة، ٢٨ أكتوبر ٢٠٢٦): يكمله أو يلغيه من اللوح نفسه، لا من «فواتيري» */
+  it('⚠️ وطلب لم يكتمل دفعه: «أكمل الدفع» و«ألغ الطلب» في اللوح نفسه — لا «تعلّمي» ولا إحالة إلى «فواتيري»', () => {
     const buy = code('src/components/BuyPanel.tsx')
     expect(buy).toMatch(/const unpaidLeft = nothingLeft && !!quote\?\.excluded\.some\(\(x\) => x\.reason === "order_pending"\);/)
-    const box = buy.slice(buy.indexOf('{nothingLeft && ('), buy.indexOf('{nothingLeft && (') + 1400)
-    expect(box).toMatch(/^\{nothingLeft && \(!unpaidLeft \? \(/)
-    expect(box).toMatch(/\) : \([\s\S]*لك طلب بهذه الدورات لم يكتمل دفعه\. أكمله من «فواتيري»\.[\s\S]*<Button as=\{Link\} to="\/student\/billing"/)
-    /* ومن صفحة المنحة خياران: يكمله أو يلغيه ويعود بمنحته — فالمحجوزُ قد يكون بلا كودها (مراجعةُ ٢٨ أكتوبر ٢٠٢٦) */
-    expect(box).toMatch(/grantPayTotal !== undefined\s*\? "لك طلب بهذه الدورات لم يكتمل دفعه\. من «فواتيري» تكمله، أو تلغيه ثم تعود فتشتري بمنحتك\."/)
+    expect(buy).toMatch(/\{nothingLeft && !unpaidLeft && \(/)
+    const box = buy.slice(buy.indexOf('{pendingOrders.map((o) => ('), buy.indexOf('{pendingOrders.map((o) => (') + 1600)
+    expect(box).toMatch(/onClick=\{\(\) => void resumePay\(o\.orderId\)\}>\s*أكمل الدفع/)
+    expect(box).toMatch(/onClick=\{\(\) => void cancelPending\(o\.orderId\)\}>\s*ألغ الطلب/)
+    expect(box, 'عادت الإحالة إلى «فواتيري»').not.toMatch(/student\/billing/)
+    expect(buy).toMatch(/apiPost<PayResult>\(`\/api\/learner\/orders\/\$\{orderId\}\/pay`/)
+    expect(buy).toMatch(/await apiPost\(`\/api\/learner\/orders\/\$\{orderId\}\/cancel`, \{\}\);\s*await refresh\(applied\);/)
     /* ولا يقوله سطرُ الكود معه مرّةً ثانية */
     expect(buy).toMatch(/\{couponError && !unpaidLeft && <p/)
+  })
+
+  /* «امنحه فرصة استعمال الكود، أوضحه في المنصة له، وفعّله تلقائيا عند أي شراء» (صاحب المنصة، ٣١ أكتوبر ٢٠٢٦) */
+  it('⚠️ وكود منحته يطبق وحده حين لا كود مكتوبا — ويقال أنه طبق، ولوحته تعرضه', () => {
+    const buy = code('src/components/BuyPanel.tsx')
+    expect(buy).toMatch(/if \(initialCoupon\) return;\s*let on = true;\s*void fetchMyGrant\(\)\.then\(\(g\) => \{/)
+    expect(buy).toMatch(/setApplied\(\(a\) => a \|\| g\.code!\);/)
+    expect(buy).toMatch(/طبقنا كود \{autoGrant\.nameAr\} تلقائيا\./)
+    const dash = code('src/pages/student/Dashboard.tsx')
+    expect(dash.match(/<MyGrantCard className="mt-6" \/>/g)?.length, 'لوحة بلا بطاقة منحته').toBe(dash.match(/<MyAdvisorCard className="mt-6" \/>/g)?.length)
+    expect(code('src/services/my-grant.ts')).toMatch(/apiGet<MyGrant>\("\/api\/learner\/my-grant"\)/)
   })
 })
 

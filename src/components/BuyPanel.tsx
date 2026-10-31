@@ -41,7 +41,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, CalendarDays, ChevronDown, CreditCard, Info, Loader2, ReceiptText, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronDown, CreditCard, Info, Loader2, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
 import Modal from "@/components/Modal";
 import { couponFieldCls } from "@/components/FormKit";
 import RegistrationClosedNotice from "@/components/RegistrationClosedNotice";
@@ -54,6 +54,7 @@ import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { useMySessions } from "@/services/my-sessions";
 import { clashWarnAr, clashesOf, freeAlternative, type TimedCohort } from "@/application/learning/cohort-overlap";
 import { GRANT_ERROR_CODES, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
+import { fetchMyGrant, type MyGrant } from "@/services/my-grant";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
 import {
   PRESENTMENT_CODES, PRESENTMENT_CURRENCIES, convertFromUsd, formatPresentment,
@@ -100,6 +101,8 @@ interface ExcludedLine {
   titleAr: string;
   reason: string;
   messageAr: string;
+  /** طلبُه الذي لم يكتمل دفعُه — حين يكون السببُ `order_pending` */
+  orderId?: string;
 }
 
 interface Quote {
@@ -127,6 +130,9 @@ interface Quote {
 
 interface CheckoutResult { orderId: string }
 interface PayResult { redirectUrl?: string }
+
+/** «دورة واحدة» و«دورتان» و«3 دورات» — ما بقي على كود منحته */
+const coursesLeftAr = (n: number) => (n === 1 ? "دورة واحدة" : n === 2 ? "دورتان" : `${n} دورات`);
 
 /* الكسرُ خانتان أو لا شيء — «402.5 USD» لا يُقرأ مبلغا. ونظيرتُها في
    `cohort-prices.ts` لنفس السبب. */
@@ -188,6 +194,23 @@ export default function BuyPanel({
   const [chosen, setChosen] = useState<Record<string, string>>({});
   const [coupon, setCoupon] = useState(initialCoupon);
   const [applied, setApplied] = useState(initialCoupon);
+  /* ═══ وكودُ منحته يُطبَّق وحده عند أيّ شراء (٣١ أكتوبر ٢٠٢٦) ═══
+     قال صاحبُ المنصّة: «فعّله تلقائيّا عند أيّ شراءٍ له لأربع دوراتٍ بالحدّ الأعلى — لأنّه الآن إذا… نقر على اشترِ
+     الدورة من الأسفل… فالنظامُ يأخذ السعرَ الجديد». فمن فتح اللوحَ بلا كودٍ مكتوب يُطبَّق عليه كودُ منحته إن كان له
+     (`learnerGrant` في الخادم). والخادمُ يحكم كعادته: إن بقي من حدّه أقلُّ من السلّة أو كانت الباقةُ أرخص قيل السببُ
+     تحت خانة الكود وسُعّر بلا منحة — ومن محا الكودَ لا يُعاد عليه. */
+  const [autoGrant, setAutoGrant] = useState<MyGrant | null>(null);
+  useEffect(() => {
+    if (initialCoupon) return;
+    let on = true;
+    void fetchMyGrant().then((g) => {
+      if (!on || !g.code) return;
+      setAutoGrant(g);
+      setCoupon((c) => c || g.code!);
+      setApplied((a) => a || g.code!);
+    });
+    return () => { on = false; };
+  }, [initialCoupon]);
   const [currency, setCurrency] = useState<PresentmentCurrency>("USD");
   /* ــ مبدّلُ العملة يُطوى حتّى يُطلَب (البند ٦٠) ــ
 
@@ -302,6 +325,20 @@ export default function BuyPanel({
   /* وما بقي منه طلبٌ لم يكتمل دفعُه ليس «لك بالفعل»: من عاد من صفحة الدفع دون أن يدفع وجد «كلّ ما في هذا الطلب لك» وزرَّ
      «تعلّمي»، وتحت كلّ دورةٍ «أكمل دفعه من الفواتير» (مراجعةُ رحلة المنحة، ٢٧ أكتوبر ٢٠٢٦). فيُقال ما بقي وبابُه */
   const unpaidLeft = nothingLeft && !!quote?.excluded.some((x) => x.reason === "order_pending");
+  /* ═══ وما لم يكتمل دفعُه يُكمَل أو يُلغى هنا (٢٨ أكتوبر ٢٠٢٦) ═══
+     قال صاحبُ المنصّة: «لازم يروح للمنصّة ليكمل الدفع؟ إذا لم يدفع اترك له الخيار أن يكمل الدفع من خلال نفس المكان
+     لشراء دورات جديدة». فكلُّ طلبٍ معلَّقٍ في السلّة له زرّان في اللوح نفسِه: «أكمل الدفع» يفتح صفحةَ دفعه بسعره،
+     و«ألغ الطلب» يفكّ حجزَه فتُشترى دوراتُه من جديد هنا (وبالمنحة إن كتب كودَها). والفرقُ يُقال في سطره. */
+  const pendingOrders = useMemo(() => {
+    const byOrder = new Map<string, string[]>();
+    for (const x of quote?.excluded ?? []) {
+      if (x.reason !== "order_pending" || !x.orderId) continue;
+      const name = lines.find((l) => l.courseId === x.courseId)?.name ?? x.titleAr;
+      byOrder.set(x.orderId, [...(byOrder.get(x.orderId) ?? []), name]);
+    }
+    return [...byOrder].map(([orderId, names]) => ({ orderId, names }));
+  }, [quote, lines]);
+  const [pendingBusy, setPendingBusy] = useState<string | null>(null);
 
   const usd = quote?.currency === "USD";
   const shownTotal = quote
@@ -346,6 +383,40 @@ export default function BuyPanel({
       }
       setError(e instanceof ApiError ? e.message : "تعذّر إتمام الشراء — أعد المحاولة");
       setPaying(false);
+    }
+  };
+
+  /** «أكمل الدفع» — صفحةُ دفع طلبه القديم بسعره. ومفتاحُ المحاولة جديدٌ كلَّ نقرة: دفعةٌ معلَّقةٌ قبلها لا تعيده إلى
+      لا شيء (كما في «فواتيري»)، والنقرةُ المزدوجةُ يمنعها `pendingBusy` */
+  const resumePay = async (orderId: string) => {
+    if (pendingBusy) return;
+    setPendingBusy(orderId);
+    setError(null);
+    try {
+      const r = await apiPost<PayResult>(`/api/learner/orders/${orderId}/pay`, {
+        idempotencyKey: `resume-${orderId}-${Date.now()}`,
+        ...(usd ? { presentment: currency } : {}),
+      });
+      if (r.redirectUrl) { window.location.assign(r.redirectUrl); return; }
+      window.location.assign(`/student/learning?paid=${orderId}`);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "تعذر فتح صفحة الدفع — أعد المحاولة");
+      setPendingBusy(null);
+    }
+  };
+
+  /** «ألغ الطلب» — يفكّ حجزَه واستعمالَ كوده، ثمّ يُسعَّر اللوحُ من جديد فتصير دوراتُه تُشترى هنا */
+  const cancelPending = async (orderId: string) => {
+    if (pendingBusy) return;
+    setPendingBusy(orderId);
+    setError(null);
+    try {
+      await apiPost(`/api/learner/orders/${orderId}/cancel`, {});
+      await refresh(applied);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "تعذر إلغاء الطلب — أعد المحاولة");
+    } finally {
+      setPendingBusy(null);
     }
   };
 
@@ -567,6 +638,11 @@ export default function BuyPanel({
             </div>
             {/* وحين بقي طلبٌ لم يكتمل دفعُه يقوله صندوقُه وحدَه — لا سطرُ الكود معه بالمعنى نفسِه مرّتين */}
             {couponError && !unpaidLeft && <p className="mt-1.5 text-read leading-6 text-gold-ink">{couponError}</p>}
+            {autoGrant && applied === autoGrant.code && !couponError && autoGrant.left !== undefined && (
+              <p className="mt-1.5 text-read leading-6 text-teal-light-ink">
+                طبقنا كود {autoGrant.nameAr} تلقائيا. بقي لك {coursesLeftAr(autoGrant.left)} من {autoGrant.max}.
+              </p>
+            )}
             {/* ومن جاء من صفحة المنحة بلا كودٍ مكتوب (عاد بعد أن أخذه، فأُرسل إلى بريده ولم يُعرض) — يُقال له ما يصير
                 إليه المبلغ بكوده، لا يُترك أمام سعرٍ كاملٍ يظنّه سعرَ المنحة */}
             {grantPayTotal !== undefined && quote && quote.grantPct === null && !couponError && !nothingLeft && (
@@ -591,7 +667,7 @@ export default function BuyPanel({
                 من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}
             {/* ═══ وزرٌّ إلى «تعلّمي» لا اسمُها وحدَه (٢٦ أكتوبر ٢٠٢٦) ═══
                 «لماذا لا يوجد هنا زرّ يأخذه إلى تعلّمي مباشرة؟ بدلا من أن يسأل أين تعلّمي وما هي» (صاحب المنصّة). */}
-            {nothingLeft && (!unpaidLeft ? (
+            {nothingLeft && !unpaidLeft && (
               <Card tone="accent" className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <p className="min-w-0 flex-1 text-read leading-6 text-teal-light-ink">
                   كلّ ما في هذا الطلب لك بالفعل — لا شيء يدفع ثمنه مرّة أخرى.
@@ -600,18 +676,24 @@ export default function BuyPanel({
                   افتح «تعلّمي»
                 </Button>
               </Card>
-            ) : (
-              <Card tone="accent" className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                {/* ومن صفحة المنحة خياران لا واحد: الطلبُ المحجوزُ قد يكون بلا كود منحته (بدأه قبل أن يأخذه) فيُدفع كاملا —
-                    فيُقال له أنّه يكمله أو يلغيه ثمّ يعود فيشتري بمنحته، والفرقُ بينهما يراه في «فواتيري» (مراجعةُ ٢٨ أكتوبر ٢٠٢٦) */}
-                <p className="min-w-0 flex-1 text-read leading-6 text-teal-light-ink">
-                  {grantPayTotal !== undefined
-                    ? "لك طلب بهذه الدورات لم يكتمل دفعه. من «فواتيري» تكمله، أو تلغيه ثم تعود فتشتري بمنحتك."
-                    : "لك طلب بهذه الدورات لم يكتمل دفعه. أكمله من «فواتيري»."}
+            )}
+            {/* وطلبٌ لم يكتمل دفعُه: يكمله هنا أو يلغيه هنا — ولو كانت في السلّة دوراتٌ جديدةٌ تُشترى معه. ومن صفحة المنحة
+                يُقال أنّ الإلغاءَ يعيد دوراتِه بمنحته: المحجوزُ قد يكون بلا كودها (بدأه قبل أن يأخذه) */}
+            {pendingOrders.map((o) => (
+              <Card key={o.orderId} tone="accent" className="mt-4 space-y-3">
+                <p className="text-read leading-6 text-teal-light-ink">
+                  لك طلب لم يكتمل دفعه: {o.names.map((n) => `«${n}»`).join("، ")}.
+                  {grantPayTotal !== undefined ? " أكمل دفعه الآن بسعره، أو ألغه وتشتريها بمنحتك هنا." : " أكمل دفعه الآن، أو ألغه وتشتريها من جديد هنا."}
                 </p>
-                <Button as={Link} to="/student/billing" tone="confirm" size="sm" icon={ReceiptText} onClick={onClose}>
-                  افتح «فواتيري»
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button tone="confirm" size="sm" icon={CreditCard} loading={pendingBusy === o.orderId}
+                    disabled={pendingBusy !== null} onClick={() => void resumePay(o.orderId)}>
+                    أكمل الدفع
+                  </Button>
+                  <Button tone="secondary" size="sm" disabled={pendingBusy !== null} onClick={() => void cancelPending(o.orderId)}>
+                    ألغ الطلب
+                  </Button>
+                </div>
               </Card>
             ))}
 

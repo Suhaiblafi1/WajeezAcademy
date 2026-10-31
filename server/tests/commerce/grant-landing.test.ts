@@ -294,14 +294,22 @@ describe('⑧ب وكود منحته لصاحب الحساب ببريد النم�
     expect(await new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG).myCode(owner), 'أخذ كود حملة أخرى').toEqual({ code: null })
   })
 
-  it('⚠️ وكود استعمل في شراء مدفوع لا يعاد — ولو أهداه فاشترى به صديقه', async () => {
+  /* والحدُّ على الكود في كلّ مشترياته (صاحب المنصة، ٢٨ أكتوبر ٢٠٢٦): يعاد ما بقيت له دورات، ولا يعاد إذا بلغ حده */
+  it('⚠️ وكود اشتري به يعاد ما بقيت له دورات — ولا يعاد إذا بلغ حده، ولو أهداه فاشترى به صديقه', async () => {
     const p = person()
     const out = await landing.apply(p)
     const friend = (await new AuthService(prisma).register(`gl-gift-${STAMP}@test.local`, 'Friend#12345', 'صديق')).userId
     const commerce = new CommerceService(prisma)
-    const bought = await commerce.checkout(friend, [(await cohort(nextCourse())).id], out.grant!.code!)
-    await commerce.payOrder(bought.orderId, friend, `gl-gift-${bought.orderId}`)
+    const buy = async (n: number) => {
+      const ids: string[] = []
+      for (let i = 0; i < n; i++) ids.push((await cohort(nextCourse())).id)
+      const o = await commerce.checkout(friend, ids, out.grant!.code!)
+      await commerce.payOrder(o.orderId, friend, `gl-gift-${o.orderId}`)
+    }
+    await buy(1)
     const owner = (await new AuthService(prisma).register(p.email, 'Owner#12345', p.fullName)).userId
+    expect((await landing.myCode(owner)).code, 'لم يعد كود بقيت له دورات').toBe(out.grant!.code)
+    await buy((await grants.settings()).maxCourses - 1)
     expect(await landing.myCode(owner)).toEqual({ code: null })
   })
 

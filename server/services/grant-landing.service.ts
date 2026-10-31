@@ -242,7 +242,8 @@ export class GrantLandingService {
      يفتح بلا منحةٍ وبسعرٍ غير الذي رآه. وقرارُ صاحب المنصّة: «يجب أن يصلح ويتغيّر من جهتك»، وخُيّر فاختار **المطابقة
      بالبريد**: حسابٌ بريدُه بريدُ نموذجٍ في هذه الحملة يأخذ كودَه، ولو لم يوثّق بريدَه بعدُ (الدفعُ لا ينتظر التوثيق).
      وعُرض عليه أثرُها: من سبق صاحبَ بريدٍ إلى حسابٍ ببريده أخذ منحتَه، ويستعيد صاحبُ البريد حسابَه ببريده. فيُكتب الأثر.
-     ولا كودَ استُعمل في شراءٍ مدفوع. */
+     ولا كودَ بلغ حدَّ دوراته — ودونه يُعطى ولو اشترى به قبلُ: الحدُّ على الكود في كلّ مشترياته (٢٨ أكتوبر ٢٠٢٦،
+     `GrantService.coursesLeft`). */
   async myCode(userId: string, ip?: string): Promise<{ code: string | null; percentOff?: number | null }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
     if (!user?.email) return { code: null }
@@ -251,11 +252,20 @@ export class GrantLandingService {
       orderBy: { createdAt: 'asc' },
       select: {
         id: true,
-        grantCode: { select: { coupon: { select: { code: true, percentOff: true, orders: { where: { status: { in: BOUGHT } }, select: { id: true } } } } } },
+        grantCode: {
+          select: {
+            coupon: {
+              select: {
+                id: true, code: true, percentOff: true, usedCount: true, maxUses: true,
+                grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } } } },
+              },
+            },
+          },
+        },
       },
     })
     const coupon = lead?.grantCode?.coupon
-    if (!lead || !coupon || coupon.orders.length > 0) return { code: null }
+    if (!lead || !coupon || (await this.grants.coursesLeft(coupon)) <= 0) return { code: null }
     await recordAudit(this.prisma, {
       action: 'coupon.grant_claim', entityType: 'lead', entityId: lead.id, actorId: userId, ip,
       meta: { campaign: this.slug },
