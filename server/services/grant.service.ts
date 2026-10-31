@@ -16,14 +16,15 @@
       يستعمل الكودَ مرّةً أخرى إن اشترى دورةً أو له طلبٌ سابق؟ قلنا الحدُّ الأعلى ٥ دورات على هذا الكود نفسِه».
       فالحدُّ عددُ الدورات على الكود في كلّ مشترياته (`coursesLeft`)، لا مرّةٌ واحدة — ومن أعطاه غيرَه استعمل ذاك
       ما بقي منه. والاستعمالُ يُحجز مع الطلب ويُفرَج عنه إن هُجر (`coupon-ledger.ts`).
-      **وطلبُه الذي لم يُدفع بالكود نفسِه يُستبدَل لا يمنع** — من عاد يشتري بكوده أُلغي طلبُه المعلَّق به قبل الجديد
-      (`CommerceService.checkout`): كان يُردّ بـ«أكمله من الفواتير»، فعلق من فتح صفحةَ دفعٍ لم يكملها.
+      **وطلبُه الذي لم يُدفع بالكود لا يمنع** — كان يُردّ بـ«أكمله من الفواتير»، فعلق من فتح صفحةَ دفعٍ لم يكملها.
+      وصار يشتري بكوده ما بقي من حدّه، وطلبُه المعلَّقُ يُعدّ منه حتى يُدفع أو يُلغى — يكمله أو يلغيه من لوح الشراء
+      نفسِه («اترك له الخيار أن يكمل الدفع من خلال نفس المكان»، ٢٨ أكتوبر ٢٠٢٦؛ `BuyPanel.tsx`).
    ٤) **ومنحةٌ واحدةٌ لكلّ متعلّم** — من جمع أكوادَ غيره لا يشتري بكودٍ ثانٍ؛ وإلّا صار «محدودُ العدد»
       بابا لمن جمع أكثر. وكودُه نفسُه يعود إليه حتى حدّه.
    ٥) **والحملةُ تُقرأ عند الاستعمال** — إيقافُها يوقف كلَّ كود، وتمديدُ نهايتها يمدّه.
    ٥ب) **وعلى عددٍ من الدورات بحدٍّ أقصى للكود كلِّه** — «يحقّ لك فقط ٤ دورات»، ثمّ «٥ دورات على هذا الكود نفسِه».
-      والحدُّ بيد صاحب المنصّة كالنسبة. والمعدودُ دوراتُ طلباته المحجوزة والمدفوعة بثمنٍ (الهديّةُ لا تُعدّ)، إلّا
-      طلبَ صاحب السلّة المعلَّقَ به (يُستبدَل). وشراءان متزامنان في نافذتين قد يتجاوزانه بدورة — لا قفلَ عليه.
+      والحدُّ بيد صاحب المنصّة كالنسبة. والمعدودُ دوراتُ طلباته المحجوزة والمدفوعة بثمنٍ (الهديّةُ لا تُعدّ). وشراءان
+      متزامنان في نافذتين قد يتجاوزانه بدورة — لا قفلَ عليه.
    ٦) **وعند الشراء المباشر وحدَه** — بابا الموافقة الإداريّة يردّانه، كما يردّان كودَ المدرّب:
       فيهما لا يُسأل أهو أوّلُ منحةٍ لصاحبه ولا أيُّ السعرين أقلّ.
 
@@ -196,7 +197,7 @@ export class GrantService {
     const campaign = coupon.grantCode?.campaign
     if (!campaign) return
     if (!isOpen(campaign, now)) throw new AuthError('grant_closed', GRANT_CLOSED_AR, 409)
-    if ((await this.coursesLeft(coupon, userId)) <= 0) throw new AuthError('grant_used', grantUsedUpAr(campaign.maxCourses), 409)
+    if ((await this.coursesLeft(coupon)) <= 0) throw new AuthError('grant_used', grantUsedUpAr(campaign.maxCourses), 409)
     /* على الحملتين معا — من اشترى بمنحةٍ لا يأخذ فوقها كودَ منحةٍ آخر، وكودُه نفسُه يعود إليه حتى حدّه */
     const once = await this.prisma.order.findFirst({
       where: { userId, status: { in: GRANT_HOLDS }, couponId: { not: coupon.id }, coupon: { grantCode: { isNot: null } } },
@@ -205,14 +206,14 @@ export class GrantService {
     if (once) throw new AuthError('grant_once', GRANT_ONCE_AR, 409)
   }
 
-  /** كم دورةً بقيت على هذا الكود — حدُّ حملته ناقصا دوراتِ طلباته المحجوزة والمدفوعة بثمن. وطلبُ هذا المتعلّم
-      المعلَّقُ بالكود لا يُعدّ: يُستبدَل بالجديد (`CommerceService.checkout`) */
-  async coursesLeft(coupon: GrantCoupon, userId: string): Promise<number> {
+  /** كم دورةً بقيت على هذا الكود — حدُّ حملته ناقصا دوراتِ طلباته المحجوزة والمدفوعة بثمن. والمعلَّقُ يُعدّ حتى
+      يُدفع أو يُلغى (من لوح الشراء نفسِه) — فلا يُشترى بالكود فوق حدّه بطلبين */
+  async coursesLeft(coupon: GrantCoupon): Promise<number> {
     const max = coupon.grantCode?.campaign.maxCourses ?? 0
     const used = await this.prisma.orderItem.count({
       where: {
         unitPrice: { gt: 0 },
-        order: { couponId: coupon.id, status: { in: GRANT_HOLDS }, NOT: { userId, status: 'pending_payment' } },
+        order: { couponId: coupon.id, status: { in: GRANT_HOLDS } },
       },
     })
     return max - used
@@ -264,6 +265,58 @@ export class GrantService {
     }))
     return out
   }
+}
+
+/* ═══ كودُ منحته في حسابه — يُعرض في لوحته ويُطبَّق وحدَه عند أيّ شراء (٣١ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «امنحه فرصةَ استعمال الكود، أوضحه في المنصّة له، وفعّله تلقائيّا عند أيّ شراءٍ له لأربع دوراتٍ
+   بالحدّ الأعلى — لأنّه الآن إذا أكمل الدفعَ من المنصّة ونقر على "اشترِ الدورة" من الأسفل… فالنظامُ يأخذ السعرَ الجديد».
+   فكان كودُه لا يُعرف إلّا في صفحة المنحة، ومن اشترى من صفحة دورةٍ دفع سعرَها كاملا.
+
+   وكودُه أحدُ اثنين بالترتيب: كودُ منحةٍ اشترى به قبلُ (منحةٌ واحدةٌ لكلّ متعلّم — فهو كودُه وحدَه)، أو كودُ نموذجٍ
+   في إحدى الحملتين ببريد حسابه (كـ`myCode`، ويُكتب أثرُ أخذه مرّةً واحدة). ولا كودَ إن أُغلقت حملتُه أو بلغ حدَّ دوراته. */
+export interface LearnerGrant {
+  code: string | null
+  percentOff?: number | null
+  nameAr?: string
+  left?: number
+  max?: number
+}
+
+const LEARNER_COUPON = {
+  id: true, code: true, percentOff: true, usedCount: true, maxUses: true,
+  grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true, nameAr: true } } } },
+} as const
+
+export async function learnerGrant(prisma: PrismaClient, userId: string, now = new Date()): Promise<LearnerGrant> {
+  const used = await prisma.order.findFirst({
+    where: { userId, status: { in: GRANT_HOLDS }, coupon: { grantCode: { isNot: null } } },
+    orderBy: { createdAt: 'desc' },
+    select: { coupon: { select: LEARNER_COUPON } },
+  })
+  let coupon = used?.coupon ?? null
+  if (!coupon) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+    const lead = user?.email
+      ? await prisma.lead.findFirst({
+        where: { erasedAt: null, email: user.email.toLowerCase(), grantCode: { isNot: null } },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, grantCode: { select: { coupon: { select: LEARNER_COUPON } } } },
+      })
+      : null
+    coupon = lead?.grantCode?.coupon ?? null
+    if (lead && coupon) {
+      const claimed = await prisma.auditEvent.count({ where: { action: 'coupon.grant_claim', entityId: lead.id, actorId: userId } })
+      if (claimed === 0) {
+        await recordAudit(prisma, { action: 'coupon.grant_claim', entityType: 'lead', entityId: lead.id, actorId: userId, meta: { via: 'account' } })
+      }
+    }
+  }
+  const campaign = coupon?.grantCode?.campaign
+  if (!coupon || !campaign || !isOpen(campaign, now)) return { code: null }
+  const left = await new GrantService(prisma).coursesLeft(coupon)
+  if (left <= 0) return { code: null }
+  return { code: coupon.code, percentOff: coupon.percentOff, nameAr: campaign.nameAr, left, max: campaign.maxCourses }
 }
 
 function isUniqueViolation(e: unknown): boolean {

@@ -265,7 +265,7 @@ export class GrantLandingService {
       },
     })
     const coupon = lead?.grantCode?.coupon
-    if (!lead || !coupon || (await this.grants.coursesLeft(coupon, userId)) <= 0) return { code: null }
+    if (!lead || !coupon || (await this.grants.coursesLeft(coupon)) <= 0) return { code: null }
     await recordAudit(this.prisma, {
       action: 'coupon.grant_claim', entityType: 'lead', entityId: lead.id, actorId: userId, ip,
       meta: { campaign: this.slug },

@@ -368,7 +368,6 @@ export class CommerceService {
        يردّ من لم يُخفَ عنه — من فتح تبويبَه قبل الإغلاق، ومن ينادي المسارَ
        بلا شاشةٍ أصلا. */
     assertSeasonOpen(await readSeasonGate(this.prisma))
-    await this.supersedeGrantOrders(userId, couponCode)
     const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds)
     /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
     const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
@@ -1221,24 +1220,6 @@ export class CommerceService {
      فلصاحب الطلب أن يُلغيه ما لم يُدفع: الطلبُ يُلغى، وفاتورتُه تُبطَل،
      وحجوزُه تُفكّ فتعود المقاعدُ إلى العدّ. والمدفوعُ لا يُلغى من هنا أبدا —
      ذاك استردادٌ له مسلكُه وصلاحيتُه المالية. */
-  /* ═══ طلبُه المعلَّقُ بكود المنحة نفسِه يُستبدَل لا يمنع (٢٨ أكتوبر ٢٠٢٦) ═══
-
-     من فتح صفحةَ دفعٍ ولم يكملها بقي طلبُه «لم يُدفع» ساعةً، وكودُ منحته محجوزٌ له — فعاد يشتري فرُدّ بـ«أكمله من
-     الفواتير». وقال صاحبُ المنصّة: «لماذا لا يقبل أن يستعمل الكودَ مرّةً أخرى… اصلح وفكّر بماذا يمكن أن يكون خطأ».
-     فالسلّةُ الجديدةُ هي ما يريد: يُلغى طلبُه المعلَّقُ بالكود نفسِه — فتُفرَج مقاعدُه واستعمالُه — قبل الجديد.
-     وما وصلتنا دفعتُه لا يُلغى (`cancelOrder` يردّه)، وإن دُفعت صفحتُه القديمةُ بعدُ سُوّي لأنّ المالَ وصل. */
-  private async supersedeGrantOrders(userId: string, couponCode?: string) {
-    if (!couponCode) return
-    const stale = await this.prisma.order.findMany({
-      where: {
-        userId, status: 'pending_payment',
-        coupon: { code: couponCode.trim().toUpperCase(), grantCode: { isNot: null } },
-      },
-      select: { id: true },
-    })
-    for (const o of stale) await this.cancelOrder(o.id, userId)
-  }
-
   async cancelOrder(orderId: string, userId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },

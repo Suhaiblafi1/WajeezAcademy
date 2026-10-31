@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import MyAdvisorCard from "@/components/MyAdvisorCard";
+import MyGrantCard from "@/components/MyGrantCard";
 import { buildJourney, defaultTrackId, type JourneyPlan, type JourneyTrack } from "@/application/student/journey";
 import { usePublishedContent } from "@/services/public-content";
 import { useRealSession } from "@/services/session";
@@ -403,6 +404,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
       {track && track.counts.total > 0 && <JourneyGlance track={track} steps={steps} className="mt-6" />}
 
       {/* ④ مستشارُه المسنَد — اسمُه وزرُّ مراسلته (`MyAdvisorCard`) */}
+      <MyGrantCard className="mt-6" />
       <MyAdvisorCard className="mt-6" />
 
       {/* مؤشر الزخم (ط-٥) — ما فعله فعلا، في ذيل يومه لا في رأسه */}
@@ -463,6 +465,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             تابع في رحلتي
           </Link>
         </Panel>
+        <MyGrantCard className="mt-6" />
         <MyAdvisorCard className="mt-6" />
       </PortalLayout>
     );
@@ -483,6 +486,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             افتح فواتيري
           </Link>
         </Panel>
+        <MyGrantCard className="mt-6" />
         <MyAdvisorCard className="mt-6" />
       </PortalLayout>
     );
@@ -503,6 +507,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             اختر شعبتك الأولى
           </Link>
         </Panel>
+        <MyGrantCard className="mt-6" />
         <MyAdvisorCard className="mt-6" />
       </PortalLayout>
     );
@@ -525,6 +530,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
           </Link>
         </div>
       </Panel>
+      <MyGrantCard className="mt-6" />
       <MyAdvisorCard className="mt-6" />
     </PortalLayout>
   );
