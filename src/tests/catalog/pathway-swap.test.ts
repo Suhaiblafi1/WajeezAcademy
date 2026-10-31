@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { chosenCohorts, stuckInClash, swapCandidates, type SwapCohortOption } from '@/application/catalog/pathway-swap'
+import { chosenCohorts, restoredSwaps, stuckInClash, swapCandidates, type SwapCohortOption } from '@/application/catalog/pathway-swap'
 
 const WINTER = '2026-nov_jan'
 /** شعبةٌ بلقاءاتٍ أسبوعيّة — يومُ البدء وساعةُ اللقاء بتوقيت عمّان (+3) */
@@ -102,5 +102,28 @@ describe('صفحةُ المسار', () => {
 
   it('والبديلةُ على شعبتها التي لا تتعارض', () => {
     expect(src).toMatch(/setPickedCohorts\(\(prev\) => \(\{ \.\.\.prev, \[newId\]: cohortId \}\)\)/)
+  })
+})
+
+/* ═══ ومن خرج قبل الدفع وعاد يجد ما استبدله (٣١ أكتوبر ٢٠٢٦) ═══ */
+describe('العائدُ إلى المسار', () => {
+  it('⚠️ يجد دوراته بعد الاستبدال، والإضافةُ الواحدةُ آخرُها', () => {
+    expect(restoredSwaps(['A', 'X', 'C', 'D'], 4)).toEqual({ base: ['A', 'X', 'C', 'D'], extra: null })
+    expect(restoredSwaps(['A', 'X', 'C', 'D', 'E'], 4)).toEqual({ base: ['A', 'X', 'C', 'D'], extra: 'E' })
+  })
+
+  it('وما لا يطابق عددَ المسار لا يُستعاد — ولا المكرَّر، ولا مسارٌ لم يُعرف بعد', () => {
+    expect(restoredSwaps(['A', 'B'], 4)).toBeNull()
+    expect(restoredSwaps(['A', 'B', 'C', 'D', 'E', 'F'], 4)).toBeNull()
+    expect(restoredSwaps(['A', 'A', 'C', 'D'], 4)).toBeNull()
+    expect(restoredSwaps(['A'], 0)).toBeNull()
+  })
+
+  const page = readFileSync(new URL('../../pages/Pathway.tsx', import.meta.url), 'utf8')
+  it('⚠️ والصفحةُ تستعيدها من الشراء المحفوظ، والخطّةُ تُرفع بما في اللوح', () => {
+    expect(page).toMatch(/restoredSwaps\(resumed\.intent\.courseIds, readyPathwayCourseIds\(pathway\.id\)\.length\)/)
+    expect(page).toMatch(/edits\?\.courseIds \?\? custom\?\.chosenIds \?\? restored\?\.base \?\?/)
+    expect(page).toMatch(/extraPicked === undefined \? restored\?\.extra \?\? null : extraPicked/)
+    expect(page).toMatch(/courseIds: intent\.courseIds \?\? courseIds,/)
   })
 })
