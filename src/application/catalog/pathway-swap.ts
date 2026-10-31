@@ -119,3 +119,16 @@ export function swapCandidates(input: {
     .map((x) => x.c)
     .slice(0, limit)
 }
+
+/* ═══ ومن خرج قبل الدفع وعاد يجد ما استبدله (٣١ أكتوبر ٢٠٢٦) ═══
+   الشراءُ المحفوظُ (`pending-checkout.ts`) يحمل الدوراتِ كما اختارها، والصفحةُ كانت تعود بدورات المسار الأولى:
+   فيرى غيرَ ما يدفع له. فتُقرأ القائمةُ المحفوظة إلى قسميها — دوراتُ المسار بعد الاستبدال، والإضافةُ الواحدةُ
+   فوقها (`extraId`) وهي آخرُها. وما لا يطابق العدد (حُذف من المسار شيءٌ بعد الحفظ مثلا) لا يُستعاد. */
+
+/** القائمةُ المحفوظةُ إلى دورات المسار والإضافة — أو `null` إن لم تطابق عددَ المسار */
+export function restoredSwaps(saved: readonly string[], pathwaySize: number): { base: string[]; extra: string | null } | null {
+  if (pathwaySize <= 0 || new Set(saved).size !== saved.length) return null
+  if (saved.length === pathwaySize) return { base: [...saved], extra: null }
+  if (saved.length === pathwaySize + 1) return { base: saved.slice(0, pathwaySize), extra: saved[pathwaySize] }
+  return null
+}
