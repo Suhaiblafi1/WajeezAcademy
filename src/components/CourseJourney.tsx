@@ -1,6 +1,7 @@
 import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker, { COHORT_RUNNING_AR } from "@/components/CohortPicker";
 import type { TimedCohort } from "@/application/learning/cohort-overlap";
+import { chosenCohorts, stuckInClash } from "@/application/catalog/pathway-swap";
 import CourseInterestForm from "@/components/CourseInterestForm";
 import { useListedCourses } from "@/services/listed-courses";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
@@ -36,6 +37,10 @@ export interface CourseJourneyEdit {
       لا تُحسب هنا: سلّمُ خصم المسار الجاهز غير سلّم البناء الحرّ، فرقمٌ
       مكتوبٌ داخل المكوّن يصدق في صفحةٍ ويكذب في أخرى. */
   addReason?: string;
+  /** سطرُ الرأس حين يكتبه النداء — المسارُ الجاهزُ يستبدل لغير سبب الخطّة المركّبة */
+  introAr?: string;
+  /** إعادةُ الدورات كما كانت — تظهر حين يمرّرها النداء (بعد استبدالٍ في المسار الجاهز) */
+  onReset?: () => void;
   onSwapToggle: (id: string | null) => void;
   onSwapPick: (oldId: string, newId: string) => void;
   onRemove: (id: string) => void;
@@ -112,12 +117,9 @@ export default function CourseJourney({
   if (list.length === 0) return null;
   /* ═══ وما اختاره لدوراتها الأخرى — فتُقال شعبةٌ تقع لقاءاتُها عليه (٢٤ أكتوبر ٢٠٢٦، `cohort-overlap.ts`) ═══
      والدورةُ التي لم يختر لها بعدُ تُحسب بأوّل شعبها — وهي ما يشتريه إن لم يبدّل */
-  const othersOf = (courseId: string): TimedCohort[] => list.flatMap((o) => {
-    if (o.id === courseId) return [];
-    const options = cohorts.get(o.id) ?? [];
-    const opt = options.find((x) => x.id === picked[o.id]) ?? options[0];
-    return opt ? [{ cohortId: opt.id, courseId: o.id, titleAr: o.title, sessions: opt.sessions }] : [];
-  });
+  const cohortsOf = (id: string) => cohorts.get(id) ?? [];
+  const chosen = chosenCohorts(list.map((o) => o.id), cohortsOf, picked, (id) => list.find((o) => o.id === id)?.title ?? id);
+  const othersOf = (courseId: string): TimedCohort[] => chosen.filter((o) => o.courseId !== courseId);
   const isSupportId = (id: string) => Boolean(supportReasons?.[id]);
   const firstSupport = list.findIndex((c) => isSupportId(c.id));
   const coreCount = firstSupport === -1 ? list.length : firstSupport;
@@ -131,10 +133,18 @@ export default function CourseJourney({
       <p className="mt-2 text-read leading-relaxed text-muted-foreground">
         {!edit
           ? "رحلة تعليمية مرتبة تنقلك من احتياجك الحالي إلى نتائج عملية يمكنك استخدامها في عملك وحياتك."
+          : edit.introAr
+            ? edit.introAr
           : edit.swapOnly
             ? "خطة مبنية لك من أكثر من مجال — وكل دورة فيها قابلة للاستبدال بأخرى تناسب احتياجك. العدد ثابت، فالسعر لا يتغير."
             : `رحلتك مرتبة من احتياجك إلى نتيجة عملية — وكل دورة فيها قابلة للاستبدال أو الحذف (بين ${MIN_PATHWAY_COURSES} و${MAX_PATHWAY_COURSES}).`}
       </p>
+      {edit?.onReset && (
+        <button type="button" onClick={edit.onReset}
+          className="mt-1.5 inline-flex items-center gap-1 text-read font-bold text-teal-light-ink underline-offset-4 hover:underline">
+          <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" /> أعد دورات المسار كما كانت
+        </button>
+      )}
 
       {/* سياسة المدربين تُقال مرة واحدة هنا بدل أن تتكرر شارةً على كل بطاقة —
           كانت خمس دورات تحمل خمس نسخ من الجملة نفسها فتغرق ما يختلف بينها.
@@ -240,6 +250,15 @@ export default function CourseJourney({
                       {supportReasons[c.id]}
                     </p>
                   )}
+                  {/* ═══ والدورةُ العالقةُ في تعارض: لا موعدَ لها لا يتعارض — فالاستبدالُ بابُها (٣١ أكتوبر ٢٠٢٦، `pathway-swap.ts`) ═══ */}
+                  {edit && showSchedule && !swapOpen && stuckInClash(c.id, chosen, cohortsOf) && (
+                    <Inset tone="warn" className="mt-3 flex flex-wrap items-center justify-between gap-2 p-3">
+                      <span className="text-read font-bold text-gold-ink">مواعيدها تتعارض مع دورة أخرى في مسارك، ولا موعد آخر لها.</span>
+                      <Button tone="secondary" size="sm" onClick={() => edit.onSwapToggle(c.id)}>
+                        <RefreshCcw className="h-3.5 w-3.5" /> استبدلها بدورة لا تتعارض
+                      </Button>
+                    </Inset>
+                  )}
                   {/* أدوات التخصيص — داخل البطاقة نفسها */}
                   {edit && (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -285,6 +304,9 @@ export default function CourseJourney({
                             <span className="mt-0.5 block text-fine text-muted-foreground">{p.note}</span>
                           </button>
                         ))}
+                        {edit.pool.every((p) => p.id === c.id) && (
+                          <p className="text-read text-muted-foreground">لا بديل له شعبة الآن.</p>
+                        )}
                       </div>
                     </Inset>
                   )}

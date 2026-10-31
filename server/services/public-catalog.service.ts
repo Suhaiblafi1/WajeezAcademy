@@ -12,8 +12,8 @@ import { publicTrainerWhere, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible }
 import { photoPublicUrl } from './storage.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { cohortSummaryAr } from '../../src/application/learning/cohort-summary'
-import { termKey, termOf } from '../../src/application/terms/season'
-import { zonedDay } from '../../src/application/trainer/cohort-period'
+import { termKey } from '../../src/application/terms/season'
+import { startTermKey } from '../../src/application/terms/start-term'
 import type { TrainingSeason } from '../../src/application/trainer/application-options'
 import { asAudience } from '../../src/application/trainer/cohort-audience'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
@@ -118,10 +118,9 @@ export class PublicCatalogService {
     const seasons: Record<string, string[]> = {}
     for (const r of rows) {
       const list = (seasons[r.courseId] ??= [])
-      const t = r.startsAt
-        ? termOf(new Date(`${zonedDay(r.startsAt)}T12:00:00Z`))
-        : r.term ? { year: r.term.year, season: r.term.season as TrainingSeason } : null
-      const key = t ? termKey(t.year, t.season) : null
+      const key = r.startsAt
+        ? startTermKey(r.startsAt)
+        : r.term ? termKey(r.term.year, r.term.season as TrainingSeason) : null
       if (key && !list.includes(key)) list.push(key)
     }
     return { courseIds: Object.keys(seasons), seasons }

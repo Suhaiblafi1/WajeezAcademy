@@ -37,6 +37,8 @@ import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-chec
 import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
+import { publicPathwayById } from "@/data/public-pathways";
+import { swapCandidates } from "@/application/catalog/pathway-swap";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-prices";
@@ -228,6 +230,24 @@ export default function PathwayPage() {
       .map((s) => ({ ...s, course: courseById(s.courseId) }))
       .filter((s): s is typeof s & { course: NonNullable<typeof s.course> } => Boolean(s.course));
   }, [baseIds, prices, pricesLoaded, catalogVersion, pathway]);
+  /* ═══ واستبدالُ دورةٍ في المسار الجاهز — وأوّلُها التي تتعارض (٣١ أكتوبر ٢٠٢٦) ═══
+     القاعدةُ في `application/catalog/pathway-swap.ts`. والمرشّحون بقربهم من المسار، ثمّ كلُّ دورةٍ لها شعبة:
+     من يستبدل لتعارضٍ يريد ما يناسب جدولَه قبل ما يقرب موضوعَه. */
+  const season = pathway ? publicPathwayById(pathway.id)?.season ?? null : null;
+  const swapChoices = useMemo(() => {
+    void catalogVersion;
+    if (!swapForId || !pathway || editable) return [];
+    const ranked = [
+      ...pathwayExtraOptions(pathway.id, baseIds, (id) => prices.has(id), courses.length),
+      ...courses.map((c) => ({ courseId: c.id, reason_ar: `من مسار «${c.pathwayName}»` })),
+    ];
+    return swapCandidates({
+      courseId: swapForId, courseIds, ranked, season,
+      cohortsOf: (id) => cohorts.get(id) ?? [],
+      picked: pickedCohorts,
+      titleOf: (id) => courseById(id)?.name ?? id,
+    });
+  }, [swapForId, pathway, editable, baseIds, courseIds, prices, cohorts, pickedCohorts, season, catalogVersion]);
   /* مدرّبُ الدورة من شعبها المفتوحة لا من تخصّصٍ ساكن — `course-trainers.ts` */
   const trainerLine = (c: Course) => trainerLineAr(trainerNamesOf(cohorts.get(c.id)), TRAINER_PENDING_AR);
   /* سعرُ المسار كاملا — أو null إن نقص سعرُ دورةٍ واحدة، فلا مجموعَ ناقصا */
@@ -529,7 +549,26 @@ export default function PathwayPage() {
                     },
                     onAdd: (id) => setExtraId(id),
                   }
-                : undefined
+                : {
+                    swapOnly: true,
+                    swapForId,
+                    pool: swapChoices.map((s) => ({ id: s.courseId, name: courseById(s.courseId)?.name ?? s.courseId, note: s.noteAr })),
+                    introAr: "لك أن تستبدل أي دورة بأخرى، وخاصة التي تتعارض مواعيدها. العدد ثابت، فخصم المسار باق.",
+                    onReset: edits ? () => { setEdits(null); setSwapForId(null); } : undefined,
+                    minReached: true,
+                    maxReached: true,
+                    onSwapToggle: setSwapForId,
+                    /* والبديلةُ على شعبتها التي لا تتعارض — لا على أقرب شعبها */
+                    onSwapPick: (oldId, newId) => {
+                      const cohortId = swapChoices.find((s) => s.courseId === newId)?.cohortId;
+                      if (oldId === extraId) setExtraId(newId);
+                      else setEdits({ courseIds: baseIds.map((i) => (i === oldId ? newId : i)) });
+                      if (cohortId) setPickedCohorts((prev) => ({ ...prev, [newId]: cohortId }));
+                      setSwapForId(null);
+                    },
+                    onRemove: () => undefined,
+                    onAdd: () => undefined,
+                  }
             }
           />
 
