@@ -28,7 +28,7 @@ export async function assertFirstPurchase(
   const pending = await db.order.findFirst({
     where: { userId, status: 'pending_payment', couponId: coupon.id }, select: { id: true },
   })
-  if (pending) throw new AuthError('bad_coupon', `كود ${FIRST_TIME_PROMO.code} في طلب لم يكتمل دفعه. أتممه من «فواتيري»، أو اشتر بدون الكود.`)
+  if (pending) throw new AuthError('bad_coupon', `كود ${FIRST_TIME_PROMO.code} في طلب لم يكتمل دفعه. أكمل دفعه أو ألغه من لوح الشراء، أو اشتر بدون الكود.`)
 }
 
 /** أيُخصم له الكودُ الآن؟ — تسألها صفحةُ الدورة قبل أن تطرح الخصمَ من السعر المعروض، فلا تَعِد

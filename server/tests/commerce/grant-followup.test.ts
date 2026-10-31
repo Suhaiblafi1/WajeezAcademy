@@ -280,18 +280,18 @@ describe('⑥ آخر يوم للمنحة 30 أكتوبر — بقرار صاحب
     expect(await applyGrantCloseFix(prisma)).toBe(false)
     expect(await closesAt()).toBe(other)
 
-    /* والعاملُ يطبّقه قبل التذكير */
+    /* وأعاده صاحبُ المنصّة إلى ٣١ أكتوبر نفسِه من شاشته — العاملُ الذي يدور كلَّ ساعةٍ لا يردّه */
     await g.update({ closesAt: new Date(GRANT_CLOSE_FIX.from) }, ownerId)
     await runJob(prisma, 'grant_reminders')
-    expect(await closesAt()).toBe(GRANT_CLOSE_FIX.to)
+    expect(await closesAt(), 'ردّ العاملُ تمديدَ صاحب المنصّة').toBe(GRANT_CLOSE_FIX.from)
     await g.update({ closesAt: null }, ownerId)
   })
 })
 
-describe('⑦ والمنحة تغطي 4 دورات بحد أقصى — بقرار صاحب المنصة، مرة واحدة', () => {
+describe('⑦ والمنحة تغطي 4 دورات بحد أقصى — بقرار صاحب المنصة، مرة واحدة حقا', () => {
   const maxCourses = async () => (await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: 'wajeez-members' }, select: { maxCourses: true } })).maxCourses
 
-  it('⚠️ من 5 إلى 4 — بأثر مكتوب، ولا يمس حدا غيره أحد بعده، والعامل يطبقه', async () => {
+  it('⚠️ من 5 إلى 4 — بأثر مكتوب، ولا يمس حدا غيره أحد بعده، ولا يعيده العامل كل ساعة', async () => {
     const g = new GrantService(prisma)
     const before = await maxCourses()
     expect(GRANT_COURSES_FIX).toEqual({ from: 5, to: 4 })
@@ -305,9 +305,10 @@ describe('⑦ والمنحة تغطي 4 دورات بحد أقصى — بقرا�
     expect(await applyGrantCoursesFix(prisma), 'مس حدا غيره أحد').toBe(false)
     expect(await maxCourses()).toBe(6)
 
+    /* وجعله صاحبُ المنصّة ٥ بقراره (٢٨ أكتوبر) — العاملُ الذي يدور كلَّ ساعةٍ لا يردّه إلى ٤ */
     await g.update({ maxCourses: 5 }, ownerId)
     await runJob(prisma, 'grant_reminders')
-    expect(await maxCourses()).toBe(4)
+    expect(await maxCourses(), 'ردّ العاملُ حدَّ صاحب المنصّة').toBe(5)
     await g.update({ maxCourses: before }, ownerId)
   })
 })

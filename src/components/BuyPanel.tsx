@@ -39,7 +39,7 @@
    ولا نقول «تمّ الدفع» عند التحويل: التسويةُ بـwebhook موقَّع، ورجوعُ
    المتصفّح ليس دليلا. */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { BookOpen, CalendarDays, ChevronDown, CreditCard, Info, Loader2, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
 import Modal from "@/components/Modal";
@@ -273,6 +273,12 @@ export default function BuyPanel({
   /* خصمُ الخطّة كاملةً — بعدد دوراتها، يُقال لمن يشتري بعضَها */
   const planPct = buildDiscountPct(lines.length);
 
+  /* ═══ والكودُ المردودُ يُذكَر — لا يضيع بإلغاء طلبٍ معلَّق (٣١ أكتوبر ٢٠٢٦) ═══
+     من استنفد طلبُه المعلَّقُ حدَّ منحته رُدّ كودُه («استعملت كلّ دورات هذا الكود») ومُحي من `applied`. فإذا ألغى
+     الطلبَ كما يدعوه سطرُه («ألغه وتشتريها بمنحتك هنا») سُعّر بلا منحة، وبقي السببُ القديمُ تحت الخانة — فيدفع قريبا
+     من السعر الكامل. فالكودُ المردودُ يُحفظ هنا، ويُعاد به التسعيرُ بعد الإلغاء، ويُمحى ما قيل عنه. */
+  const rejectedCode = useRef("");
+
   /* التسعير: نداءٌ واحد كلّما تبدّلت الشعبُ أو الكود — والرقمُ الظاهر رقمُه */
   const refresh = useCallback(async (code: string) => {
     if (cohortIds.length === 0) { setQuote(null); return; }
@@ -283,11 +289,12 @@ export default function BuyPanel({
         cohortIds,
         ...(code ? { couponCode: code } : {}),
       }));
-      if (code) setCouponError(null);
+      if (code) { setCouponError(null); rejectedCode.current = ""; }
     } catch (e) {
       /* الكودُ وحدَه رُدّ: يُقال سببُه تحت خانته، ويُعاد التسعيرُ بلا كود */
       if (code && e instanceof ApiError && COUPON_ERRORS.has(e.code)) {
         setCouponError(e.message);
+        rejectedCode.current = code;
         setApplied("");
         return;
       }
@@ -381,7 +388,12 @@ export default function BuyPanel({
         setPaying(false);
         return;
       }
-      setError(e instanceof ApiError ? e.message : "تعذّر إتمام الشراء — أعد المحاولة");
+      /* ═══ وإن أُنشئ الطلبُ وتعثّرت صفحةُ دفعه — يُعاد التسعيرُ فيظهر زرّاه (٣١ أكتوبر ٢٠٢٦) ═══
+         كان الخطأُ يُقال واللوحُ على تسعيره القديم: فمن ضغط «ادفع» ثانيةً قيل له «لك طلبٌ لم يكتمل دفعه» ولا
+         «أكمل الدفع» ولا «ألغ الطلب» أمامه حتى يغلق اللوحَ ويفتحه. والتسعيرُ يمحو الخطأ، فيُقال بعده. */
+      const message = e instanceof ApiError ? e.message : "تعذّر إتمام الشراء — أعد المحاولة";
+      await refresh(applied);
+      setError(message);
       setPaying(false);
     }
   };
@@ -412,7 +424,16 @@ export default function BuyPanel({
     setError(null);
     try {
       await apiPost(`/api/learner/orders/${orderId}/cancel`, {});
-      await refresh(applied);
+      /* وما رُدّ من كودٍ بسبب هذا الطلب يُجرَّب ثانيةً، وسببُ ردّه القديمُ لا يبقى */
+      setCouponError(null);
+      const again = applied || rejectedCode.current;
+      rejectedCode.current = "";
+      if (again !== applied) {
+        setCoupon((c) => c || again);
+        setApplied(again);
+      } else {
+        await refresh(applied);
+      }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "تعذر إلغاء الطلب — أعد المحاولة");
     } finally {
