@@ -16,6 +16,7 @@ import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
+  GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -399,7 +400,15 @@ describe('بعد النموذج', () => {
   /* من حدّث الصفحةَ أو عاد إليها كان يجد الدوراتِ فارغة — وقد اختارها وحُفظت في ملفّه عندنا (٢٧ أكتوبر ٢٠٢٦) */
   it('⚠️ ما اختاره يبقى على جهازه — ويعود إليه حين يحدّث الصفحة', () => {
     expect(PAGE).toMatch(/if \(kept\?\.ref === ref\) saveStoredGrant\(\{ \.\.\.kept, picks: picked \}, storeKey\);/)
-    expect(PAGE).toMatch(/setPicked\(\(resumed \? resumed\.intent\.courseIds : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)\);/)
+    expect(PAGE).toMatch(/setPicked\(\(resumed \? resumed\.intent\.courseIds : linkPicks\.length > 0 \? linkPicks : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)\);/)
+    /* ومن رابط بريد التذكير (`?picks=`) — يعود إلى اختياره ولو فتحه من جهازٍ آخر (٣١ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const \[linkPicks\] = useState\(\(\) => parsePicksParam\(window\.location\.search\)\);/)
+    expect(parsePicksParam('?picks=C-MKT-103,C-FIN-101,C-MKT-103,<x>,')).toEqual(['C-MKT-103', 'C-FIN-101'])
+    expect(parsePicksParam('?ch=wa')).toEqual([])
+    expect(grantPicksLink('https://x.co/grant', ['C-1', 'bad id', 'C-2'])).toBe('https://x.co/grant?picks=C-1,C-2')
+    expect(grantPicksLink('https://x.co/grant/i/SARA', [])).toBe('https://x.co/grant/i/SARA')
+    expect(parsePicksParam(new URL(grantPicksLink('https://x.co/grant', ['C-1', 'C-2'])).search), 'الرابط لا يقرأ ما كتب').toEqual(['C-1', 'C-2'])
+    for (const t of [grantPicksPreheaderAr(3, '$330.00'), GRANT_PICKS_INTRO_AR, GRANT_PICKS_CTA_AR]) expect(t).toBe(plainAr(t))
     const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', interests: [], at: Date.now() }
     expect(parseStoredGrant(JSON.stringify({ ...ok, picks: ['C-1', 7, 'C-2'] }))?.picks).toEqual(['C-1', 'C-2'])
     expect(parseStoredGrant(JSON.stringify(ok))?.picks, 'حفظ قبل الاختيار').toEqual([])
@@ -450,7 +459,7 @@ describe('بعد النموذج', () => {
     /* ما يعود مختارا ما اختاره هو — من رحلة الدفع أو من جهازه — لا ما اقترحناه */
     const seed = effect.match(/setPicked\(([^;]*)\);/)
     expect(seed, 'لا اختيار أول').not.toBeNull()
-    expect(seed![1], 'اختارها عنه').toMatch(/^\(resumed \? resumed\.intent\.courseIds : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)$/)
+    expect(seed![1], 'اختارها عنه').toMatch(/^\(resumed \? resumed\.intent\.courseIds : linkPicks\.length > 0 \? linkPicks : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)$/)
     expect(seed![1], 'اختارها عنه').not.toMatch(/\bours\b|suggested|found/)
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
     /* وسمٌ نصّيٌّ أعلى البطاقة لا قرصٌ يشبه الزرّ — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */

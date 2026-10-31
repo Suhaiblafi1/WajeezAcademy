@@ -56,7 +56,7 @@ import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode }
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
-  type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
+  type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr, parsePicksParam,
 } from "@/application/commerce/grant-landing";
 import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
@@ -189,6 +189,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   useEffect(() => { void load(); }, [load]);
 
   const [resumed] = useState(() => (pickPath ? resumedCheckoutFor(pickPath) : null));
+  /* وما اختاره من رابط بريد التذكير (`?picks=`) — يعود إلى اختياره ولو فتحه من جهازٍ آخر (٣١ أكتوبر ٢٠٢٦) */
+  const [linkPicks] = useState(() => parsePicksParam(window.location.search));
 
   /* ما نقترحه مرّةً واحدةً حين يصير له كود: خمسُ دوراتٍ لا تتعارض ولا يتكرّر فيها مدرّب، أوّلُها دوراتُ المسار الرئيسيّ
      الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، ثمّ ما يناسبهما (`suggestCourses`) — ويختار منها حتّى الحدّ. قرارُ صاحب
@@ -202,9 +204,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const ours = suggestCourses(view.openCourses, stored.interests, stored.workField, GRANT_SUGGESTED_COURSES, found.main?.courseIds ?? []);
     const open = new Set(view.openCourses.map((x) => x.courseId));
     setSuggested(ours);
-    setPicked((resumed ? resumed.intent.courseIds : stored.picks ?? []).filter((id) => open.has(id)).slice(0, max));
+    setPicked((resumed ? resumed.intent.courseIds : linkPicks.length > 0 ? linkPicks : stored.picks ?? []).filter((id) => open.has(id)).slice(0, max));
     setSeeded(true);
-  }, [view, stored, seeded, resumed]);
+  }, [view, stored, seeded, resumed, linkPicks]);
 
   /* ونسبةُ كوده إن كان له — كلُّ كودٍ يحمل نسبتَه يومَ أُعطي (`grant.service.ts`)، فإن غيّر صاحبُ المنصّة نسبةَ الحملة بعده
      سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة.
