@@ -10,7 +10,8 @@ import type { PrismaClient } from '@prisma/client'
 import { assertNotBot } from '../honeypot'
 import { GrantLandingService } from '../../services/grant-landing.service'
 import { learnerGrant } from '../../services/grant.service'
-import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { recordGrantVisit } from '../../services/grant-visit.service'
 import { requireAuth } from '../auth-plugin'
 
 const applyBody = z.object({
@@ -24,6 +25,7 @@ const applyBody = z.object({
   wave: z.string().max(40).nullable().optional(),
   /* زيارتاه — تُنظَّفان في الخدمة حقلا حقلا (`cleanTouch`)، فلا يُفحص هنا إلّا أنّهما شيءٌ أو لا شيء */
   source: z.object({ page: z.unknown().optional(), first: z.unknown().optional() }).nullable().optional(),
+  visitorId: z.string().uuid().nullable().optional(),
 })
 
 /* ═══ سقفُ نموذجَي المنحة: حاجزُ غَمرٍ لا حاجزُ ناس (٢٨ أكتوبر ٢٠٢٦) ═══
@@ -82,6 +84,22 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     assertNotBot(req.body)
     const body = applyBody.extend({ influencerCode: z.string().trim().min(1, 'اكتب كود المؤثر').max(40) }).parse(req.body)
     return reply.status(201).send(await influencers.apply(body, req.ip))
+  })
+
+  /* من فتح صفحةَ المنحة — زائرٌ لكلّ متصفّحٍ في كلّ حملة، عبّأ أم لم يعبّئ (`grant-visit.service.ts`). يُرسَل مرّةً مع كلّ فتح،
+     فالسقفُ واسعٌ لمن يحدّث الصفحة، ولا يقبل إلّا رقما عشوائيّا بشكله وزيارتين تُنظَّفان */
+  app.post('/api/public/grant/visit', {
+    config: { rateLimit: { max: 120, timeWindow: '15 minutes' } },
+    schema: { tags: ['public'], summary: 'زيارة صفحة المنحة — لتعرف كم فتح الرابط من كل مصدر وكم عبأ منهم' },
+  }, async (req, reply) => {
+    const body = z.object({
+      campaign: z.enum(['member', 'influencer']),
+      visitorId: z.string().uuid(),
+      code: z.string().max(40).nullable().optional(),
+      source: z.object({ page: z.unknown().optional(), first: z.unknown().optional() }).nullable().optional(),
+    }).parse(req.body)
+    await recordGrantVisit(prisma, body.campaign === 'influencer' ? INFLUENCER_GRANT_SLUG : MEMBER_GRANT_SLUG, body)
+    return reply.status(204).send()
   })
 
   /* ما اختاره من دوراتٍ يُحفظ في ملفّه فيراه المستشار — يُرسَل بعد كلّ تغييرٍ بمهلة، فالسقفُ أوسعُ من النموذج */

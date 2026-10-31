@@ -15,13 +15,13 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { ChevronDown, FileDown, Mail, MessageCircle, Send, Trash2 } from "lucide-react";
 import { apiDelete, apiDownload, apiGet, apiPost, ApiError } from "@/services/api";
-import { fmtDateTime } from "@/application/text/format-ar";
+import { fmtDateWith } from "@/application/text/format-ar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { grantFollowupAr } from "@/application/commerce/grant-landing";
 import {
   GRANT_MESSAGE_BODY_MAX, GRANT_MESSAGE_SUBJECT_MAX, MAIL_STATE_AR, SOURCE_GROUP_AR, registrantStats,
-  type MailState, type RegistrantSource, type SourceGroup, type Upcoming,
+  type GrantFunnel, type MailState, type RegistrantSource, type SourceGroup, type Upcoming,
 } from "@/application/commerce/grant-registrants";
 import { shortCourseTitleAr } from "@/application/text/course-lines";
 import { INFLUENCER_GRANT_NAME_AR } from "@/application/commerce/grant";
@@ -49,7 +49,10 @@ interface Registrant {
   /** ما كُتب لبريده، وما هو آتٍ له */
   mails: Mail[]; upcoming: Upcoming[];
 }
-interface List { mailOn: boolean; rows: Registrant[] }
+interface List { mailOn: boolean; rows: Registrant[]; funnel: GrantFunnel }
+
+/** «31/10، 2:42 م» — بلا سنةٍ ولا ثوانٍ: كلُّه في الحملة نفسِها، والعمودُ ضيّق */
+const when = (v: string) => fmtDateWith(v, { day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
 
 const STATE_AR: Record<State, string> = { bought: "اشترى", pending: "ينتظر الدفع", none: "لم يشتر بعد" };
 const GRANT_AR = { member: "منحة وجيز", influencer: "منحة المؤثرين" } as const;
@@ -120,10 +123,10 @@ export default function GrantRegistrants() {
         </Button>
       </div>
 
-      <GrantRegistrantStats s={stats} filtered={filtered} />
+      <GrantRegistrantStats s={stats} filtered={filtered} funnel={data.funnel} />
 
       <Card className="mt-3">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="mb-3 grid gap-2 sm:grid-cols-3">
           <select value={only} onChange={(e) => { setOnly(e.target.value as "" | State); reset(); }} aria-label="الحالة" className={staffSelectCls}>
             <option value="">الكل ({rows.length})</option>
             {(Object.keys(STATE_AR) as State[]).map((s) => (
@@ -146,7 +149,8 @@ export default function GrantRegistrants() {
         {view.rows.length === 0 ? (
           <p className="text-read text-muted-foreground">لا أحد بعد.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
+            {/* `relative` يحبس ما تموضع مطلقا داخل التمرير — كان عنوانُ عمود الأفعال الخفيُّ يخرج منه فيعرّض الصفحةَ على الهاتف */}
             <table className="w-full text-read">
               <thead>
                 <tr className="text-muted-foreground">
@@ -169,7 +173,7 @@ export default function GrantRegistrants() {
                       <tr className="border-t border-border align-top">
                         <td className="p-2">
                           <span className="font-bold">{r.fullName}</span><br />
-                          <span className="text-muted-foreground">{fmtDateTime(r.createdAt)}</span>
+                          <span className="whitespace-nowrap text-muted-foreground">{when(r.createdAt)}</span>
                         </td>
                         <td className="p-2">
                           <span dir="ltr">{r.phone ?? "—"}</span>
@@ -205,13 +209,13 @@ export default function GrantRegistrants() {
                           <span className="font-bold">{r.source.labelAr}</span>
                           <br /><span className="text-muted-foreground">{r.influencer ? GRANT_AR.influencer : GRANT_AR.member}</span>
                           {r.pageOpenedAt && (
-                            <><br /><span className="text-muted-foreground">فتح الرابط {fmtDateTime(r.pageOpenedAt)}</span></>
+                            <><br /><span className="text-muted-foreground">فتح الرابط <span className="whitespace-nowrap">{when(r.pageOpenedAt)}</span></span></>
                           )}
                           {r.source.detailAr && <><br /><span className="text-fine text-muted-foreground">{r.source.detailAr}</span></>}
                         </td>
                         <td className={`p-2 font-bold ${r.state === "bought" ? "text-teal-light-ink" : ""}`}>
                           {STATE_AR[r.state]}
-                          {r.code && <><br /><span dir="ltr" className="font-normal text-muted-foreground">{r.code}{r.codeActive === false ? " · مبطل" : ""}</span></>}
+                          {r.code && <><br /><span dir="ltr" className="whitespace-nowrap font-normal text-muted-foreground">{r.code}{r.codeActive === false ? " · مبطل" : ""}</span></>}
                         </td>
                         <td className="p-2">{r.advisor ?? "—"}</td>
                         <td className="p-2">
@@ -221,7 +225,7 @@ export default function GrantRegistrants() {
                           >
                             التفاصيل ({r.mails.length}) <ChevronDown className={`h-4 w-4 transition ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                           </button>
-                          {next && !isOpen && <p className="text-read text-muted-foreground">التالي: {fmtDateTime(next.at)}</p>}
+                          {next && !isOpen && <p className="text-read text-muted-foreground">التالي: <span className="whitespace-nowrap">{when(next.at)}</span></p>}
                         </td>
                       </tr>
                       {isOpen && (
@@ -255,9 +259,9 @@ function Details({ r, onRemove }: { r: Registrant; onRemove: () => void }) {
       <div>
         <p className="font-bold">الأوقات</p>
         <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-read">
-          <dt className="text-muted-foreground">أول زيارة للموقع</dt><dd>{r.firstSeenAt ? fmtDateTime(r.firstSeenAt) : "—"}</dd>
-          <dt className="text-muted-foreground">فتح صفحة المنحة</dt><dd>{r.pageOpenedAt ? fmtDateTime(r.pageOpenedAt) : "—"}</dd>
-          <dt className="text-muted-foreground">عبأ النموذج</dt><dd>{fmtDateTime(r.createdAt)}{gap ? ` · بعد ${gap}` : ""}</dd>
+          <dt className="text-muted-foreground">أول زيارة للموقع</dt><dd>{r.firstSeenAt ? when(r.firstSeenAt) : "—"}</dd>
+          <dt className="text-muted-foreground">فتح صفحة المنحة</dt><dd>{r.pageOpenedAt ? when(r.pageOpenedAt) : "—"}</dd>
+          <dt className="text-muted-foreground">عبأ النموذج</dt><dd>{when(r.createdAt)}{gap ? ` · بعد ${gap}` : ""}</dd>
           {r.landingPath && <><dt className="text-muted-foreground">أول صفحة</dt><dd dir="ltr" className="text-start">{r.landingPath}</dd></>}
         </dl>
         <Button tone="danger" size="sm" icon={Trash2} className="mt-3" onClick={onRemove}>احذفه من القائمة</Button>
@@ -273,7 +277,7 @@ function Details({ r, onRemove }: { r: Registrant; onRemove: () => void }) {
                 <span className="font-bold">{m.purposeAr}</span>
                 <span className={`ms-2 text-fine ${m.status === "failed" ? "font-bold text-danger-ink" : "text-muted-foreground"}`}>{MAIL_STATE_AR[m.status]}</span>
                 <br /><span className="text-muted-foreground">{m.subject}</span>
-                <br /><span className="text-fine text-muted-foreground">{fmtDateTime(m.sentAt ?? m.createdAt)}</span>
+                <br /><span className="text-fine text-muted-foreground">{when(m.sentAt ?? m.createdAt)}</span>
               </li>
             ))}
           </ol>
@@ -290,7 +294,7 @@ function Details({ r, onRemove }: { r: Registrant; onRemove: () => void }) {
             {r.upcoming.map((u) => (
               <li key={`${u.kind}-${u.at}`}>
                 <span className="font-bold">{u.labelAr}</span>
-                <br /><span className="text-fine text-muted-foreground">{fmtDateTime(u.at)}</span>
+                <br /><span className="text-fine text-muted-foreground">{when(u.at)}</span>
               </li>
             ))}
           </ol>

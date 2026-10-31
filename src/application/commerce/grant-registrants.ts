@@ -253,3 +253,64 @@ export function registrantStats(rows: StatRow[]): RegistrantStats {
 
 /** نسبةُ الشراء في مجموعة — «٣ من ١٠ · ٣٠%» */
 export const conversionAr = (c: { n: number; bought: number }): string => `${c.bought} من ${c.n} · ${pct(c.bought, c.n)}%`
+
+/* ─────────── من فتح الرابط ← عبّأ ← اشترى (٣١ أكتوبر ٢٠٢٦) ───────────
+
+   كانت القائمةُ لا ترى إلّا من عبّأ. فصفحةُ المنحة تسجّل كلَّ متصفّحٍ يفتحها مرّةً لكلّ حملة (`GrantVisit`)، ويُربط بمن عبّأ
+   منه. فيُقرأ لكلّ مصدرٍ: كم فتح الرابط، وكم عبّأ منهم، وكم اشترى. ويُعدّ من أوّل زيارةٍ سُجّلت (`since`) — ومن عبّأ قبلها
+   ليس فيه. */
+
+export interface FunnelVisit {
+  group: SourceGroup
+  /** يومُ أوّل فتحٍ بتوقيت عمّان */
+  day: string
+  /** عبّأ النموذجَ من المتصفّح نفسِه */
+  filled: boolean
+  /** حالُه إن عبّأ وما زال في القائمة */
+  state: RegistrantState | null
+}
+
+export interface FunnelCount { key: string; labelAr: string; visitors: number; filled: number; bought: number }
+
+export interface GrantFunnel {
+  /** أوّلُ زيارةٍ سُجّلت — ومنها يُعدّ */
+  since: string | null
+  visitors: number
+  filled: number
+  bought: number
+  /** نسبةُ من عبّأ ممّن فتح الرابط — بالمئة */
+  filledPct: number
+  bySource: FunnelCount[]
+  byDay: { day: string; visitors: number; filled: number }[]
+}
+
+export function grantFunnel(visits: FunnelVisit[], since: Date | string | null): GrantFunnel {
+  const groups = new Map<string, FunnelCount>()
+  const days = new Map<string, { day: string; visitors: number; filled: number }>()
+  for (const v of visits) {
+    const g = groups.get(v.group) ?? { key: v.group, labelAr: SOURCE_GROUP_AR[v.group], visitors: 0, filled: 0, bought: 0 }
+    g.visitors += 1
+    if (v.filled) g.filled += 1
+    if (v.state === 'bought') g.bought += 1
+    groups.set(v.group, g)
+    const d = days.get(v.day) ?? { day: v.day, visitors: 0, filled: 0 }
+    d.visitors += 1
+    if (v.filled) d.filled += 1
+    days.set(v.day, d)
+  }
+  const order = Object.keys(SOURCE_GROUP_AR)
+  const filled = visits.filter((v) => v.filled).length
+  return {
+    since: since ? new Date(since).toISOString() : null,
+    visitors: visits.length,
+    filled,
+    bought: visits.filter((v) => v.state === 'bought').length,
+    filledPct: pct(filled, visits.length),
+    bySource: [...groups.values()].sort((a, b) => b.visitors - a.visitors || order.indexOf(a.key) - order.indexOf(b.key)),
+    byDay: [...days.values()].sort((a, b) => a.day.localeCompare(b.day)),
+  }
+}
+
+/** «فتح ١٠ · عبأ ٣ (٣٠%) · اشترى ١» */
+export const funnelAr = (c: { visitors: number; filled: number; bought: number }): string =>
+  `فتح ${c.visitors} · عبأ ${c.filled} (${pct(c.filled, c.visitors)}%) · اشترى ${c.bought}`
