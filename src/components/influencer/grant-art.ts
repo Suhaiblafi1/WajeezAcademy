@@ -35,7 +35,6 @@
 
 import { C, fitLines, font, loadImage, roundRect } from '../trainer/share-art'
 import { splitTitle } from '@/application/trainer/share-kit'
-import { GRANT_ACADEMY_LINE_AR } from '@/application/commerce/grant-landing'
 import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { FIELD_CHECKS } from '@/domain/placement/field-check'
 
@@ -117,157 +116,204 @@ export const coursesAr = (n: number) => (n === 1 ? 'دورة واحدة' : n ===
 /** «14 مدربا معتمدا» و«5 مدربين معتمدين» و«مدربان معتمدان» */
 export const trainersCountAr = (n: number) =>
   (n === 1 ? 'مدرب معتمد' : n === 2 ? 'مدربان معتمدان' : n <= 10 ? `${n} مدربين معتمدين` : `${n} مدربا معتمدا`)
-/** ما تحت الرقم في بطاقته — «دورة مباشرة» أو «دورات مباشرة» بحسب العدد */
-const underNumber = (n: number, few: string, many: string) => (n >= 3 && n <= 10 ? few : many)
 
 /** اسمُ الدورة قصيرا — ما قبل النقطتين، وبلا ما بين القوسين */
 export const shortTitle = (title: string) => splitTitle(title).name.replace(/\s*\([^)]*\)\s*/g, ' ').trim()
 
+/* ═══ الهيئةُ الجديدة (٣١ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «جميعُ التصاميم فيها نصٌّ كثير وتقليديّة… يجب أن يكون ما قلّ ودلّ، وأن يكون التصميمُ أنعم ولا يظهر
+   وكأنّه AI generated»، و«صورُ المدرّبين على شكل دوائر، ولا داعي أن نقول ٢٤ دورة و١٤ مدرّبا — هذه أرقامٌ ليست بفخرة…
+   أمورٌ تحفيزيّةٌ أكثر: ماذا سيحصل الشخص؟»، و«صورةُ الإنفلونسر وتحتها منحةٌ خاصّةٌ لمتابعيني ٤٥٪».
+   فصار لكلّ تصميمٍ فكرةٌ واحدة: عنوانٌ قصيرٌ بخطٍّ كبير تحته خطٌّ ذهبيٌّ مرسومٌ باليد، وسطرٌ واحدٌ بعده على الأكثر،
+   والنسبةُ ملصقٌ ذهبيٌّ مائل، وصورُ المدرّبين دوائرُ بإطارٍ أبيض. وأرضيّتان تتناوبان: «ليل» فيروزيٌّ عميقٌ بدوائرِ ضوءٍ
+   خافتة، و«نهار» نعناعيٌّ فاتح — وحبيباتٌ خفيفةٌ فوقهما تكسر ملاسةَ ما يُولَّد. ولا قوائمَ ولا أرقامَ عددٍ ولا بطاقاتٌ مكدّسة. */
+
+type Mood = 'night' | 'day'
+
+const TONE = {
+  night: { bg: '#0E4950', glow: [43, 138, 146, 0.55], warm: [250, 188, 5, 0.16], head: '#FFFFFF', sub: '#CDEBE8', grain: 'rgba(255,255,255,0.05)' },
+  day: { bg: '#EAF5F3', glow: [168, 222, 216, 0.7], warm: [250, 188, 5, 0.16], head: '#10272B', sub: '#3E5A5E', grain: 'rgba(16,39,43,0.04)' },
+} as const
+
+/** لكلّ تصميمٍ أرضيّتُه — يتناوبان في الكاروسيل */
+const MOOD: Record<GrantDesign, Mood> = {
+  personal: 'night', offer: 'night', academy: 'day', start: 'day', features: 'night',
+  why: 'day', trainers: 'night', team: 'day', courses: 'day', steps: 'night',
+}
+
 /** حدودُ المتن والذيل لكلّ مقاس */
 function frameOf(size: GrantSize) {
-  if (size === 'story') return { top: 300, bottom: 1400, lineY: 1470, pillY: 1520, s: 1.3, cta: true }
-  if (size === 'slide') return { top: 230, bottom: 1080, lineY: 1140, pillY: 1180, s: 1.08, cta: false }
-  return { top: 190, bottom: 830, lineY: 885, pillY: 925, s: 1, cta: false }
+  if (size === 'story') return { top: 300, bottom: 1480, pillY: 1560, s: 1.3, cta: true }
+  if (size === 'slide') return { top: 210, bottom: 1130, pillY: 1190, s: 1.1, cta: false }
+  return { top: 180, bottom: 880, pillY: 930, s: 1, cta: false }
 }
 
-/* ═══ الهيئةُ الناعمة ═══ */
-
-const SOFT = { bgTop: '#F8F6F1', bgBottom: '#EAF4F4', card: 'rgba(255,255,255,0.94)', tint: '#E6F3F4', line: '#DDE7E8' }
-
-/** الأرضيّة: تدرّجٌ فاتح، وبقعتا ضوءٍ فيروزيّةٌ أعلى اليمين وذهبيّةٌ أسفلَ اليسار */
-function softBackground(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const g = ctx.createLinearGradient(0, 0, 0, h)
-  g.addColorStop(0, SOFT.bgTop)
-  g.addColorStop(1, SOFT.bgBottom)
-  ctx.fillStyle = g
+/** الأرضيّة: لونٌ واحد، ودائرتا ضوءٍ خافتتان، وحبيباتٌ ثابتةُ المواضع (بذرةٌ واحدة — فالصورةُ نفسُها كلَّ مرّة) */
+function backdrop(ctx: CanvasRenderingContext2D, w: number, h: number, mood: Mood) {
+  const t = TONE[mood]
+  ctx.fillStyle = t.bg
   ctx.fillRect(0, 0, w, h)
-  const blob = (x: number, y: number, r: number, color: string) => {
-    const rg = ctx.createRadialGradient(x, y, 0, x, y, r)
-    rg.addColorStop(0, color)
-    rg.addColorStop(1, 'rgba(255,255,255,0)')
-    ctx.fillStyle = rg
+  /* والضوءُ يخفت إلى لونه شفّافا لا إلى أسودَ شفّاف — وإلّا رمّد الأرضيّةَ الفاتحة */
+  const glow = (x: number, y: number, r: number, [cr, cg, cb, a]: readonly number[]) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r)
+    g.addColorStop(0, `rgba(${cr},${cg},${cb},${a})`)
+    g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`)
+    ctx.fillStyle = g
     ctx.fillRect(0, 0, w, h)
   }
-  blob(w * 0.92, h * 0.06, w * 0.62, 'rgba(56,167,180,0.20)')
-  blob(w * 0.05, h * 0.95, w * 0.55, 'rgba(250,188,5,0.14)')
+  glow(w * 0.88, h * 0.1, w * 0.7, t.glow)
+  glow(w * 0.08, h * 0.92, w * 0.6, t.warm)
+  let seed = 20261031
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+  ctx.fillStyle = t.grain
+  for (let i = 0; i < 2600; i++) ctx.fillRect(rand() * w, rand() * h, 2, 2)
 }
 
-/** بطاقةٌ بيضاءُ مستديرةٌ بظلٍّ خفيف */
-function card(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r = 40) {
-  ctx.save()
-  ctx.shadowColor = 'rgba(31,42,46,0.10)'
-  ctx.shadowBlur = 44
-  ctx.shadowOffsetY = 14
-  roundRect(ctx, x, y, w, h, r)
-  ctx.fillStyle = SOFT.card
-  ctx.fill()
-  ctx.restore()
-}
-
-/** الرأس: علامةُ وجيز واسمُها يمينا، وشارةٌ بيضاءُ «مباشر على Zoom» بنقطةٍ حمراء يسارا */
-function softHeader(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: number) {
-  if (logo) ctx.drawImage(logo, w - 56 - 68, 52, 68, 68)
-  ctx.fillStyle = C.tealInk
-  ctx.font = font(700, 32)
+/** الرأس: علامةُ وجيز صغيرةً واسمُها — لا شارات */
+function header(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: number, mood: Mood) {
+  if (logo) ctx.drawImage(logo, w - 60 - 58, 56, 58, 58)
+  ctx.fillStyle = TONE[mood].head
+  ctx.font = font(700, 30)
   ctx.textAlign = 'right'
   ctx.textBaseline = 'middle'
-  ctx.fillText('أكاديمية وجيز', w - 56 - 68 - 18, 88)
-  const label = 'مباشر على Zoom'
-  ctx.font = font(500, 24)
-  const pw = ctx.measureText(label).width + 70
-  card(ctx, 56, 62, pw, 52, 26)
-  ctx.fillStyle = C.live
-  ctx.beginPath(); ctx.arc(56 + pw - 28, 88, 7, 0, Math.PI * 2); ctx.fill()
-  ctx.fillStyle = C.ink
-  ctx.font = font(500, 24)
-  ctx.fillText(label, 56 + pw - 46, 89)
+  ctx.fillText('أكاديمية وجيز', w - 60 - 58 - 16, 86)
   ctx.textBaseline = 'alphabetic'
 }
 
-/** عنوانٌ وسطٌ وتحته سطرٌ خافت — ويُرجع أسفلَهما */
-function heading(ctx: CanvasRenderingContext2D, text: string, sub: string | null, cx: number, y: number, px: number, width: number): number {
-  ctx.textAlign = 'center'
-  ctx.fillStyle = C.ink
-  const t = fitLines(ctx, text, width, 2, px, px - 16)
-  ctx.font = font(700, t.px)
-  t.lines.forEach((l, i) => ctx.fillText(l, cx, y + i * t.px * 1.25))
-  let bottom = y + (t.lines.length - 1) * t.px * 1.25
-  if (sub) {
-    const sp = Math.round(px * 0.5)
-    const sl = fitLines(ctx, sub, width, 2, sp, sp - 6, 500)
-    ctx.fillStyle = C.muted
-    ctx.font = font(500, sl.px)
-    sl.lines.forEach((l, i) => ctx.fillText(l, cx, bottom + sp * 1.6 + i * sl.px * 1.45))
-    bottom += sp * 1.6 + (sl.lines.length - 1) * sl.px * 1.45
-  }
-  return bottom
+/** خطٌّ ذهبيٌّ كأنّه بالقلم تحت العنوان */
+function swoosh(ctx: CanvasRenderingContext2D, cx: number, y: number, width: number, s: number) {
+  ctx.save()
+  ctx.strokeStyle = C.gold
+  ctx.lineWidth = 9 * s
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(cx + width / 2, y)
+  ctx.quadraticCurveTo(cx + width * 0.1, y + 16 * s, cx - width / 2, y - 6 * s)
+  ctx.stroke()
+  ctx.restore()
 }
 
-/** صورةُ مدرّبٍ مربّعةٌ مستديرةُ الزوايا بإطارٍ أبيضَ رفيعٍ وظلٍّ خفيف — أو مربّعٌ فاتحٌ إن تعذّرت */
-function tile(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, x: number, y: number, size: number) {
-  const r = size * 0.28
+/** العنوان: سطران على الأكثر بخطٍّ كبير، وتحته الخطُّ الذهبيّ — ويُرجع أسفلَه */
+function headline(ctx: CanvasRenderingContext2D, text: string, cx: number, y: number, px: number, width: number, mood: Mood, s: number): number {
+  const t = fitLines(ctx, text, width, 2, px, Math.round(px * 0.7))
+  ctx.textAlign = 'center'
+  ctx.fillStyle = TONE[mood].head
+  ctx.font = font(700, t.px)
+  t.lines.forEach((l, i) => ctx.fillText(l, cx, y + i * t.px * 1.18))
+  const last = y + (t.lines.length - 1) * t.px * 1.18
+  ctx.font = font(700, t.px)
+  const lw = Math.min(ctx.measureText(t.lines[t.lines.length - 1]).width * 0.55, width * 0.5)
+  swoosh(ctx, cx, last + t.px * 0.42, lw, s)
+  return last + t.px * 0.42
+}
+
+/** سطرٌ واحدٌ بعد العنوان */
+function subline(ctx: CanvasRenderingContext2D, text: string, cx: number, y: number, px: number, width: number, mood: Mood) {
+  const t = fitLines(ctx, text, width, 2, px, Math.round(px * 0.8), 500)
+  ctx.textAlign = 'center'
+  ctx.fillStyle = TONE[mood].sub
+  ctx.font = font(500, t.px)
+  t.lines.forEach((l, i) => ctx.fillText(l, cx, y + i * t.px * 1.45))
+  return y + (t.lines.length - 1) * t.px * 1.45
+}
+
+/** ملصقُ النسبة: ذهبيٌّ مائلٌ بظلّ، وفوق الرقم «لحد» */
+function sticker(ctx: CanvasRenderingContext2D, cx: number, cy: number, pct: number, px: number, tilt = -0.08) {
+  const big = `${pct}٪`
+  ctx.font = font(700, px)
+  const w = ctx.measureText(big).width + px * 0.7
+  const h = px * 1.55
   ctx.save()
-  ctx.shadowColor = 'rgba(31,42,46,0.12)'
-  ctx.shadowBlur = size * 0.18
-  ctx.shadowOffsetY = size * 0.05
-  roundRect(ctx, x, y, size, size, r)
+  ctx.translate(cx, cy)
+  ctx.rotate(tilt)
+  ctx.shadowColor = 'rgba(0,0,0,0.25)'
+  ctx.shadowBlur = px * 0.35
+  ctx.shadowOffsetY = px * 0.1
+  roundRect(ctx, -w / 2, -h / 2, w, h, h * 0.26)
+  ctx.fillStyle = C.gold
+  ctx.fill()
+  ctx.shadowColor = 'transparent'
+  ctx.fillStyle = '#10272B'
+  ctx.textAlign = 'center'
+  ctx.font = font(500, Math.round(px * 0.24))
+  ctx.fillText('لحد', 0, -h / 2 + px * 0.34)
+  ctx.font = font(700, px)
+  ctx.fillText(big, 0, h / 2 - px * 0.22)
+  ctx.restore()
+}
+
+/** صورةٌ في دائرةٍ بإطارٍ أبيضَ وظلٍّ خفيف — أو دائرةٌ فاتحة إن تعذّرت */
+function circlePhoto(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, cx: number, cy: number, r: number, ring = 0.06) {
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.22)'
+  ctx.shadowBlur = r * 0.3
+  ctx.shadowOffsetY = r * 0.06
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2)
   ctx.fillStyle = C.white
   ctx.fill()
   ctx.restore()
-  const b = Math.max(3, size * 0.04)
+  const inner = r * (1 - ring)
   ctx.save()
-  roundRect(ctx, x + b, y + b, size - b * 2, size - b * 2, r - b)
+  ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2)
   ctx.clip()
   if (img) {
     const side = Math.min(img.naturalWidth, img.naturalHeight)
     const sy = img.naturalHeight > img.naturalWidth ? (img.naturalHeight - side) * 0.2 : (img.naturalHeight - side) / 2
-    ctx.drawImage(img, (img.naturalWidth - side) / 2, sy, side, side, x + b, y + b, size - b * 2, size - b * 2)
+    ctx.drawImage(img, (img.naturalWidth - side) / 2, sy, side, side, cx - inner, cy - inner, inner * 2, inner * 2)
   } else {
-    ctx.fillStyle = SOFT.tint
-    ctx.fillRect(x, y, size, size)
+    ctx.fillStyle = '#CFE7E5'
+    ctx.fillRect(cx - inner, cy - inner, inner * 2, inner * 2)
   }
   ctx.restore()
 }
 
-/** شاراتُ المزايا — بيضاءُ بنقطةٍ فيروزيّة، في صفٍّ وسطَ عرضه */
-function softChips(ctx: CanvasRenderingContext2D, items: readonly string[], cx: number, y: number, px: number) {
+/** شاراتٌ قصيرةٌ في سطرٍ أو سطرين — للكلمات لا للجمل */
+function pills(ctx: CanvasRenderingContext2D, items: readonly string[], cx: number, y: number, px: number, maxW: number, mood: Mood): number {
   ctx.font = font(500, px)
-  const widths = items.map((t) => ctx.measureText(t).width + px * 2.4)
+  const padX = px * 1.1
+  const h = px * 2.1
   const gap = px * 0.6
-  let right = cx + (widths.reduce((a, b) => a + b, 0) + gap * (items.length - 1)) / 2
-  items.forEach((t, i) => {
-    const w = widths[i]
-    card(ctx, right - w, y, w, px * 2, px)
-    ctx.fillStyle = C.teal
-    ctx.beginPath(); ctx.arc(right - px * 0.9, y + px, px * 0.24, 0, Math.PI * 2); ctx.fill()
-    ctx.fillStyle = C.tealInk
-    ctx.font = font(500, px)
-    ctx.textAlign = 'right'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(t, right - px * 1.5, y + px + px * 0.05)
-    ctx.textBaseline = 'alphabetic'
-    right -= w + gap
+  const rows: string[][] = [[]]
+  let rowW = 0
+  for (const t of items) {
+    const tw = ctx.measureText(t).width + padX * 2
+    if (rows[rows.length - 1].length > 0 && rowW + gap + tw > maxW) { rows.push([]); rowW = 0 }
+    rows[rows.length - 1].push(t)
+    rowW += (rowW ? gap : 0) + tw
+  }
+  rows.forEach((row, ri) => {
+    const widths = row.map((t) => ctx.measureText(t).width + padX * 2)
+    let right = cx + (widths.reduce((a, b) => a + b, 0) + gap * (row.length - 1)) / 2
+    const ry = y + ri * (h + gap)
+    row.forEach((t, i) => {
+      roundRect(ctx, right - widths[i], ry, widths[i], h, h / 2)
+      ctx.fillStyle = mood === 'night' ? 'rgba(255,255,255,0.12)' : '#FFFFFF'
+      ctx.fill()
+      ctx.fillStyle = TONE[mood].head
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = font(500, px)
+      ctx.fillText(t, right - widths[i] / 2, ry + h / 2 + px * 0.05)
+      ctx.textBaseline = 'alphabetic'
+      right -= widths[i] + gap
+    })
   })
-  ctx.textAlign = 'center'
+  return y + rows.length * (h + gap) - gap
 }
 
-/** شارةُ الكود الذهبيّة بظلٍّ خفيف — «الكود الخاص بـسارة: SARA» */
-function codePill(ctx: CanvasRenderingContext2D, d: GrantArtData, cx: number, y: number, px: number, maxW: number) {
+/** الكودُ باسمه في الذيل — «الكود الخاص بـسارة: SARA» */
+function codePill(ctx: CanvasRenderingContext2D, d: GrantArtData, cx: number, y: number, px: number, maxW: number, mood: Mood = 'night') {
   const text = `${influencerCodeLabelAr(d.name)}: ${d.code}`
   let p = px
   ctx.font = font(700, p)
   while (p > 22 && ctx.measureText(text).width + p * 1.8 > maxW) { p -= 2; ctx.font = font(700, p) }
   const w = ctx.measureText(text).width + p * 1.8
   const h = p * 2.1
-  ctx.save()
-  ctx.shadowColor = 'rgba(250,188,5,0.35)'
-  ctx.shadowBlur = 30
-  ctx.shadowOffsetY = 10
   roundRect(ctx, cx - w / 2, y, w, h, h / 2)
-  ctx.fillStyle = C.gold
+  ctx.fillStyle = mood === 'night' ? C.white : '#0E4950'
   ctx.fill()
-  ctx.restore()
-  ctx.fillStyle = C.ink
+  ctx.fillStyle = mood === 'night' ? '#0E4950' : C.white
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.font = font(700, p)
@@ -275,19 +321,11 @@ function codePill(ctx: CanvasRenderingContext2D, d: GrantArtData, cx: number, y:
   ctx.textBaseline = 'alphabetic'
 }
 
-/** سطرُ المنحة فوق الكود — «منحتك تصل إلى 45٪ من سعر الدورات» */
-function grantLine(ctx: CanvasRenderingContext2D, d: GrantArtData, cx: number, y: number, px: number) {
-  ctx.textAlign = 'center'
-  ctx.fillStyle = C.tealInk
-  ctx.font = font(700, px)
-  ctx.fillText(`منحتك تصل إلى ${d.percentOff}٪ من سعر الدورات`, cx, y)
-}
-
-/** رقمٌ في دائرةٍ فيروزيّةٍ فاتحة — للخطوات والدورات */
-function numberChip(ctx: CanvasRenderingContext2D, n: number, cx: number, cy: number, r: number) {
-  ctx.fillStyle = SOFT.tint
+/** رقمٌ في دائرةٍ ذهبيّة — للخطوات وحدَها، فهي تسلسل */
+function stepDot(ctx: CanvasRenderingContext2D, n: number, cx: number, cy: number, r: number) {
+  ctx.fillStyle = C.gold
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
-  ctx.fillStyle = C.tealInk
+  ctx.fillStyle = '#10272B'
   ctx.font = font(700, r * 1.05)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -295,429 +333,180 @@ function numberChip(ctx: CanvasRenderingContext2D, n: number, cx: number, cy: nu
   ctx.textBaseline = 'alphabetic'
 }
 
-/** علامةُ صحٍّ في دائرةٍ فيروزيّةٍ فاتحة */
-function checkChip(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
-  ctx.fillStyle = SOFT.tint
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
-  ctx.strokeStyle = C.teal
-  ctx.lineWidth = Math.max(3, r * 0.2)
-  ctx.lineCap = 'round'
-  ctx.beginPath()
-  ctx.moveTo(cx - r * 0.42, cy)
-  ctx.lineTo(cx - r * 0.1, cy + r * 0.32)
-  ctx.lineTo(cx + r * 0.45, cy - r * 0.32)
-  ctx.stroke()
-}
-
-/** صورُ المدرّبين متراكبةً قليلا في صفّ — و«+N» آخرَها */
-function facePile(ctx: CanvasRenderingContext2D, imgs: (HTMLImageElement | null)[], more: number, cx: number, y: number, size: number) {
-  const step = size * 0.78
-  const n = imgs.length + (more > 0 ? 1 : 0)
-  const total = step * (n - 1) + size
-  let x = cx + total / 2 - size
-  imgs.forEach((img) => { tile(ctx, img, x, y, size); x -= step })
-  if (more > 0) {
-    ctx.save()
-    ctx.shadowColor = 'rgba(31,42,46,0.12)'
-    ctx.shadowBlur = size * 0.18
-    roundRect(ctx, x, y, size, size, size * 0.28)
-    ctx.fillStyle = C.tealInk
-    ctx.fill()
-    ctx.restore()
-    ctx.fillStyle = C.white
-    ctx.font = font(700, size * 0.32)
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.direction = 'ltr'
-    ctx.fillText(`+${more}`, x + size / 2, y + size / 2)
-    ctx.direction = 'rtl'
-    ctx.textBaseline = 'alphabetic'
-  }
+/** دوائرُ المدرّبين متجاورةً في سطورٍ متداخلةٍ قليلا — كأنّهم معا لا في جدول */
+function circleCluster(ctx: CanvasRenderingContext2D, imgs: (HTMLImageElement | null)[], cx: number, top: number, bottom: number, w: number) {
+  const n = imgs.length
+  if (n === 0) return
+  /* والمتنُ الطويلُ (الستوري) يأخذ سطورا أكثر — فتكبر الدوائرُ بدل أن يبقى نصفُه فارغا */
+  const tall = bottom - top > w * 0.75
+  const perRow = n <= 3 ? n : tall ? Math.ceil(n / (n <= 6 ? 2 : n <= 12 ? 3 : 4)) : n <= 8 ? Math.ceil(n / 2) : Math.ceil(n / 3)
+  const rows = Math.ceil(n / perRow)
+  const r = Math.min((w - 160) / (perRow * 1.85), (bottom - top) / (rows * 1.85 + 0.2))
+  const step = r * 1.85
+  const blockH = r * 2 + (rows - 1) * step * 0.92
+  const y0 = top + (bottom - top - blockH) / 2 + r
+  imgs.forEach((img, i) => {
+    const row = Math.floor(i / perRow)
+    const inRow = Math.min(perRow, n - row * perRow)
+    const col = i % perRow
+    const rowW = (inRow - 1) * step
+    circlePhoto(ctx, img, cx + rowW / 2 - col * step, y0 + row * step * 0.92, r)
+  })
 }
 
 /* ═══ التصاميم ═══ */
 
 type Box = ReturnType<typeof frameOf>
 
-function drawOffer(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number) {
-  const cx = w / 2
-  const cardW = w - 160
-  const big = Math.round(190 * f.s)
-  const cardH = big * 2.25
-  const y0 = f.top + Math.max(20, (f.bottom - f.top - cardH - 110 * f.s) / 2)
-  card(ctx, 80, y0, cardW, cardH, 56)
-  ctx.textAlign = 'center'
-  ctx.fillStyle = C.muted
-  ctx.font = font(500, Math.round(30 * f.s))
-  ctx.fillText('منحة من أكاديمية وجيز', cx, y0 + big * 0.42)
-  ctx.fillStyle = C.ink
-  ctx.font = font(700, Math.round(42 * f.s))
-  ctx.fillText('منحتك تصل إلى', cx, y0 + big * 0.72)
-  ctx.fillStyle = C.gold
-  ctx.font = font(700, big)
-  ctx.fillText(`${d.percentOff}٪`, cx, y0 + big * 1.62)
-  ctx.fillStyle = C.tealInk
-  ctx.font = font(700, Math.round(36 * f.s))
-  ctx.fillText('من سعر الدورات', cx, y0 + big * 1.88)
-  ctx.fillStyle = C.muted
-  ctx.font = font(500, Math.round(26 * f.s))
-  ctx.fillText([`اختر حتى ${coursesAr(d.maxCourses)}`, ...(d.lastDayAr ? [`آخر يوم ${d.lastDayAr}`] : [])].join(' · '), cx, y0 + big * 2.08)
-  softChips(ctx, ['لقاءات على Zoom', 'تسجيل كل لقاء', 'شهادة موثقة'], cx, y0 + cardH + 40 * f.s, Math.round(22 * f.s))
-}
-
-async function drawAcademy(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number) {
-  const cx = w / 2
-  const line = fitLines(ctx, GRANT_ACADEMY_LINE_AR, w - 240, 2, Math.round(28 * f.s), Math.round(22 * f.s), 500)
-  const pile = d.photos.length >= MIN_FACES ? Math.round(78 * f.s) : 0
-  const ch = 190 * f.s
-  /* الكتلةُ كلُّها وسطَ ما بين الرأس والذيل — فلا يبقى في الستوري فراغٌ تحتها */
-  const blockH = 140 * f.s + line.lines.length * line.px * 1.45 + 30 * f.s + (pile ? pile + 40 * f.s : 0) + ch
-  const top = f.top + Math.max(0, (f.bottom - f.top - blockH) / 2)
-  ctx.textAlign = 'center'
-  ctx.fillStyle = C.tealInk
-  ctx.font = font(700, Math.round(76 * f.s))
-  ctx.fillText('أكاديمية وجيز', cx, top + 80 * f.s)
-  ctx.fillStyle = C.muted
-  ctx.font = font(500, line.px)
-  line.lines.forEach((l, i) => ctx.fillText(l, cx, top + 140 * f.s + i * line.px * 1.45))
-  /* صفٌّ صغيرٌ من صور المدرّبين — يقول «معك مدرّبون» بلا أن يغلب */
-  let y = top + 140 * f.s + line.lines.length * line.px * 1.45 + 30 * f.s
-  if (pile) {
-    const shown = d.photos.slice(0, 6)
-    const imgs = await Promise.all(shown.map(loadImage))
-    facePile(ctx, imgs, Math.max(0, d.trainerTotal - shown.length), cx, y, pile)
-    y += pile + 40 * f.s
-  }
-  /* ثلاثُ بطاقاتٍ بأرقام الموسم */
-  const stats = [
-    { n: String(d.courses.length), t: underNumber(d.courses.length, 'دورات مباشرة', 'دورة مباشرة') },
-    { n: String(d.trainerTotal), t: underNumber(d.trainerTotal, 'مدربين معتمدين', 'مدربا معتمدا') },
-    { n: `${d.percentOff}٪`, t: 'منحتك' },
-  ].filter((x) => x.n !== '0')
-  const gap = 24
-  const cw = (w - 160 - gap * (stats.length - 1)) / stats.length
-  stats.forEach((x, i) => {
-    const left = w - 80 - (i + 1) * cw - i * gap
-    card(ctx, left, y, cw, ch, 36)
-    ctx.textAlign = 'center'
-    ctx.fillStyle = i === stats.length - 1 ? C.gold : C.tealInk
-    ctx.font = font(700, Math.round(70 * f.s))
-    ctx.fillText(x.n, left + cw / 2, y + ch * 0.52)
-    ctx.fillStyle = C.muted
-    ctx.font = font(500, Math.round(26 * f.s))
-    ctx.fillText(x.t, left + cw / 2, y + ch * 0.8)
-  })
-}
-
-function drawWhy(ctx: CanvasRenderingContext2D, f: Box, w: number, size: GrantSize) {
-  const cx = w / 2
-  const below = heading(ctx, 'لماذا أكاديمية وجيز؟', 'دورات تتعلم فيها وتطبق، مع مدرب معتمد', cx, f.top + 70 * f.s, Math.round(60 * f.s), w - 200)
-  const top = below + 60 * f.s
-  const cols = size === 'story' ? 1 : 2
-  const rows = Math.ceil(ACADEMY_FEATURES.length / cols)
-  const gap = 28
-  const cw = (w - 160 - gap * (cols - 1)) / cols
-  const ch = Math.min((f.bottom - top - gap * (rows - 1)) / rows, (cols === 1 ? 150 : 230) * f.s)
-  ACADEMY_FEATURES.forEach((t, i) => {
-    const col = i % cols
-    const row = Math.floor(i / cols)
-    const left = w - 80 - (col + 1) * cw - col * gap
-    const y = top + row * (ch + gap)
-    card(ctx, left, y, cw, ch, 36)
-    const r = 30 * f.s
-    if (cols === 1) {
-      checkChip(ctx, left + cw - 40 - r, y + ch / 2, r)
-      ctx.fillStyle = C.tealInk
-      ctx.textAlign = 'right'
-      const tl = fitLines(ctx, t, cw - r * 2 - 100, 1, Math.round(34 * f.s), Math.round(26 * f.s))
-      ctx.font = font(700, tl.px)
-      ctx.textBaseline = 'middle'
-      ctx.fillText(tl.lines[0], left + cw - 60 - r * 2, y + ch / 2)
-      ctx.textBaseline = 'alphabetic'
-    } else {
-      checkChip(ctx, left + cw / 2, y + 30 * f.s + r, r)
-      ctx.fillStyle = C.tealInk
-      ctx.textAlign = 'center'
-      const tl = fitLines(ctx, t, cw - 60, 2, Math.round(30 * f.s), Math.round(24 * f.s))
-      ctx.font = font(700, tl.px)
-      tl.lines.forEach((l, k) => ctx.fillText(l, left + cw / 2, y + 30 * f.s + r * 2 + 50 * f.s + k * tl.px * 1.3))
-    }
-  })
-  ctx.textAlign = 'center'
-}
-
-/** اعرف من أين تبدأ — أربعُ بطاقات: اسمُ الاختبار وما يعطيك، وشارةٌ بزمنه أو عدد أسئلته */
-function drawStart(ctx: CanvasRenderingContext2D, f: Box, w: number, size: GrantSize) {
-  const cx = w / 2
-  const below = heading(ctx, 'اعرف من أين تبدأ', 'تشخيص واختبارات مجانية، بلا حساب', cx, f.top + 70 * f.s, Math.round(60 * f.s), w - 200)
-  const top = below + 56 * f.s
-  const cols = size === 'story' ? 1 : 2
-  const rows = Math.ceil(ASSESSMENTS.length / cols)
-  const gap = 26
-  const cw = (w - 160 - gap * (cols - 1)) / cols
-  const ch = Math.min((f.bottom - top - gap * (rows - 1)) / rows, (cols === 1 ? 210 : 260) * f.s)
-  const tagPx = Math.round(21 * f.s)
-  ASSESSMENTS.forEach((a, i) => {
-    const col = i % cols
-    const row = Math.floor(i / cols)
-    const left = w - 80 - (col + 1) * cw - col * gap
-    const y = top + row * (ch + gap)
-    card(ctx, left, y, cw, ch, 36)
-    const pad = 36
-    const right = left + cw - pad
-    /* الكتلةُ (الشارة، فالاسم، فما يعطيك) وسطَ البطاقة — وتصغر إن لم تتّسع لها */
-    const t = fitLines(ctx, a.title, cw - pad * 2, 1, Math.round(36 * f.s), Math.round(26 * f.s))
-    const sl = fitLines(ctx, a.sub, cw - pad * 2, 2, Math.round(25 * f.s), Math.round(19 * f.s), 500)
-    const th0 = tagPx * 1.9
-    const blockH = th0 + t.px * 1.5 + sl.px * 0.6 + sl.lines.length * sl.px * 1.4
-    const k = Math.min(1, (ch - 44) / blockH)
-    const tp = tagPx * k
-    const th = th0 * k
-    let yy = y + (ch - blockH * k) / 2
-    ctx.font = font(700, tp)
-    const tw = ctx.measureText(a.tag).width + tp * 1.6
-    roundRect(ctx, right - tw, yy, tw, th, th / 2)
-    ctx.fillStyle = SOFT.tint
-    ctx.fill()
-    ctx.fillStyle = C.tealInk
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(a.tag, right - tw / 2, yy + th / 2 + tp * 0.05)
-    ctx.textBaseline = 'top'
-    yy += th + t.px * 0.4 * k
-    ctx.textAlign = 'right'
-    ctx.fillStyle = C.ink
-    ctx.font = font(700, t.px * k)
-    ctx.fillText(t.lines[0], right, yy)
-    yy += t.px * 1.1 * k + sl.px * 0.6 * k
-    ctx.fillStyle = C.muted
-    ctx.font = font(500, sl.px * k)
-    sl.lines.forEach((l, n) => ctx.fillText(l, right, yy + n * sl.px * 1.4 * k))
-    ctx.textBaseline = 'alphabetic'
-  })
-  ctx.textAlign = 'center'
-}
-
-/** مزايا وجيز — ثماني مزايا بعلامة صحّ: عمودان في المنشور والشريحة، وعمودٌ في الستوري */
-function drawFeatures(ctx: CanvasRenderingContext2D, f: Box, w: number, size: GrantSize) {
-  const cx = w / 2
-  const below = heading(ctx, 'كل ما تجده في وجيز', 'من أول خطوة حتى الشهادة', cx, f.top + 70 * f.s, Math.round(60 * f.s), w - 200)
-  const top = below + 50 * f.s
-  const cols = size === 'story' ? 1 : 2
-  const rows = Math.ceil(ACADEMY_PERKS.length / cols)
-  const gap = 20
-  const cw = (w - 160 - gap * (cols - 1)) / cols
-  const ch = Math.min((f.bottom - top - gap * (rows - 1)) / rows, (cols === 1 ? 110 : 130) * f.s)
-  const r = Math.min(26 * f.s, ch * 0.26)
-  ACADEMY_PERKS.forEach((t, i) => {
-    const col = i % cols
-    const row = Math.floor(i / cols)
-    const left = w - 80 - (col + 1) * cw - col * gap
-    const y = top + row * (ch + gap)
-    card(ctx, left, y, cw, ch, 30)
-    checkChip(ctx, left + cw - 28 - r, y + ch / 2, r)
-    ctx.fillStyle = C.tealInk
-    ctx.textAlign = 'right'
-    const tl = fitLines(ctx, t, cw - r * 2 - 76, 1, Math.round((cols === 1 ? 34 : 28) * f.s), Math.round(20 * f.s))
-    ctx.font = font(700, tl.px)
-    ctx.textBaseline = 'middle'
-    ctx.fillText(tl.lines[0], left + cw - 48 - r * 2, y + ch / 2)
-    ctx.textBaseline = 'alphabetic'
-  })
-  ctx.textAlign = 'center'
-}
-
-async function drawTrainers(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number) {
-  const cx = w / 2
-  heading(ctx, 'تتعلم مع نخبة من المدربين', `${trainersCountAr(d.trainerTotal)} · ${coursesAr(d.courses.length)} مباشرة على Zoom`, cx, f.top + 80 * f.s, Math.round(60 * f.s), w - 200)
-  const shown = d.photos.slice(0, 6)
-  const imgs = await Promise.all(shown.map(loadImage))
-  const size = Math.round(118 * f.s)
-  const y = f.top + 80 * f.s + (f.bottom - f.top - 80 * f.s) / 2 - size / 2 + 10 * f.s
-  facePile(ctx, imgs, Math.max(0, d.trainerTotal - shown.length), cx, y, size)
-  ctx.textAlign = 'center'
-  ctx.fillStyle = C.muted
-  ctx.font = font(500, Math.round(28 * f.s))
-  ctx.fillText('مدرب معتمد لدينا يرافقك في كل لقاء', cx, y + size + 70 * f.s)
-}
-
-/** كلُّ المدرّبين معا — شبكةٌ من صورهم تملأ ما فوق البطاقة، وبطاقةٌ بيضاءُ أسفلَها تقول من هم */
-async function drawTeam(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number, size: GrantSize) {
-  const cx = w / 2
-  const photos = d.photos.slice(0, size === 'story' ? 20 : size === 'slide' ? 16 : 12)
-  const imgs = await Promise.all(photos.map(loadImage))
-  const cardH = 230 * f.s
-  const gridTop = f.top + 10
-  const gridBottom = f.bottom - cardH - 30 * f.s
-  const cols = size === 'post' ? 6 : 5
-  const rows = Math.ceil(photos.length / cols)
-  const gap = 18
-  const tileSize = Math.min((w - 140 - gap * (cols - 1)) / cols, (gridBottom - gridTop - gap * (rows - 1)) / rows)
-  const gridH = rows * tileSize + gap * (rows - 1)
-  const y0 = gridTop + (gridBottom - gridTop - gridH) / 2
-  imgs.forEach((img, i) => {
-    const row = Math.floor(i / cols)
-    const inRow = Math.min(cols, photos.length - row * cols)
-    const col = i % cols
-    const rowW = inRow * tileSize + gap * (inRow - 1)
-    const x = cx + rowW / 2 - (col + 1) * tileSize - col * gap
-    tile(ctx, img, x, y0 + row * (tileSize + gap), tileSize)
-  })
-  const cy = f.bottom - cardH
-  card(ctx, 80, cy, w - 160, cardH, 44)
-  ctx.textAlign = 'center'
-  ctx.fillStyle = C.ink
-  ctx.font = font(700, Math.round(52 * f.s))
-  ctx.fillText('مدربونا', cx, cy + cardH * 0.42)
-  ctx.fillStyle = C.muted
-  ctx.font = font(500, Math.round(28 * f.s))
-  ctx.fillText(`${trainersCountAr(d.trainerTotal)} في ${coursesAr(d.courses.length)} مباشرة هذا الفصل`, cx, cy + cardH * 0.72)
-}
-
-function drawCourses(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number, size: GrantSize) {
-  const cx = w / 2
-  const below = heading(ctx, 'دورات مباشرة هذا الفصل', d.termAr, cx, f.top + 70 * f.s, Math.round(58 * f.s), w - 200)
-  const cap = size === 'story' ? 9 : size === 'slide' ? 6 : 5
-  const list = d.courses.slice(0, cap)
-  const rest = d.courses.length - list.length
-  const top = below + 50 * f.s
-  const restH = rest > 0 ? 60 * f.s : 0
-  const cardH = f.bottom - top - restH
-  card(ctx, 80, top, w - 160, cardH, 44)
-  const rowH = (cardH - 40) / Math.max(1, list.length)
-  const namePx = Math.round(Math.min(32 * f.s, rowH * 0.36))
-  const datePx = Math.round(namePx * 0.74)
-  const r = namePx * 0.78
-  const right = w - 80 - 44
-  list.forEach((c, i) => {
-    const yc = top + 20 + i * rowH + rowH / 2
-    numberChip(ctx, i + 1, right - r, yc, r)
-    ctx.textAlign = 'right'
-    ctx.fillStyle = C.ink
-    const t = fitLines(ctx, shortTitle(c.title), w - 300 - r * 2, 1, namePx, namePx - 6)
-    ctx.font = font(700, t.px)
-    ctx.fillText(t.lines[0], right - r * 2 - 24, yc - datePx * 0.15)
-    ctx.fillStyle = C.muted
-    ctx.font = font(500, datePx)
-    ctx.fillText(c.startsAt ? `تبدأ ${d.dayAr(c.startsAt)}` : 'موعدها قريبا', right - r * 2 - 24, yc + datePx * 1.15)
-    if (i < list.length - 1) {
-      ctx.fillStyle = SOFT.line
-      ctx.fillRect(130, top + 20 + (i + 1) * rowH, w - 260, 2)
-    }
-  })
-  if (rest > 0) {
-    ctx.textAlign = 'center'
-    ctx.fillStyle = C.muted
-    ctx.font = font(700, Math.round(26 * f.s))
-    ctx.fillText(`و${coursesAr(rest)} أخرى تختار منها`, cx, f.bottom - 8)
-  }
-}
-
-function drawSteps(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number) {
-  const cx = w / 2
-  const below = heading(ctx, 'كيف تحجز منحتك؟', 'ثلاث خطوات، وتبدأ', cx, f.top + 70 * f.s, Math.round(60 * f.s), w - 200)
-  const lines = ['افتح الرابط في البايو', `اكتب الكود ${d.code}`, `اختر حتى ${coursesAr(d.maxCourses)} واحجز منحتك`]
-  const top = below + 60 * f.s
-  const gap = 26
-  const ch = Math.min((f.bottom - top - gap * 2) / 3, 170 * f.s)
-  lines.forEach((l, i) => {
-    const y = top + i * (ch + gap)
-    card(ctx, 80, y, w - 160, ch, 36)
-    const r = 34 * f.s
-    numberChip(ctx, i + 1, w - 80 - 44 - r, y + ch / 2, r)
-    ctx.textAlign = 'right'
-    ctx.fillStyle = C.tealInk
-    const t = fitLines(ctx, l, w - 320, 1, Math.round(38 * f.s), Math.round(28 * f.s))
-    ctx.font = font(700, t.px)
-    ctx.textBaseline = 'middle'
-    ctx.fillText(t.lines[0], w - 80 - 44 - r * 2 - 28, y + ch / 2)
-    ctx.textBaseline = 'alphabetic'
-  })
-  ctx.textAlign = 'center'
-}
-
-/** مكانُ الصورة في القالب — ظلُّ رأسٍ وكتفين و«صورتك هنا» */
-function photoSlot(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
-  ctx.fillStyle = SOFT.tint
-  ctx.fillRect(x, y, size, size)
-  ctx.fillStyle = 'rgba(31,111,120,0.22)'
-  ctx.beginPath(); ctx.arc(x + size / 2, y + size * 0.38, size * 0.16, 0, Math.PI * 2); ctx.fill()
-  ctx.beginPath(); ctx.ellipse(x + size / 2, y + size * 1.04, size * 0.34, size * 0.4, 0, Math.PI, 0); ctx.fill()
-  ctx.fillStyle = C.tealInk
-  ctx.font = font(700, Math.round(size * 0.075))
-  ctx.textAlign = 'center'
-  ctx.fillText('صورتك هنا', x + size / 2, y + size * 0.88)
-}
-
-/** تصميمُه الخاصّ — صورتُه كبيرةً مستديرةَ الزوايا، واسمُه، و«منحتي لكم تصل إلى ٤٥٪» في بطاقة */
+/** تصميمُه الخاصّ — صورتُه في دائرةٍ كبيرة، واسمُه، و«منحة خاصة لمتابعيني» والملصق */
 async function drawPersonal(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number, size: GrantSize) {
   const cx = w / 2
-  /* الصورةُ أكبرُ ما يتّسع له المقاس — والستوري أطولُها فصورتُه أكبر */
-  const P = size === 'story' ? 560 : size === 'slide' ? 400 : 330
-  const cardH = 130 * f.s
-  const blockH = P + 72 * f.s + 50 * f.s + 40 * f.s + cardH
-  const y0 = f.top + Math.max(10, (f.bottom - f.top - blockH) / 2)
-  const x0 = cx - P / 2
-  const r = P * 0.22
+  const mood = MOOD.personal
+  const r = size === 'story' ? 300 : size === 'slide' ? 230 : 190
   const img = d.own.photo ? await loadImage(d.own.photo) : null
-  ctx.save()
-  ctx.shadowColor = 'rgba(31,42,46,0.16)'
-  ctx.shadowBlur = 50
-  ctx.shadowOffsetY = 18
-  roundRect(ctx, x0, y0, P, P, r)
-  ctx.fillStyle = C.white
-  ctx.fill()
-  ctx.restore()
-  const b = 10
-  ctx.save()
-  roundRect(ctx, x0 + b, y0 + b, P - b * 2, P - b * 2, r - b)
-  ctx.clip()
-  if (img) {
-    const side = Math.min(img.naturalWidth, img.naturalHeight)
-    const sy = img.naturalHeight > img.naturalWidth ? (img.naturalHeight - side) * 0.2 : (img.naturalHeight - side) / 2
-    ctx.drawImage(img, (img.naturalWidth - side) / 2, sy, side, side, x0 + b, y0 + b, P - b * 2, P - b * 2)
-  } else photoSlot(ctx, x0 + b, y0 + b, P - b * 2)
-  ctx.restore()
+  const blockH = r * 2 + 60 * f.s + 150 * f.s
+  const cy = f.top + Math.max(10, (f.bottom - f.top - blockH) / 2) + r
+  if (img) circlePhoto(ctx, img, cx, cy, r, 0.035)
+  else {
+    circlePhoto(ctx, null, cx, cy, r, 0.035)
+    ctx.fillStyle = 'rgba(14,73,80,0.25)'
+    ctx.beginPath(); ctx.arc(cx, cy - r * 0.22, r * 0.3, 0, Math.PI * 2); ctx.fill()
+    ctx.beginPath(); ctx.ellipse(cx, cy + r * 0.75, r * 0.55, r * 0.5, 0, Math.PI, 0); ctx.fill()
+    ctx.fillStyle = '#0E4950'
+    ctx.font = font(700, Math.round(r * 0.14))
+    ctx.textAlign = 'center'
+    ctx.fillText('صورتك هنا', cx, cy + r * 0.62)
+  }
+  sticker(ctx, cx - r * 0.78, cy + r * 0.62, d.percentOff, Math.round(r * 0.42))
   ctx.textAlign = 'center'
-  ctx.fillStyle = C.ink
-  const nm = fitLines(ctx, d.own.name, w - 200, 1, Math.round(58 * f.s), Math.round(36 * f.s))
-  ctx.font = font(700, nm.px)
-  ctx.fillText(nm.lines[0], cx, y0 + P + 72 * f.s)
-  ctx.fillStyle = C.muted
-  ctx.font = font(500, Math.round(28 * f.s))
-  ctx.fillText('أنصحكم بأكاديمية وجيز', cx, y0 + P + 122 * f.s)
-  /* «منحتي لكم تصل إلى» والنسبةُ ذهبيّةٌ كبيرةٌ إلى يسارها، في بطاقةٍ بيضاء */
-  const cy = y0 + P + 162 * f.s
-  const lead = 'منحتي لكم تصل إلى'
-  const tail = 'من سعر الدورات'
-  const big = `${d.percentOff}٪`
-  const lp = Math.round(32 * f.s)
-  const bp = Math.round(76 * f.s)
-  ctx.font = font(700, lp)
-  const lw = ctx.measureText(lead).width
-  const tw = ctx.measureText(tail).width
-  ctx.font = font(700, bp)
-  const bw = ctx.measureText(big).width
-  const gap = 22 * f.s
-  const total = lw + gap + bw + gap + tw
-  const cw = Math.min(w - 160, total + 90 * f.s)
-  card(ctx, cx - cw / 2, cy, cw, cardH, cardH / 2)
-  let right = cx + total / 2
-  ctx.textAlign = 'right'
-  ctx.textBaseline = 'middle'
-  ctx.fillStyle = C.tealInk
-  ctx.font = font(700, lp)
-  ctx.fillText(lead, right, cy + cardH / 2 + lp * 0.08)
-  right -= lw + gap
-  ctx.fillStyle = C.gold
-  ctx.font = font(700, bp)
-  ctx.fillText(big, right, cy + cardH / 2 + bp * 0.06)
-  right -= bw + gap
-  ctx.fillStyle = C.tealInk
-  ctx.font = font(700, lp)
-  ctx.fillText(tail, right, cy + cardH / 2 + lp * 0.08)
-  ctx.textBaseline = 'alphabetic'
-  ctx.textAlign = 'center'
+  ctx.fillStyle = TONE[mood].sub
+  ctx.font = font(500, Math.round(30 * f.s))
+  ctx.fillText(d.own.name, cx, cy + r + 62 * f.s)
+  headline(ctx, 'منحة خاصة لمتابعيني', cx, cy + r + 140 * f.s, Math.round(64 * f.s), w - 180, mood, f.s)
+}
+
+/** المنحة: عنوانٌ وملصقٌ كبير، وسطرٌ يقول على ماذا */
+function drawOffer(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number) {
+  const cx = w / 2
+  const mood = MOOD.offer
+  const big = Math.round(170 * f.s)
+  const blockH = 90 * f.s + big * 1.55 + 70 * f.s + 120 * f.s
+  const top = f.top + Math.max(0, (f.bottom - f.top - blockH) / 2)
+  headline(ctx, 'منحة خاصة لمتابعيني', cx, top + 70 * f.s, Math.round(66 * f.s), w - 180, mood, f.s)
+  sticker(ctx, cx, top + 90 * f.s + 60 * f.s + big * 0.78, d.percentOff, big)
+  subline(ctx, 'على دورات أكاديمية وجيز، بمناسبة انطلاقتها', cx, top + 150 * f.s + big * 1.55 + 70 * f.s, Math.round(32 * f.s), w - 200, mood)
+}
+
+/** الأكاديمية: ما يحصل عليه — بلا أرقام. وصفٌّ صغيرٌ من دوائر المدرّبين إن كانوا */
+async function drawAcademy(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number) {
+  const cx = w / 2
+  const mood = MOOD.academy
+  const faces = d.photos.length >= MIN_FACES ? d.photos.slice(0, 5) : []
+  const r = Math.round(52 * f.s)
+  const blockH = 260 * f.s + (faces.length ? r * 2 + 60 * f.s : 0)
+  const top = f.top + Math.max(0, (f.bottom - f.top - blockH) / 2)
+  const below = headline(ctx, 'تعلم اليوم، طبق غدا', cx, top + 80 * f.s, Math.round(76 * f.s), w - 180, mood, f.s)
+  const after = subline(ctx, 'دورات مباشرة مع مدربين من أهل المجال', cx, below + 80 * f.s, Math.round(32 * f.s), w - 220, mood)
+  if (faces.length) {
+    const imgs = await Promise.all(faces.map(loadImage))
+    const step = r * 1.7
+    const y = after + 70 * f.s + r
+    imgs.forEach((img, i) => circlePhoto(ctx, img, cx + ((imgs.length - 1) * step) / 2 - i * step, y, r))
+  }
+}
+
+/** من أين تبدأ: سؤالٌ وجوابٌ في سطر، وأسماءُ الاختبارات شاراتٍ صغيرة */
+function drawStart(ctx: CanvasRenderingContext2D, f: Box, w: number, size: GrantSize) {
+  const cx = w / 2
+  const mood = MOOD.start
+  const blockH = 420 * f.s
+  const top = f.top + Math.max(0, (f.bottom - f.top - blockH) / 2)
+  const below = headline(ctx, 'لا تعرف من أين تبدأ؟', cx, top + 80 * f.s, Math.round(74 * f.s), w - 160, mood, f.s)
+  const after = subline(ctx, 'تشخيص مجاني يدلك على طريقك، بلا حساب', cx, below + 80 * f.s, Math.round(32 * f.s), w - 220, mood)
+  pills(ctx, ASSESSMENTS.map((a) => a.title), cx, after + 60 * f.s, Math.round((size === 'story' ? 28 : 25) * f.s), w - 160, mood)
+}
+
+/** المزايا: عنوانٌ وأربعُ كلماتٍ لا ثمانٍ */
+function drawFeatures(ctx: CanvasRenderingContext2D, f: Box, w: number, size: GrantSize) {
+  const cx = w / 2
+  const mood = MOOD.features
+  const blockH = 400 * f.s
+  const top = f.top + Math.max(0, (f.bottom - f.top - blockH) / 2)
+  const below = headline(ctx, 'كل ما تحتاجه في مكان واحد', cx, top + 80 * f.s, Math.round(70 * f.s), w - 160, mood, f.s)
+  const shown = [ACADEMY_PERKS[2], ACADEMY_PERKS[4], ACADEMY_PERKS[5], ACADEMY_PERKS[6]]
+  pills(ctx, shown, cx, below + 80 * f.s, Math.round((size === 'story' ? 30 : 27) * f.s), w - 160, mood)
+}
+
+/** لماذا: جملةٌ واحدةٌ تقول الفرق */
+function drawWhy(ctx: CanvasRenderingContext2D, f: Box, w: number) {
+  const cx = w / 2
+  const mood = MOOD.why
+  const blockH = 300 * f.s
+  const top = f.top + Math.max(0, (f.bottom - f.top - blockH) / 2)
+  const below = headline(ctx, 'لا تجمع شهادات، ابن مهارة', cx, top + 80 * f.s, Math.round(78 * f.s), w - 160, mood, f.s)
+  subline(ctx, 'تطبيق عملي في كل دورة، ومدرب يرافقك', cx, below + 80 * f.s, Math.round(32 * f.s), w - 220, mood)
+}
+
+/** المدرّبون: دوائرُ معا، وعنوانٌ يقول من هم — بلا عدد */
+async function drawTrainers(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number) {
+  const cx = w / 2
+  const mood = MOOD.trainers
+  const below = headline(ctx, 'تعلم من أهل الخبرة', cx, f.top + 80 * f.s, Math.round(70 * f.s), w - 180, mood, f.s)
+  const imgs = await Promise.all(d.photos.slice(0, 7).map(loadImage))
+  circleCluster(ctx, imgs, cx, below + 50 * f.s, f.bottom - 70 * f.s, w)
+  subline(ctx, 'مدربون معتمدون يرافقونك في كل لقاء', cx, f.bottom - 10 * f.s, Math.round(30 * f.s), w - 220, mood)
+}
+
+/** كلُّ المدرّبين معا — دوائرُهم تملأ المتن */
+async function drawTeam(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number, size: GrantSize) {
+  const cx = w / 2
+  const mood = MOOD.team
+  const below = headline(ctx, 'مدربونا', cx, f.top + 80 * f.s, Math.round(74 * f.s), w - 180, mood, f.s)
+  const imgs = await Promise.all(d.photos.slice(0, size === 'story' ? 15 : 12).map(loadImage))
+  circleCluster(ctx, imgs, cx, below + 40 * f.s, f.bottom, w)
+}
+
+/** الدورات: أسماؤها شاراتٍ — خمسٌ على الأكثر، بلا مواعيد */
+function drawCourses(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number, size: GrantSize) {
+  const cx = w / 2
+  const mood = MOOD.courses
+  const list = d.courses.slice(0, size === 'story' ? 7 : 5).map((c) => shortTitle(c.title))
+  const rest = d.courses.length - list.length
+  const blockH = 160 * f.s + list.length * 70 * f.s
+  const top = f.top + Math.max(0, (f.bottom - f.top - blockH) / 2)
+  const below = headline(ctx, 'دورات هذا الفصل', cx, top + 80 * f.s, Math.round(70 * f.s), w - 180, mood, f.s)
+  const px = Math.round(28 * f.s)
+  let y = below + 70 * f.s
+  for (const t of list) {
+    y = pills(ctx, [t], cx, y, px, w - 160, mood) + px * 0.7
+  }
+  if (rest > 0) subline(ctx, 'ودورات أخرى تختار منها', cx, y + px * 1.2, Math.round(26 * f.s), w - 200, mood)
+}
+
+/** كيف تحجز: ثلاثُ خطواتٍ مرقّمة — فهي تسلسلٌ حقّا */
+function drawSteps(ctx: CanvasRenderingContext2D, d: GrantArtData, f: Box, w: number) {
+  const cx = w / 2
+  const mood = MOOD.steps
+  const lines = ['افتح الرابط في البايو', `اكتب كودي ${d.code}`, 'اختر دوراتك واحجز']
+  const gap = 120 * f.s
+  const blockH = 200 * f.s + gap * 3
+  const top = f.top + Math.max(0, (f.bottom - f.top - blockH) / 2)
+  const below = headline(ctx, '3 خطوات وتبدأ', cx, top + 80 * f.s, Math.round(72 * f.s), w - 180, mood, f.s)
+  const px = Math.round(38 * f.s)
+  ctx.font = font(700, px)
+  const widest = Math.max(...lines.map((l) => ctx.measureText(l).width))
+  const r = 30 * f.s
+  const right = cx + (widest + r * 2 + 30 * f.s) / 2
+  lines.forEach((l, i) => {
+    const y = below + 110 * f.s + i * gap
+    stepDot(ctx, i + 1, right - r, y, r)
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = TONE[mood].head
+    ctx.font = font(700, px)
+    ctx.fillText(l, right - r * 2 - 30 * f.s, y + px * 0.05)
+    ctx.textBaseline = 'alphabetic'
+  })
 }
 
 /** يرسم تصميما بمقاسه */
@@ -730,8 +519,9 @@ export async function drawGrantArt(design: GrantDesign, size: GrantSize, d: Gran
   await Promise.all([document.fonts.load(font(700, 40)), document.fonts.load(font(500, 40))]).catch(() => undefined)
   const logo = await loadImage('/logo-mark.png')
   ctx.direction = 'rtl'
-  softBackground(ctx, w, h)
-  softHeader(ctx, logo, w)
+  const mood = MOOD[design]
+  backdrop(ctx, w, h, mood)
+  header(ctx, logo, w, mood)
   const f = frameOf(size)
   const cx = w / 2
 
@@ -740,23 +530,19 @@ export async function drawGrantArt(design: GrantDesign, size: GrantSize, d: Gran
   else if (design === 'academy') await drawAcademy(ctx, d, f, w)
   else if (design === 'start') drawStart(ctx, f, w, size)
   else if (design === 'features') drawFeatures(ctx, f, w, size)
-  else if (design === 'why') drawWhy(ctx, f, w, size)
+  else if (design === 'why') drawWhy(ctx, f, w)
   else if (design === 'trainers') await drawTrainers(ctx, d, f, w)
   else if (design === 'team') await drawTeam(ctx, d, f, w, size)
   else if (design === 'courses') drawCourses(ctx, d, f, w, size)
   else drawSteps(ctx, d, f, w)
 
-  /* والذيلُ لكلّ تصميم: سطرُ المنحة (إلّا فيما يقولها) ثمّ الكودُ باسمه — وفي تصميمه الخاصّ باسمه كما كتبه */
-  if (design !== 'offer' && design !== 'personal') grantLine(ctx, d, cx, f.lineY, Math.round(28 * f.s))
-  codePill(ctx, design === 'personal' ? { ...d, name: d.own.name } : d, cx, f.pillY, Math.round(30 * f.s), w - 160)
+  /* والذيلُ لكلّ تصميم: الكودُ باسمه — وفي تصميمه الخاصّ باسمه كما كتبه. والستوري يقول أين الرابط */
+  codePill(ctx, design === 'personal' ? { ...d, name: d.own.name } : d, cx, f.pillY, Math.round(30 * f.s), w - 160, mood)
   if (f.cta) {
     ctx.textAlign = 'center'
-    ctx.fillStyle = C.ink
-    ctx.font = font(700, 44)
-    ctx.fillText('احجز منحتك — الرابط في البايو', cx, h - 170)
-    ctx.fillStyle = C.muted
-    ctx.font = font(500, 32)
-    ctx.fillText('المنح محدودة', cx, h - 112)
+    ctx.fillStyle = TONE[mood].sub
+    ctx.font = font(500, 34)
+    ctx.fillText('الرابط في البايو', cx, h - 150)
   }
   return canvas
 }
