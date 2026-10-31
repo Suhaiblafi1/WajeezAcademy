@@ -1679,20 +1679,25 @@ export class CohortService {
         console.error('[zoom] تعذّر إلغاء الاجتماع مع لقائه', session.zoom.meetingId, e)
       }
     }
-    /* والمُعلَنُ يُبلَّغ قبل أن يُمحى صفُّه — فبعد الحذف لا مرجعَ يُقرأ منه */
+    /* والمُعلَنُ يُبلَّغ قبل أن يُمحى صفُّه — فبعد الحذف لا مرجعَ يُقرأ منه. تُرفع دعوتُه من التقاويم أوّلا —
+       والرسالةُ تُبنى ممّا يُمحى بعد سطر — ثمّ الجرس.
+
+       ═══ ورسالةٌ واحدةٌ لا اثنتان (٣١ أكتوبر ٢٠٢٦) ═══
+       كان صاحبُ المقعد يصله الخبرُ مرّتين: بريدُ الجرس ورسالةُ الرفع بالجملة نفسِها. فقيل لصاحب المنصّة ذلك، وأنّ
+       علاجَه ما اختاره للنقل («One email»)، فقال: «Yes». فمن وصلته رسالةُ الرفع يبقى له الجرسُ وحدَه، والمنتظِرُ في
+       القائمة — ولا دعوةَ له تُرفع — يبقى له البريد. وإن لم تُكتب رسالةُ الرفع بقي البريدُ لكلٍّ: واحدةٌ لا صفر. */
     const wasAnnounced = session.approvalState === 'approved'
-    const told = wasAnnounced
-      ? await this.tellCohortScheduleChanged(session.cohortId, session, 'ألغي هذا اللقاء. ويصلك بديله إن جدول.')
-      : 0
-    /* وتُرفع دعوتُه من التقاويم قبل صفّه — والرسالةُ تُبنى ممّا يُمحى بعد سطر */
+    let told = 0
     if (wasAnnounced) {
-      await this.inviteSafely('delete', () => this.invites.withdraw(
+      const mailed = await this.inviteSafely('delete', () => this.invites.withdraw(
         {
           id: session.id, cohortId: session.cohortId, cohortTitle: session.cohort.title,
           title: session.title, startsAt: session.startsAt, endsAt: session.endsAt,
         },
         { learnerAr: 'ألغي هذا اللقاء — ويصلك بديله إن جدول.', trainerAr: 'حذف هذا اللقاء من جدول الشعبة.' },
       ))
+      told = await this.tellCohortScheduleChanged(session.cohortId, session, 'ألغي هذا اللقاء. ويصلك بديله إن جدول.',
+        { calendarMailed: mailed > 0 })
     }
 
     await this.prisma.cohortSession.delete({ where: { id: sessionId } })
