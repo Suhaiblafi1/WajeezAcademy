@@ -322,6 +322,31 @@ export async function applyGrantCloseFix(prisma: PrismaClient, fix: { from: stri
   return true
 }
 
+/* ═══ وتُمدَّد إلى ١٢ نوفمبر — بقرار صاحب المنصّة (١ نوفمبر ٢٠٢٦) ═══
+
+   قال: «مدّد المنحة إلى 12 نوفمبر». فآخرُ يومٍ ١٢ نوفمبر، والنهايةُ أوّلَ ١٣ نوفمبر بتوقيت عمّان (`grantClosesAt`).
+   وتمديدٌ لا تقصير: لا يقع إلّا والنهايةُ قبلها — فإن مدّها أحدٌ من شاشتها أبعدَ لم تُمسّ، ولا نهايةَ لها لا تُمسّ.
+   ومرّةً واحدةً بأثره (`fixedBefore`): فإن غيّرها صاحبُ المنصّة من شاشتها بعدُ بقي ما كتب. */
+export const GRANT_EXTEND_FIX = { to: '2026-11-12T21:00:00.000Z' } as const
+const GRANT_EXTEND_FIX_REASON = 'قرار صاحب المنصة (1 نوفمبر 2026): تمديد المنحة إلى 12 نوفمبر'
+
+export async function applyGrantExtendFix(prisma: PrismaClient, fix: { to: string } = GRANT_EXTEND_FIX): Promise<boolean> {
+  const c = await prisma.grantCampaign.findUnique({ where: { slug: MEMBER_GRANT_SLUG }, select: { id: true, closesAt: true } })
+  const to = new Date(fix.to)
+  if (!c?.closesAt || c.closesAt >= to) return false
+  if (await fixedBefore(prisma, c.id, GRANT_EXTEND_FIX_REASON)) return false
+  const from = c.closesAt.toISOString()
+  await prisma.$transaction(async (tx) => {
+    await tx.grantCampaign.update({ where: { id: c.id }, data: { closesAt: to } })
+    await recordAudit(tx, {
+      actorId: null, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
+      before: { closesAt: from }, after: { closesAt: fix.to },
+      reason: GRANT_EXTEND_FIX_REASON,
+    })
+  })
+  return true
+}
+
 /* ═══ والمنحةُ تغطّي ٤ دوراتٍ بحدٍّ أقصى — بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) ═══
 
    قال: «ضعها له وكأنّك تقول اختر ٤ دوراتٍ بحدٍّ أقصى، لكي يشعر أنّ المنحةَ عظيمة»، واختار تغييرَ الحدّ من ٥ إلى ٤ لا

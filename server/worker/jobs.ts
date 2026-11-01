@@ -1547,11 +1547,13 @@ export async function runGrantFollowups(prisma: PrismaClient, now = new Date()):
 /** من أخذ كود المنحة ولم يشترِ — بريدٌ قبل انتهائها بثلاثة أيّامٍ وفي آخر يوم، مرّةً لكلٍّ (`grant-followup.service.ts`) */
 export async function runGrantReminders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
-  const { applyGrantCloseFix, applyGrantCoursesFix, sendGrantReminders } = await import('../services/grant-followup.service')
+  const { applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, sendGrantReminders } = await import('../services/grant-followup.service')
   const { seedGrantAdvisorWhatsApp } = await import('../services/integrations.service')
   /* آخرُ يومٍ ٣٠ أكتوبر، والحدُّ ٤ دورات — بقرار صاحب المنصّة، قبل التذكير فيتبع التذكيرُ اليومَ الصحيح.
      ورقمُ مستشار المنحة على واتساب — والعاملُ يدور بكلّ وظائفه حين يبدأ، فيُكتب أوّلَ ما يُنشر */
   const fixed = await applyGrantCloseFix(prisma)
+  /* ثمّ مُدّت إلى ١٢ نوفمبر (١ نوفمبر ٢٠٢٦) — بعد تصحيح ٣٠ أكتوبر، فلا يردّها ذاك إن وقع أوّلا */
+  const extended = await applyGrantExtendFix(prisma)
   const limited = await applyGrantCoursesFix(prisma)
   const seeded = await seedGrantAdvisorWhatsApp(prisma)
   /* ولكلّ حملةٍ بنهايتها: «منحة وجيز» و«منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) */
@@ -1562,11 +1564,11 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   const mailOff = members.mailOff || influencers.mailOff
   return {
     job: 'grant_reminders',
-    summaryAr: (fixed ? 'صار آخر يوم للمنحة 30 أكتوبر · ' : '') + (limited ? 'صار حد المنحة 4 دورات · ' : '')
+    summaryAr: (fixed ? 'صار آخر يوم للمنحة 30 أكتوبر · ' : '') + (extended ? 'مدت المنحة إلى 12 نوفمبر · ' : '') + (limited ? 'صار حد المنحة 4 دورات · ' : '')
       + (seeded ? 'ضبط رقم واتساب مستشار المنحة · ' : '') + (mailOff
       ? 'حلّ تذكير المنحة وقناة البريد غير موصولة — لا يذكّر أحد حتى توصل'
       : sent === 0 ? 'لا تذكير منحة مستحق' : `ذكّر ${sent} ممن لم يشتر بأن المنحة تنتهي (${stage === '1d' ? 'آخر يوم' : 'قبل ثلاثة أيام'})`),
-    done: sent + (fixed ? 1 : 0) + (limited ? 1 : 0) + (seeded ? 1 : 0), failed: 0, ms: Date.now() - started,
+    done: sent + (fixed ? 1 : 0) + (extended ? 1 : 0) + (limited ? 1 : 0) + (seeded ? 1 : 0), failed: 0, ms: Date.now() - started,
   }
 }
 

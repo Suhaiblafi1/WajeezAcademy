@@ -19,10 +19,10 @@ import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
-import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, applyGrantCoursesFix, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
+import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_EXTEND_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { grantCallDueAt } from '../../../src/application/commerce/grant-landing'
-import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { INFLUENCER_GRANT_SLUG, grantClosesAt } from '../../../src/application/commerce/grant'
 import { shortCourseTitleAr } from '../../../src/application/text/course-lines'
 import { runJob } from '../../worker/jobs'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
@@ -280,7 +280,9 @@ describe('⑥ آخر يوم للمنحة 30 أكتوبر — بقرار صاحب
     expect(await applyGrantCloseFix(prisma)).toBe(false)
     expect(await closesAt()).toBe(other)
 
-    /* وأعاده صاحبُ المنصّة إلى ٣١ أكتوبر نفسِه من شاشته — العاملُ الذي يدور كلَّ ساعةٍ لا يردّه */
+    /* وأعاده صاحبُ المنصّة إلى ٣١ أكتوبر نفسِه من شاشته — العاملُ الذي يدور كلَّ ساعةٍ لا يردّه.
+       وتمديدُ ١٢ نوفمبر وقع قبلها، فلا يمدّها هو أيضا (⑧) */
+    await applyGrantExtendFix(prisma)
     await g.update({ closesAt: new Date(GRANT_CLOSE_FIX.from) }, ownerId)
     await runJob(prisma, 'grant_reminders')
     expect(await closesAt(), 'ردّ العاملُ تمديدَ صاحب المنصّة').toBe(GRANT_CLOSE_FIX.from)
@@ -322,5 +324,40 @@ describe('⑧ ما اختاره في حالته', () => {
     const title = (await prisma.courseVersion.findFirstOrThrow({ where: { courseId }, orderBy: { version: 'desc' } })).titleAr
     const [kase] = await casesOf(picked.ref)
     expect(kase?.nextAction, 'لم يقرأ المستشار ما اختاره').toContain(`اختار: ${shortCourseTitleAr(title)}`)
+  })
+})
+
+describe('⑧ وتمدد المنحة إلى 12 نوفمبر — بقرار صاحب المنصة، مرة واحدة ولا تقصير', () => {
+  const closesAt = async () => (await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: 'wajeez-members' }, select: { closesAt: true } })).closesAt?.toISOString() ?? null
+  const reason = 'قرار صاحب المنصة (1 نوفمبر 2026): تمديد المنحة إلى 12 نوفمبر'
+
+  it('⚠️ من 30 أكتوبر إلى آخر يوم 12 نوفمبر — بأثر مكتوب، ولا يقصر نهاية أبعد، ولا يعيده العامل', async () => {
+    const g = new GrantService(prisma)
+    expect(GRANT_EXTEND_FIX.to, 'أول 13 نوفمبر بتوقيت عمان').toBe(grantClosesAt('2026-11-12'))
+
+    /* نهايةٌ أبعدُ كتبها أحدٌ من الشاشة — لا تُقصَّر، ولا نهايةَ لا تُمسّ */
+    await prisma.auditEvent.deleteMany({ where: { reason } })
+    const later = grantClosesAt('2026-11-20')
+    await g.update({ closesAt: new Date(later) }, ownerId)
+    expect(await applyGrantExtendFix(prisma)).toBe(false)
+    expect(await closesAt()).toBe(later)
+    await g.update({ closesAt: null }, ownerId)
+    expect(await applyGrantExtendFix(prisma)).toBe(false)
+    expect(await closesAt()).toBeNull()
+
+    /* النهايةُ ٣٠ أكتوبر كما هي اليوم — تُمدّ بأثرٍ يسمّي ما كانت */
+    await g.update({ closesAt: new Date(GRANT_CLOSE_FIX.to) }, ownerId)
+    expect(await applyGrantExtendFix(prisma)).toBe(true)
+    expect(await closesAt()).toBe(GRANT_EXTEND_FIX.to)
+    const ev = await prisma.auditEvent.findFirstOrThrow({ where: { reason } })
+    expect(ev.before).toEqual({ closesAt: GRANT_CLOSE_FIX.to })
+    expect(ev.after).toEqual({ closesAt: GRANT_EXTEND_FIX.to })
+
+    /* وقصّرها صاحبُ المنصّة من شاشته بعدُ — العاملُ لا يردّه */
+    const shorter = grantClosesAt('2026-11-08')
+    await g.update({ closesAt: new Date(shorter) }, ownerId)
+    await runJob(prisma, 'grant_reminders')
+    expect(await closesAt(), 'ردّ العاملُ ما كتبه صاحب المنصة').toBe(shorter)
+    await g.update({ closesAt: null }, ownerId)
   })
 })
