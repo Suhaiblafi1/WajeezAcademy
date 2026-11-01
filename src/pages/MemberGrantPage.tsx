@@ -34,7 +34,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Award, Check, ChevronDown, Clock, Copy, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
+import { Award, Check, ChevronDown, Clock, Clock3, Compass, Copy, Gauge, GraduationCap, Languages, Lightbulb, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Route, Share2, ShieldCheck, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { coursesLeftOn, useMyGrant } from "@/services/my-grant";
@@ -58,7 +58,7 @@ import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr, parsePicksParam,
-  GRANT_WHY_AR, GRANT_WHY_CLOSE_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr,
+  GRANT_WHY_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr, GRANT_DIAG_AR, GRANT_DIAG_MORE, GRANT_DIAG_MORE_AR, GRANT_DIAG_PATH, GRANT_DIAG_POINTS_AR,
 } from "@/application/commerce/grant-landing";
 import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
@@ -138,7 +138,7 @@ const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { l
 const WHY_ICON: Record<(typeof GRANT_WHY_POINTS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, proof: Award, advisor: UserRound };
 
 /** «لماذا هذه المنحة؟» — بين صندوق الكود و«اختر دوراتك» (١ نوفمبر ٢٠٢٦، `GRANT_WHY_AR`): عنوانٌ يسمّي الألم، وأربعُ قيمٍ
-    بأيقوناتها، وشريطٌ يقسم السعرَ بينه وبين الأكاديميّة بنسبة منحته */
+    قصيرةٍ في صفٍّ واحدٍ على الحاسوب ومربّعين على الهاتف («النصوص مكتظّة.. صغّرها»)، وشريطٌ يقسم السعرَ بنسبة منحته */
 function GrantWhy({ percentOff }: { percentOff: number }) {
   const split = grantWhySplitAr(percentOff);
   const us = Math.min(100, Math.max(0, Math.round(percentOff)));
@@ -148,24 +148,22 @@ function GrantWhy({ percentOff }: { percentOff: number }) {
         <Sparkles className="h-4 w-4" aria-hidden="true" />{GRANT_WHY_AR.eyebrow}
       </p>
       <h2 id="grant-why" className="mt-1 text-xl font-black leading-8">{GRANT_WHY_AR.title}</h2>
-      <p className="mt-1 text-read text-muted-foreground">{GRANT_WHY_AR.lead}</p>
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+      <p className="text-read text-muted-foreground">{GRANT_WHY_AR.lead}</p>
+      <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {GRANT_WHY_POINTS_AR.map((x) => {
           const Icon = WHY_ICON[x.id];
           return (
-            <Inset as="li" key={x.id} className="flex items-start gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-teal/10"><Icon className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /></span>
-              <span className="min-w-0">
-                <span className="block font-bold leading-6">{x.title}</span>
-                <span className="mt-0.5 block text-read leading-6 text-muted-foreground">{x.body}</span>
-              </span>
+            <Inset as="li" key={x.id} className="text-center">
+              <span className="mx-auto grid h-9 w-9 place-items-center rounded-full bg-teal/10"><Icon className="h-[18px] w-[18px] text-teal-light-ink" aria-hidden="true" /></span>
+              <span className="mt-2 block font-bold leading-6">{x.title}</span>
+              <span className="mt-0.5 block text-read leading-5 text-muted-foreground">{x.body}</span>
             </Inset>
           );
         })}
       </ul>
       {/* السعرُ بالمال قسمين: ما يدفعه هو وما تدفعه الأكاديميّة — والشريطُ زينةٌ يقولها السطرُ تحته */}
       <div className="mt-4">
-        <div className="flex h-2.5 overflow-hidden rounded-full" aria-hidden="true">
+        <div className="flex h-2 overflow-hidden rounded-full" aria-hidden="true">
           <span className="bg-teal" style={{ width: `${100 - us}%` }} />
           <span className="bg-gold" style={{ width: `${us}%` }} />
         </div>
@@ -174,7 +172,71 @@ function GrantWhy({ percentOff }: { percentOff: number }) {
           <span className="text-gold-ink">{split.us}</span>
         </p>
       </div>
-      <p className="mt-3 border-t border-border pt-3 text-read text-muted-foreground">{GRANT_WHY_CLOSE_AR}</p>
+    </Card>
+  );
+}
+
+/** أيقونةُ كلِّ بندٍ في «دعنا نشخص احتياجك» وأدواته الأخرى */
+const DIAG_ICON: Record<(typeof GRANT_DIAG_POINTS_AR)[number]["id"], LucideIcon> = { fast: Clock3, reason: Route, free: ShieldCheck };
+const MORE_ICON: Record<(typeof GRANT_DIAG_MORE)[number]["id"], LucideIcon> = { mirror: Lightbulb, english: Languages, skill: Gauge };
+
+/** «دعنا نشخص احتياجك» — بين لوح الدفع وصندوق الإهداء (١ نوفمبر ٢٠٢٦، `GRANT_DIAG_AR`): لمن لا يعرف ما يحتاجه، بقوّة
+    التشخيص في ثلاثة بنود، وزرٌّ يفتحه في صفحةٍ جديدة فلا يضيع ما اختاره هنا. وتحته الأدواتُ المجانيّةُ الأخرى وسوما —
+    هنا وحدَها في الصفحة (`GRANT_DIAG_MORE`) */
+function GrantDiagnostic() {
+  return (
+    <Card as="section" aria-labelledby="grant-diag" className="mt-6">
+      <div className="flex items-start gap-4">
+        {/* والأيقونةُ على الشاشة الواسعة وحدَها — على الهاتف تضيّق العنوانَ إلى عمودٍ نحيل */}
+        <span className="hidden h-12 w-12 shrink-0 place-items-center rounded-full bg-teal/10 sm:grid"><Compass className="h-6 w-6 text-teal-light-ink" aria-hidden="true" /></span>
+        <span className="min-w-0">
+          <span className="block text-read font-bold text-gold-ink">{GRANT_DIAG_AR.eyebrow}</span>
+          <h2 id="grant-diag" className="mt-0.5 text-xl font-black leading-8">{GRANT_DIAG_AR.title}</h2>
+          <span className="block text-read leading-6 text-muted-foreground">{GRANT_DIAG_AR.lead}</span>
+        </span>
+      </div>
+      <ul className="mt-4 grid gap-2 sm:grid-cols-3">
+        {GRANT_DIAG_POINTS_AR.map((x) => {
+          const Icon = DIAG_ICON[x.id];
+          return (
+            <Inset as="li" key={x.id} className="flex items-center gap-2.5">
+              <Icon className="h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
+              <span className="min-w-0">
+                <span className="block font-bold leading-6">{x.title}</span>
+                <span className="block text-read leading-5 text-muted-foreground">{x.body}</span>
+              </span>
+            </Inset>
+          );
+        })}
+      </ul>
+      <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+        <span className="text-center text-read text-muted-foreground sm:text-start">{GRANT_DIAG_AR.note}</span>
+        <Button as="a" href={GRANT_DIAG_PATH} target="_blank" rel="noreferrer" icon={Compass} className="w-full shrink-0 sm:w-auto">{GRANT_DIAG_AR.cta}</Button>
+      </div>
+      {/* وأدواتٌ مجانيّةٌ أخرى وسوما — روابطُها في صفحةٍ جديدة، وفحصُ المهارة بلا رابط: يُفتح بمجاله من نتيجة التشخيص */}
+      <div className="mt-4 border-t border-border pt-3">
+        <p className="text-read font-bold text-muted-foreground">{GRANT_DIAG_MORE_AR}</p>
+        <ul className="mt-2 flex flex-wrap gap-2 text-read">
+          {GRANT_DIAG_MORE.map((x) => {
+            const Icon = MORE_ICON[x.id];
+            const body = (
+              <>
+                <Icon className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
+                <span className="font-bold">{x.title}</span>
+                <span className="text-muted-foreground">· {x.meta}</span>
+                {x.href && <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
+              </>
+            );
+            return (
+              <li key={x.id}>
+                {x.href
+                  ? <Inset as="a" href={x.href} target="_blank" rel="noreferrer" interactive className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5">{body}</Inset>
+                  : <Inset className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5">{body}</Inset>}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </Card>
   );
 }
@@ -399,14 +461,13 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const topNote = reasonAr ?? (!c.open ? GRANT_CLOSED_AR : c.soldOut ? GRANT_SOLD_OUT_AR : null);
     /* آخرُ يومٍ قصيرا («7 نوفمبر») — لسطر ما يخسره إن تأخّر */
     const lastDayShort = c.closesAt ? cohortDayAr(new Date(new Date(c.closesAt).getTime() - 1), { day: "numeric", month: "long" }) : null;
-    /* وتحت «ما ستخرج به»: لقاءاتُها كلُّها ومدرّبوها وشهادتُها — ما يأخذه لا ما يدفعه */
+    /* وفي رأس «ما ستخرج به»: لقاءاتُها كلُّها ومدرّبوها — ما يأخذه لا ما يدفعه. والشهادةُ نزلت إلى «ومع كل دورة» */
     const chosenMeetings = chosen.reduce((n, x) => n + (x.sessions?.length ?? 0), 0);
     const chosenTrainers = new Set(chosen.map((x) => x.trainer?.id).filter(Boolean)).size;
     const outcomeExtras = [
       chosenMeetings > 0 ? grantSessionsAr(chosenMeetings) : null,
       chosenTrainers > 0 ? grantTrainersAr(chosenTrainers) : null,
-      GRANT_GAINS_AR.find((g) => g.id === "certificate")?.title ?? null,
-    ].filter(Boolean).join(" · ");
+    ].filter((x): x is string => !!x);
     /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب
        هي الشيءَ الذي يراه الشخص، بتصميمٍ يبيّن الصورةَ بحجمٍ كبيرٍ عصريّ». والشاراتُ وسومٌ نصّيّةٌ أعلاها لا أقراصٌ تُشبه
        الأزرار («نقترحها لك يبدو زرّا»)، والسعرُ قيمتان بلا «قبل المنحة/بعد المنحة»: ما يدفعه كبيرا، وأصلُه مشطوبا */
@@ -597,20 +658,29 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           </>
         )}
 
-        {/* «ما ستخرج به» من الدورات التي اختارها — بوعد كلٍّ منها، وعددِ لقاءاتها ومدرّبيها وشهادتها (٣١ أكتوبر ٢٠٢٦).
+        {/* «ما ستخرج به» من الدورات التي اختارها — أسماؤها وعددُ لقاءاتها ومدرّبيها (٣١ أكتوبر، ثمّ ١ نوفمبر ٢٠٢٦: «لا تكرار»).
             بطاقةٌ غيرُ عالقة: اللوحُ العالقُ تحتها يبقى قصيرا على الهاتف */}
         {chosen.length > 0 && (
           <Card className="mt-6">
-            <p className="font-black">{GRANT_OUTCOMES_TITLE_AR}</p>
-            <ul className="mt-2 space-y-2 text-read leading-6">
-              {chosen.map((x) => (
-                <li key={x.courseId} className="flex items-start gap-2">
-                  <Check className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-                  <span><span className="font-bold">{grantShortTitleAr(x.titleAr)}</span>{x.summary?.aboutAr ? `: ${x.summary.aboutAr}` : ""}</span>
-                </li>
+            {/* الرأس: أيقونةٌ والعنوانُ وأرقامُ ما اختاره وسوما */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold/10"><GraduationCap className="h-5 w-5 text-gold-ink" aria-hidden="true" /></span>
+              <p className="text-lg font-black">{GRANT_OUTCOMES_TITLE_AR}</p>
+              {outcomeExtras.length > 0 && (
+                <span className="flex flex-wrap gap-1.5 sm:ms-auto">
+                  {outcomeExtras.map((t) => <Chip key={t} tone="accent">{t}</Chip>)}
+                </span>
+              )}
+            </div>
+            {/* دوراتُه بأسمائها مرقّمةً — ووعدُ كلٍّ تحت اسمها في صفّها فوق، فلا يُعاد هنا (١ نوفمبر ٢٠٢٦: «لا تكرار») */}
+            <ol className="mt-3 grid gap-2 text-read sm:grid-cols-2">
+              {chosen.map((x, i) => (
+                <Inset as="li" key={x.courseId} className="flex items-center gap-2.5 py-2.5">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-teal/15 text-fine font-black text-teal-light-ink" aria-hidden="true">{i + 1}</span>
+                  <span className="min-w-0 font-bold leading-6">{grantShortTitleAr(x.titleAr)}</span>
+                </Inset>
               ))}
-            </ul>
-            <p className="mt-3 border-t border-border pt-3 text-read text-muted-foreground">{outcomeExtras}</p>
+            </ol>
           </Card>
         )}
         {chosen.length > 0 && (
@@ -633,6 +703,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             <Button tone="confirm" className="mt-3 w-full" onClick={pay}>{grantOn ? "احصل على المنحة" : "اشتر الدورات"}</Button>
           </Card>
         )}
+
+        {/* «دعنا نشخص احتياجك» بين لوح الدفع وصندوق الإهداء — طلبُ صاحب المنصّة (١ نوفمبر ٢٠٢٦). ولكلّ من في هذه الخطوة:
+            من لم يعرف ما يختاره أحوجُ إليه ممّن اختار */}
+        {view.openCourses.length > 0 && <GrantDiagnostic />}
 
         {/* الإهداءُ صندوقٌ وحدَه خارجَ لوح الدفع — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «صندوقُ الإهداء يكون خارجَ صندوق
             الدفع، واجعل الكلمة: يحقّ لك أن تهدي هذه المنحة لأصدقائك (بحدٍّ أعلى ٣)». رسالةٌ جاهزةٌ في واتساب والبريد، فالصديقُ

@@ -17,7 +17,7 @@ import {
   GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
-  GRANT_WHY_AR, GRANT_WHY_CLOSE_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr,
+  GRANT_WHY_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr, GRANT_DIAG_AR, GRANT_DIAG_MORE, GRANT_DIAG_MORE_AR, GRANT_DIAG_PATH, GRANT_DIAG_POINTS_AR,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -371,7 +371,8 @@ describe('بعد النموذج', () => {
     expect(out, 'لا «ما ستخرج به»').toBeGreaterThan(-1)
     expect(out, '«ما ستخرج به» بعد اللوح العالق').toBeLessThan(sticky)
     expect(PAGE.slice(PAGE.lastIndexOf('<Card', out), out), '«ما ستخرج به» عالقة').not.toMatch(/sticky/)
-    expect(PAGE).toMatch(/\{grantShortTitleAr\(x\.titleAr\)\}<\/span>\{x\.summary\?\.aboutAr \? `: \$\{x\.summary\.aboutAr\}` : ""\}/)
+    /* ومنذ ١ نوفمبر ٢٠٢٦ («لا تكرار»): أسماؤها وحدَها هنا — ووعدُ كلٍّ تحت اسمها في صفّها */
+    expect(PAGE).toMatch(/<span className="min-w-0 font-bold leading-6">\{grantShortTitleAr\(x\.titleAr\)\}<\/span>/)
     expect(PAGE).toMatch(/chosenMeetings > 0 \? grantSessionsAr\(chosenMeetings\) : null,\s*chosenTrainers > 0 \? grantTrainersAr\(chosenTrainers\) : null,/)
     expect(grantShortTitleAr('دورة الضرائب في الأردن تطبيقيا: ضريبة الدخل')).toBe('الضرائب في الأردن تطبيقيا')
     /* ٢) وما يخسره إن تأخّر — في اللوح العالق لمن له منحة، بلا مبلغ */
@@ -816,34 +817,81 @@ describe('النصوص', () => {
   })
 })
 
-/* «لماذا هذه المنحة؟» قبل «اختر دوراتك» — طلبُ صاحب المنصّة (١ نوفمبر ٢٠٢٦): «يوضّح القيمةَ المستفادة ولماذا يأخذ
-   المنحة وكيف ستفيده». يُحرَس موضعُه (بعد صندوق الكود وقبل العنوان، ولمن له منحةٌ وحدَه)، وأنّ نصوصَه بيضاءُ بلا
-   تشكيل، وأنّ ما يَعِد به قائمٌ: حدُّ رسالة التوصية من `endorsement.ts` لا رقمٌ منسوخ، ولا عددَ للمنح ولا وعدَ بوظيفة. */
-describe('لماذا هذه المنحة؟', () => {
-  it('⚠️ بين صندوق الكود و«اختر دوراتك»، ولمن له منحة يستعملها وحده', () => {
-    const top = PAGE.indexOf(TOP_CARD)
-    const why = PAGE.indexOf('{grantOn && <GrantWhy percentOff={pct} />}')
-    const pick = PAGE.indexOf('اختر دوراتك{view.termAr')
-    expect(top, 'صندوق الكود').toBeGreaterThan(-1)
-    expect(why, 'القسم غائب أو بلا شرط المنحة').toBeGreaterThan(top)
-    expect(pick, 'القسم بعد «اختر دوراتك»').toBeGreaterThan(why)
-    const fn = PAGE.slice(PAGE.indexOf('function GrantWhy('), PAGE.indexOf('export default function MemberGrantPage'))
-    expect(fn, 'العنوان والقيم والشريط').toMatch(/\{GRANT_WHY_AR\.title\}[\s\S]*GRANT_WHY_POINTS_AR\.map[\s\S]*\{split\.you\}[\s\S]*\{split\.us\}[\s\S]*\{GRANT_WHY_CLOSE_AR\}/)
+/* الأقسامُ الثلاثةُ التي أضافها صاحبُ المنصّة (١ نوفمبر ٢٠٢٦) — «لماذا هذه المنحة؟» قبل «اختر دوراتك»، و«ما ستخرج به» أجملَ،
+   و«دعنا نشخص احتياجك» بين لوح الدفع والإهداء. ثمّ قال: «النصوص مكتظّة.. صغّرها»، و«لا تجعل هناك أيَّ تكرار، ووزّع بينهم».
+   فيُحرَس: موضعُ كلٍّ وشرطُه، وأنّ كلَّ فكرةٍ في قسمٍ واحد، وأنّ النصوصَ قصيرةٌ بيضاءُ بلا ضمانٍ ولا وعدٍ بوظيفة، وأنّ ما
+   يُقال عن كلّ أداةٍ مجانيّةٍ هو ما تقوله صفحتُها — لا رقمٌ يُنسخ فيبلى. */
+const page = (p: string) => readFileSync(join(root, p), 'utf8')
+const fnOf = (name: string) => PAGE.slice(PAGE.indexOf(`function ${name}(`), PAGE.indexOf('\n}\n', PAGE.indexOf(`function ${name}(`)))
+const outcomesCard = () => { const at = PAGE.indexOf('{GRANT_OUTCOMES_TITLE_AR}'); return PAGE.slice(at, PAGE.indexOf('</Card>', at)) }
+const ALL_NEW = () => [
+  ...Object.values(GRANT_WHY_AR), ...GRANT_WHY_POINTS_AR.flatMap((x) => [x.title, x.body]), ...Object.values(grantWhySplitAr(55)),
+  ...Object.values(GRANT_DIAG_AR), ...GRANT_DIAG_POINTS_AR.flatMap((x) => [x.title, x.body]), GRANT_DIAG_MORE_AR, ...GRANT_DIAG_MORE.flatMap((x) => [x.title, x.meta]),
+]
+
+describe('لماذا هذه المنحة؟ · ما ستخرج به · دعنا نشخص احتياجك', () => {
+  it('⚠️ المواضع: «لماذا» بين صندوق الكود و«اختر دوراتك» لمن له منحة، والتشخيص بين لوح الدفع والإهداء', () => {
+    const top = PAGE.indexOf(TOP_CARD), why = PAGE.indexOf('{grantOn && <GrantWhy percentOff={pct} />}'), pick = PAGE.indexOf('اختر دوراتك{view.termAr')
+    expect(top).toBeGreaterThan(-1)
+    expect(why, '«لماذا» غائب أو بلا شرط المنحة').toBeGreaterThan(top)
+    expect(pick).toBeGreaterThan(why)
+    const pay = PAGE.indexOf('<Card tone="solid" className="sticky bottom-3'), diag = PAGE.indexOf('{view.openCourses.length > 0 && <GrantDiagnostic />}'), gift = PAGE.indexOf('{GRANT_GIFT_AR.title}')
+    expect(diag, 'التشخيص غائب أو فوق لوح الدفع').toBeGreaterThan(pay)
+    expect(gift, 'التشخيص تحت الإهداء').toBeGreaterThan(diag)
   })
 
-  it('⚠️ نصوصه قصيرة بلا تشكيل، وما يعد به قائم', () => {
-    const all = [GRANT_WHY_AR.eyebrow, GRANT_WHY_AR.title, GRANT_WHY_AR.lead, GRANT_WHY_CLOSE_AR,
-      ...GRANT_WHY_POINTS_AR.flatMap((x) => [x.title, x.body]), ...Object.values(grantWhySplitAr(55))]
-    for (const t of all) {
+  it('⚠️ لا تكرار: كل فكرة في قسم واحد', () => {
+    const why = fnOf('GrantWhy'), diag = fnOf('GrantDiagnostic'), out = outcomesCard()
+    expect(why).toMatch(/GRANT_WHY_POINTS_AR\.map/)
+    expect(diag).toMatch(/GRANT_DIAG_POINTS_AR\.map[\s\S]*GRANT_DIAG_MORE\.map/)
+    /* ما يأخذه مع كلّ دورة في «لماذا» وحدَه، والأدواتُ المجانيّة في التشخيص وحدَه */
+    expect(PAGE.match(/GRANT_WHY_POINTS_AR\.map/g)).toHaveLength(1)
+    expect(PAGE.match(/GRANT_DIAG_MORE\.map/g)).toHaveLength(1)
+    /* و«ما ستخرج به» أسماءُ ما اختاره وأرقامُه — لا وعدُ الدورة (في صفّها فوق) ولا الشهادة (في «لماذا») */
+    expect(out, 'عاد وعد الدورة إلى «ما ستخرج به»').not.toMatch(/summary/)
+    expect(out).not.toMatch(/GRANT_GAINS_AR|GRANT_WHY|GRANT_DIAG/)
+    expect(PAGE, 'الشهادة عادت إلى أرقام «ما ستخرج به»').not.toMatch(/const outcomeExtras = \[[^\]]*GRANT_GAINS_AR/)
+    /* وآخرُ يومٍ في صندوق الكود ولوح الدفع — لا سطرَ ثالثا في «لماذا» */
+    expect(why, 'عاد سطر «المنح محدودة» إلى «لماذا»').not.toMatch(/محدودة|CLOSE/)
+    /* والأدواتُ المجانيّة غيرُ التشخيص نفسِه — لا يُعرض مرّتين */
+    expect(GRANT_DIAG_MORE.map((x) => x.href)).not.toContain(GRANT_DIAG_PATH)
+  })
+
+  it('⚠️ نصوص قصيرة بيضاء: لا تشكيل ولا ضمان ولا وعد بوظيفة', () => {
+    for (const t of ALL_NEW()) {
       expect(plainAr(t), t).toBe(t)
-      expect(t, 'وعد بوظيفة أو دخل أو عدد للمنح').not.toMatch(/وظيف|دخل|راتب|\d+ منح/)
+      expect(t, 'ضمان أو وظيفة أو دخل').not.toMatch(/ضمان|نضمن|مضمون|وظيف|دخل|راتب/)
     }
-    expect(GRANT_WHY_POINTS_AR.map((x) => x.id)).toEqual(['live', 'practice', 'proof', 'advisor'])
-    expect(GRANT_WHY_POINTS_AR.find((x) => x.id === 'proof')!.body).toContain(`${ENDORSEMENT_MIN_ATTENDANCE}%`)
-    expect(GRANT_WHY_POINTS_AR.find((x) => x.id === 'live')!.body).toContain('Zoom')
+    /* «صغّرها»: عنوانُ القيمة كلماتٌ قليلة، وسطرُها قصير */
+    for (const x of [...GRANT_WHY_POINTS_AR, ...GRANT_DIAG_POINTS_AR]) {
+      expect(x.title.split(' ').length, x.title).toBeLessThanOrEqual(4)
+      expect(x.body.length, x.body).toBeLessThanOrEqual(40)
+    }
+    expect(GRANT_WHY_AR.title.length).toBeLessThanOrEqual(40)
   })
 
-  it('⚠️ السعر قسمان بنسبة المنحة: ما يدفعه وما تدفعه وجيز عنه', () => {
+  it('⚠️ ما يقال عن التشخيص وأدواته هو ما تقوله صفحاتها، وروابطها في صفحة جديدة إلى طرق قائمة', () => {
+    const DIAG = page('src/pages/Diagnostic.tsx')
+    expect(GRANT_DIAG_POINTS_AR[0].title).toBe('3 إلى 6 دقائق')
+    expect(DIAG).toContain('{ icon: Clock3, text: "٣–٦ دقائق" }')
+    expect(DIAG).toContain('ابدأ مجانا — ترى مسارك المقترح ونتيجتك كاملة فورا، بلا حساب')
+    expect(DIAG).toContain('توصية مفسّرة، ليست حظا')
+    const meta = (id: string) => GRANT_DIAG_MORE.find((x) => x.id === id)!.meta
+    expect(meta('mirror')).toBe('3 دقائق')
+    expect(page('src/pages/Mirror.tsx')).toContain('أربعة وعشرون عبارة، ثلاث دقائق.')
+    expect(meta('english')).toBe('20 دقيقة أو أقل')
+    expect(page('src/pages/PlacementTest.tsx')).toContain('من ربع ساعة إلى عشرين دقيقة، مجانا وبلا حساب.')
+    expect(meta('skill')).toMatch(/^3 دقائق، بعد التشخيص$/)
+    expect(page('src/pages/SkillCheck.tsx')).toContain('سؤالا من الأساسيّ إلى المتقدّم — ثلاث دقائق تقريبا.')
+    expect(GRANT_DIAG_MORE.find((x) => x.id === 'skill')!.href, 'فحص المهارة يفتح بمجاله من نتيجة التشخيص').toBeNull()
+    const diag = fnOf('GrantDiagnostic')
+    expect(diag).toMatch(/<Button as="a" href=\{GRANT_DIAG_PATH\} target="_blank" rel="noreferrer"/)
+    expect(diag).toMatch(/<Inset as="a" href=\{x\.href\} target="_blank" rel="noreferrer"/)
+    for (const href of [GRANT_DIAG_PATH, ...GRANT_DIAG_MORE.map((x) => x.href).filter(Boolean)]) expect(APP, `${href} بلا طريق`).toContain(`path="${href}"`)
+    expect(GRANT_WHY_POINTS_AR.find((x) => x.id === 'live')!.body).toMatch(/Zoom، لا دروس مسجلة/)
+  })
+
+  it('⚠️ السعر قسمان بنسبة المنحة — والرقم أول الجملة فلا ينقلب', () => {
     expect(grantWhySplitAr(55)).toEqual({ you: 'تدفع 45% فقط', us: '55% تدفعها وجيز عنك' })
     expect(grantWhySplitAr(60)).toEqual({ you: 'تدفع 40% فقط', us: '60% تدفعها وجيز عنك' })
     expect(grantWhySplitAr(140).you).toBe('تدفع 0% فقط')
