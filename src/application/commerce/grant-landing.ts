@@ -19,7 +19,7 @@ import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
 import { courseLinesAr, shortCourseTitleAr } from '../text/course-lines'
 import { plainAr } from '../text/plain-ar'
 import { clashesOf, sessionsOverlap, type TimedSession } from '../learning/cohort-overlap'
-import { MEMBER_GRANT_NAME_AR } from './grant'
+import { MEMBER_GRANT_NAME_AR, OPEN_GRANT_PATH } from './grant'
 import { ENDORSEMENT_MIN_ATTENDANCE } from '../learning/endorsement'
 
 /** ما يوافق عليه بالإرسال — يُعرض تحت الزرّ ويُحفظ مع العميل المحتمل */
@@ -252,6 +252,10 @@ export const grantFollowupAr = (name: string, grantNameAr = MEMBER_GRANT_NAME_AR
 export const grantThanksAr = (percentOff: number) =>
   `تطبيق وجيز يشكرك لأنك من قرائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى ${percentOff}% لتستفيد من منتجنا الجديد: أكاديمية وجيز.`
 
+/** وسطرُ «منحة وجيز العامة» — للجميع، فلا شكرَ لقرّاء ولا «حصريّة» (١ نوفمبر ٢٠٢٦) */
+export const openGrantLineAr = (percentOff: number) =>
+  `منحة من أكاديمية وجيز لكل من يريد أن يتعلم، تصل إلى ${percentOff}% من سعر دوراتك.`
+
 /** المستوى الوظيفيّ — سؤالٌ اختياريّ */
 export const CAREER_LEVELS: readonly string[] = [
   'طالب أو حديث تخرج', 'موظف في بداية مسيرتي', 'موظف بخبرة', 'مشرف أو قائد فريق', 'مدير', 'صاحب عمل',
@@ -453,6 +457,8 @@ export function seatsLeftAr(n: number | null | undefined): string | null {
 export const GRANT_GIFT_MAX = 3
 /** وجهةُ هديّة «منحة وجيز» — ووسمُ قناتها `share` يقرؤه سجلُّ الحملة (`campaignParams`) */
 export const GRANT_SHARE_PATH = '/grant?ch=share'
+/** ووجهةُ هديّة «منحة وجيز العامة» — صفحتُها هي بوسم القناة نفسِه (١ نوفمبر ٢٠٢٦) */
+export const OPEN_GRANT_SHARE_PATH = `${OPEN_GRANT_PATH}?ch=share`
 /** عنوانُ صندوق الإهداء وحدُّه */
 export const GRANT_GIFT_AR = { title: 'يحق لك أن تهدي هذه المنحة لأصدقائك', limit: `بحد أعلى ${GRANT_GIFT_MAX} أصدقاء` } as const
 

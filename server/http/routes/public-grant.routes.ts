@@ -10,7 +10,7 @@ import type { PrismaClient } from '@prisma/client'
 import { assertNotBot } from '../honeypot'
 import { GrantLandingService } from '../../services/grant-landing.service'
 import { learnerGrant } from '../../services/grant.service'
-import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { GRANT_KIND_SLUG, GRANT_KINDS, INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
 import { recordGrantVisit } from '../../services/grant-visit.service'
 import { requireAuth } from '../auth-plugin'
 
@@ -40,14 +40,17 @@ export const GRANT_FORM_RATE_MAX = 120
 export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const landing = new GrantLandingService(prisma)
   const influencers = new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG)
+  /* «منحة وجيز العامة» — قواعدُ الأولى نفسُها، وصفحتُها `/grant/open` (١ نوفمبر ٢٠٢٦) */
+  const open = new GrantLandingService(prisma, OPEN_GRANT_SLUG)
+  const byKind = { member: landing, influencer: influencers, open } as const
 
   /* كودُ منحته لصاحب الحساب ببريد النموذج — فيفتح لوحُ الدفع بمنحته ولو عبّأ النموذجَ من جهازٍ آخر (`myCode`) */
   app.get('/api/learner/grant-code', {
     preHandler: requireAuth,
     schema: { tags: ['commerce'], summary: 'كود المنحة لصاحب الحساب — من نموذج في الحملة ببريد حسابه، ما لم يستعمل' },
   }, async (req) => {
-    const { campaign } = z.object({ campaign: z.enum(['member', 'influencer']) }).parse(req.query)
-    return (campaign === 'influencer' ? influencers : landing).myCode(req.auth!.userId, req.ip)
+    const { campaign } = z.object({ campaign: z.enum(GRANT_KINDS) }).parse(req.query)
+    return byKind[campaign].myCode(req.auth!.userId, req.ip)
   })
 
   /* وكودُ منحته في حسابه — لوحتُه تعرضه، ولوحُ الشراء يطبّقه وحده عند أيّ شراء (`learnerGrant`) */
@@ -86,6 +89,20 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     return reply.status(201).send(await influencers.apply(body, req.ip))
   })
 
+  /* ═══ «منحة وجيز العامة» — نموذجُ الأولى بلا كود مؤثّر، بصفّها هي ═══ */
+  app.get('/api/public/grant/open', {
+    schema: { tags: ['public'], summary: 'حال منحة وجيز العامة ودوراتها بفصلها' },
+  }, async () => open.view())
+
+  app.post('/api/public/grant/open', {
+    config: { rateLimit: { max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' } },
+    schema: { tags: ['public'], summary: 'نموذج منحة وجيز العامة: عميل محتمل وكوده، والدورات' },
+  }, async (req, reply) => {
+    assertNotBot(req.body)
+    const body = applyBody.parse(req.body)
+    return reply.status(201).send(await open.apply(body, req.ip))
+  })
+
   /* من فتح صفحةَ المنحة — زائرٌ لكلّ متصفّحٍ في كلّ حملة، عبّأ أم لم يعبّئ (`grant-visit.service.ts`). يُرسَل مرّةً مع كلّ فتح،
      فالسقفُ واسعٌ لمن يحدّث الصفحة، ولا يقبل إلّا رقما عشوائيّا بشكله وزيارتين تُنظَّفان */
   app.post('/api/public/grant/visit', {
@@ -93,12 +110,12 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     schema: { tags: ['public'], summary: 'زيارة صفحة المنحة — لتعرف كم فتح الرابط من كل مصدر وكم عبأ منهم' },
   }, async (req, reply) => {
     const body = z.object({
-      campaign: z.enum(['member', 'influencer']),
+      campaign: z.enum(GRANT_KINDS),
       visitorId: z.string().uuid(),
       code: z.string().max(40).nullable().optional(),
       source: z.object({ page: z.unknown().optional(), first: z.unknown().optional() }).nullable().optional(),
     }).parse(req.body)
-    await recordGrantVisit(prisma, body.campaign === 'influencer' ? INFLUENCER_GRANT_SLUG : MEMBER_GRANT_SLUG, body)
+    await recordGrantVisit(prisma, GRANT_KIND_SLUG[body.campaign], body)
     return reply.status(204).send()
   })
 

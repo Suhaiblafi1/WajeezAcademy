@@ -212,6 +212,9 @@ export default function App() {
           <Route path="/grant/i" element={<MemberGrantPage variant="influencer" />} />
           <Route path="/grant/i/:code" element={<MemberGrantPage variant="influencer" />} />
           <Route path="/grant/i/:code/build" element={<MemberGrantPage variant="influencer" />} />
+          {/* «منحة وجيز العامة» — للجميع بصفّها هي، غيرُ `/grant` (١ نوفمبر ٢٠٢٦) */}
+          <Route path="/grant/open" element={<MemberGrantPage variant="open" />} />
+          <Route path="/grant/open/build" element={<MemberGrantPage variant="open" />} />
           {/* مسار يبدأ بدورة واحدة — «تفاصيل الدورة» تفتح هذه لا صفحة المسار كاملا */}
           <Route path="/build/:courseId" element={<CoursePathPage />} />
           <Route path="/stories" element={<StoriesPage />} />
@@ -413,6 +416,7 @@ export default function App() {
             <Route path="/admin/advisor-payouts" element={<AdminAdvisorPayouts />} />
             <Route path="/admin/member-grant" element={<AdminMemberGrant />} />
             <Route path="/admin/influencer-grant" element={<AdminMemberGrant variant="influencer" />} />
+            <Route path="/admin/open-grant" element={<AdminMemberGrant variant="open" />} />
             <Route path="/admin/audit" element={<AdminAuditLog />} />
             <Route path="/admin/system-health" element={<AdminSystemHealth />} />
             <Route path="/admin/reports" element={<AdminReports />} />

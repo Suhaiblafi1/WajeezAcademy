@@ -42,7 +42,9 @@ describe('شاشة صاحب المنصة', () => {
     expect(PAGE).toMatch(/onClick=\{\(\) => setConfirm\(true\)\}>احفظ<\/Button>/)
     expect(PAGE).toMatch(/\{confirm && \(\s*<ConfirmAction[\s\S]*?onConfirm=\{\(\) => void save\(\)\}/)
     /* والشاشةُ نفسُها لمنحة المؤثّرين ببابها (٢٦ أكتوبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/const api = forInfluencer \? "\/api\/admin\/influencer-grant" : "\/api\/admin\/member-grant";/)
+    expect(PAGE).toMatch(/const api = forInfluencer \? "\/api\/admin\/influencer-grant" : forOpen \? "\/api\/admin\/open-grant" : "\/api\/admin\/member-grant";/)
+    /* و«منحة وجيز العامة» ببابها هي — إعداداتُها ونتائجُها (١ نوفمبر ٢٠٢٦) */
+    expect(ROUTES).toMatch(/app\.put\('\/api\/admin\/open-grant', \{\s*preHandler: canManage/)
     expect(PAGE).toMatch(/apiGet<\{ rows: MarginRow\[\]; commissionPercent\?: number \}>\(`\$\{api\}\/margins\?percentOff=\$\{pctNum\}`\)/)
     expect(PAGE).toContain('والأكواد التي أعطيت قبله')
   })
@@ -77,8 +79,10 @@ describe('دورات المنحة', () => {
 
 describe('نتائج الحملة', () => {
   it('⚠️ في شاشة المنحة — وبابها بصلاحية الكوبونات، ونصوصها بلا تشكيل', () => {
-    expect(PAGE).toMatch(/<GrantResults \/>/)
-    expect(RESULTS).toMatch(/apiGet<Results>\("\/api\/admin\/member-grant\/results"\)/)
+    expect(PAGE).toMatch(/<GrantResults api=\{api\} \/>/)
+    expect(RESULTS).toMatch(/export default function GrantResults\(\{ api = "\/api\/admin\/member-grant" \}/)
+    expect(RESULTS).toMatch(/apiGet<Results>\(`\$\{api\}\/results`\)/)
+    expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/open-grant\/results', \{\s*preHandler: canManage/)
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/results', \{\s*preHandler: canManage/)
     for (const t of ['نتائج الحملة', 'عبأ النموذج', 'أخذ كودا', 'اشترى', 'القناة', 'الدفعة', 'مجالات العمل', 'بلا وسم']) {
       expect(RESULTS).toContain(t)
@@ -92,7 +96,7 @@ describe('من عبأ النموذج', () => {
     expect(PAGE).toMatch(/<GrantRegistrants \/>/)
     expect(REG).toMatch(/apiGet<List>\("\/api\/admin\/member-grant\/registrants"\)/)
     expect(REG).toMatch(/<ListToolbar q=\{q\}/)
-    expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.influencer \? INFLUENCER_GRANT_NAME_AR : undefined\)\)/)
+    expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.influencer \? INFLUENCER_GRANT_NAME_AR : r\.grant === "open" \? OPEN_GRANT_NAME_AR : undefined\)\)/)
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/registrants', \{\s*preHandler: canManage/)
     /* ومتابعُ المؤثّر قناتُه كودُ مؤثّره نفسُه — فلا يُعاد في «المصدر» بعد «كود …» (٢٨ أكتوبر ٢٠٢٦). وصار العمودُ «المصدر»
        (٣١ أكتوبر ٢٠٢٦)، وحارسُه على السلوك في `grant-registrants.test.ts` */
