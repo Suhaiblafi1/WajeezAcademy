@@ -47,7 +47,7 @@ import { enqueueMail } from './outbox.service'
 import { renderMail, type MailBlock } from './mail-template'
 import { publicSiteUrl } from './site-url'
 import { GrantCoursesService } from './grant-courses.service'
-import { GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
+import { GRANT_CAMPAIGNS, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
 import { influencerLink } from '../../src/application/commerce/influencer'
 import {
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, GRANT_VALUE_AR, grantCallDueAt, grantDaysLeftAr, grantPicksLink, grantPicksPreheaderAr,
@@ -345,6 +345,42 @@ export async function applyGrantExtendFix(
       actorId: null, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
       before: { closesAt: from }, after: { closesAt: fix.to },
       reason: GRANT_EXTEND_FIX_REASON,
+    })
+  })
+  return true
+}
+
+/* ═══ وتُشغَّل «منحة وجيز العامة» حتى ٣٠ نوفمبر — بقرار صاحب المنصّة (١ نوفمبر ٢٠٢٦) ═══
+
+   قال: «شغّل المنحة العامة وحدّد آخر يومٍ لها»، وخُيّر بين ١٢ و٣٠ نوفمبر و١٥ ديسمبر وبلا نهاية فاختار **٣٠ نوفمبر**.
+   فتُشغَّل ونهايتُها أوّلَ ١ ديسمبر بتوقيت عمّان (`grantClosesAt('2026-11-30')`)، ونسبتُها وعددُها وحدُّ دوراتها كما بدأت.
+   · **والصفُّ يُنشأ إن لم يكن** — بإعداداته الافتراضيّة كما ينشئه `GrantService.campaign`.
+   · **ولا تُشغَّل إلّا موقوفة**: من شغّلها من شاشتها قبلُ بنهايةٍ يختارها لم تُمسّ.
+   · **ولا بعد نهايتها**: ما فات يومُه لا يُفتح.
+   · **ومرّةً واحدةً بأثره** (`fixedBefore`): فإن أوقفها صاحبُ المنصّة من شاشتها بعدُ بقيت موقوفة. */
+export const OPEN_GRANT_LAUNCH = { closesAt: '2026-11-30T21:00:00.000Z' } as const
+const OPEN_GRANT_LAUNCH_REASON = 'قرار صاحب المنصة (1 نوفمبر 2026): تشغيل منحة وجيز العامة حتى 30 نوفمبر'
+
+export async function applyOpenGrantLaunch(
+  prisma: PrismaClient, now = new Date(), launch: { closesAt: string } = OPEN_GRANT_LAUNCH,
+): Promise<boolean> {
+  const closesAt = new Date(launch.closesAt)
+  if (closesAt <= now) return false
+  const { nameAr, defaults } = GRANT_CAMPAIGNS[OPEN_GRANT_SLUG]
+  const c = await prisma.grantCampaign.upsert({
+    where: { slug: OPEN_GRANT_SLUG },
+    create: { slug: OPEN_GRANT_SLUG, nameAr, ...defaults, active: false },
+    update: {},
+    select: { id: true, active: true, closesAt: true },
+  })
+  if (c.active) return false
+  if (await fixedBefore(prisma, c.id, OPEN_GRANT_LAUNCH_REASON)) return false
+  await prisma.$transaction(async (tx) => {
+    await tx.grantCampaign.update({ where: { id: c.id }, data: { active: true, closesAt } })
+    await recordAudit(tx, {
+      actorId: null, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
+      before: { active: false, closesAt: c.closesAt?.toISOString() ?? null }, after: { active: true, closesAt: launch.closesAt },
+      reason: OPEN_GRANT_LAUNCH_REASON,
     })
   })
   return true
