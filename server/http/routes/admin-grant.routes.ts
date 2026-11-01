@@ -13,6 +13,15 @@ import { grantResults } from '../../services/grant-landing.service'
 import { eraseRegistrant, messageRegistrants, registrantsFull, registrantsXlsx } from '../../services/grant-registrants.service'
 import { GRANT_MESSAGE_BODY_MAX, GRANT_MESSAGE_MAX_TO, GRANT_MESSAGE_SUBJECT_MAX } from '../../../src/application/commerce/grant-registrants'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
+import { OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
+
+const settingsBody = z.object({
+  percentOff: z.number().int().min(1).max(100).optional(),
+  maxCodes: z.number().int().min(1).nullable().optional(),
+  maxCourses: z.number().int().min(1).max(20).optional(),
+  closesAt: z.coerce.date().nullable().optional(),
+  active: z.boolean().optional(),
+})
 
 export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const grants = new GrantService(prisma)
@@ -28,13 +37,7 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     preHandler: canManage,
     schema: { tags: ['admin-commerce'], summary: 'تغيير نسبة المنحة أو عددها أو نهايتها أو تشغيلها' },
   }, async (req) => {
-    const body = z.object({
-      percentOff: z.number().int().min(1).max(100).optional(),
-      maxCodes: z.number().int().min(1).nullable().optional(),
-      maxCourses: z.number().int().min(1).max(20).optional(),
-      closesAt: z.coerce.date().nullable().optional(),
-      active: z.boolean().optional(),
-    }).parse(req.body ?? {})
+    const body = settingsBody.parse(req.body ?? {})
     return grants.update(body, req.auth!.userId)
   })
 
@@ -89,6 +92,33 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     }).parse(req.body ?? {})
     return messageRegistrants(prisma, body, req.auth!.userId, req.ip)
   })
+
+  /* ═══ «منحة وجيز العامة» — إعداداتُها وهامشُها ونتائجُها بصفّها هي (١ نوفمبر ٢٠٢٦) ═══
+     ومن عبّأ نموذجَها في قائمة من عبّأ أعلاه، مع الحملات كلِّها، ودوراتُها دوراتُ الأولى نفسُها */
+  const open = new GrantService(prisma, OPEN_GRANT_SLUG)
+
+  app.get('/api/admin/open-grant', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'إعدادات منحة وجيز العامة وما جرى بها' },
+  }, async () => open.settings())
+
+  app.put('/api/admin/open-grant', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'تغيير نسبة المنحة العامة أو عددها أو نهايتها أو تشغيلها' },
+  }, async (req) => open.update(settingsBody.parse(req.body ?? {}), req.auth!.userId))
+
+  app.get('/api/admin/open-grant/margins', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'سعر كل شعبة مفتوحة بعد المنحة العامة مقابل أجر مقعدها' },
+  }, async (req) => {
+    const { percentOff } = z.object({ percentOff: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query)
+    return open.margins(percentOff)
+  })
+
+  app.get('/api/admin/open-grant/results', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'نتائج المنحة العامة: من عبأ ومن أخذ كودا ومن اشترى، بالقناة والدفعة ومجال العمل' },
+  }, async () => grantResults(prisma, OPEN_GRANT_SLUG))
 
   /* ═══ دوراتُ المنحة — ما يختار منه صاحبُ المنحة (`grant-courses.service.ts`) ═══ */
   app.get('/api/admin/member-grant/open-courses', {

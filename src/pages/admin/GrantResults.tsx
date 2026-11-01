@@ -19,9 +19,10 @@ interface Results {
 const CHANNEL_AR: Record<string, string> = { whatsapp: "واتساب", email: "البريد", share: "من صديق" };
 const channelAr = (c: string | null) => (c ? CHANNEL_AR[c] ?? c : "بلا وسم");
 
-export default function GrantResults() {
+/** و`api` لنتائج حملةٍ غير الأولى — «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
+export default function GrantResults({ api = "/api/admin/member-grant" }: { api?: string }) {
   const [r, setR] = useState<Results | null>(null);
-  useEffect(() => { apiGet<Results>("/api/admin/member-grant/results").then(setR).catch(() => setR(null)); }, []);
+  useEffect(() => { apiGet<Results>(`${api}/results`).then(setR).catch(() => setR(null)); }, [api]);
   if (!r) return null;
   const t = r.totals;
   return (

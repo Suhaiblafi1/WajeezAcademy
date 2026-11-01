@@ -14,7 +14,7 @@ import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr, GRANT_DIAG_AR, GRANT_DIAG_MORE, GRANT_DIAG_MORE_AR, GRANT_DIAG_PATH, GRANT_DIAG_POINTS_AR,
@@ -48,7 +48,12 @@ describe('الطريق والأبواب', () => {
     expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/advisor', \{\s*config: \{ rateLimit: \{ max: 3, timeWindow: '15 minutes' \} \}/)
     /* وباب منحة المؤثّرين ثالثُها، بالسقف نفسِه (٢٦ أكتوبر ٢٠٢٦) */
     expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/influencer', \{\s*config: \{ rateLimit: \{ max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' \} \}/)
-    expect((ROUTES.match(/assertNotBot\(req\.body\)/g) ?? []).length, 'باب بلا مصيدة').toBe(3)
+    /* وباب «منحة وجيز العامة» رابعُها، بالسقف نفسِه — وصفحتُها وطريقُ عودتها غيرُ `/grant` (١ نوفمبر ٢٠٢٦) */
+    expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/open', \{\s*config: \{ rateLimit: \{ max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' \} \}/)
+    expect(APP).toMatch(/<Route path="\/grant\/open" element=\{<MemberGrantPage variant="open" \/>\} \/>/)
+    expect(APP).toMatch(/<Route path="\/grant\/open\/build" element=\{<MemberGrantPage variant="open" \/>\} \/>/)
+    expect(PAGE).toMatch(/const OPEN_PICK_PATH = `\$\{OPEN_GRANT_PATH\}\/build`;/)
+    expect((ROUTES.match(/assertNotBot\(req\.body\)/g) ?? []).length, 'باب بلا مصيدة').toBe(4)
   })
 })
 
@@ -186,7 +191,11 @@ describe('بعد النموذج', () => {
   it('⚠️ المنحة بنسبتها «تصل إلى 60%» لا «تدفع 40% فقط» — في الصفحة الأولى وبريد الكود وبريد التذكير', () => {
     /* قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من أنّك تدفع ٤٠٪» */
     /* ثمّ صار سطرُه شكرا من تطبيق وجيز لمستخدمه (٢٧ أكتوبر ٢٠٢٦) — والنسبةُ «تصل إلى» كما هي */
-    expect(PAGE).toMatch(/\{!forInfluencer\s*\? grantThanksAr\(c\.percentOff\)/)
+    expect(PAGE).toMatch(/: !forInfluencer\s*\? grantThanksAr\(c\.percentOff\)/)
+    /* و«منحة وجيز العامة» للجميع: بلا شكرٍ لقرّاء وجيز ولا «حصريّة» (١ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/\{forOpen\s*\? openGrantLineAr\(c\.percentOff\)/)
+    expect(openGrantLineAr(50)).toBe('منحة من أكاديمية وجيز لكل من يريد أن يتعلم، تصل إلى 50% من سعر دوراتك.')
+    expect(openGrantLineAr(50), 'شكر قراء وجيز في المنحة العامة').not.toMatch(/قرائه|حصرية/)
     expect(grantThanksAr(60)).toBe('تطبيق وجيز يشكرك لأنك من قرائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى 60% لتستفيد من منتجنا الجديد: أكاديمية وجيز.')
     /* وفي منحة المؤثّرين باسم المؤثّر إن جاء برابطه (٢٦ أكتوبر ٢٠٢٦) */
     expect(PAGE).toContain('`بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
@@ -322,7 +331,8 @@ describe('بعد النموذج', () => {
   it('⚠️ من لا كود ظاهرا له يأخذه بحسابه حين يدخل — ولوح الدفع يعاد بالكود فيسعر بمنحته', () => {
     /* وحين يفتح لوحُ الدفع أيضا — من أنشأ حسابه في نافذة الدفع لا تعرفه الصفحةُ بعدُ (بلاغُ ٢٧ أكتوبر ٢٠٢٦) */
     expect(PAGE).toMatch(/const claimFor = \(authed \|\| buyOpen\) && stored && !stored\.code \? `\$\{session\?\.email \?\? "buy"\}\|\$\{stored\.ref\}` : null;/)
-    expect(PAGE).toMatch(/apiGet<\{ code: string \| null; percentOff\?: number \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{forInfluencer \? "influencer" : "member"\}`\)/)
+    expect(PAGE).toMatch(/apiGet<\{ code: string \| null; percentOff\?: number \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{kind\}`\)/)
+    expect(PAGE).toMatch(/const kind: GrantKind = forInfluencer \? "influencer" : forOpen \? "open" : "member";/)
     expect(PAGE, 'لا يحفظ الكود على الجهاز').toMatch(/if \(kept && !kept\.code\) saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null, percentOff: percentOff \?\? kept\.percentOff \}, storeKey\);/)
     expect(PAGE).toMatch(/setStored\(\(s\) => \(s && !s\.code \? \{ \.\.\.s, code, sentTo: null, percentOff: percentOff \?\? s\.percentOff \} : s\)\);/)
     /* ولوحُ الدفع يُبنى من جديدٍ حين يصل الكود — فلا يبقى على أوّل حالٍ بلا منحة */
@@ -558,12 +568,14 @@ describe('بعد النموذج', () => {
     expect(GRANT_GIFT_MAX).toBe(3)
     expect(GRANT_GIFT_AR).toEqual({ title: 'يحق لك أن تهدي هذه المنحة لأصدقائك', limit: 'بحد أعلى 3 أصدقاء' })
     /* الرابطُ القصيرُ من الخادم إن صنعه، والطويلُ بوسمه إن لم يصنع — ومنحةُ المؤثّرين برابط مؤثّرها */
-    expect(PAGE).toMatch(/const sharePath = forInfluencer && creditedCode \? `\$\{INFLUENCER_GRANT_PATH\}\/\$\{creditedCode\}` : GRANT_SHARE_PATH;/)
+    expect(PAGE).toMatch(/const sharePath = forInfluencer && creditedCode \? `\$\{INFLUENCER_GRANT_PATH\}\/\$\{creditedCode\}` : forOpen \? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;/)
+    expect(OPEN_GRANT_SHARE_PATH).toBe('/grant/open?ch=share')
     expect(PAGE).toMatch(/const shareLink = view\.sharePath \? `https:\/\/\$\{BARE_HOST\}\$\{view\.sharePath\}` : `\$\{window\.location\.origin\}\$\{sharePath\}`;/)
     /* بنسبة الحملة اليوم لا بنسبة كوده: الصديقُ يأخذ كودا جديدا بنسبة يومه (٢٨ أكتوبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/const shareText = grantShareAr\(shareLink, c\.percentOff, lastDayLong, !forInfluencer\);/)
+    expect(PAGE).toMatch(/const fromWajeezApp = kind === "member";/)
+    expect(PAGE).toMatch(/const shareText = grantShareAr\(shareLink, c\.percentOff, lastDayLong, fromWajeezApp\);/)
     expect(PAGE).toMatch(/href=\{waShare\(shareText\)\}/)
-    expect(PAGE).toMatch(/href=\{grantShareMailto\(shareLink, c\.percentOff, lastDayLong, !forInfluencer\)\}/)
+    expect(PAGE).toMatch(/href=\{grantShareMailto\(shareLink, c\.percentOff, lastDayLong, fromWajeezApp\)\}/)
     expect(PAGE).toMatch(/import \{ waHref, waShare \} from "@\/application\/site\/whatsapp";/)
     expect(PAGE, 'عاد «ثلاثة أصدقاء»').not.toContain('ثلاثة أصدقاء')
     /* خارجَ لوح الدفع وبعده — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «صندوقُ الإهداء يكون خارجَ صندوق الدفع» */

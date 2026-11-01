@@ -24,7 +24,7 @@ import {
   type GrantFunnel, type MailState, type RegistrantSource, type SourceGroup, type Upcoming,
 } from "@/application/commerce/grant-registrants";
 import { shortCourseTitleAr } from "@/application/text/course-lines";
-import { INFLUENCER_GRANT_NAME_AR } from "@/application/commerce/grant";
+import { INFLUENCER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, type GrantKind } from "@/application/commerce/grant";
 import { waToPerson } from "@/application/site/whatsapp";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { staffAreaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
@@ -44,6 +44,8 @@ interface Registrant {
   picks: string[];
   /** من «منحة مؤثرين وجيز» — وبكود أيّ مؤثّر */
   influencer: boolean; influencerCode: string | null;
+  /** أيُّ منحةٍ عبّأ — والثالثةُ «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
+  grant: GrantKind;
   /** متى فتح صفحةَ المنحة، ومتى زار الموقعَ أوّلَ مرّة، ومن أين جاء */
   pageOpenedAt: string | null; firstSeenAt: string | null; landingPath: string | null; source: RegistrantSource;
   /** ما كُتب لبريده، وما هو آتٍ له */
@@ -55,7 +57,7 @@ interface List { mailOn: boolean; rows: Registrant[]; funnel: GrantFunnel }
 const when = (v: string) => fmtDateWith(v, { day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
 
 const STATE_AR: Record<State, string> = { bought: "اشترى", pending: "ينتظر الدفع", none: "لم يشتر بعد" };
-const GRANT_AR = { member: "منحة وجيز", influencer: "منحة المؤثرين" } as const;
+const GRANT_AR: Record<GrantKind, string> = { member: "منحة وجيز", influencer: "منحة المؤثرين", open: "المنحة العامة" };
 
 /** كم بين لحظتين — «بعد ٥ د» */
 function gapAr(from: string, to: string): string | null {
@@ -89,7 +91,7 @@ export default function GrantRegistrants() {
 
   const matched = useMemo(
     () => (rows ?? []).filter((r) => (!only || r.state === only) && (!source || r.source.group === source)
-      && (!grant || (grant === "influencer") === r.influencer)
+      && (!grant || grant === r.grant)
       && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, ...r.picks, r.influencerCode, r.source.labelAr, r.code, r.id])),
     [rows, q, only, source, grant],
   );
@@ -141,8 +143,9 @@ export default function GrantRegistrants() {
           </select>
           <select value={grant} onChange={(e) => { setGrant(e.target.value as "" | keyof typeof GRANT_AR); reset(); }} aria-label="المنحة" className={staffSelectCls}>
             <option value="">كل المنح</option>
-            <option value="member">{GRANT_AR.member} ({rows.filter((r) => !r.influencer).length})</option>
+            <option value="member">{GRANT_AR.member} ({rows.filter((r) => r.grant === "member").length})</option>
             <option value="influencer">{GRANT_AR.influencer} ({rows.filter((r) => r.influencer).length})</option>
+            <option value="open">{GRANT_AR.open} ({rows.filter((r) => r.grant === "open").length})</option>
           </select>
         </div>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} placeholder="ابحث بالاسم أو الرقم أو البريد أو الكود" unit="شخصا" />
@@ -165,7 +168,7 @@ export default function GrantRegistrants() {
               </thead>
               <tbody>
                 {view.rows.map((r) => {
-                  const wa = waToPerson(r.phone, grantFollowupAr(r.fullName, r.influencer ? INFLUENCER_GRANT_NAME_AR : undefined));
+                  const wa = waToPerson(r.phone, grantFollowupAr(r.fullName, r.influencer ? INFLUENCER_GRANT_NAME_AR : r.grant === "open" ? OPEN_GRANT_NAME_AR : undefined));
                   const isOpen = openId === r.id;
                   const next = r.upcoming[0];
                   return (
@@ -207,7 +210,7 @@ export default function GrantRegistrants() {
                         {/* من أين جاء ومتى فتح الصفحة — `registrantSource` */}
                         <td className="p-2">
                           <span className="font-bold">{r.source.labelAr}</span>
-                          <br /><span className="text-muted-foreground">{r.influencer ? GRANT_AR.influencer : GRANT_AR.member}</span>
+                          <br /><span className="text-muted-foreground">{GRANT_AR[r.grant]}</span>
                           {r.pageOpenedAt && (
                             <><br /><span className="text-muted-foreground">فتح الرابط <span className="whitespace-nowrap">{when(r.pageOpenedAt)}</span></span></>
                           )}

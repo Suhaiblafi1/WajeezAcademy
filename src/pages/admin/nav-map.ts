@@ -232,6 +232,9 @@ export const allSections: AdminNavSection[] = [
       /* «منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦): إعداداتُها، والمؤثّرون بأكوادهم وعمولاتهم وما دُفع لهم */
       { to: "/admin/influencer-grant", label: "منحة مؤثرين وجيز", tab: "منحة المؤثرين", icon: Megaphone, need: "commerce.manage",
         descAr: "نسبة منحة المؤثرين، والمؤثرون بأكوادهم وعمولاتهم وما دفع لهم" },
+      /* «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦): منحةُ الأولى نفسُها للجميع، بنسبتها ونتائجها هي */
+      { to: "/admin/open-grant", label: "منحة وجيز العامة", tab: "المنحة العامة", icon: Gift, need: "commerce.manage",
+        descAr: "نسبة المنحة العامة وعددها وآخر يوم لها، ونتائجها" },
       { to: "/admin/reports", label: "التقارير والتصدير", tab: "التقارير", icon: BarChart3, need: "reports.view",
         descAr: "أرقامُ المنصّة مفصَّلةً، وتصديرُها إلى ملفّ" },
     ],

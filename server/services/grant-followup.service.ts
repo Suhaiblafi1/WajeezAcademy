@@ -47,7 +47,7 @@ import { enqueueMail } from './outbox.service'
 import { renderMail, type MailBlock } from './mail-template'
 import { publicSiteUrl } from './site-url'
 import { GrantCoursesService } from './grant-courses.service'
-import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
+import { GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
 import { influencerLink } from '../../src/application/commerce/influencer'
 import {
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, GRANT_VALUE_AR, grantCallDueAt, grantDaysLeftAr, grantPicksLink, grantPicksPreheaderAr,
@@ -63,8 +63,6 @@ export const GRANT_FOLLOWUP_HOURS = 1
 const FOLLOWUP_BATCH = 200
 
 export const BOUGHT = ['paid', 'partially_refunded']
-/** الحملتان — يُتابَع من عبّأ أيَّهما */
-const GRANT_SLUGS: GrantSlug[] = [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG]
 const OPEN_CASE = ['closed', 'enrolled', 'not_interested']
 
 export type RegistrantState = 'bought' | 'pending' | 'none'
@@ -91,7 +89,7 @@ export async function courseTitles(prisma: PrismaClient, ids: string[]): Promise
 
 export async function grantRegistrants(prisma: PrismaClient) {
   const leads = await prisma.lead.findMany({
-    where: { campaign: { in: GRANT_SLUGS }, erasedAt: null },
+    where: { campaign: { in: [...GRANT_SLUGS] }, erasedAt: null },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true, fullName: true, phone: true, email: true, workField: true, careerLevel: true, interests: true,
@@ -135,7 +133,7 @@ export async function grantRegistrants(prisma: PrismaClient) {
 export async function openGrantFollowups(prisma: PrismaClient, now = new Date()): Promise<{ opened: number }> {
   const cutoff = new Date(now.getTime() - GRANT_FOLLOWUP_HOURS * 3_600_000)
   const leads = await prisma.lead.findMany({
-    where: { campaign: { in: GRANT_SLUGS }, erasedAt: null, createdAt: { lte: cutoff }, cases: { none: {} } },
+    where: { campaign: { in: [...GRANT_SLUGS] }, erasedAt: null, createdAt: { lte: cutoff }, cases: { none: {} } },
     orderBy: { createdAt: 'asc' },
     take: FOLLOWUP_BATCH,
     select: {
@@ -159,7 +157,9 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
         nextAction: [
           lead.campaign === INFLUENCER_GRANT_SLUG
             ? `اتصل به — عبأ نموذج منحة المؤثرين${lead.influencer ? ` بكود ${lead.influencer.code}` : ''} ولم يشتر بعد`
-            : 'اتصل به — عبأ نموذج المنحة ولم يشتر بعد',
+            : lead.campaign === OPEN_GRANT_SLUG
+              ? 'اتصل به — عبأ نموذج منحة وجيز العامة ولم يشتر بعد'
+              : 'اتصل به — عبأ نموذج المنحة ولم يشتر بعد',
           leadProfileAr({ ...lead, picks: lead.grantPicks.map((id) => titles.get(id) ?? id) }),
         ].filter(Boolean).join(' · '),
         nextFollowUpAt: callAt,
@@ -232,7 +232,7 @@ export async function sendGrantReminders(
     const coupon = lead.grantCode?.coupon
     if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase())) continue
     const pct = coupon.percentOff ?? campaign.percentOff
-    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant`
+    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}${grantPagePath(slug)}`
     const lastDayRow = days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]
     /* ما اختاره هو ممّا يُشترى اليوم — بسعر كلٍّ بعد منحته، ومجموعِها وقيمةِ منحته، وزرٍّ يعيده إلى اختياره (٣١ أكتوبر ٢٠٢٦) */
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)

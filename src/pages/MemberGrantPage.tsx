@@ -52,15 +52,15 @@ import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import type { TimedSession } from "@/application/learning/cohort-overlap";
-import { GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
+import { GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
 import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr, GRANT_DIAG_AR, GRANT_DIAG_MORE, GRANT_DIAG_MORE_AR, GRANT_DIAG_PATH, GRANT_DIAG_POINTS_AR,
 } from "@/application/commerce/grant-landing";
-import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
+import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
 import { BARE_HOST } from "@/application/site/origin";
 import { waHref, waShare } from "@/application/site/whatsapp";
@@ -98,6 +98,7 @@ interface ApplyResult extends View {
 const USD = "USD";
 /** طريقُ العودة بعد توثيق البريد — اختيارُه محفوظٌ على الجهاز، والصفحةُ تعيده (`pending-checkout.ts`) */
 const PICK_PATH = "/grant/build";
+const OPEN_PICK_PATH = `${OPEN_GRANT_PATH}/build`;
 const influencerPickPath = (code: string) => `${INFLUENCER_GRANT_PATH}/${code}/build`;
 const BUY_TITLE_AR = "دورات منحتك";
 /** حيث يُحفظ ما اختاره، وكم يُنتظر بعد آخر نقرةٍ قبل حفظه */
@@ -241,10 +242,13 @@ function GrantDiagnostic() {
   );
 }
 
-export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" }) {
+export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" | "open" }) {
   const forInfluencer = variant === "influencer";
-  const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
-  const storeKey = forInfluencer ? INFLUENCER_GRANT_STORE_KEY : GRANT_STORE_KEY;
+  /* «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦): صفحةُ الأولى نفسُها بصفّها هي — بلا كود مؤثّر، وبلا شكرٍ لقرّاء وجيز */
+  const forOpen = variant === "open";
+  const kind: GrantKind = forInfluencer ? "influencer" : forOpen ? "open" : "member";
+  const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : forOpen ? OPEN_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  const storeKey = forInfluencer ? INFLUENCER_GRANT_STORE_KEY : forOpen ? OPEN_GRANT_STORE_KEY : GRANT_STORE_KEY;
   const params = useParams();
   const urlCode = forInfluencer ? normalizeInfluencerCode(params.code) : null;
   const { user: session } = useRealSession();
@@ -266,10 +270,12 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [influencerCode, setInfluencerCode] = useState(urlCode ?? "");
   /* ومن حُسب له: مؤثّرُ ما حُفظ إن أخذ كودا، وإلّا مؤثّرُ الرابط */
   const creditedCode = stored?.influencer ?? urlCode;
-  const pickPath = forInfluencer ? (creditedCode ? influencerPickPath(creditedCode) : null) : PICK_PATH;
+  const pickPath = forInfluencer ? (creditedCode ? influencerPickPath(creditedCode) : null) : forOpen ? OPEN_PICK_PATH : PICK_PATH;
   const shell = forInfluencer
     ? { title: nameAr, path: `${INFLUENCER_GRANT_PATH}${urlCode ? `/${urlCode}` : ""}`, description: "منحة من أكاديمية وجيز: دورات مباشرة تختارها بخصم كبير، والعدد محدود." }
-    : {};
+    : forOpen
+      ? { title: nameAr, path: OPEN_GRANT_PATH, description: "منحة من أكاديمية وجيز للجميع: دورات مباشرة على Zoom بخصم كبير، والعدد محدود." }
+      : {};
   const [interests, setInterests] = useState<string[]>(() => readStoredGrant(storeKey)?.interests ?? []);
   const [busy, setBusy] = useState(false);
   /* متى فتح هذه الصفحة ومن أين — يُرسَل مع النموذج فيُعرف في قائمة من عبّأ مصدرُه ووقتُ فتحه الرابط (`grant-registrants.ts`) */
@@ -278,9 +284,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [visitor] = useState(visitorId);
   useEffect(() => {
     void apiPost("/api/public/grant/visit", {
-      campaign: forInfluencer ? "influencer" : "member", visitorId: visitor, code: urlCode, source: { page: opened, first: firstTouch() },
+      campaign: kind, visitorId: visitor, code: urlCode, source: { page: opened, first: firstTouch() },
     }).catch(() => {});
-  }, [forInfluencer, visitor, urlCode, opened]);
+  }, [kind, visitor, urlCode, opened]);
   /* رقمُ مستشار المنحة من شاشة الربط (`grant_advisor`) — لا حرفٌ في الشيفرة */
   const numbers = useWhatsAppNumbers();
 
@@ -297,10 +303,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const load = useCallback(async () => {
     const url = forInfluencer
       ? `/api/public/grant/influencer${urlCode ? `?code=${encodeURIComponent(urlCode)}` : ""}`
-      : "/api/public/grant";
+      : forOpen ? "/api/public/grant/open" : "/api/public/grant";
     try { setView(await apiGet<View>(url)); }
     catch (e) { setFailed(e instanceof ApiError ? e.message : "تعذر تحميل الصفحة"); }
-  }, [forInfluencer, urlCode]);
+  }, [forInfluencer, forOpen, urlCode]);
   useEffect(() => { void load(); }, [load]);
 
   const [resumed] = useState(() => (pickPath ? resumedCheckoutFor(pickPath) : null));
@@ -365,7 +371,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     e.preventDefault();
     setBusy(true);
     try {
-      const out = await apiPost<ApplyResult>(forInfluencer ? "/api/public/grant/influencer" : "/api/public/grant", {
+      const out = await apiPost<ApplyResult>(forInfluencer ? "/api/public/grant/influencer" : forOpen ? "/api/public/grant/open" : "/api/public/grant", {
         ...form, careerLevel: form.careerLevel || null, interests, ...campaignParams(window.location.search), website: hp.value,
         source: { page: opened, first: firstTouch() }, visitorId: visitor,
         ...(forInfluencer ? { influencerCode: influencerCode.trim() } : {}),
@@ -397,7 +403,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   useEffect(() => {
     if (!claimFor) return;
     let on = true;
-    apiGet<{ code: string | null; percentOff?: number | null }>(`/api/learner/grant-code?campaign=${forInfluencer ? "influencer" : "member"}`)
+    apiGet<{ code: string | null; percentOff?: number | null }>(`/api/learner/grant-code?campaign=${kind}`)
       .then(({ code, percentOff = null }) => {
         if (!on || !code) return;
         const kept = readStoredGrant(storeKey);
@@ -406,7 +412,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       })
       .catch(() => undefined);
     return () => { on = false; };
-  }, [claimFor, forInfluencer, storeKey]);
+  }, [claimFor, kind, storeKey]);
 
   const pay = () => {
     if (chosen.length === 0) return;
@@ -433,11 +439,13 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   /* آخرُ يومٍ بتاريخه الطويل — في رسالة الهديّة («30 أكتوبر 2026») */
   const lastDayLong = c.closesAt ? fmtDateLong(new Date(new Date(c.closesAt).getTime() - 1)) : null;
   /* ومنحةُ المؤثّرين تُهدى برابط مؤثّرها — فالصديقُ يأخذ منحتَها، ويُحسب للمؤثّر */
-  const sharePath = forInfluencer && creditedCode ? `${INFLUENCER_GRANT_PATH}/${creditedCode}` : GRANT_SHARE_PATH;
+  const sharePath = forInfluencer && creditedCode ? `${INFLUENCER_GRANT_PATH}/${creditedCode}` : forOpen ? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;
   /* والرابطُ قصيرٌ من الخادم إن صنعه — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «الرابط يجب أن يكون قصيرا جدّا» */
   const shareLink = view.sharePath ? `https://${BARE_HOST}${view.sharePath}` : `${window.location.origin}${sharePath}`;
   /* والهديّةُ بنسبة الحملة اليوم لا بنسبة كوده: الصديقُ يأخذ كودا جديدا بنسبة يومه */
-  const shareText = grantShareAr(shareLink, c.percentOff, lastDayLong, !forInfluencer);
+  /* ومن تطبيق وجيز «منحة وجيز» وحدَها — العامّةُ والمؤثّرون منحةٌ من الأكاديميّة */
+  const fromWajeezApp = kind === "member";
+  const shareText = grantShareAr(shareLink, c.percentOff, lastDayLong, fromWajeezApp);
 
   /* ─── الخطوة ٢: الكودُ واختيارُ الدورات ─── */
   /* ومن عبّأ النموذجَ والمنحةُ مغلقةٌ أو نفدت أكوادُها لم يأخذ كودا ولا بريدا — فإن فتحت يعود إلى النموذج ليأخذه، لا إلى
@@ -720,7 +728,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             </span>
             <span className="flex shrink-0 gap-2">
               <Button as="a" href={waShare(shareText)} target="_blank" rel="noreferrer" icon={Share2}>واتساب</Button>
-              <Button as="a" href={grantShareMailto(shareLink, c.percentOff, lastDayLong, !forInfluencer)} icon={Mail}>البريد</Button>
+              <Button as="a" href={grantShareMailto(shareLink, c.percentOff, lastDayLong, fromWajeezApp)} icon={Mail}>البريد</Button>
             </span>
           </Card>
         )}
@@ -785,7 +793,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               {/* المنحةُ بنسبتها لا بما يبقى عليه — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من
                   أنّك تدفع ٤٠٪». وكذلك في بريد الكود وبريد التذكير */}
               <p className="mt-3 text-lg font-bold">
-                {!forInfluencer
+                {forOpen
+                  ? openGrantLineAr(c.percentOff)
+                  : !forInfluencer
                   ? grantThanksAr(c.percentOff)
                   : view.influencer
                     ? `بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`

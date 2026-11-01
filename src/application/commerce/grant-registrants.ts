@@ -135,6 +135,8 @@ export interface StatRow {
   pageOpenedAt: string | null
   state: RegistrantState
   influencer: boolean
+  /** أيُّ منحةٍ عبّأ — وبلا قيمةٍ يُقرأ من `influencer` كما كان قبل الثالثة */
+  grant?: 'member' | 'influencer' | 'open'
   code: string | null
   advisor: string | null
   workField: string | null
@@ -158,6 +160,8 @@ export interface RegistrantStats {
   withAdvisor: number
   member: number
   influencer: number
+  /** «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
+  open: number
   bySource: Count[]
   byDay: { day: string; n: number }[]
   byHour: { hour: number; n: number }[]
@@ -230,8 +234,9 @@ export function registrantStats(rows: StatRow[]): RegistrantStats {
     none: count((r) => r.state === 'none'),
     boughtPct: pct(bought, rows.length),
     withAdvisor: count((r) => !!r.advisor),
-    member: count((r) => !r.influencer),
+    member: count((r) => (r.grant ?? (r.influencer ? 'influencer' : 'member')) === 'member'),
     influencer: count((r) => r.influencer),
+    open: count((r) => r.grant === 'open'),
     bySource,
     byDay: [...days.entries()].map(([day, n]) => ({ day, n })).sort((a, b) => a.day.localeCompare(b.day)),
     byHour: hours.map((n, hour) => ({ hour, n })),

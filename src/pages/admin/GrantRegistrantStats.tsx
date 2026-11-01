@@ -113,7 +113,7 @@ export default function GrantRegistrantStats({ s, filtered, funnel }: { s: Regis
             <Tile label="ينتظر الدفع" value={s.pending} />
             <Tile label="لم يشتر بعد" value={s.none} />
             <Tile label="له مستشار" value={s.withAdvisor} />
-            <Tile label="منحة وجيز" value={s.member} note={`ومؤثرين ${s.influencer}`} />
+            <Tile label="منحة وجيز" value={s.member} note={`ومؤثرين ${s.influencer}${s.open > 0 ? ` · والعامة ${s.open}` : ""}`} />
             <Tile
               label="من فتح الرابط إلى التعبئة"
               value={s.openToFormMedianMin === null ? "—" : `${s.openToFormMedianMin} د`}

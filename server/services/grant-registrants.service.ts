@@ -33,7 +33,7 @@ import { eraseLeadCases, ERASED_NAME_AR } from './guest-erasure.service'
 import { BOUGHT, GRANT_REMINDERS, grantRegistrants } from './grant-followup.service'
 import { grantVisitFunnel } from './grant-visit.service'
 import { cleanTouch, storedSource, type FirstTouch } from '../../src/application/marketing/signup-source'
-import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG } from '../../src/application/commerce/grant'
+import { GRANT_CAMPAIGNS, GRANT_KIND_SLUG, GRANT_SLUGS, grantKindOf } from '../../src/application/commerce/grant'
 import {
   GRANT_MESSAGE_MAX_TO, MAIL_STATE_AR, SOURCE_GROUP_AR, conversionAr, funnelAr, mailPurposeAr, messageParagraphs, registrantSource, registrantStats,
   type MailState, type RegistrantSource, type Upcoming,
@@ -72,7 +72,7 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
       where: { email: { in: emails } }, select: { email: true, signupSource: true },
     }),
     prisma.grantCampaign.findMany({
-      where: { slug: { in: [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG] } }, select: { slug: true, active: true, closesAt: true },
+      where: { slug: { in: [...GRANT_SLUGS] } }, select: { slug: true, active: true, closesAt: true },
     }),
     prisma.auditEvent.findMany({
       where: { action: 'coupon.grant_reminder', entityType: 'lead', entityId: { in: base.map((r) => r.id) } },
@@ -139,6 +139,8 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
       id: r.id, fullName: r.fullName, phone: r.phone, email: r.email, workField: r.workField, careerLevel: r.careerLevel,
       interests: r.interests, channel: r.channel, wave: r.wave, createdAt: r.createdAt, code: r.code, codeActive: r.codeActive,
       state: r.state, advisor: r.advisor, picks: r.picks, influencer: r.influencer, influencerCode: r.influencerCode,
+      /* وأيُّ منحةٍ عبّأ — والثالثةُ «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
+      grant: grantKindOf(r.campaign),
       pageOpenedAt: r.pageOpenedAt ?? (t.page?.at ? new Date(t.page.at) : null),
       firstSeenAt: t.first?.at ? new Date(t.first.at) : null,
       landingPath: t.page?.landingPath ?? t.first?.landingPath ?? null,
@@ -192,7 +194,7 @@ export async function registrantsXlsx(prisma: PrismaClient, now = new Date()): P
     const next = r.upcoming[0]
     people.addRow({
       name: r.fullName, phone: r.phone ?? '', email: r.email ?? '',
-      grant: r.influencer ? 'منحة مؤثرين وجيز' : 'منحة وجيز',
+      grant: GRANT_CAMPAIGNS[GRANT_KIND_SLUG[r.grant]].nameAr,
       source: SOURCE_GROUP_AR[r.source.group], sourceLabel: r.source.labelAr, sourceDetail: r.source.detailAr ?? '',
       opened: stamp(r.pageOpenedAt), firstSeen: stamp(r.firstSeenAt), created: stamp(r.createdAt),
       state: STATE_AR[r.state], code: r.code ?? '', advisor: r.advisor ?? '',
@@ -239,6 +241,7 @@ export async function registrantsXlsx(prisma: PrismaClient, now = new Date()): P
   stats.addRow({ k: 'له مستشار', n: s.withAdvisor })
   stats.addRow({ k: 'منحة وجيز', n: s.member })
   stats.addRow({ k: 'منحة مؤثرين وجيز', n: s.influencer })
+  stats.addRow({ k: 'منحة وجيز العامة', n: s.open })
   if (s.openToFormMedianMin !== null) stats.addRow({ k: 'من فتح الصفحة إلى التعبئة (وسيط بالدقائق)', n: s.openToFormMedianMin })
   const block = (title: string, list: { labelAr: string; n: number; bought: number }[]) => {
     section(title)
@@ -275,7 +278,7 @@ export async function eraseRegistrant(
   prisma: PrismaClient, id: string, opts: { disableCode: boolean }, actorId: string, ip?: string, now = new Date(),
 ) {
   const lead = await prisma.lead.findFirst({
-    where: { id, campaign: { in: [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG] }, erasedAt: null },
+    where: { id, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null },
     select: {
       id: true, campaign: true,
       grantCode: { select: { coupon: { select: { id: true, code: true, orders: { where: { status: { in: BOUGHT } }, select: { id: true } } } } } },
@@ -316,7 +319,7 @@ export async function messageRegistrants(
   if (!subject) throw new AuthError('bad_subject', 'اكتب عنوان الرسالة', 400)
   if (paragraphs.length === 0) throw new AuthError('bad_body', 'اكتب نص الرسالة', 400)
   const leads = await prisma.lead.findMany({
-    where: { id: { in: ids }, campaign: { in: [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG] }, erasedAt: null },
+    where: { id: { in: ids }, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null },
     select: { id: true, fullName: true, email: true },
   })
   const to = leads.filter((l): l is typeof l & { email: string } => !!l.email)

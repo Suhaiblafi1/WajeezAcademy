@@ -9,7 +9,11 @@
    ═══ وهي شاشةُ «منحة مؤثرين وجيز» أيضا (٢٦ أكتوبر ٢٠٢٦) ═══
 
    `variant="influencer"`: إعداداتُ صفّها هي، وتحتها المؤثّرون بأكوادهم وعمولاتهم وما دُفع لهم (`InfluencersPanel`)
-   بدل نتائج الأولى ومن عبّأ نموذجها. والهامشُ فيها يطرح عمولةَ المؤثّر أيضا. */
+   بدل نتائج الأولى ومن عبّأ نموذجها. والهامشُ فيها يطرح عمولةَ المؤثّر أيضا.
+
+   ═══ و«منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) ═══
+
+   `variant="open"`: منحةُ الأولى نفسُها للجميع بصفّها هي — إعداداتُها ونتائجُها، ومن عبّأ نموذجَها في القائمة نفسِها. */
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
@@ -22,7 +26,7 @@ import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
-import { grantClosesAt, grantLastDay, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
+import { grantClosesAt, grantLastDay, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH } from "@/application/commerce/grant";
 import { staffControlCls } from "@/components/FormKit";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -45,10 +49,11 @@ const RULE_AR: Record<string, string> = {
   fixed_per_cohort: "مبلغ ثابت للشعبة",
 };
 
-export default function AdminMemberGrant({ variant = "members" }: { variant?: "members" | "influencer" }) {
+export default function AdminMemberGrant({ variant = "members" }: { variant?: "members" | "influencer" | "open" }) {
   const forInfluencer = variant === "influencer";
-  const api = forInfluencer ? "/api/admin/influencer-grant" : "/api/admin/member-grant";
-  const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  const forOpen = variant === "open";
+  const api = forInfluencer ? "/api/admin/influencer-grant" : forOpen ? "/api/admin/open-grant" : "/api/admin/member-grant";
+  const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : forOpen ? OPEN_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
   const [commissionPct, setCommissionPct] = useState(0);
   const [s, setS] = useState<Settings | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
@@ -141,6 +146,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: "m
         </p>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
           {forInfluencer && "صفحتها برابط كل مؤثر، وكوده لازم في نموذجها. "}
+          {forOpen && `للجميع، وصفحتها ${OPEN_GRANT_PATH}. وقواعدها قواعد منحة وجيز، ومنحة واحدة لكل متعلم على المنح كلها. `}
           من يعبئ نموذج الحملة يأخذ كودا شخصيا. يستعمل مرة واحدة، ويمكن أن يعطيه لغيره. وصاحبه يدفع نسبة ثابتة من سعر الدورات بدل خصم الباقة، أو سعر الباقة إن كان أقل. والمنحة على {s.maxCourses} دورات بحد أقصى.
         </p>
       </Card>
@@ -166,7 +172,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: "m
         <Button disabled={busy || !changed || !pctOk || !maxOk || !coursesOk} onClick={() => setConfirm(true)}>احفظ</Button>
       </Card>
 
-      {forInfluencer ? <InfluencersPanel /> : <><GrantResults /><GrantRegistrants /></>}
+      {forInfluencer ? <InfluencersPanel /> : <><GrantResults api={api} /><GrantRegistrants /></>}
 
       <GrantCourses percentOff={pctOk ? pctNum : null} />
 

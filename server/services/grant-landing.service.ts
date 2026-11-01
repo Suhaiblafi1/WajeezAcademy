@@ -42,11 +42,11 @@ import { normalizePhone } from '../../src/application/advisor/guest-contact'
 import { cleanTouch } from '../../src/application/marketing/signup-source'
 import { linkGrantVisit } from './grant-visit.service'
 import {
-  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, WORK_FIELDS, campaignTag, grantCourseSummary, leadProfileAr,
+  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, OPEN_GRANT_SHARE_PATH, WORK_FIELDS, campaignTag, grantCourseSummary, leadProfileAr,
   type GrantCourseSummary,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
-import { GRANT_ONCE_AR, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
+import { GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
 import { INFLUENCER_CODE_BAD_AR, INFLUENCER_GRANT_PATH, influencerLink, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
 import { shortLinkPath } from '../../src/application/links/short-link'
 import { fmtDate } from '../../src/application/text/format-ar'
@@ -70,8 +70,8 @@ export interface GrantApplyInput {
 
 const OPEN_CASE = { notIn: ['closed', 'enrolled', 'not_interested'] }
 
-/** الحملتان — بهما يُقبل طلبُ المستشار ممّن عبّأ أيَّهما */
-const GRANT_SLUGS: GrantSlug[] = [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG]
+/** وجهةُ الهديّة لكلّ حملةٍ بلا مؤثّر — ومنحةُ المؤثّرين برابط مؤثّرها (`influencerView`) */
+const SHARE_PATH: Partial<Record<GrantSlug, string>> = { [MEMBER_GRANT_SLUG]: GRANT_SHARE_PATH, [OPEN_GRANT_SLUG]: OPEN_GRANT_SHARE_PATH }
 /** غرضُ رابط الهديّة القصير — به يُعرف صفُّه فيُعاد ولا يُصنع ثانية */
 const GRANT_SHARE_PURPOSE = 'grant.share'
 
@@ -132,7 +132,7 @@ export class GrantLandingService {
       /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
       /* و`soldOut`: نفدت أكوادُها والمنحةُ مفتوحة — فمن عبّأ ولم يأخذ كودا يبقى عند سببه، ويعود إلى النموذج حين تُزاد (٢٨ أكتوبر ٢٠٢٦) */
       campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt, soldOut: s.left === 0 },
-      sharePath: this.slug === MEMBER_GRANT_SLUG ? await this.shareLink(GRANT_SHARE_PATH) : null,
+      sharePath: SHARE_PATH[this.slug] ? await this.shareLink(SHARE_PATH[this.slug]!) : null,
       termAr: open.termAr,
       openCourses: open.courses.map((c) => ({
         courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: c.startsAt, price: c.price,
@@ -308,7 +308,7 @@ export class GrantLandingService {
       هذا ثالثُه. والمفتاحُ رقمُ طلبه (`ref`) كما في `askAdvisor`: لا يعرفه إلّا متصفّحُه. ولا يُحفظ إلّا ما يُشترى اليوم
       في حملته، وبحدِّ دوراتها — فلا يكتب أحدٌ في ملفٍّ ما لا يُختار. */
   async savePicks(ref: string, courseIds: string[], now = new Date()) {
-    const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: { in: GRANT_SLUGS }, erasedAt: null }, select: { id: true, campaign: true } })
+    const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null }, select: { id: true, campaign: true } })
     if (!lead) throw new AuthError('not_found', 'عبئ النموذج أولا', 404)
     const own = lead.campaign === this.slug ? this : new GrantLandingService(this.prisma, lead.campaign as GrantSlug)
     const v = await own.view(now)
@@ -319,7 +319,7 @@ export class GrantLandingService {
   }
 
   async askAdvisor(ref: string, noteAr?: string | null, ip?: string) {
-    const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: { in: GRANT_SLUGS }, erasedAt: null } })
+    const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null } })
     if (!lead) throw new AuthError('not_found', 'عبئ النموذج أولا', 404)
     const open = await this.prisma.advisorCase.findFirst({ where: { leadId: lead.id, status: OPEN_CASE }, select: { id: true } })
     if (open) return { ok: true as const }
@@ -343,10 +343,11 @@ export class GrantLandingService {
      قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة». فعنوانٌ وشكرٌ وكودٌ في جدولٍ وزرٌّ يفتح الدورات،
      ولا «عضو» ولا «مستخدم»: «قرّاءُ وجيز» (قرارُه في اليوم نفسِه). ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
   private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
-    const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode) : `${publicSiteUrl()}/grant`
+    /* وصاحبُ «منحة وجيز العامة» يعود إلى صفحتها هي — فيها نسبتُها ودوراتُها (`grantPagePath`) */
+    const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode) : `${publicSiteUrl()}${grantPagePath(this.slug)}`
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
     const member = this.slug === MEMBER_GRANT_SLUG
-    const nameAr = member ? MEMBER_GRANT_NAME_AR : INFLUENCER_GRANT_NAME_AR
+    const { nameAr } = GRANT_CAMPAIGNS[this.slug]
     await enqueueMail(this.prisma, {
       to, purpose: 'grant.code',
       subject: `كود ${nameAr} الخاص بك`,
@@ -386,11 +387,12 @@ const BOUGHT = ['paid', 'partially_refunded']
 /** نتائجُ الحملة لصاحب المنصّة: من عبّأ، ومن أخذ كودا، ومن اشترى، وبكم — بالقناة والدفعة، وبمجال العمل.
     والشراءُ يُنسب إلى قناة **صاحب الكود** لا المشتري: كودٌ أُهدي لصديقٍ فاشترى به جاء من القناة التي
     أوصلت الكودَ أصلا. والمبلغُ ما دُفع بعملته (الحملةُ بالدولار). */
-export async function grantResults(prisma: PrismaClient) {
-  const campaign = await new GrantService(prisma).campaign()
+export async function grantResults(prisma: PrismaClient, slug: GrantSlug = MEMBER_GRANT_SLUG) {
+  /* ولكلّ حملةٍ نتائجُها — «منحة وجيز العامة» تُقرأ وحدَها ولا تختلط بقرّاء وجيز (١ نوفمبر ٢٠٢٦) */
+  const campaign = await new GrantService(prisma, slug).campaign()
   const [leads, fields, codes, cases] = await Promise.all([
-    prisma.lead.groupBy({ by: ['channel', 'wave'], where: { campaign: MEMBER_GRANT_SLUG }, _count: { _all: true } }),
-    prisma.lead.groupBy({ by: ['workField'], where: { campaign: MEMBER_GRANT_SLUG }, _count: { _all: true } }),
+    prisma.lead.groupBy({ by: ['channel', 'wave'], where: { campaign: slug }, _count: { _all: true } }),
+    prisma.lead.groupBy({ by: ['workField'], where: { campaign: slug }, _count: { _all: true } }),
     prisma.grantCode.findMany({
       where: { campaignId: campaign.id },
       select: {
@@ -398,7 +400,7 @@ export async function grantResults(prisma: PrismaClient) {
         coupon: { select: { orders: { where: { status: { in: BOUGHT } }, select: { total: true } } } },
       },
     }),
-    prisma.advisorCase.count({ where: { lead: { campaign: MEMBER_GRANT_SLUG } } }),
+    prisma.advisorCase.count({ where: { lead: { campaign: slug } } }),
   ])
   type Row = { channel: string | null; wave: string | null; leads: number; codes: number; bought: number; revenue: number }
   const key = (c: string | null, w: string | null) => `${c ?? ''}|${w ?? ''}`

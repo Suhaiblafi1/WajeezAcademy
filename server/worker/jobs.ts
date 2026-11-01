@@ -42,7 +42,7 @@ import { LEARNER_SESSION_WHERE } from '../services/session-visibility'
 import { learnerGate, whenAr } from '../../src/application/learning/cohort-gate'
 import { timelineEvents, type TimelineEvent } from '../../src/application/learning/timeline-events'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
-import { INFLUENCER_GRANT_SLUG } from '../../src/application/commerce/grant'
+import { INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG } from '../../src/application/commerce/grant'
 import { sessionEnd } from '../../src/application/trainer/axis-timeline'
 import { MIN_SESSION_MS } from '../../src/application/trainer/session-length'
 import { notPermanentAuditWhere } from '../../src/application/audit/retention'
@@ -1554,12 +1554,13 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   const fixed = await applyGrantCloseFix(prisma)
   const limited = await applyGrantCoursesFix(prisma)
   const seeded = await seedGrantAdvisorWhatsApp(prisma)
-  /* ولكلّ حملةٍ بنهايتها: «منحة وجيز» و«منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) */
+  /* ولكلّ حملةٍ بنهايتها: «منحة وجيز» و«منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) و«منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
   const members = await sendGrantReminders(prisma, now)
   const influencers = await sendGrantReminders(prisma, now, INFLUENCER_GRANT_SLUG)
-  const sent = members.sent + influencers.sent
-  const stage = members.stage ?? influencers.stage
-  const mailOff = members.mailOff || influencers.mailOff
+  const open = await sendGrantReminders(prisma, now, OPEN_GRANT_SLUG)
+  const sent = members.sent + influencers.sent + open.sent
+  const stage = members.stage ?? influencers.stage ?? open.stage
+  const mailOff = members.mailOff || influencers.mailOff || open.mailOff
   return {
     job: 'grant_reminders',
     summaryAr: (fixed ? 'صار آخر يوم للمنحة 30 أكتوبر · ' : '') + (limited ? 'صار حد المنحة 4 دورات · ' : '')

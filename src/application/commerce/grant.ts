@@ -24,12 +24,44 @@ export const INFLUENCER_GRANT_SLUG = 'wajeez-influencers'
 export const INFLUENCER_GRANT_NAME_AR = 'منحة مؤثرين وجيز'
 export const INFLUENCER_GRANT_DEFAULTS = { percentOff: 45, maxCodes: 1000, maxCourses: 4 } as const
 
-export type GrantSlug = typeof MEMBER_GRANT_SLUG | typeof INFLUENCER_GRANT_SLUG
+/* ═══ والثالثة: «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) ═══
 
-/** الحملتان باسمَيهما وما تبدأ به كلٌّ منهما */
+   قرارُ صاحب المنصّة: «منحةٌ أخرى عامّةٌ بـ٥٠٪.. تكون مطابقةً تماما لمنحة وجيز الأولى ولكن عامّة»، وخُيّر بين بنائها
+   وتغيير الأولى إلى ٥٠٪ فاختار **بناءها**. فقواعدُها قواعدُ الأولى كلُّها — نموذجٌ بلا كود، وكودٌ فوريّ، وعددٌ محدود،
+   وحدُّ دوراتٍ على الكود، و«منحةٌ واحدةٌ لكلّ متعلّم» على الحملات كلِّها — وصفحتُها غيرُ `/grant`: `/grant/open`،
+   وصفُّها بنسبته وعدده ونهايته، فتُقرأ نتائجُها وحدَها ولا تختلط بقرّاء وجيز. */
+export const OPEN_GRANT_SLUG = 'wajeez-open'
+export const OPEN_GRANT_NAME_AR = 'منحة وجيز العامة'
+export const OPEN_GRANT_DEFAULTS = { percentOff: 50, maxCodes: 1000, maxCourses: 4 } as const
+export const OPEN_GRANT_PATH = '/grant/open'
+
+export type GrantSlug = typeof MEMBER_GRANT_SLUG | typeof INFLUENCER_GRANT_SLUG | typeof OPEN_GRANT_SLUG
+
+/** الحملاتُ بأسمائها وما تبدأ به كلٌّ منها */
 export const GRANT_CAMPAIGNS: Record<GrantSlug, { nameAr: string; defaults: { percentOff: number; maxCodes: number; maxCourses: number } }> = {
   [MEMBER_GRANT_SLUG]: { nameAr: MEMBER_GRANT_NAME_AR, defaults: GRANT_DEFAULTS },
   [INFLUENCER_GRANT_SLUG]: { nameAr: INFLUENCER_GRANT_NAME_AR, defaults: INFLUENCER_GRANT_DEFAULTS },
+  [OPEN_GRANT_SLUG]: { nameAr: OPEN_GRANT_NAME_AR, defaults: OPEN_GRANT_DEFAULTS },
+}
+
+/** الحملاتُ كلُّها — بها يُتابَع من عبّأ أيَّها، ويُقبل منه طلبُ المستشار، ويُعدّ في قائمة من عبّأ */
+export const GRANT_SLUGS: readonly GrantSlug[] = [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG]
+
+/** اسمُ الحملة القصيرُ في أبواب الصفحة والخادم — `?campaign=open` لا المعرّفُ المحفوظ */
+export type GrantKind = 'member' | 'influencer' | 'open'
+export const GRANT_KIND_SLUG: Record<GrantKind, GrantSlug> = {
+  member: MEMBER_GRANT_SLUG, influencer: INFLUENCER_GRANT_SLUG, open: OPEN_GRANT_SLUG,
+}
+export const GRANT_KINDS = Object.keys(GRANT_KIND_SLUG) as [GrantKind, ...GrantKind[]]
+
+/** الحملةُ بمعرّفها المحفوظ — وما لا يُعرف يُقرأ «منحة وجيز»، كما كان كلُّ عميلٍ قبل الثانية */
+export function grantKindOf(slug: string | null | undefined): GrantKind {
+  return slug === INFLUENCER_GRANT_SLUG ? 'influencer' : slug === OPEN_GRANT_SLUG ? 'open' : 'member'
+}
+
+/** صفحةُ الحملة التي يعود إليها صاحبُ الكود من بريده — ومنحةُ المؤثّرين برابط مؤثّرها (`influencerLink`) */
+export function grantPagePath(slug: GrantSlug): string {
+  return slug === OPEN_GRANT_SLUG ? OPEN_GRANT_PATH : '/grant'
 }
 
 /** بادئةُ الكود — تميّزه عن رمز الدعوة (WJ) وكود المدرّب (WD) */
