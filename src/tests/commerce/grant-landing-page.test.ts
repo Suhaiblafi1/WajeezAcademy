@@ -17,7 +17,7 @@ import {
   GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
-  GRANT_WHY_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr, GRANT_DIAG_AR, GRANT_DIAG_MORE, GRANT_DIAG_MORE_AR, GRANT_DIAG_PATH, GRANT_DIAG_POINTS_AR,
+  GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr, GRANT_DIAG_AR, GRANT_DIAG_MORE, GRANT_DIAG_MORE_AR, GRANT_DIAG_PATH, GRANT_DIAG_POINTS_AR,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -837,7 +837,7 @@ const page = (p: string) => readFileSync(join(root, p), 'utf8')
 const fnOf = (name: string) => PAGE.slice(PAGE.indexOf(`function ${name}(`), PAGE.indexOf('\n}\n', PAGE.indexOf(`function ${name}(`)))
 const outcomesCard = () => { const at = PAGE.indexOf('{GRANT_OUTCOMES_TITLE_AR}'); return PAGE.slice(at, PAGE.indexOf('</Card>', at)) }
 const ALL_NEW = () => [
-  ...Object.values(GRANT_WHY_AR), ...GRANT_WHY_POINTS_AR.flatMap((x) => [x.title, x.body]), ...Object.values(grantWhySplitAr(55)),
+  ...Object.values(GRANT_WHY_AR), ...GRANT_WHY_LOSSES_AR, ...GRANT_WHY_POINTS_AR.flatMap((x) => [x.title, x.body]), ...Object.values(grantWhySplitAr(55)),
   ...Object.values(GRANT_DIAG_AR), ...GRANT_DIAG_POINTS_AR.flatMap((x) => [x.title, x.body]), GRANT_DIAG_MORE_AR, ...GRANT_DIAG_MORE.flatMap((x) => [x.title, x.meta]),
 ]
 
@@ -880,6 +880,20 @@ describe('لماذا هذه المنحة؟ · ما ستخرج به · دعنا �
       expect(x.body.length, x.body).toBeLessThanOrEqual(40)
     }
     expect(GRANT_WHY_AR.title.length).toBeLessThanOrEqual(40)
+    expect(`${GRANT_WHY_AR.title} ${GRANT_WHY_AR.titleMark}`.length).toBeLessThanOrEqual(40)
+    for (const x of GRANT_WHY_LOSSES_AR) expect(x.length, x).toBeLessThanOrEqual(30)
+  })
+
+  it('⚠️ «أكبر ما تخسره ليس سعر الدورة، بل وقتك» — والأوقات الثلاثة الضائعة وسوم تحته', () => {
+    expect(GRANT_WHY_AR.title).toMatch(/ليس سعر الدورة/)
+    expect(GRANT_WHY_AR.titleMark).toBe('بل وقتك')
+    expect(GRANT_WHY_LOSSES_AR).toEqual(['لم تكملها', 'لم تستفد منها', 'لم تكن تحتاجها من البداية'])
+    const why = fnOf('GrantWhy')
+    expect(why, '«بل وقتك» غير مبرز').toMatch(/<span className="text-gold-ink">\{GRANT_WHY_AR\.titleMark\}<\/span>/)
+    expect(why, 'الأوقات الضائعة ليست تحت العنوان').toMatch(/id="grant-why"[\s\S]*GRANT_WHY_AR\.lossesLead[\s\S]*GRANT_WHY_LOSSES_AR\.map[\s\S]*GRANT_WHY_AR\.lead[\s\S]*GRANT_WHY_POINTS_AR\.map/)
+    /* «أصغر بدرجة»: عنوانه أصغر من عنوان التشخيص */
+    expect(why).toMatch(/id="grant-why" className="mt-1 text-lg /)
+    expect(fnOf('GrantDiagnostic')).toMatch(/id="grant-diag" className="mt-0\.5 text-xl /)
   })
 
   it('⚠️ ما يقال عن التشخيص وأدواته هو ما تقوله صفحاتها، وروابطها في صفحة جديدة إلى طرق قائمة', () => {

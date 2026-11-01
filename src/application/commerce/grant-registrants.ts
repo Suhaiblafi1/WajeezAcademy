@@ -98,6 +98,7 @@ export function registrantSource(i: SourceInput): RegistrantSource {
 export const GRANT_MAIL_PURPOSE_AR: Record<string, string> = {
   'grant.code': 'كود المنحة',
   'grant.reminder': 'تذكير قبل انتهاء المنحة',
+  'grant.extended': 'تمديد المنحة',
   'grant.message': 'رسالة منك',
 }
 export const mailPurposeAr = (purpose: string | null): string =>

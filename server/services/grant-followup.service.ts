@@ -322,6 +322,137 @@ export async function applyGrantCloseFix(prisma: PrismaClient, fix: { from: stri
   return true
 }
 
+/* ═══ وتُمدَّد إلى ١٢ نوفمبر — بقرار صاحب المنصّة (١ نوفمبر ٢٠٢٦) ═══
+
+   قال: «مدّد المنحة إلى 12 نوفمبر»، ثمّ «مددها أيضا إلى 12 نوفمبر» لـ«منحة مؤثرين وجيز». فآخرُ يومٍ للحملتين ١٢ نوفمبر،
+   والنهايةُ أوّلَ ١٣ نوفمبر بتوقيت عمّان (`grantClosesAt`).
+   وتمديدٌ لا تقصير: لا يقع إلّا والنهايةُ قبلها — فإن مدّها أحدٌ من شاشتها أبعدَ لم تُمسّ، ولا نهايةَ لها لا تُمسّ.
+   ومرّةً واحدةً بأثره (`fixedBefore`): فإن غيّرها صاحبُ المنصّة من شاشتها بعدُ بقي ما كتب. */
+export const GRANT_EXTEND_FIX = { to: '2026-11-12T21:00:00.000Z' } as const
+const GRANT_EXTEND_FIX_REASON = 'قرار صاحب المنصة (1 نوفمبر 2026): تمديد المنحة إلى 12 نوفمبر'
+
+export async function applyGrantExtendFix(
+  prisma: PrismaClient, slug: GrantSlug = MEMBER_GRANT_SLUG, fix: { to: string } = GRANT_EXTEND_FIX,
+): Promise<boolean> {
+  const c = await prisma.grantCampaign.findUnique({ where: { slug }, select: { id: true, closesAt: true } })
+  const to = new Date(fix.to)
+  if (!c?.closesAt || c.closesAt >= to) return false
+  if (await fixedBefore(prisma, c.id, GRANT_EXTEND_FIX_REASON)) return false
+  const from = c.closesAt.toISOString()
+  await prisma.$transaction(async (tx) => {
+    await tx.grantCampaign.update({ where: { id: c.id }, data: { closesAt: to } })
+    await recordAudit(tx, {
+      actorId: null, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
+      before: { closesAt: from }, after: { closesAt: fix.to },
+      reason: GRANT_EXTEND_FIX_REASON,
+    })
+  })
+  return true
+}
+
+/* ═══ وبريدُ «مددنا منحتك» لمن لم يشترِ — بقرار صاحب المنصّة (١ نوفمبر ٢٠٢٦) ═══
+
+   قال: «ارسل للي ما اشتروا ايميل ان المنحة تمددت». فمن أخذ كودَه قبل التمديد ولم يشترِ ولا ينتظر طلبُه الدفع
+   يصله بريدٌ واحدٌ بآخر يومٍ الجديد وكودِه، وزرٌّ يعيده إلى ما اختاره أو إلى صفحة منحته.
+   · **مرّةً لكلّ عميل**: أثرُه (`coupon.grant_reminder` بمرحلة `extended`) يُكتب مع البريد في معاملةٍ واحدة.
+   · **لمن سبق التمديدَ وحدَه**: من عبّأ بعده أخذ كودَه وآخرُ يومٍ أمامه، فلا يُقال له «مددنا».
+   · **ولا يقع إلّا والتمديدُ وقع** لهذه الحملة (أثرُه) وهي مفتوحة. والقناةُ مفصولةً لا بريدَ ولا أثر، فيصل حين توصل. */
+export const GRANT_EXTENDED_STAGE = 'extended'
+export const grantExtendedSubjectAr = (lastDay: string) => `مددنا منحتك حتى ${lastDay}`
+/** ما ينتظره في وجيز — نصُّ صاحب المنصّة (١ نوفمبر ٢٠٢٦) كما كتبه، بلا حركاتٍ (قاعدةُ نصوص الشاشات) */
+export const GRANT_EXTENDED_PERKS_AR = [
+  'تطبيق عملي ومشروع تخرج يراجعه مدربك',
+  'مدربون معتمدون في لقاءات مباشرة على Zoom لا دروس مسجلة',
+  'شهادة اجتياز ورسالة توصية لمشرفك في العمل أو الدراسة',
+  'تشخيص مهاري لتحليل احتياجك المهني من المهارات مجاني.',
+  'اختبار اكتشف ميولك في ٣ دقائق مع «المرآة»، مجانا',
+  'افحص مستواك في المهارة التي تريدها، من الأساسي إلى المتقدم، في ٣ دقائق مجانا.',
+  'اعرف مستواك في الإنجليزية (قواعد ومفردات وقراءة) في ٢٠ دقيقة أو أقل، مجانا.',
+  'متابعة إنجازك بمستشار مهني خاص لضمان التقدم والاستفادة.',
+] as const
+
+export async function sendGrantExtendedNotice(
+  prisma: PrismaClient, now = new Date(), slug: GrantSlug = MEMBER_GRANT_SLUG,
+): Promise<{ sent: number; mailOff: boolean }> {
+  const campaign = await prisma.grantCampaign.findUnique({
+    where: { slug }, select: { id: true, active: true, closesAt: true, percentOff: true },
+  })
+  const closesAt = campaign?.closesAt
+  if (!campaign?.active || !closesAt || closesAt <= now) return { sent: 0, mailOff: false }
+  const extended = await prisma.auditEvent.findFirst({
+    where: { action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: campaign.id, actorId: null, reason: GRANT_EXTEND_FIX_REASON },
+    select: { createdAt: true },
+  })
+  if (!extended) return { sent: 0, mailOff: false }
+
+  const told = await prisma.auditEvent.findMany({
+    where: { action: 'coupon.grant_reminder', entityType: 'lead', meta: { path: ['stage'], equals: GRANT_EXTENDED_STAGE } },
+    select: { entityId: true },
+  })
+  const leads = await prisma.lead.findMany({
+    where: {
+      campaign: slug, erasedAt: null, email: { not: null },
+      createdAt: { lt: extended.createdAt },
+      grantCode: { campaignId: campaign.id },
+      id: { notIn: told.map((r) => r.entityId) },
+    },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true, fullName: true, email: true, grantPicks: true,
+      influencer: { select: { code: true } },
+      grantCode: { select: { coupon: { select: {
+        code: true, percentOff: true,
+        orders: { where: { status: { in: [...BOUGHT, 'pending_payment'] } }, select: { id: true } },
+      } } } },
+    },
+  })
+  if (leads.length === 0) return { sent: 0, mailOff: false }
+  if (!(await liveChannels(prisma)).includes('email')) return { sent: 0, mailOff: true }
+  const paid = await paidEmails(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
+
+  const pool = new Map((await new GrantCoursesService(prisma).openCourses(now)).courses.map((c) => [c.courseId, c]))
+  const lastDay = fmtDateLong(new Date(closesAt.getTime() - 1))
+  const subject = grantExtendedSubjectAr(lastDay)
+  let sent = 0
+  for (const lead of leads) {
+    const coupon = lead.grantCode?.coupon
+    if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase())) continue
+    const pct = coupon.percentOff ?? campaign.percentOff
+    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant`
+    const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
+    const blocks: MailBlock[] = [
+      { kind: 'p', text: `منحتك ما زالت قائمة، وتصل إلى ${pct}% من سعر الدورات.` },
+      { kind: 'p', text: 'ما ينتظرك في وجيز:' },
+      { kind: 'list', items: [...GRANT_EXTENDED_PERKS_AR] },
+      { kind: 'facts', rows: [
+        { label: 'كود منحتك', value: coupon.code },
+        { label: 'آخر يوم', value: lastDay },
+      ] },
+      mine.length > 0
+        ? { kind: 'cta', label: GRANT_PICKS_CTA_AR, href: grantPicksLink(base, mine.map((c) => c.courseId)) }
+        : { kind: 'cta', label: 'اختر دوراتك', href: base },
+      { kind: 'note', text: 'وإن لم تحتجها، يمكنك أن تهدي الكود لغيرك.' },
+    ]
+    await prisma.$transaction(async (tx) => {
+      await recordAudit(tx, {
+        action: 'coupon.grant_reminder', entityType: 'lead', entityId: lead.id,
+        meta: { stage: GRANT_EXTENDED_STAGE, campaign: slug, picks: mine.length },
+      })
+      await enqueueMail(tx, {
+        to: lead.email!, purpose: 'grant.extended', subject,
+        ...renderMail({
+          greetingName: lead.fullName,
+          preheader: `كودك يعمل حتى ${lastDay}.`,
+          heading: subject,
+          blocks,
+        }),
+      })
+    })
+    sent += 1
+  }
+  return { sent, mailOff: false }
+}
+
 /* ═══ والمنحةُ تغطّي ٤ دوراتٍ بحدٍّ أقصى — بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) ═══
 
    قال: «ضعها له وكأنّك تقول اختر ٤ دوراتٍ بحدٍّ أقصى، لكي يشعر أنّ المنحةَ عظيمة»، واختار تغييرَ الحدّ من ٥ إلى ٤ لا
