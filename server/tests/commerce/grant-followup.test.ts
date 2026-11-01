@@ -327,7 +327,7 @@ describe('⑧ ما اختاره في حالته', () => {
   })
 })
 
-describe('⑧ وتمدد المنحة إلى 12 نوفمبر — بقرار صاحب المنصة، مرة واحدة ولا تقصير', () => {
+describe('⑧ وتمدد المنحتان إلى 12 نوفمبر — بقرار صاحب المنصة، مرة واحدة ولا تقصير', () => {
   const closesAt = async () => (await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: 'wajeez-members' }, select: { closesAt: true } })).closesAt?.toISOString() ?? null
   const reason = 'قرار صاحب المنصة (1 نوفمبر 2026): تمديد المنحة إلى 12 نوفمبر'
 
@@ -359,5 +359,25 @@ describe('⑧ وتمدد المنحة إلى 12 نوفمبر — بقرار صا
     await runJob(prisma, 'grant_reminders')
     expect(await closesAt(), 'ردّ العاملُ ما كتبه صاحب المنصة').toBe(shorter)
     await g.update({ closesAt: null }, ownerId)
+  })
+
+  it('⚠️ ومنحة المؤثرين أيضا — بأثرها هي، ولا يمنعها تمديد منحة وجيز قبلها', async () => {
+    const inf = new GrantService(prisma, INFLUENCER_GRANT_SLUG)
+    const infCloses = async () => (await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: INFLUENCER_GRANT_SLUG }, select: { closesAt: true } })).closesAt?.toISOString() ?? null
+    const c = await inf.campaign()
+    await prisma.auditEvent.deleteMany({ where: { reason, entityId: c.id } })
+    expect(await prisma.auditEvent.count({ where: { reason } }), 'تمديد منحة وجيز وقع قبلها').toBeGreaterThanOrEqual(1)
+
+    await inf.update({ closesAt: new Date(GRANT_CLOSE_FIX.to) }, ownerId)
+    await runJob(prisma, 'grant_reminders')
+    expect(await infCloses()).toBe(GRANT_EXTEND_FIX.to)
+    expect(await prisma.auditEvent.count({ where: { reason, entityId: c.id } })).toBe(1)
+
+    /* وقصّرها صاحبُ المنصّة من شاشتها بعدُ — لا تُردّ */
+    const shorter = grantClosesAt('2026-11-08')
+    await inf.update({ closesAt: new Date(shorter) }, ownerId)
+    await runJob(prisma, 'grant_reminders')
+    expect(await infCloses()).toBe(shorter)
+    await inf.update({ closesAt: null }, ownerId)
   })
 })

@@ -324,14 +324,17 @@ export async function applyGrantCloseFix(prisma: PrismaClient, fix: { from: stri
 
 /* ═══ وتُمدَّد إلى ١٢ نوفمبر — بقرار صاحب المنصّة (١ نوفمبر ٢٠٢٦) ═══
 
-   قال: «مدّد المنحة إلى 12 نوفمبر». فآخرُ يومٍ ١٢ نوفمبر، والنهايةُ أوّلَ ١٣ نوفمبر بتوقيت عمّان (`grantClosesAt`).
+   قال: «مدّد المنحة إلى 12 نوفمبر»، ثمّ «مددها أيضا إلى 12 نوفمبر» لـ«منحة مؤثرين وجيز». فآخرُ يومٍ للحملتين ١٢ نوفمبر،
+   والنهايةُ أوّلَ ١٣ نوفمبر بتوقيت عمّان (`grantClosesAt`).
    وتمديدٌ لا تقصير: لا يقع إلّا والنهايةُ قبلها — فإن مدّها أحدٌ من شاشتها أبعدَ لم تُمسّ، ولا نهايةَ لها لا تُمسّ.
    ومرّةً واحدةً بأثره (`fixedBefore`): فإن غيّرها صاحبُ المنصّة من شاشتها بعدُ بقي ما كتب. */
 export const GRANT_EXTEND_FIX = { to: '2026-11-12T21:00:00.000Z' } as const
 const GRANT_EXTEND_FIX_REASON = 'قرار صاحب المنصة (1 نوفمبر 2026): تمديد المنحة إلى 12 نوفمبر'
 
-export async function applyGrantExtendFix(prisma: PrismaClient, fix: { to: string } = GRANT_EXTEND_FIX): Promise<boolean> {
-  const c = await prisma.grantCampaign.findUnique({ where: { slug: MEMBER_GRANT_SLUG }, select: { id: true, closesAt: true } })
+export async function applyGrantExtendFix(
+  prisma: PrismaClient, slug: GrantSlug = MEMBER_GRANT_SLUG, fix: { to: string } = GRANT_EXTEND_FIX,
+): Promise<boolean> {
+  const c = await prisma.grantCampaign.findUnique({ where: { slug }, select: { id: true, closesAt: true } })
   const to = new Date(fix.to)
   if (!c?.closesAt || c.closesAt >= to) return false
   if (await fixedBefore(prisma, c.id, GRANT_EXTEND_FIX_REASON)) return false
