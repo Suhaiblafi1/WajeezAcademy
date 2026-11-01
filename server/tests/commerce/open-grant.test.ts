@@ -9,7 +9,9 @@
    ④ **والشراءُ بنسبتها.**
    ⑤ **ومنحةٌ واحدةٌ لكلّ متعلّم على الحملات كلِّها.**
    ⑥ **ونتائجُها وحدَها، ومن عبّأها في قائمة من عبّأ.**
-   ⑦ **والمتابعةُ والتذكيرُ كالأولى** — حالةٌ تقول اسمَها، وتذكيرٌ بنهايتها هي يعيد إلى صفحتها، ولا يذكّره تذكيرُ الأولى. */
+   ⑦ **والمتابعةُ والتذكيرُ كالأولى** — حالةٌ تقول اسمَها، وتذكيرٌ بنهايتها هي يعيد إلى صفحتها، ولا يذكّره تذكيرُ الأولى.
+   ⑧ **وتُشغَّل حتى ٣٠ نوفمبر مرّةً واحدة** — بقرار صاحب المنصّة (١ نوفمبر ٢٠٢٦): موقوفةً تُشغَّل بأثرها، ومشغّلةً لا تُمسّ،
+      وما أوقفه بعدُ يبقى موقوفا، وما فات يومُه لا يُفتح. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -18,9 +20,9 @@ import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService, grantResults } from '../../services/grant-landing.service'
-import { grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
+import { OPEN_GRANT_LAUNCH, applyOpenGrantLaunch, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
-import { GRANT_ONCE_AR, OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { GRANT_ONCE_AR, OPEN_GRANT_SLUG, grantClosesAt, grantLastDay } from '../../../src/application/commerce/grant'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -194,5 +196,28 @@ describe('⑦ المتابعة والتذكير كالأولى', () => {
       if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
       else await prisma.integrationSetting.delete({ where: { provider: 'email' } })
     }
+  })
+})
+
+describe('⑧ وتشغل حتى ٣٠ نوفمبر مرة واحدة', () => {
+  it('⚠️ موقوفة تشغل وآخر يومها ٣٠ نوفمبر بأثر — ثم لا تمس: لا ثانية، ولا بعد إيقافها، ولا بعد يومها', async () => {
+    const BEFORE = new Date('2026-11-01T12:00:00.000Z')
+    expect(OPEN_GRANT_LAUNCH.closesAt, 'ليست نهاية ٣٠ نوفمبر بتوقيت عمان').toBe(grantClosesAt('2026-11-30'))
+    expect(await applyOpenGrantLaunch(prisma, new Date(OPEN_GRANT_LAUNCH.closesAt)), 'فتحت بعد يومها').toBe(false)
+
+    await grant.update({ active: false, closesAt: null }, ownerId)
+    expect(await applyOpenGrantLaunch(prisma, BEFORE)).toBe(true)
+    const s = await grant.settings(BEFORE)
+    expect(s).toMatchObject({ active: true, open: true, percentOff: 50 })
+    expect(grantLastDay(s.closesAt!)).toBe('2026-11-30')
+    const audit = await prisma.auditEvent.findFirstOrThrow({
+      where: { action: 'coupon.grant_settings', entityId: s.id, actorId: null }, orderBy: { createdAt: 'desc' },
+    })
+    expect(audit.reason).toContain('30 نوفمبر')
+
+    expect(await applyOpenGrantLaunch(prisma, BEFORE), 'شغلت مرة ثانية').toBe(false)
+    await grant.update({ active: false }, ownerId)
+    expect(await applyOpenGrantLaunch(prisma, BEFORE), 'أعاد تشغيل ما أوقفه صاحب المنصة').toBe(false)
+    expect((await grant.settings(BEFORE)).active).toBe(false)
   })
 })

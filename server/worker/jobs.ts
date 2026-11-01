@@ -1547,7 +1547,7 @@ export async function runGrantFollowups(prisma: PrismaClient, now = new Date()):
 /** من أخذ كود المنحة ولم يشترِ — بريدٌ قبل انتهائها بثلاثة أيّامٍ وفي آخر يوم، مرّةً لكلٍّ (`grant-followup.service.ts`) */
 export async function runGrantReminders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
-  const { applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, sendGrantExtendedNotice, sendGrantReminders } = await import('../services/grant-followup.service')
+  const { applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, applyOpenGrantLaunch, sendGrantExtendedNotice, sendGrantReminders } = await import('../services/grant-followup.service')
   const { seedGrantAdvisorWhatsApp } = await import('../services/integrations.service')
   /* آخرُ يومٍ ٣٠ أكتوبر، والحدُّ ٤ دورات — بقرار صاحب المنصّة، قبل التذكير فيتبع التذكيرُ اليومَ الصحيح.
      ورقمُ مستشار المنحة على واتساب — والعاملُ يدور بكلّ وظائفه حين يبدأ، فيُكتب أوّلَ ما يُنشر */
@@ -1560,6 +1560,8 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   const toldInfluencers = await sendGrantExtendedNotice(prisma, now, INFLUENCER_GRANT_SLUG)
   const told = toldMembers.sent + toldInfluencers.sent
   const limited = await applyGrantCoursesFix(prisma)
+  /* و«منحة وجيز العامة» تُشغَّل حتى ٣٠ نوفمبر — مرّةً واحدة، قبل تذكيرها فيتبع نهايتَها (١ نوفمبر ٢٠٢٦) */
+  const launched = await applyOpenGrantLaunch(prisma, now)
   const seeded = await seedGrantAdvisorWhatsApp(prisma)
   /* ولكلّ حملةٍ بنهايتها: «منحة وجيز» و«منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) و«منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
   const members = await sendGrantReminders(prisma, now)
@@ -1571,10 +1573,10 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   return {
     job: 'grant_reminders',
     summaryAr: (fixed ? 'صار آخر يوم للمنحة 30 أكتوبر · ' : '') + (extended ? 'مدت المنحة إلى 12 نوفمبر · ' : '') + (extendedInfluencers ? 'مدت منحة المؤثرين إلى 12 نوفمبر · ' : '') + (told > 0 ? `أخبر ${told} ممن لم يشتر بتمديد المنحة · ` : '') + (limited ? 'صار حد المنحة 4 دورات · ' : '')
-      + (seeded ? 'ضبط رقم واتساب مستشار المنحة · ' : '') + (mailOff
+      + (launched ? 'شغلت منحة وجيز العامة حتى 30 نوفمبر · ' : '') + (seeded ? 'ضبط رقم واتساب مستشار المنحة · ' : '') + (mailOff
       ? 'حلّ تذكير المنحة وقناة البريد غير موصولة — لا يذكّر أحد حتى توصل'
       : sent === 0 ? 'لا تذكير منحة مستحق' : `ذكّر ${sent} ممن لم يشتر بأن المنحة تنتهي (${stage === '1d' ? 'آخر يوم' : 'قبل ثلاثة أيام'})`),
-    done: sent + told + (fixed ? 1 : 0) + (extended ? 1 : 0) + (extendedInfluencers ? 1 : 0) + (limited ? 1 : 0) + (seeded ? 1 : 0), failed: 0, ms: Date.now() - started,
+    done: sent + told + (fixed ? 1 : 0) + (extended ? 1 : 0) + (extendedInfluencers ? 1 : 0) + (limited ? 1 : 0) + (launched ? 1 : 0) + (seeded ? 1 : 0), failed: 0, ms: Date.now() - started,
   }
 }
 
