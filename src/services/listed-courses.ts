@@ -11,7 +11,7 @@
 
 import { useEffect, useSyncExternalStore } from 'react'
 import { withRetry } from './retry'
-import { listedFromResponse, seasonsFromResponse, type ListedCourses } from '@/application/catalog/listed-courses'
+import { listedFromResponse, seasonFromResponse, seasonsFromResponse, type ListedCourses } from '@/application/catalog/listed-courses'
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? ''
 
@@ -34,14 +34,14 @@ function start() {
       const body: unknown = await r.json()
       const ids = listedFromResponse(body)
       if (!ids) throw new Error('listed-courses: جوابٌ لا يقرأ')
-      return { ids, seasons: seasonsFromResponse(body) ?? undefined }
+      return { ids, seasons: seasonsFromResponse(body) ?? undefined, season: seasonFromResponse(body) ?? undefined }
     } catch (err) {
       /* أوّلُ إخفاقٍ لا يُبقي القسمَ فارغا — والإعادةُ ماضية */
       if (current.state === 'loading') set({ state: 'failed' })
       throw err
     }
   })
-    .then(({ ids, seasons }) => set({ state: 'ready', ids, seasons }))
+    .then(({ ids, seasons, season }) => set({ state: 'ready', ids, seasons, season }))
     .catch(() => undefined)
 }
 

@@ -39,6 +39,7 @@ import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { publicPathwayById } from "@/data/public-pathways";
 import { restoredSwaps, swapCandidates } from "@/application/catalog/pathway-swap";
+import { useListedCourses } from "@/services/listed-courses";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-prices";
@@ -242,7 +243,9 @@ export default function PathwayPage() {
   /* ═══ واستبدالُ دورةٍ في المسار الجاهز — وأوّلُها التي تتعارض (٣١ أكتوبر ٢٠٢٦) ═══
      القاعدةُ في `application/catalog/pathway-swap.ts`. والمرشّحون بقربهم من المسار، ثمّ كلُّ دورةٍ لها شعبة:
      من يستبدل لتعارضٍ يريد ما يناسب جدولَه قبل ما يقرب موضوعَه. */
-  const season = pathway ? publicPathwayById(pathway.id)?.season ?? null : null;
+  /* وفصلُ البديل فصلُ المسار: ما ثُبّت له، وإلّا موسمُ البيع (`listedWhole`) */
+  const listed = useListedCourses();
+  const season = pathway ? publicPathwayById(pathway.id)?.season ?? (listed.state === "ready" ? listed.season ?? null : null) : null;
   const swapChoices = useMemo(() => {
     void catalogVersion;
     if (!swapForId || !pathway || editable) return [];

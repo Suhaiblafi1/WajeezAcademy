@@ -10,6 +10,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { PublicCatalogService } from '../../services/public-catalog.service'
+import { startTermKey } from '../../../src/application/terms/start-term'
 
 let prisma: PrismaClient
 let catalog: PublicCatalogService
@@ -128,5 +129,12 @@ describe('فصولُ الدورات المعروضة', () => {
     })
     const { seasons } = await catalog.listedCourses()
     expect([...seasons[id]].sort()).toEqual([`${t.year}-nov_jan`, '2031-feb_apr'].sort())
+  })
+
+  it('⚠️ وموسمُ البيع فصلُ أقرب شعبةٍ معروضةٍ لم تبدأ — لا الجاريةُ ولا البعيدة', async () => {
+    const soon = at(0.5)
+    await courseWith('W', { startsAt: soon, endsAt: at(40) })
+    const { season } = await catalog.listedCourses()
+    expect(season).toBe(startTermKey(soon))
   })
 })
