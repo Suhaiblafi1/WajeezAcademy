@@ -97,10 +97,12 @@ describe('متى يُعرض المسار', () => {
 describe('المسارُ في فصله', () => {
   const WINTER = '2026-nov_jan'
   /** الجوابُ بفصول شعبه — `{ دورة: [فصل…] }` */
-  const seasoned = (map: Record<string, string[]>): ListedCourses => ({
+  /** وموسمُ البيع من الخادم (١ نوفمبر ٢٠٢٦، `sellingSeason`) — الشتاءُ ما لم يُقل غيرُه */
+  const seasoned = (map: Record<string, string[]>, season = WINTER): ListedCourses => ({
     state: 'ready',
     ids: new Set(Object.keys(map)),
     seasons: new Map(Object.entries(map).map(([id, keys]) => [id, new Set(keys)])),
+    season,
   })
 
   /* المعروضُ يومَ القرار كما قاله الخادم: أربعٌ وعشرون دورةً شعبتُها في الشتاء، وتسعٌ بعده */
@@ -121,8 +123,9 @@ describe('المسارُ في فصله', () => {
     'C-COMX-108': [WINTER, '2027-may_jul'],
   })
 
-  it('⚠️ المساراتُ كلُّها لفصل الشتاء', () => {
-    for (const p of publicPathways) expect(p.season, p.id).toBe(WINTER)
+  it('⚠️ المساراتُ كلُّها لموسم البيع لا لفصلٍ مكتوب', () => {
+    /* ولا فصلَ مكتوبٌ في الملفّ: فصلُها موسمُ البيع من الخادم — فلا تغيب كلُّها حين ينتهي الشتاء */
+    for (const p of publicPathways) expect(p.season, p.id).toBeNull()
   })
 
   it('⚠️ يومَ القرار: الجديدةُ العشرةُ تُعرض، وما فيه دورةٌ بعد الشتاء يُخفى', () => {
@@ -142,6 +145,23 @@ describe('المسارُ في فصله', () => {
     const neg = publicPathwayById('PP-NEG')!
     const back = seasoned(Object.fromEntries(neg.courseIds.map((id) => [id, [LATER[id], WINTER]])))
     expect(listedWhole(publicPathways, back).map((p) => p.id)).toEqual(['PP-NEG'])
+  })
+
+  it('⚠️ وإذا جاء الربيعُ انتقلت وحدَها: يُعرض ما اكتملت شعبُه فيه، ويغيب ما بقي في الشتاء', () => {
+    const neg = publicPathwayById('PP-NEG')!
+    const spring = '2027-feb_apr'
+    const map = {
+      ...Object.fromEntries(WINTER_IDS.map((id) => [id, [WINTER]])),
+      ...Object.fromEntries(neg.courseIds.map((id) => [id, [spring]])),
+    }
+    expect(listedWhole(publicPathways, seasoned(map, spring)).map((p) => p.id)).toEqual(['PP-NEG'])
+    expect(listedWhole(publicPathways, seasoned(map, WINTER)).map((p) => p.id)).not.toContain('PP-NEG')
+  })
+
+  it('والمسارُ المثبَّتُ على فصلٍ يبقى عليه وإن تغيّر موسمُ البيع', () => {
+    const pinned = [{ id: 'X', courseIds: ['C-A'], season: WINTER }]
+    expect(listedWhole(pinned, seasoned({ 'C-A': [WINTER] }, '2027-feb_apr'))).toHaveLength(1)
+    expect(listedWhole(pinned, seasoned({ 'C-A': ['2027-feb_apr'] }, '2027-feb_apr'))).toHaveLength(0)
   })
 
   it('والخادمُ الأقدمُ بلا فصولٍ لا يُخفي مسارا', () => {

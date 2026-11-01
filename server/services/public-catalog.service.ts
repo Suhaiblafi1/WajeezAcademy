@@ -13,7 +13,7 @@ import { photoPublicUrl } from './storage.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { cohortSummaryAr } from '../../src/application/learning/cohort-summary'
 import { termKey } from '../../src/application/terms/season'
-import { startTermKey } from '../../src/application/terms/start-term'
+import { sellingSeason, startTermKey } from '../../src/application/terms/start-term'
 import type { TrainingSeason } from '../../src/application/trainer/application-options'
 import { asAudience } from '../../src/application/trainer/cohort-audience'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
@@ -108,8 +108,11 @@ export class PublicCatalogService {
       ═══ لمَ الفصل (٢٨ أكتوبر ٢٠٢٦) ═══
       قال صاحبُ المنصّة: «المساراتُ فيها دوراتٌ خارج فصل الشتاء». فالمسارُ العامُّ يُعرض حين تكون لكلّ دوراته
       شعبةٌ **في فصله** (`listedWhole`)، لا شعبةٌ في أيّ فصل. والفصلُ من يوم بدء الشعبة بتوقيت عمّان — لا من
-      فصلها المسجَّل: شعبةٌ في صفّ الشتاء تبدأ في مارس خارجَ الشتاء عند من يشتريها. وبلا يومِ بدءٍ ففصلُها المسجَّل. */
-  async listedCourses(now = new Date()): Promise<{ courseIds: string[]; seasons: Record<string, string[]> }> {
+      فصلها المسجَّل: شعبةٌ في صفّ الشتاء تبدأ في مارس خارجَ الشتاء عند من يشتريها. وبلا يومِ بدءٍ ففصلُها المسجَّل.
+
+      ═══ وموسمُ البيع (١ نوفمبر ٢٠٢٦) ═══
+      وفصلُ المسار نفسُه يُحسب هنا لا يُكتب: فصلُ أقربِ شعبةٍ معروضةٍ لم تبدأ (`sellingSeason`). */
+  async listedCourses(now = new Date()): Promise<{ courseIds: string[]; seasons: Record<string, string[]>; season: string }> {
     const rows = await this.prisma.cohort.findMany({
       where: listedCohortWhere(now),
       select: { courseId: true, startsAt: true, term: { select: { year: true, season: true } } },
@@ -123,7 +126,7 @@ export class PublicCatalogService {
         : r.term ? termKey(r.term.year, r.term.season as TrainingSeason) : null
       if (key && !list.includes(key)) list.push(key)
     }
-    return { courseIds: Object.keys(seasons), seasons }
+    return { courseIds: Object.keys(seasons), seasons, season: sellingSeason(rows.map((r) => r.startsAt), now) }
   }
 
   /** الشعب المعروضة للزوار — مفتوحة أو ممتلئة أو جارية: السعر والموعد والمدرب */

@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { availabilityNoteAr, listedFirst, listedFromResponse, listedOnly, seasonsFromResponse, type ListedCourses } from '@/application/catalog/listed-courses'
+import { availabilityNoteAr, listedFirst, listedFromResponse, listedOnly, seasonFromResponse, seasonsFromResponse, type ListedCourses } from '@/application/catalog/listed-courses'
 
 const rows = [{ id: 'C-A' }, { id: 'C-B' }, { id: 'C-C' }]
 const ready = (ids: string[]): ListedCourses => ({ state: 'ready', ids: new Set(ids) })
@@ -35,6 +35,12 @@ describe('المرشِّح', () => {
     const m = seasonsFromResponse({ seasons: { 'C-A': ['2026-nov_jan', 4, ''], 'C-B': 'x' } })!
     expect([...m.get('C-A')!]).toEqual(['2026-nov_jan'])
     expect(m.has('C-B')).toBe(false)
+  })
+
+  it('وموسمُ البيع يُقرأ بشكله وحدَه', () => {
+    expect(seasonFromResponse({ season: '2026-nov_jan' })).toBe('2026-nov_jan')
+    expect(seasonFromResponse({ season: 'winter' })).toBeNull()
+    expect(seasonFromResponse({ courseIds: [] })).toBeNull()
   })
 })
 
