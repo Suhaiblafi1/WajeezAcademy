@@ -17,6 +17,7 @@ import {
   GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
+  GRANT_WHY_AR, GRANT_WHY_CLOSE_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -812,5 +813,39 @@ describe('النصوص', () => {
     expect(p, 'سمى الشعبة لا الدورة').toMatch(/\.map\(\(i\) => lines\.find\(\(l\) => l\.courseId === i\.courseId\)\?\.name \?\? i\.titleAr\)/)
     expect(BUY, 'بند التفصيل يقول «الكود WA2026»').toMatch(/: quote\.firstPurchasePct \? `خصم أول عملية شراء — \$\{quote\.firstPurchasePct\}٪` : `الكود \$\{quote\.couponCode\}`/)
     expect(plainAr('خصم أول عملية شراء على الدورة الأعلى سعرا')).toBe('خصم أول عملية شراء على الدورة الأعلى سعرا')
+  })
+})
+
+/* «لماذا هذه المنحة؟» قبل «اختر دوراتك» — طلبُ صاحب المنصّة (١ نوفمبر ٢٠٢٦): «يوضّح القيمةَ المستفادة ولماذا يأخذ
+   المنحة وكيف ستفيده». يُحرَس موضعُه (بعد صندوق الكود وقبل العنوان، ولمن له منحةٌ وحدَه)، وأنّ نصوصَه بيضاءُ بلا
+   تشكيل، وأنّ ما يَعِد به قائمٌ: حدُّ رسالة التوصية من `endorsement.ts` لا رقمٌ منسوخ، ولا عددَ للمنح ولا وعدَ بوظيفة. */
+describe('لماذا هذه المنحة؟', () => {
+  it('⚠️ بين صندوق الكود و«اختر دوراتك»، ولمن له منحة يستعملها وحده', () => {
+    const top = PAGE.indexOf(TOP_CARD)
+    const why = PAGE.indexOf('{grantOn && <GrantWhy percentOff={pct} />}')
+    const pick = PAGE.indexOf('اختر دوراتك{view.termAr')
+    expect(top, 'صندوق الكود').toBeGreaterThan(-1)
+    expect(why, 'القسم غائب أو بلا شرط المنحة').toBeGreaterThan(top)
+    expect(pick, 'القسم بعد «اختر دوراتك»').toBeGreaterThan(why)
+    const fn = PAGE.slice(PAGE.indexOf('function GrantWhy('), PAGE.indexOf('export default function MemberGrantPage'))
+    expect(fn, 'العنوان والقيم والشريط').toMatch(/\{GRANT_WHY_AR\.title\}[\s\S]*GRANT_WHY_POINTS_AR\.map[\s\S]*\{split\.you\}[\s\S]*\{split\.us\}[\s\S]*\{GRANT_WHY_CLOSE_AR\}/)
+  })
+
+  it('⚠️ نصوصه قصيرة بلا تشكيل، وما يعد به قائم', () => {
+    const all = [GRANT_WHY_AR.eyebrow, GRANT_WHY_AR.title, GRANT_WHY_AR.lead, GRANT_WHY_CLOSE_AR,
+      ...GRANT_WHY_POINTS_AR.flatMap((x) => [x.title, x.body]), ...Object.values(grantWhySplitAr(55))]
+    for (const t of all) {
+      expect(plainAr(t), t).toBe(t)
+      expect(t, 'وعد بوظيفة أو دخل أو عدد للمنح').not.toMatch(/وظيف|دخل|راتب|\d+ منح/)
+    }
+    expect(GRANT_WHY_POINTS_AR.map((x) => x.id)).toEqual(['live', 'practice', 'proof', 'advisor'])
+    expect(GRANT_WHY_POINTS_AR.find((x) => x.id === 'proof')!.body).toContain(`${ENDORSEMENT_MIN_ATTENDANCE}%`)
+    expect(GRANT_WHY_POINTS_AR.find((x) => x.id === 'live')!.body).toContain('Zoom')
+  })
+
+  it('⚠️ السعر قسمان بنسبة المنحة: ما يدفعه وما تدفعه وجيز عنه', () => {
+    expect(grantWhySplitAr(55)).toEqual({ you: 'تدفع 45% فقط', us: '55% تدفعها وجيز عنك' })
+    expect(grantWhySplitAr(60)).toEqual({ you: 'تدفع 40% فقط', us: '60% تدفعها وجيز عنك' })
+    expect(grantWhySplitAr(140).you).toBe('تدفع 0% فقط')
   })
 })
