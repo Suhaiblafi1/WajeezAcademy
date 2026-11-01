@@ -17,7 +17,7 @@ import {
   GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
-  GRANT_WHY_AR, GRANT_WHY_CLOSE_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr,
+  GRANT_WHY_AR, GRANT_WHY_CLOSE_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr, GRANT_DIAG_AR, GRANT_DIAG_PATH, GRANT_DIAG_POINTS_AR,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -847,5 +847,33 @@ describe('لماذا هذه المنحة؟', () => {
     expect(grantWhySplitAr(55)).toEqual({ you: 'تدفع 45% فقط', us: '55% تدفعها وجيز عنك' })
     expect(grantWhySplitAr(60)).toEqual({ you: 'تدفع 40% فقط', us: '60% تدفعها وجيز عنك' })
     expect(grantWhySplitAr(140).you).toBe('تدفع 0% فقط')
+  })
+})
+
+/* «دعنا نشخص احتياجك» بين لوح الدفع وصندوق الإهداء — طلبُ صاحب المنصّة (١ نوفمبر ٢٠٢٦). يُحرَس موضعُه، وأنّ زرَّه يفتح
+   التشخيصَ في صفحةٍ جديدة فلا يضيع ما اختاره، وأنّ ما يقوله عن التشخيص هو ما تقوله صفحةُ التشخيص نفسُها. */
+describe('دعنا نشخص احتياجك', () => {
+  it('⚠️ بين لوح الدفع وصندوق الإهداء، وزره يفتح التشخيص في صفحة جديدة', () => {
+    const pay = PAGE.indexOf('<Card tone="solid" className="sticky bottom-3')
+    const diag = PAGE.indexOf('{view.openCourses.length > 0 && <GrantDiagnostic />}')
+    const gift = PAGE.indexOf('{GRANT_GIFT_AR.title}')
+    expect(pay, 'لوح الدفع').toBeGreaterThan(-1)
+    expect(diag, 'الصندوق غائب أو فوق لوح الدفع').toBeGreaterThan(pay)
+    expect(gift, 'الصندوق تحت الإهداء').toBeGreaterThan(diag)
+    const fn = PAGE.slice(PAGE.indexOf('function GrantDiagnostic('), PAGE.indexOf('export default function MemberGrantPage'))
+    expect(fn, 'الزر لا يفتح صفحة جديدة').toMatch(/<Button as="a" href=\{GRANT_DIAG_PATH\} target="_blank" rel="noreferrer"/)
+    expect(GRANT_DIAG_PATH).toBe('/diagnostic')
+    expect(APP, 'طريق التشخيص').toMatch(/path="\/diagnostic"/)
+  })
+
+  it('⚠️ نصوصه بلا تشكيل، وما يقوله عن التشخيص تقوله صفحته', () => {
+    const all = [...Object.values(GRANT_DIAG_AR), ...GRANT_DIAG_POINTS_AR.flatMap((x) => [x.title, x.body])]
+    for (const t of all) expect(plainAr(t), t).toBe(t)
+    const DIAG = readFileSync(join(root, 'src/pages/Diagnostic.tsx'), 'utf8')
+    expect(DIAG, 'المدة').toContain('{ icon: Clock3, text: "٣–٦ دقائق" }')
+    expect(DIAG, 'أقل الأسئلة').toMatch(/const ESTIMATE_MIN = 8;/)
+    expect(DIAG, 'أكثر الأسئلة').toMatch(/const ESTIMATE_MAX = 14;/)
+    expect(DIAG, 'مجاني وبلا حساب').toContain('ابدأ مجانا — ترى مسارك المقترح ونتيجتك كاملة فورا، بلا حساب')
+    expect(DIAG, 'توصية مفسرة').toContain('توصية مفسّرة، ليست حظا')
   })
 })
