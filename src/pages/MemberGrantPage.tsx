@@ -58,6 +58,7 @@ import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_SHARE_PATH, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr, parsePicksParam,
+  GRANT_WHY_AR, GRANT_WHY_CLOSE_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr,
 } from "@/application/commerce/grant-landing";
 import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
@@ -133,6 +134,50 @@ const OTHER_DOMAIN = "أخرى";
 const SECTION_FACES = 3;
 /** أيقونةُ كلِّ بندٍ ممّا يحصل عليه — في سطر صندوق الكود */
 const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, certificate: Award };
+/** أيقونةُ كلِّ قيمةٍ في «لماذا هذه المنحة؟» */
+const WHY_ICON: Record<(typeof GRANT_WHY_POINTS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, proof: Award, advisor: UserRound };
+
+/** «لماذا هذه المنحة؟» — بين صندوق الكود و«اختر دوراتك» (١ نوفمبر ٢٠٢٦، `GRANT_WHY_AR`): عنوانٌ يسمّي الألم، وأربعُ قيمٍ
+    بأيقوناتها، وشريطٌ يقسم السعرَ بينه وبين الأكاديميّة بنسبة منحته */
+function GrantWhy({ percentOff }: { percentOff: number }) {
+  const split = grantWhySplitAr(percentOff);
+  const us = Math.min(100, Math.max(0, Math.round(percentOff)));
+  return (
+    <Card as="section" aria-labelledby="grant-why" className="mt-6">
+      <p className="inline-flex items-center gap-1.5 text-read font-bold text-gold-ink">
+        <Sparkles className="h-4 w-4" aria-hidden="true" />{GRANT_WHY_AR.eyebrow}
+      </p>
+      <h2 id="grant-why" className="mt-1 text-xl font-black leading-8">{GRANT_WHY_AR.title}</h2>
+      <p className="mt-1 text-read text-muted-foreground">{GRANT_WHY_AR.lead}</p>
+      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+        {GRANT_WHY_POINTS_AR.map((x) => {
+          const Icon = WHY_ICON[x.id];
+          return (
+            <Inset as="li" key={x.id} className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-teal/10"><Icon className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /></span>
+              <span className="min-w-0">
+                <span className="block font-bold leading-6">{x.title}</span>
+                <span className="mt-0.5 block text-read leading-6 text-muted-foreground">{x.body}</span>
+              </span>
+            </Inset>
+          );
+        })}
+      </ul>
+      {/* السعرُ بالمال قسمين: ما يدفعه هو وما تدفعه الأكاديميّة — والشريطُ زينةٌ يقولها السطرُ تحته */}
+      <div className="mt-4">
+        <div className="flex h-2.5 overflow-hidden rounded-full" aria-hidden="true">
+          <span className="bg-teal" style={{ width: `${100 - us}%` }} />
+          <span className="bg-gold" style={{ width: `${us}%` }} />
+        </div>
+        <p className="mt-2 flex flex-wrap justify-between gap-x-4 text-read font-bold">
+          <span className="text-teal-light-ink">{split.you}</span>
+          <span className="text-gold-ink">{split.us}</span>
+        </p>
+      </div>
+      <p className="mt-3 border-t border-border pt-3 text-read text-muted-foreground">{GRANT_WHY_CLOSE_AR}</p>
+    </Card>
+  );
+}
 
 export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" }) {
   const forInfluencer = variant === "influencer";
@@ -496,6 +541,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             })}
           </p>
         </Card>
+
+        {/* «لماذا هذه المنحة؟» قبل «اختر دوراتك» — لمن له منحةٌ يستعملها وحدَه (١ نوفمبر ٢٠٢٦) */}
+        {grantOn && <GrantWhy percentOff={pct} />}
 
         <h2 className="mt-6 text-xl font-black">
           اختر دوراتك{view.termAr && <span className="text-read font-normal text-muted-foreground"> · {view.termAr}</span>}
