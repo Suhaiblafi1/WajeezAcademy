@@ -38,6 +38,8 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 | `email-marketing-bible` | [CosmoBlk/email-marketing-bible](https://github.com/CosmoBlk/email-marketing-bible) · الجذر | `b6dd8b4` | MIT |
 | `mobbin-ux` | [rohunvora/cool-claude-skills](https://github.com/rohunvora/cool-claude-skills) · `skills/mobbin-ux/` | `8b7c17f` | MIT — **معلَنةٌ في README وحدَه، ولا ملفَّ رخصةٍ في المستودَع** |
 | `quick-view` | المصدر نفسُه · `skills/quick-view/` | `8b7c17f` | MIT — بالشرط نفسِه |
+| `design-taste-frontend` (٣٩ ملفّا: مراجعُ ومكتبةٌ وسكربتات) | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) · `skills/taste-skill/` | `12af471` | MIT — انظر «دفعة 2026-11-01» |
+| `graphify` (١٠ ملفّات) | [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) · مولَّدةٌ بـ`graphify install --project --platform claude` من النسخة `0.9.100` | `f5155ba` | Apache 2.0 — انظر «دفعة 2026-11-01» |
 
 > **و`mobbin-ux` لا تعمل اليوم — تُستورد جاهزةً لغدٍ.** جُلبت بطلب صاحب المنصّة
 > (٨ سبتمبر ٢٠٢٦)، وثلاثةُ شروطٍ لها غيرُ متحقّقة، وكلُّها فُحصت لا خُمِّنت:
@@ -391,3 +393,61 @@ claude plugin install aaron-marketing@aaron
 على كلّ `Bash` ثمنٌ غالٍ لثلاثةِ آلافٍ من إرشاد SEO. وإن أُريدت رغم ذلك،
 فعلى جهازٍ واحدٍ بنطاق `user` — **لا `--scope project` أبدا**: ذاك يفرضها على
 كلّ من يستنسخ المستودَع ويُدخلها CI.
+
+## دفعة 2026-11-01 — `design-taste-frontend` و`graphify`، وما لم يُستورد معهما
+
+أرسل صاحبُ المنصّة خمسةَ روابطَ وملفَّ PDF يشرح Graphify، وطلب «نزّل الآتي».
+ثمّ خُيّر في إبقائها لجلساتٍ قادمة، فاختار **الخفيفةَ في المستودع** (ولا
+محرّرَ الفيديو). جُلبت الخمسةُ استنساخا سطحيّا (`--depth 1`) إلى مجلَّدٍ مؤقّتٍ
+**خارج** المستودع، وقُرئت منه، ونُقل المثبَّتُ نسخا حرفيّا — و`diff -rq` بعد
+النقل: **مطابقٌ**.
+
+### `design-taste-frontend` — من `Leonxlnx/taste-skill`
+
+الأمران المرسَلان (`npx skills add … --skill "design-taste-frontend"` و
+`/plugin install taste-skill@taste-skill`) يُثبّتان **المهارةَ نفسَها**: في
+`.claude-plugin/marketplace.json` إضافةٌ واحدةٌ مهاراتُها `./skills/taste-skill`،
+واسمُها في ترويستها `design-taste-frontend`. فنُسخت مرّةً واحدة.
+
+وفيها سكربتاتُ Node (`scripts/*.mjs`) قُرئت شبكتُها كلُّها: مكتباتُ صورٍ مفتوحة
+(`api.openverse.org` و`commons.wikimedia.org` و`api.artic.edu` و`picsum.photos`)
+وخادمٌ محلّيٌّ على `127.0.0.1` لفحص الصفحة في متصفّح. ولا تقرأ من البيئة إلّا
+`TASTE_SKILL_HISTORY`، وتكتب سجلَّ ما اختارته في `~/.taste-skill/history.json`.
+ولا `.ts` فيها، فلا يراها `eslint` (إعدادُه `**/*.{ts,tsx}` وحدَه).
+
+وترويستُها ~١٠١٥ حرفا (~٢٥٠ رمزا في كلّ جلسة). وتتقاطع مع `frontend-design`
+و`impeccable` و`ui-ux-pro-max` — **وقواعدُ المستودع فوقها كلِّها**، ومنها نصوصُ
+الشاشات القصيرة باللغة البيضاء بلا تشكيل.
+
+### `graphify` — أداةٌ قبل أن تكون مهارة
+
+`graphify` برنامجُ بايثون (`graphifyy` على PyPI) يبني خريطةً لمجلّد: ملفّاته
+وعلاقاتها، في `graphify-out/`. ومهارتُه تنادي الأمرَ `graphify` — فنسخُها بلا
+الأداة عينُ علّة `claude-mem` أعلاه: تعليماتٌ تشير إلى ما لا وجودَ له. ولذلك
+**ومعها خطّافُ بدء جلسة** (`.claude/hooks/session-start.sh`، مسجَّلٌ في
+`.claude/settings.json`) يثبّت النسخةَ `0.9.100` بـ`uv` — **في السحابة وحدَها**
+(`CLAUDE_CODE_REMOTE`)، ولا يمنع الجلسةَ إن تعذّر.
+
+- **النسخةُ مثبَّتةٌ على ما قُرئ.** حزمةُ PyPI `0.9.100` قوبلت بمصدر GitHub
+  `f5155ba` ملفّا بملفّ: مطابقةٌ إلّا ملفَّ توثيقٍ واحدا غائبا عن الحزمة
+  (`extractors/MIGRATION.md`). وأيُّ ترقيةٍ تمرّ بقراءةٍ جديدةٍ وتحديثِ هذا السطر.
+- **مُثبِّتُ المشروع يفعل أكثرَ من المهارة، فرُدّ ما زاد.**
+  `graphify install --project --platform claude` كتب ثلاثةَ أشياءَ غيرَها:
+  قسما في `CLAUDE.md`، و`.claude/CLAUDE.md`، وخطّافَي `PreToolUse`
+  (`graphify hook-guard search` على `Bash|Grep`، و`… read` على `Read|Glob`).
+  **حُذفت الثلاثة:** `CLAUDE.md` قراراتُ صاحب المنصّة لا يكتب فيها مُثبِّت،
+  وسكربتٌ من طرفٍ ثالثٍ أمامَ كلِّ بحثٍ وقراءةٍ هو ما رُدّت به `aaron-marketing`.
+  فلا يُشغَّل هذا المُثبِّتُ في الخطّاف.
+- **وتحليلُ الكود محلّيٌّ بلا نموذج** (`graphify update <مجلد>`). وما ليس كودا
+  (وثائق وصور) يقرؤه كلود نفسُه حين تُنادى `/graphify`. ولا مفتاحَ يُطلب.
+- **و`graphify-out/` لا يُرفع** (أُضيف إلى `.gitignore`): يُبنى من جديدٍ متى
+  طُلب، ويصف بنيةَ المستودع كلَّها.
+- وترويستُها ~٣٨٦ حرفا (~١٠٠ رمز في كلّ جلسة).
+
+### ما لم يُستورد
+
+| المطلوب | ما هو | القرار |
+|---|---|---|
+| `majedphotos/video-ad-editor` (إضافة `majed-video`، خمسُ مهارات) | منتجةُ فيديو عربيّة بالكود: ffmpeg وwhisper ورسمٌ بالمتصفّح. ٢٥ ميغابايت، أكثرُها أصولُ موشن | **لا في المستودع** — اختيارُ صاحب المنصّة. ثُبّتت في `~/.claude/skills/` لجلسة 2026-11-01 وحدَها. قُرئت سكربتاتُها: الشبكةُ فحصُ تحديثٍ من إصداراتها على GitHub يسأل المستخدمَ قبل أن يُنزّل |
+| `mikiarlo3/awesome-growth-hacking-skills` | الدليلُ نفسُه الذي قيل فيه في «دفعة 2026-09-08» أعلاه | **لا** — دليلٌ لا مهارة |
+| `Vidaaieg/claude-linkedin-composio-prompts` | `README.md` فيه ثلاثُ مطالباتٍ للنشر على LinkedIn، تشترط ربطَ حسابٍ في Composio موصَّلا بكلود | **لا** — ليس مهارة. يعمل بعد أن يربط صاحبُ المنصّة Composio بحسابه |
