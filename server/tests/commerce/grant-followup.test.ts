@@ -19,7 +19,7 @@ import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
-import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_EXTEND_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, grantExtendedSubjectAr, sendGrantExtendedNotice, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
+import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_EXTEND_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, GRANT_EXTENDED_PERKS_AR, grantExtendedSubjectAr, sendGrantExtendedNotice, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { grantCallDueAt } from '../../../src/application/commerce/grant-landing'
 import { INFLUENCER_GRANT_SLUG, grantClosesAt } from '../../../src/application/commerce/grant'
@@ -425,6 +425,7 @@ describe('⑨ وبريد «مددنا منحتك» لمن لم يشتر — بق
     expect(m[0].subject).toContain('نوفمبر')
     expect(m[0].text).toContain(idle.code)
     expect(m[0].text).toContain('/grant')
+    for (const line of GRANT_EXTENDED_PERKS_AR) expect(m[0].text, `غاب: ${line}`).toContain(line)
     expect(await mails(bought.email), 'أخبر من اشترى').toHaveLength(0)
     expect(await mails(paying.email), 'أخبر من ينتظر طلبه الدفع').toHaveLength(0)
 

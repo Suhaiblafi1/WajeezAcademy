@@ -359,6 +359,17 @@ export async function applyGrantExtendFix(
    · **ولا يقع إلّا والتمديدُ وقع** لهذه الحملة (أثرُه) وهي مفتوحة. والقناةُ مفصولةً لا بريدَ ولا أثر، فيصل حين توصل. */
 export const GRANT_EXTENDED_STAGE = 'extended'
 export const grantExtendedSubjectAr = (lastDay: string) => `مددنا منحتك حتى ${lastDay}`
+/** ما ينتظره في وجيز — نصُّ صاحب المنصّة (١ نوفمبر ٢٠٢٦) كما كتبه، بلا حركاتٍ (قاعدةُ نصوص الشاشات) */
+export const GRANT_EXTENDED_PERKS_AR = [
+  'تطبيق عملي ومشروع تخرج يراجعه مدربك',
+  'مدربون معتمدون في لقاءات مباشرة على Zoom لا دروس مسجلة',
+  'شهادة اجتياز ورسالة توصية لمشرفك في العمل أو الدراسة',
+  'تشخيص مهاري مجاني لتحليل احتياجك المهني من المهارات مجاني.',
+  'اختبار اكتشف ميولك في ٣ دقائق مع «المرآة»، مجانا',
+  'افحص مستواك في المهارة التي تريدها، من الأساسي إلى المتقدم، في ٣ دقائق مجانا.',
+  'اعرف مستواك في الإنجليزية (قواعد ومفردات وقراءة) في ٢٠ دقيقة أو أقل، مجانا.',
+  'متابعة إنجازك بمستشار مهني خاص لضمان التقدم والاستفادة.',
+] as const
 
 export async function sendGrantExtendedNotice(
   prisma: PrismaClient, now = new Date(), slug: GrantSlug = MEMBER_GRANT_SLUG,
@@ -410,7 +421,9 @@ export async function sendGrantExtendedNotice(
     const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant`
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
     const blocks: MailBlock[] = [
-      { kind: 'p', text: `منحتك ما زالت قائمة، وتصل إلى ${pct}% من سعر دورات مباشرة على Zoom مع مدربين معتمدين.` },
+      { kind: 'p', text: `منحتك ما زالت قائمة، وتصل إلى ${pct}% من سعر الدورات.` },
+      { kind: 'p', text: 'ما ينتظرك في وجيز:' },
+      { kind: 'list', items: [...GRANT_EXTENDED_PERKS_AR] },
       { kind: 'facts', rows: [
         { label: 'كود منحتك', value: coupon.code },
         { label: 'آخر يوم', value: lastDay },
