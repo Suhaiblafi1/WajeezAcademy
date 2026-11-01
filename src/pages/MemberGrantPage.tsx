@@ -146,7 +146,7 @@ function GrantWhy({ percentOff }: { percentOff: number }) {
   const us = Math.min(100, Math.max(0, Math.round(percentOff)));
   return (
     <Card as="section" aria-labelledby="grant-why" className="mt-6 p-4">
-      <p className="inline-flex items-center gap-1.5 text-xs font-bold text-gold-ink">
+      <p className="inline-flex items-center gap-1.5 text-read font-bold text-gold-ink">
         <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{GRANT_WHY_AR.eyebrow}
       </p>
       <h2 id="grant-why" className="mt-1 text-lg font-black leading-7">
@@ -180,7 +180,7 @@ function GrantWhy({ percentOff }: { percentOff: number }) {
           <span className="bg-teal" style={{ width: `${100 - us}%` }} />
           <span className="bg-gold" style={{ width: `${us}%` }} />
         </div>
-        <p className="mt-1.5 flex flex-wrap justify-between gap-x-4 text-xs font-bold">
+        <p className="mt-1.5 flex flex-wrap justify-between gap-x-4 text-read font-bold">
           <span className="text-teal-light-ink">{split.you}</span>
           <span className="text-gold-ink">{split.us}</span>
         </p>
