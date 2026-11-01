@@ -891,6 +891,16 @@ describe('لماذا هذه المنحة؟ · ما ستخرج به · دعنا �
     const why = fnOf('GrantWhy')
     expect(why, '«بل وقتك» غير مبرز').toMatch(/<span className="text-gold-ink">\{GRANT_WHY_AR\.titleMark\}<\/span>/)
     expect(why, 'الأوقات الضائعة ليست تحت العنوان').toMatch(/id="grant-why"[\s\S]*GRANT_WHY_AR\.lossesLead[\s\S]*GRANT_WHY_LOSSES_AR\.map[\s\S]*GRANT_WHY_AR\.lead[\s\S]*GRANT_WHY_POINTS_AR\.map/)
+    /* «لا تجعلها تظهر بثبات»: الوسوم بجانب جملتها في صفٍّ واحدٍ يلتفّ، وتدخل حين يبلغها القارئ — مخفيّةً قبله */
+    const row = why.slice(why.indexOf('<div ref={lossRef}'), why.indexOf('</div>', why.indexOf('<div ref={lossRef}')))
+    expect(why).toMatch(/const \[lossRef, lossSeen\] = useSeenOnce<HTMLDivElement>\(\)/)
+    expect(row, 'الوسوم ليست بجانب جملتها').toMatch(/flex flex-wrap items-center[\s\S]*GRANT_WHY_AR\.lossesLead[\s\S]*GRANT_WHY_LOSSES_AR\.map/)
+    expect(row, 'الوسوم ظاهرة قبل أن يبلغها').toMatch(/lossSeen \? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"/)
+    expect(row, 'تدخل معا لا واحدا بعد واحد').toMatch(/transitionDelay: lossSeen \? `\$\{\d+ \+ i \* \d+\}ms`/)
+    expect(row).toMatch(/motion-reduce:transition-none/)
+    const HOOK = page('src/hooks/useSeenOnce.ts')
+    expect(HOOK, 'من طلب تخفيف الحركة لا يراها فورا').toMatch(/const showNow = [\s\S]*prefers-reduced-motion: reduce[\s\S]*useState\(showNow\)/)
+    expect(HOOK, 'الدخول يقع خلف لوح الدفع اللاصق').toMatch(/rootMargin: `0px 0px \$\{bottom\} 0px`/)
     /* «أصغر بدرجة»: عنوانه أصغر من عنوان التشخيص */
     expect(why).toMatch(/id="grant-why" className="mt-1 text-lg /)
     expect(fnOf('GrantDiagnostic')).toMatch(/id="grant-diag" className="mt-0\.5 text-xl /)

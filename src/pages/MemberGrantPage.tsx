@@ -37,6 +37,7 @@ import { Link, useParams } from "react-router";
 import { Award, Check, ChevronDown, Clock, Clock3, Compass, Copy, Gauge, GraduationCap, Languages, Lightbulb, ExternalLink, Flame, Gift, Hourglass, Loader2, Mail, MessageCircle, PencilRuler, Route, Share2, ShieldCheck, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
+import { useSeenOnce } from "@/hooks/useSeenOnce";
 import { coursesLeftOn, useMyGrant } from "@/services/my-grant";
 import { useHoneypot } from "@/components/HoneypotField";
 import { toast, toastError } from "@/components/Toast";
@@ -139,12 +140,13 @@ const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { l
 const WHY_ICON: Record<(typeof GRANT_WHY_POINTS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, proof: Award, advisor: UserRound };
 
 /** «لماذا هذه المنحة؟» — بين صندوق الكود و«اختر دوراتك» (١ نوفمبر ٢٠٢٦، `GRANT_WHY_AR`): عنوانٌ يسمّي الخسارة وآخرُه
-    «بل وقتك» بالذهبيّ، وتحته الأوقاتُ الثلاثةُ الضائعةُ وسوما ذهبيّة، ثمّ أربعُ قيمٍ قصيرةٍ في صفٍّ واحدٍ على
+    «بل وقتك» بالذهبيّ، وتحته الأوقاتُ الثلاثةُ الضائعةُ وسوما ذهبيّةً بجانب جملتها تدخل حين يبلغها، ثمّ أربعُ قيمٍ قصيرةٍ في صفٍّ واحدٍ على
     الحاسوب ومربّعين على الهاتف، وشريطٌ يقسم السعرَ بنسبة منحته. وأصغرُ بدرجةٍ من أخواته بطلبه: عنوانٌ أصغر، وأيقوناتٌ
     وحشوٌ أقلّ */
 function GrantWhy({ percentOff }: { percentOff: number }) {
   const split = grantWhySplitAr(percentOff);
   const us = Math.min(100, Math.max(0, Math.round(percentOff)));
+  const [lossRef, lossSeen] = useSeenOnce<HTMLDivElement>();
   return (
     <Card as="section" aria-labelledby="grant-why" className="mt-6 p-4">
       <p className="inline-flex items-center gap-1.5 text-read font-bold text-gold-ink">
@@ -153,15 +155,23 @@ function GrantWhy({ percentOff }: { percentOff: number }) {
       <h2 id="grant-why" className="mt-1 text-lg font-black leading-7">
         {GRANT_WHY_AR.title} <span className="text-gold-ink">{GRANT_WHY_AR.titleMark}</span>
       </h2>
-      {/* الأوقاتُ الضائعة: جملةٌ واحدةٌ تُكملها الوسوم — «الوقت الذي تصرفه على دورة: لم تكملها · لم تستفد منها · …» */}
-      <p className="mt-3 text-read font-bold leading-6">{GRANT_WHY_AR.lossesLead}:</p>
-      <ul className="mt-1.5 flex flex-wrap gap-1.5">
-        {GRANT_WHY_LOSSES_AR.map((x) => (
-          <Inset as="li" key={x} tone="warn" className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold">
+      {/* الأوقاتُ الضائعة: جملةٌ واحدةٌ تُكملها الوسوم بجانبها — «الوقت الذي تصرفه على دورة: لم تكملها · لم تستفد منها · …».
+          وتلتفّ على الهاتف خلفها كما تلتفّ الكلمات. ولا تقف من أوّل الصفحة: تدخل واحدا بعد واحد حين يبلغها القارئ
+          (`useSeenOnce`) — بطلبه: «لا تجعلها تظهر بثبات» */}
+      <div ref={lossRef} className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        <span className="text-read font-bold leading-6">{GRANT_WHY_AR.lossesLead}:</span>
+        {GRANT_WHY_LOSSES_AR.map((x, i) => (
+          <Inset
+            as="span"
+            key={x}
+            tone="warn"
+            style={{ transitionDelay: lossSeen ? `${150 + i * 220}ms` : "0ms" }}
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition duration-500 ease-out motion-reduce:transition-none ${lossSeen ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
+          >
             <Hourglass className="h-3.5 w-3.5 text-gold-ink" aria-hidden="true" />{x}
           </Inset>
         ))}
-      </ul>
+      </div>
       <p className="mt-2 text-read leading-6 text-muted-foreground">{GRANT_WHY_AR.lead}</p>
       <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {GRANT_WHY_POINTS_AR.map((x) => {
