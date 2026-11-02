@@ -33,6 +33,7 @@ import { randomUnambiguousCode } from '../../src/application/text/unambiguous-co
 import { publicSiteUrl } from './notification.service'
 import { publicTrainerWhere } from './trainer-visibility'
 import { cohortLeadTrainer, cohortLeadTrainers, leadCohortsOf } from './cohort-lead'
+import { sharedCohortTitleAr } from '../../src/application/learning/cohort-title'
 
 /** رمزٌ يُقرأ ويُنسخ: ثمانيةُ أحرفٍ من أبجديّةٍ بلا التباس (لا 0/O ولا 1/I).
 
@@ -42,6 +43,17 @@ import { cohortLeadTrainer, cohortLeadTrainers, leadCohortsOf } from './cohort-l
     واحدا. والطولُ يبقى هنا لأنّه شأنُ هذا الرمز وحدَه. */
 function newCode(): string {
   return `WJ-${randomUnambiguousCode(8)}`
+}
+
+/* ═══ ورابطُ الشعبة يفتح شعبتَه نفسَها (٢ نوفمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة عن تصاميم مدرّبة: «تأكّد أنّ كلَّ التصاميم تخصّ الدوراتِ الخاصّةَ بالمدرّب كشعبة، وليس الدورةَ
+   العليا أو شعبا أخرى لنفس الدورات». وكان رابطُ الشعبة `/build/<الدورة>?ref=<رمزه>` وحدَه، فتختار صفحةُ الدورة
+   أقربَ شعبةٍ مفتوحة — وقد تكون شعبةَ مدرّبٍ آخرَ للدورة نفسِها: يشتريها من جاء برابطه، ولا يُختم له (`referralFor`).
+   فالرابطُ يحمل شعبتَه (`?cohort=`) كما يحملها «سجّل في هذه الشعبة» في صفحته العامّة، وتختارها الصفحةُ ابتداءً.
+   وما سُكّ من روابطَ قصيرةٍ قبلَه يُوجَّه إلى هذا بترحيل `20261102090000_trainer_share_own_cohort` — برمزه نفسِه. */
+export function cohortLinkUrl(site: string, courseId: string, cohortId: string, code: string): string {
+  return `${site}/build/${courseId}?cohort=${encodeURIComponent(cohortId)}&ref=${encodeURIComponent(code)}`
 }
 
 export class ReferralService {
@@ -67,7 +79,7 @@ export class ReferralService {
         actorId: userId, action: 'referral.link.create', entityType: 'cohort', entityId: cohortId, meta: { code: row.code },
       })
     }
-    return { code: row.code, url: `${publicSiteUrl()}/build/${cohort.courseId}?ref=${encodeURIComponent(row.code)}` }
+    return { code: row.code, url: cohortLinkUrl(publicSiteUrl(), cohort.courseId, cohortId, row.code) }
   }
 
   /* ═══ روابطُ شعبه كلِّها في نداءٍ واحد ═══
@@ -132,14 +144,15 @@ export class ReferralService {
       return {
         cohortId: c.id,
         title: c.title,
-        courseTitle: c.course.versions.find((v) => v.version === c.course.currentVersion)?.titleAr ?? c.title,
+        /* اسمُ شعبته لا اسمُ الدورة العليا (٢ نوفمبر ٢٠٢٦) — والعلّةُ عند `sharedCohortTitleAr` */
+        courseTitle: sharedCohortTitleAr(c.title, c.course.versions.find((v) => v.version === c.course.currentVersion)?.titleAr ?? c.title),
         startsAt: (c.sessions[0]?.startsAt ?? c.startsAt)?.toISOString() ?? null,
         termTitleAr: c.term?.titleAr ?? null,
         status: c.status,
         registrationOpen: c.registrationOpen,
         learners: c._count.enrollments,
         code,
-        url: `${site}/build/${c.courseId}?ref=${encodeURIComponent(code)}`,
+        url: cohortLinkUrl(site, c.courseId, c.id, code),
       }
     })
   }

@@ -164,7 +164,9 @@ describe('⑥ روابط «شارك دوراتك» القصيرة', () => {
     expect(short, 'لا رابط قصير لشعبته').toMatch(/\/s\/[A-Z0-9]{6}$/)
     const code = short.slice(short.lastIndexOf('/') + 1)
     const row = await prisma.shortLink.findUniqueOrThrow({ where: { code } })
-    expect(row.target, 'الرابط القصير لا يحمل رمز الإحالة').toMatch(/\?ref=/)
+    expect(row.target, 'الرابط القصير لا يحمل رمز الإحالة').toMatch(/[?&]ref=/)
+    /* ويفتح شعبتَه نفسَها لا أقربَ شعبةٍ للدورة (٢ نوفمبر ٢٠٢٦، `cohortLinkUrl`) */
+    expect(new URLSearchParams(row.target.split('?')[1]).get('cohort'), 'الرابط لا يفتح شعبته').toBe(cohort.A1)
     const again = await shares.kit(A.userId)
     expect(again.short.cohorts[cohort.A1], 'تغير الرابط فضاع ما نشر').toBe(short)
     expect(first.short.cohorts[cohort.B1], 'رابط لشعبة غيره').toBeUndefined()
