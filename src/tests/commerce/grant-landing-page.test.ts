@@ -612,6 +612,12 @@ describe('بعد النموذج', () => {
     /* بصيغة المجموع نفسِها، وبعملة البطاقة إن بدّلها */
     expect(BUY).toMatch(/const shownGrant = quote && grantPayTotal !== undefined\s*\? usd \? formatPresentment\(convertFromUsd\(grantPayTotal, currency\), currency\) : money\(grantPayTotal, quote\.currency\)/)
     for (const t of ['اكتب كود منحتك ليصير المبلغ', 'تجده في بريدك.']) expect(plainAr(t)).toBe(t)
+
+    /* ═══ وسعرُ الدورات قبل المنحة مشطوبا بجانب المبلغ — ظاهرا لا في المطويّ (٢ نوفمبر ٢٠٢٦) ═══
+       قرارُ صاحب المنصّة: «يجب أن يظهر السعرُ قبلُ وعليه شخطة وجانبَه السعرُ الحاليّ، ليس مخفيّا.. لكافّة المنح» */
+    expect(BUY).toMatch(/const shownBefore = quote && quote\.grantPct !== null && quote\.subtotal > quote\.total\s*\? usd \? formatPresentment\(convertFromUsd\(quote\.subtotal, currency\), currency\) : money\(quote\.subtotal, quote\.currency\)/)
+    const totalRow = BUY.slice(BUY.indexOf('</details>', BUY.indexOf('تفصيل السعر')), BUY.indexOf('{shownTotal}', BUY.indexOf('ما تدفعه الآن')))
+    expect(totalRow, 'السعر قبل المنحة ليس في سطر المبلغ الظاهر').toMatch(/\{shownBefore && \(\s*<s [^>]*>\{shownBefore\}<\/s>/)
   })
 
   it('⚠️ ولا كود يكتب مثالا في خانة الكود — سري نعطيه لمن نريد', () => {
