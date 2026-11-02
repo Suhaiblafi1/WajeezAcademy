@@ -201,14 +201,23 @@ export default function BuyPanel({
      (`learnerGrant` في الخادم). والخادمُ يحكم كعادته: إن بقي من حدّه أقلُّ من السلّة أو كانت الباقةُ أرخص قيل السببُ
      تحت خانة الكود وسُعّر بلا منحة — ومن محا الكودَ لا يُعاد عليه. */
   const [autoGrant, setAutoGrant] = useState<MyGrant | null>(null);
+  /* ═══ ولا تسعيرَ ولا دفعَ قبل أن يُعرف كودُ منحته (٢ نوفمبر ٢٠٢٦) ═══
+     بلاغُ صاحب المنصّة: «فواتير صدرت بقيمة الدورات كاملة وليس بعد الخصم». كان التسعيرُ الأوّلُ يقع بلا كودٍ والسؤالُ عن
+     منحته في الطريق، فيُفتح زرُّ الدفع على السعر الكامل — ومن ضغطه قبل أن يصل الكودُ صدرت فاتورتُه كاملة. وأكثرُ ما يقع
+     لمن عاد إلى صفحة المنحة فقيل له «أرسلناه إلى بريدك» (لا كودَ مكتوبا)، ولمن يشتري من صفحة دورة. فينتظر التسعيرُ
+     الجوابَ، والسؤالُ لا يرمي (`fetchMyGrant` يردّ «لا كود» عند الفشل)، فلا يعلق اللوح. */
+  const [grantKnown, setGrantKnown] = useState(!!initialCoupon);
   useEffect(() => {
     if (initialCoupon) return;
     let on = true;
     void fetchMyGrant().then((g) => {
-      if (!on || !g.code) return;
-      setAutoGrant(g);
-      setCoupon((c) => c || g.code!);
-      setApplied((a) => a || g.code!);
+      if (!on) return;
+      if (g.code) {
+        setAutoGrant(g);
+        setCoupon((c) => c || g.code!);
+        setApplied((a) => a || g.code!);
+      }
+      setGrantKnown(true);
     });
     return () => { on = false; };
   }, [initialCoupon]);
@@ -316,7 +325,7 @@ export default function BuyPanel({
     }
   }, [cohortIds]);
 
-  useEffect(() => { void refresh(applied); }, [refresh, applied]);
+  useEffect(() => { if (grantKnown) void refresh(applied); }, [refresh, applied, grantKnown]);
 
   /* سببُ الاستبعاد بالشعبة لا بالدورة: من مُنع من شعبةٍ قد تُتاح له أخرى
      من الدورة نفسِها، فيبقى المبدّلُ معروضا ليختار موعدا آخر. */
@@ -376,8 +385,19 @@ export default function BuyPanel({
     ? usd ? formatPresentment(convertFromUsd(grantPayTotal, currency), currency) : money(grantPayTotal, quote.currency)
     : null;
 
-  const pay = async () => {
+  /* ═══ ومن له منحةٌ لا يدفع بلا منحته وهو لا يدري (٢ نوفمبر ٢٠٢٦) ═══
+     بلاغُ صاحب المنصّة: «فواتير صدرت بقيمة الدورات كاملة»، وخُيّر بين تركه يدفع كما هو وسؤالِه قبل الدفع ومنعِه، فقال:
+     «fix it to all». ولا إجبار (قواعدُ المستودَع): فمن رُدّ كودُ منحته أو لم يُكتب — وهو صاحبُ منحة (كودُه في حسابه، أو جاء
+     من صفحة المنحة) — يُقال له قبل الدفع أنّ منحته لم تطبَّق وسببُه وما يدفعه بها وبدونها، ويختار: يرجع أو يدفع بلا منحة */
+  const grantHolder = !!autoGrant?.code || grantPayTotal !== undefined;
+  const grantMissing = grantHolder && !!quote && quote.grantPct === null && payableIds.length > 0;
+  const [confirmFull, setConfirmFull] = useState(false);
+  useEffect(() => { setConfirmFull(false); }, [quote]);
+
+  const pay = async (withoutGrant = false) => {
     if (!quote || payableIds.length === 0) return;
+    if (grantMissing && !withoutGrant) { setConfirmFull(true); return; }
+    setConfirmFull(false);
     setPaying(true);
     setError(null);
     try {
@@ -722,7 +742,7 @@ export default function BuyPanel({
               <Card key={o.orderId} tone="accent" className="mt-4 space-y-3">
                 <p className="text-read leading-6 text-teal-light-ink">
                   لك طلب لم يكتمل دفعه: {o.names.map((n) => `«${n}»`).join("، ")}.
-                  {grantPayTotal !== undefined ? " أكمل دفعه الآن بسعره، أو ألغه وتشتريها بمنحتك هنا." : " أكمل دفعه الآن، أو ألغه وتشتريها من جديد هنا."}
+                  {grantHolder ? " أكمل دفعه الآن بسعره، أو ألغه وتشتريها بمنحتك هنا." : " أكمل دفعه الآن، أو ألغه وتشتريها من جديد هنا."}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button tone="confirm" size="sm" icon={CreditCard} loading={pendingBusy === o.orderId}
@@ -878,7 +898,28 @@ export default function BuyPanel({
               />
             )}
 
-            {!nothingLeft && !closedAr && (
+            {!nothingLeft && !closedAr && confirmFull && grantMissing && (
+              <Card tone="accent" className="mt-5 space-y-3">
+                <p className="text-read leading-6 text-gold-ink">
+                  منحتك لم تطبق على هذا الطلب.{couponError ? ` السبب: ${couponError}` : ""}
+                </p>
+                <p className="text-read leading-6 text-foreground">
+                  إن دفعت الآن تدفع <bdi dir="ltr">{shownTotal}</bdi> بلا منحة.
+                  {shownGrant ? <> وبالمنحة يصير <bdi dir="ltr">{shownGrant}</bdi>.</> : null}
+                  {" "}وإن رجعت تعدل دوراتك أو تكتب كودك.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button tone="confirm" size="sm" onClick={() => setConfirmFull(false)}>
+                    ارجع
+                  </Button>
+                  <Button tone="secondary" size="sm" disabled={paying} onClick={() => void pay(true)}>
+                    ادفع بلا منحة · <span dir="ltr">{shownTotal}</span>
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            {!nothingLeft && !closedAr && !confirmFull && (
               <>
                 <Button tone="primary" onClick={() => void pay()}
                   disabled={paying || quoting || !quote || payableIds.length === 0} className="mt-5 w-full disabled:opacity-50">
