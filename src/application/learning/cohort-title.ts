@@ -98,3 +98,16 @@ export function publicCohortTitleAr(title: string): string {
   const out = title.replace(NUMBER_TAIL, '').trim()
   return out || title.trim()
 }
+
+/* ═══ وما يُنشر عن الشعبة اسمُها هي، لا اسمُ دورتها العليا (٢ نوفمبر ٢٠٢٦) ═══
+   قال صاحبُ المنصّة عن تصاميم «شارك دوراتك» لمدرّبة: «تأكّد أنّ كلَّ التصاميم تخصّ الدوراتِ الخاصّةَ بالمدرّب كشعبة،
+   وليس الدورةَ العليا». وكانت الصورُ والنصوصُ تأخذ اسمَ الدورة من نسختها الجارية — فما سُمّيت به الشعبةُ لمدرّبها
+   («القيادة للمديرين الجدد: …») لا يظهر، ويظهر ما للدورة كلِّها. فالمنشورُ يأخذ اسمَ الشعبة بلا رقمها
+   (`publicCohortTitleAr`)، واسمُ الدورة بديلٌ حين لا يقول اسمُ الشعبة شيئا: «شعبة ١» أو «الدفعة الأولى». */
+const BARE_LABEL = /^(?:ال)?(?:شعبة|دفعة)(?:\s|$)/
+
+/** اسمُ الشعبة كما يُنشر عنها — أو اسمُ دورتها إن لم يكن لها اسمٌ يُقرأ */
+export function sharedCohortTitleAr(cohortTitle: string | null | undefined, courseTitleAr: string): string {
+  const own = publicCohortTitleAr(cohortTitle ?? '')
+  return !own || BARE_LABEL.test(own) ? courseTitleAr.trim() : own
+}
