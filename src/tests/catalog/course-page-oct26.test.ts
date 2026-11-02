@@ -81,6 +81,24 @@ describe('③ زر إلى «تعلمي»', () => {
     expect(dash.match(/<MyGrantCard className="mt-6" \/>/g)?.length, 'لوحة بلا بطاقة منحته').toBe(dash.match(/<MyAdvisorCard className="mt-6" \/>/g)?.length)
     expect(code('src/services/my-grant.ts')).toMatch(/apiGet<MyGrant>\("\/api\/learner\/my-grant"\)/)
   })
+
+  /* «فواتير صدرت بقيمة الدورات كاملة وليس بعد الخصم» (صاحب المنصة، ٢ نوفمبر ٢٠٢٦): كان التسعير الأول يقع بلا كود
+     والسؤال عن المنحة في الطريق، فيفتح زر الدفع على السعر الكامل. والفحص على البنية: التسعير مشروط بأن يعرف الجواب،
+     والجواب يُكتب بعد الكود في الفرعين (له كود أو لا كود) — ولا يُكتب إلا من داخل جواب السؤال */
+  it('⚠️ ولا تسعير ولا دفع قبل أن يعرف كود منحته — فلا فاتورة كاملة بضغطة سبقت الكود', () => {
+    const buy = code('src/components/BuyPanel.tsx')
+    expect(buy).toMatch(/const \[grantKnown, setGrantKnown\] = useState\(!!initialCoupon\);/)
+    expect(buy).toMatch(/useEffect\(\(\) => \{ if \(grantKnown\) void refresh\(applied\); \}, \[refresh, applied, grantKnown\]\);/)
+    expect(buy, 'تسعير لا ينتظر الجواب').not.toMatch(/useEffect\(\(\) => \{ void refresh\(applied\); \}/)
+    const asked = buy.match(/void fetchMyGrant\(\)\.then\(\(g\) => \{([\s\S]*?)\n {4}\}\);/)
+    expect(asked, 'لا سؤال عن المنحة في اللوح').not.toBeNull()
+    const body = asked![1]
+    expect(body.indexOf('setApplied'), 'الكود لا يطبق').toBeGreaterThan(-1)
+    expect(body.indexOf('setGrantKnown(true)'), 'الجواب لا يكتب').toBeGreaterThan(body.indexOf('setApplied'))
+    expect(body, 'الجواب يكتب لمن له كود وحده').toMatch(/if \(g\.code\) \{[^}]*\}\s*setGrantKnown\(true\);\s*$/)
+    expect(body, 'من لا كود له يبقى بلا تسعير').not.toMatch(/if \(!on \|\| !g\.code\) return;/)
+    expect(buy.match(/setGrantKnown\(/g)?.length, 'الجواب يكتب من غير السؤال').toBe(1)
+  })
 })
 
 describe('④ مشتري المسار: ثلاثة مقترحات', () => {

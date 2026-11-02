@@ -201,14 +201,23 @@ export default function BuyPanel({
      (`learnerGrant` في الخادم). والخادمُ يحكم كعادته: إن بقي من حدّه أقلُّ من السلّة أو كانت الباقةُ أرخص قيل السببُ
      تحت خانة الكود وسُعّر بلا منحة — ومن محا الكودَ لا يُعاد عليه. */
   const [autoGrant, setAutoGrant] = useState<MyGrant | null>(null);
+  /* ═══ ولا تسعيرَ ولا دفعَ قبل أن يُعرف كودُ منحته (٢ نوفمبر ٢٠٢٦) ═══
+     بلاغُ صاحب المنصّة: «فواتير صدرت بقيمة الدورات كاملة وليس بعد الخصم». كان التسعيرُ الأوّلُ يقع بلا كودٍ والسؤالُ عن
+     منحته في الطريق، فيُفتح زرُّ الدفع على السعر الكامل — ومن ضغطه قبل أن يصل الكودُ صدرت فاتورتُه كاملة. وأكثرُ ما يقع
+     لمن عاد إلى صفحة المنحة فقيل له «أرسلناه إلى بريدك» (لا كودَ مكتوبا)، ولمن يشتري من صفحة دورة. فينتظر التسعيرُ
+     الجوابَ، والسؤالُ لا يرمي (`fetchMyGrant` يردّ «لا كود» عند الفشل)، فلا يعلق اللوح. */
+  const [grantKnown, setGrantKnown] = useState(!!initialCoupon);
   useEffect(() => {
     if (initialCoupon) return;
     let on = true;
     void fetchMyGrant().then((g) => {
-      if (!on || !g.code) return;
-      setAutoGrant(g);
-      setCoupon((c) => c || g.code!);
-      setApplied((a) => a || g.code!);
+      if (!on) return;
+      if (g.code) {
+        setAutoGrant(g);
+        setCoupon((c) => c || g.code!);
+        setApplied((a) => a || g.code!);
+      }
+      setGrantKnown(true);
     });
     return () => { on = false; };
   }, [initialCoupon]);
@@ -316,7 +325,7 @@ export default function BuyPanel({
     }
   }, [cohortIds]);
 
-  useEffect(() => { void refresh(applied); }, [refresh, applied]);
+  useEffect(() => { if (grantKnown) void refresh(applied); }, [refresh, applied, grantKnown]);
 
   /* سببُ الاستبعاد بالشعبة لا بالدورة: من مُنع من شعبةٍ قد تُتاح له أخرى
      من الدورة نفسِها، فيبقى المبدّلُ معروضا ليختار موعدا آخر. */
