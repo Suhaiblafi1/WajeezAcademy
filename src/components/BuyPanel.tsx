@@ -364,6 +364,13 @@ export default function BuyPanel({
       ? formatPresentment(convertFromUsd(quote.total, currency), currency)
       : money(quote.total, quote.currency)
     : "—";
+  /* ═══ وسعرُ الدورات قبل المنحة مشطوبا بجانب ما يدفعه — ظاهرا لا في المطويّ (٢ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «يجب أن يظهر السعرُ قبلُ وعليه شخطة وجانبَه السعرُ الحاليّ، ليس مخفيّا.. لكافّة المنح». كان
+     مجموعُ الدورات وخصمُ المنحة في «تفصيل السعر» المطويّ وحدَه، فلا يرى المشتري قيمةَ منحته إلّا إن فتحه. فإذا وقعت
+     منحةٌ — أيُّ منحة — قيل مجموعُ الدورات مشطوبا بصيغة المجموع نفسِها وعملتِه، فلا يُقابَل «595 USD» بـ«AED 874.65». */
+  const shownBefore = quote && quote.grantPct !== null && quote.subtotal > quote.total
+    ? usd ? formatPresentment(convertFromUsd(quote.subtotal, currency), currency) : money(quote.subtotal, quote.currency)
+    : null;
   /* وما يصير إليه المبلغ بكود المنحة — بصيغة المجموع نفسِها («$60.00» لا «60 USD») */
   const shownGrant = quote && grantPayTotal !== undefined
     ? usd ? formatPresentment(convertFromUsd(grantPayTotal, currency), currency) : money(grantPayTotal, quote.currency)
@@ -794,7 +801,12 @@ export default function BuyPanel({
                 </details>
                 <div className="flex items-end justify-between border-t border-white/10 pt-2 text-foreground">
                   <span className="text-xs font-bold">ما تدفعه الآن</span>
-                  <span dir="ltr" className="text-2xl font-black">{shownTotal}</span>
+                  <span dir="ltr" className="flex items-baseline gap-2">
+                    {shownBefore && (
+                      <s className="text-read font-bold text-muted-foreground" aria-label={`السعر قبل المنحة ${shownBefore}`}>{shownBefore}</s>
+                    )}
+                    <span className="text-2xl font-black">{shownTotal}</span>
+                  </span>
                 </div>
               </Card>
             )}
