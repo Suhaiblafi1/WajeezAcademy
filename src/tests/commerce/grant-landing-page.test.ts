@@ -78,7 +78,7 @@ describe('النموذج', () => {
 describe('بعد النموذج', () => {
   it('⚠️ ما يدفعه كبيرا «4 دورات بـ$320 بدل $800»، وقيمة منحته صغيرة تحته — والمبالغ معزولة فلا تنقلب', () => {
     expect(`${GRANT_VALUE_AR} $480 ${GRANT_VALUE_PAID_AR}`).toBe('قيمة منحتك $480 تدفعها الأكاديمية عنك')
-    const panel = PAGE.slice(PAGE.indexOf('<Card tone="solid" className="sticky'))
+    const panel = PAGE.slice(PAGE.indexOf('<Card tone="solid" id="grant-pay"'))
     const big = panel.indexOf('<p className="text-lg font-black">')
     expect(big, 'السطر الكبير').toBeGreaterThan(-1)
     expect(panel.slice(big)).toMatch(/^<p className="text-lg font-black">\s*\{grantCountAr\(chosen\.length\)\} بـ<bdi dir="ltr">\{money\(payTotal\)\}<\/bdi>/)
@@ -376,18 +376,22 @@ describe('بعد النموذج', () => {
     expect(grantPerSession(80, 6), 'قيل أقل مما يدفع').toBe(14)
     expect(grantPerSession(80, 0)).toBeNull()
     expect([1, 2, 4, 16].map(grantSessionsAr)).toEqual(['لقاء مباشر واحد', 'لقاءان مباشران', '4 لقاءات مباشرة', '16 لقاء مباشرا'])
-    /* ٤) «ما ستخرج به» من المختار — بطاقةٌ غيرُ عالقة قبل اللوح العالق، بوعد كلٍّ ولقاءاتها ومدرّبيها وشهادتها */
-    const out = PAGE.indexOf('{GRANT_OUTCOMES_TITLE_AR}'), sticky = PAGE.indexOf('className="sticky bottom-3')
+    /* ٤) «ما ستخرج به» من المختار — قبل لوح الدفع، بوعد كلٍّ ولقاءاتها ومدرّبيها وشهادتها */
+    const out = PAGE.indexOf('{GRANT_OUTCOMES_TITLE_AR}'), payAt = PAGE.indexOf('<Card tone="solid" id="grant-pay"')
     expect(out, 'لا «ما ستخرج به»').toBeGreaterThan(-1)
-    expect(out, '«ما ستخرج به» بعد اللوح العالق').toBeLessThan(sticky)
-    expect(PAGE.slice(PAGE.lastIndexOf('<Card', out), out), '«ما ستخرج به» عالقة').not.toMatch(/sticky/)
+    expect(out, '«ما ستخرج به» بعد لوح الدفع').toBeLessThan(payAt)
+    /* ولا شيءَ عالقٌ في الصفحة — قرارُ صاحب المنصّة (٢ نوفمبر ٢٠٢٦): «لا تجعل هذه تظهر بثبات، اجعلها تظهر في النهاية»،
+       ولمنحه الثلاث (الصفحةُ واحدةٌ لها) */
+    expect(payAt, 'لوح الدفع غائب').toBeGreaterThan(-1)
+    expect(PAGE, 'عاد لوح الدفع عالقا').not.toMatch(/className=\{?["`][^"`]*\b(sticky|fixed)\b/)
+    for (const v of ['"influencer"', '"open"']) expect(APP, `منحة ${v} في صفحة أخرى`).toContain(`element={<MemberGrantPage variant=${v} />}`)
     /* ومنذ ١ نوفمبر ٢٠٢٦ («لا تكرار»): أسماؤها وحدَها هنا — ووعدُ كلٍّ تحت اسمها في صفّها */
     expect(PAGE).toMatch(/<span className="min-w-0 font-bold leading-6">\{grantShortTitleAr\(x\.titleAr\)\}<\/span>/)
     expect(PAGE).toMatch(/chosenMeetings > 0 \? grantSessionsAr\(chosenMeetings\) : null,\s*chosenTrainers > 0 \? grantTrainersAr\(chosenTrainers\) : null,/)
     expect(grantShortTitleAr('دورة الضرائب في الأردن تطبيقيا: ضريبة الدخل')).toBe('الضرائب في الأردن تطبيقيا')
-    /* ٢) وما يخسره إن تأخّر — في اللوح العالق لمن له منحة، بلا مبلغ */
-    const stickyCard = PAGE.slice(sticky, PAGE.indexOf('</Card>', sticky))
-    expect(stickyCard).toMatch(/\{lastDayShort && <p className="mt-0\.5 text-read text-muted-foreground">\{grantUntilAr\(lastDayShort\)\}<\/p>\}/)
+    /* ٢) وما يخسره إن تأخّر — في لوح الدفع لمن له منحة، بلا مبلغ */
+    const payCard = PAGE.slice(payAt, PAGE.indexOf('</Card>', payAt))
+    expect(payCard).toMatch(/\{lastDayShort && <p className="mt-0\.5 text-read text-muted-foreground">\{grantUntilAr\(lastDayShort\)\}<\/p>\}/)
     expect(grantUntilAr('7 نوفمبر')).toBe('المنحة حتى 7 نوفمبر، وبعدها تعود لسعرها')
     for (const t of [grantUntilAr('7 نوفمبر'), GRANT_OUTCOMES_TITLE_AR, ...[1, 2, 4, 16].map(grantSessionsAr), 'للقاء']) expect(t).toBe(plainAr(t))
   })
@@ -579,7 +583,7 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/import \{ waHref, waShare \} from "@\/application\/site\/whatsapp";/)
     expect(PAGE, 'عاد «ثلاثة أصدقاء»').not.toContain('ثلاثة أصدقاء')
     /* خارجَ لوح الدفع وبعده — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «صندوقُ الإهداء يكون خارجَ صندوق الدفع» */
-    const from = PAGE.indexOf('<Card tone="solid" className="sticky')
+    const from = PAGE.indexOf('<Card tone="solid" id="grant-pay"')
     const panel = PAGE.slice(from, PAGE.indexOf('</Card>', from))
     expect(panel, 'الزر').toContain('احصل على المنحة')
     expect(panel, 'عادت الهدية في لوح الدفع').not.toMatch(/waShare|grantShareMailto|GRANT_GIFT_AR|أهدها/)
@@ -853,7 +857,7 @@ describe('لماذا هذه المنحة؟ · ما ستخرج به · دعنا �
     expect(top).toBeGreaterThan(-1)
     expect(why, '«لماذا» غائب أو بلا شرط المنحة').toBeGreaterThan(top)
     expect(pick).toBeGreaterThan(why)
-    const pay = PAGE.indexOf('<Card tone="solid" className="sticky bottom-3'), diag = PAGE.indexOf('{view.openCourses.length > 0 && <GrantDiagnostic />}'), gift = PAGE.indexOf('{GRANT_GIFT_AR.title}')
+    const pay = PAGE.indexOf('<Card tone="solid" id="grant-pay"'), diag = PAGE.indexOf('{view.openCourses.length > 0 && <GrantDiagnostic />}'), gift = PAGE.indexOf('{GRANT_GIFT_AR.title}')
     expect(diag, 'التشخيص غائب أو فوق لوح الدفع').toBeGreaterThan(pay)
     expect(gift, 'التشخيص تحت الإهداء').toBeGreaterThan(diag)
   })
@@ -906,7 +910,7 @@ describe('لماذا هذه المنحة؟ · ما ستخرج به · دعنا �
     expect(row).toMatch(/motion-reduce:transition-none/)
     const HOOK = page('src/hooks/useSeenOnce.ts')
     expect(HOOK, 'من طلب تخفيف الحركة لا يراها فورا').toMatch(/const showNow = [\s\S]*prefers-reduced-motion: reduce[\s\S]*useState\(showNow\)/)
-    expect(HOOK, 'الدخول يقع خلف لوح الدفع اللاصق').toMatch(/rootMargin: `0px 0px \$\{bottom\} 0px`/)
+    expect(HOOK, 'الدخول يقع والعنصر يطل من أسفل الشاشة').toMatch(/rootMargin: `0px 0px \$\{bottom\} 0px`/)
     /* «أصغر بدرجة»: عنوانه أصغر من عنوان التشخيص */
     expect(why).toMatch(/id="grant-why" className="mt-1 text-lg /)
     expect(fnOf('GrantDiagnostic')).toMatch(/id="grant-diag" className="mt-0\.5 text-xl /)
