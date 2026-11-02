@@ -92,6 +92,8 @@ describe('رابطُ دعوة المدرّب', () => {
     const again = await referrals.linkFor(trainerUserId, cohortId)
     expect(again.code).toBe(first.code)
     expect(first.url).toContain(`ref=${encodeURIComponent(first.code)}`)
+    /* ويفتح شعبتَه نفسَها لا أقربَ شعبةٍ للدورة — وقد تكون لمدرّبٍ آخر (٢ نوفمبر ٢٠٢٦) */
+    expect(new URL(first.url).searchParams.get('cohort')).toBe(cohortId)
     code = first.code
     await expect(referrals.linkFor(otherTrainerUserId, cohortId)).rejects.toMatchObject({ code: 'not_your_cohort' })
   })

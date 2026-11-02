@@ -24,6 +24,7 @@ import { publicSiteUrl } from './site-url'
 import { TrainerShareCodeService } from './trainer-share-code.service'
 import { cohortLeadTrainers } from './cohort-lead'
 import { cohortDayAr } from '../../src/application/learning/cohort-gate'
+import { sharedCohortTitleAr } from '../../src/application/learning/cohort-title'
 import { countAr } from '../../src/application/text/count-ar'
 import { bestCode, splitTitle } from '../../src/application/trainer/share-kit'
 
@@ -50,7 +51,7 @@ export class ShareReminderService {
         ],
       },
       select: {
-        id: true, startsAt: true,
+        id: true, startsAt: true, title: true,
         sessions: { where: { status: { not: 'cancelled' } }, orderBy: { startsAt: 'asc' }, take: 1, select: { startsAt: true } },
         course: { select: { currentVersion: true, versions: { select: { version: true, titleAr: true } } } },
       },
@@ -78,7 +79,8 @@ export class ShareReminderService {
       if (!kit || !link) { skipped += 1; continue }
       const code = bestCode({ code: kit.code, percentOff: kit.percentOff }, kit.hisCodes)
       const opens = kit.reach[link.split('/').pop() ?? '']?.opens ?? 0
-      const title = c.course.versions.find((v) => v.version === c.course.currentVersion)?.titleAr ?? ''
+      /* اسمُ شعبته لا اسمُ الدورة العليا — كما في صورها (`sharedCohortTitleAr`) */
+      const title = sharedCohortTitleAr(c.title, c.course.versions.find((v) => v.version === c.course.currentVersion)?.titleAr ?? '')
       const mail = shareReminderMail({
         name: profile.application.fullName, course: splitTitle(title).name, startsAr: cohortDayAr(first, { day: 'numeric', month: 'long' }),
         link, code, opens, panel: `${publicSiteUrl()}/trainer/share?share=${encodeURIComponent(c.id)}`,

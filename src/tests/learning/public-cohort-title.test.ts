@@ -4,7 +4,7 @@
    ما في وسط الاسم لا يُمسّ، وأنّ اسما ليس فيه إلّا الرقمُ يبقى — وأنّ خياراتِ الشراء كلَّها تمرّ به. */
 
 import { describe, expect, it } from 'vitest'
-import { publicCohortTitleAr } from '@/application/learning/cohort-title'
+import { publicCohortTitleAr, sharedCohortTitleAr } from '@/application/learning/cohort-title'
 import { cohortOptionsFrom } from '@/services/cohort-prices'
 
 describe('اسم الشعبة بلا رقمها', () => {
@@ -35,5 +35,22 @@ describe('اسم الشعبة بلا رقمها', () => {
       startsAt: '2099-12-01T00:00:00.000Z', seatsLeft: 10, trainers: [], sessions: [],
     }]).get('C-1') ?? []
     expect(opt?.title).toBe('إدارة المشاريع')
+  })
+})
+
+/* وما يُنشر عن الشعبة اسمُها لا اسمُ دورتها العليا (`sharedCohortTitleAr`، ٢ نوفمبر ٢٠٢٦) */
+describe('اسم الشعبة في «شارك دوراتك»', () => {
+  const course = 'القيادة للمديرين: مواءمة أداء الفريق'
+
+  it('⚠️ اسم الشعبة بلا رقمها — لا اسم الدورة', () => {
+    expect(sharedCohortTitleAr('القيادة للمديرين الجدد: من التعلم إلى التطبيق — شعبة ٢', course)).toBe('القيادة للمديرين الجدد: من التعلم إلى التطبيق')
+  })
+
+  it.each(['شعبة 1', 'الدفعة الأولى', 'الشعبة الأولى', 'شعبة الإحالة', '', null])('⚠️ واسم لا يقول شيئا (%s) ينشر باسم دورته', (t) => {
+    expect(sharedCohortTitleAr(t, course)).toBe(course)
+  })
+
+  it('⚠️ وما في وسطه «شعبة» ليس مجردا', () => {
+    expect(sharedCohortTitleAr('دورة الشعبة الصباحية', course)).toBe('دورة الشعبة الصباحية')
   })
 })
