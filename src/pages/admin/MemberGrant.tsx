@@ -3,7 +3,7 @@
    قرارُه: «A ويحقّ لي تغيير الـ٦٠٪ كما أشاء». فهنا نسبةُ المنحة وعددُها وآخرُ يومٍ لها وتشغيلُها،
    وما جرى بها. والحفظُ بتأكيدٍ يقول ما يقع بكلّ تغيير — والقرارُ له.
 
-   ثمّ نتائجُ الحملة بالقناة والدفعة (`GrantResults`)، ومن عبّأ النموذج بالأسماء (`GrantRegistrants`)، ثمّ دوراتُ المنحة بفصلها وسعرها بعد المنحة (`GrantCourses`)، وتحتها فحصُ الهامش: كلُّ شعبةٍ مفتوحةٍ بسعرها بعد المنحة مقابل أجر مقعدها للمدرّب، **بالنسبة التي
+   ثمّ من عبّأ النموذج بالأسماء وإحصاءاتُه — وفيها نتائجُ الحملة بالقناة والدفعة والمبلغ (`GrantRegistrants`، ٢ نوفمبر ٢٠٢٦)، ثمّ دوراتُ المنحة بفصلها وسعرها بعد المنحة (`GrantCourses`)، وتحتها فحصُ الهامش: كلُّ شعبةٍ مفتوحةٍ بسعرها بعد المنحة مقابل أجر مقعدها للمدرّب، **بالنسبة التي
    في الخانة** لا المحفوظة — فيرى أثرَ النسبة قبل أن يحفظها. والعلّةُ في `server/services/grant.service.ts`.
 
    ═══ وهي شاشةُ «منحة مؤثرين وجيز» أيضا (٢٦ أكتوبر ٢٠٢٦) ═══
@@ -19,7 +19,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import GrantCourses from "./GrantCourses";
-import GrantResults from "./GrantResults";
 import GrantRegistrants from "./GrantRegistrants";
 import InfluencersPanel from "./InfluencersPanel";
 import { toast, toastError } from "@/components/Toast";
@@ -172,7 +171,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: "m
         <Button disabled={busy || !changed || !pctOk || !maxOk || !coursesOk} onClick={() => setConfirm(true)}>احفظ</Button>
       </Card>
 
-      {forInfluencer ? <InfluencersPanel /> : <><GrantResults api={api} /><GrantRegistrants /></>}
+      {forInfluencer ? <InfluencersPanel /> : <GrantRegistrants grant={forOpen ? "open" : "member"} />}
 
       <GrantCourses percentOff={pctOk ? pctNum : null} />
 

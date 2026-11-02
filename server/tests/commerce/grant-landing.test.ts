@@ -21,7 +21,9 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { GrantService } from '../../services/grant.service'
-import { GrantLandingService, grantResults, maskEmail } from '../../services/grant-landing.service'
+import { GrantLandingService, maskEmail } from '../../services/grant-landing.service'
+import { registrantsFull } from '../../services/grant-registrants.service'
+import { registrantStats } from '../../../src/application/commerce/grant-registrants'
 import { CommerceService } from '../../services/commerce.service'
 import { grantRegistrants, sendGrantReminders } from '../../services/grant-followup.service'
 import { approvedPlanBy } from '../helpers/approved-trainer'
@@ -259,7 +261,7 @@ describe('⑦ والوسوم تنظف', () => {
   })
 })
 
-describe('⑧ ونتائج الحملة بالقناة والدفعة', () => {
+describe('⑧ ونتائج الحملة بالقناة والدفعة — في إحصاءات من عبأ', () => {
   it('⚠️ من عبأ ومن أخذ كودا ومن اشترى وبكم — والمهدى يحسب لقناة صاحب الكود', async () => {
     const ch = `t${STAMP % 1_000_000_000}`
     const a = await landing.apply(person({ channel: ch, wave: '1', workField: 'الهندسة' }))
@@ -275,12 +277,15 @@ describe('⑧ ونتائج الحملة بالقناة والدفعة', () => {
     const idle = (await new AuthService(prisma).register(`gl-idle-${STAMP}@test.local`, 'Idle#12345', 'لم يدفع')).userId
     await commerce.checkout(idle, [(await cohort(nextCourse())).id], b.grant!.code!)
 
-    const r = await grantResults(prisma)
-    const w1 = r.rows.find((x) => x.channel === ch && x.wave === '1')!
-    expect(w1).toMatchObject({ leads: 2, codes: 2, bought: 1, revenue: 60 })
-    expect(r.rows.find((x) => x.channel === ch && x.wave === '2')).toMatchObject({ leads: 1, codes: 1, bought: 0, revenue: 0 })
-    expect(r.fields.find((f) => f.workField === 'الهندسة')!.leads).toBeGreaterThanOrEqual(2)
-    expect(r.totals.leads).toBeGreaterThanOrEqual(3)
+    /* «نتائج الحملة» صارت في إحصاءات من عبّأ (٢ نوفمبر ٢٠٢٦) — بالقناة والدفعة والمبلغ، والمُهدى لقناة صاحب الكود */
+    const { rows } = await registrantsFull(prisma)
+    expect(rows.find((x) => x.id === a.ref)).toMatchObject({ state: 'bought', orders: 1, revenue: 60 })
+    expect(rows.find((x) => x.id === b.ref)).toMatchObject({ state: 'pending', orders: 0, revenue: 0 })
+    const s = registrantStats(rows.filter((x) => x.channel === ch).map((x) => ({ ...x, createdAt: x.createdAt.toISOString(), pageOpenedAt: null })))
+    expect(s.byLink.find((x) => x.key === `${ch}|1`)).toMatchObject({ labelAr: `${ch} · دفعة 1`, n: 2, bought: 1, revenue: 60 })
+    expect(s.byLink.find((x) => x.key === `${ch}|2`)).toMatchObject({ n: 1, bought: 0, revenue: 0 })
+    expect(s).toMatchObject({ total: 3, revenue: 60, orders: 1 })
+    expect(s.byField.find((f) => f.key === 'الهندسة')!.n).toBe(2)
   })
 })
 

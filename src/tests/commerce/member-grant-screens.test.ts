@@ -23,7 +23,7 @@ const ROUTES = code('server/http/routes/admin-grant.routes.ts')
 const BUY = code('src/components/BuyPanel.tsx')
 const HTTP = code('server/http/app.ts')
 const COURSES = code('src/pages/admin/GrantCourses.tsx')
-const RESULTS = code('src/pages/admin/GrantResults.tsx')
+const STATS = code('src/pages/admin/GrantRegistrantStats.tsx')
 const REG = code('src/pages/admin/GrantRegistrants.tsx')
 
 describe('شاشة صاحب المنصة', () => {
@@ -78,22 +78,21 @@ describe('دورات المنحة', () => {
 })
 
 describe('نتائج الحملة', () => {
-  it('⚠️ في شاشة المنحة — وبابها بصلاحية الكوبونات، ونصوصها بلا تشكيل', () => {
-    expect(PAGE).toMatch(/<GrantResults api=\{api\} \/>/)
-    expect(RESULTS).toMatch(/export default function GrantResults\(\{ api = "\/api\/admin\/member-grant" \}/)
-    expect(RESULTS).toMatch(/apiGet<Results>\(`\$\{api\}\/results`\)/)
-    expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/open-grant\/results', \{\s*preHandler: canManage/)
-    expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/results', \{\s*preHandler: canManage/)
-    for (const t of ['نتائج الحملة', 'عبأ النموذج', 'أخذ كودا', 'اشترى', 'القناة', 'الدفعة', 'مجالات العمل', 'بلا وسم']) {
-      expect(RESULTS).toContain(t)
-      expect(t).toBe(plainAr(t))
-    }
+  it('⚠️ في إحصاءات من عبأ — بالقناة والدفعة والمبلغ، وتفتح على منحة الشاشة، ونصوصها بلا تشكيل', () => {
+    /* صارت «نتائج الحملة» في الإحصاءات فوق القائمة (٢ نوفمبر ٢٠٢٦) — والجدولُ القديمُ وبابُه ذهبا */
+    expect(PAGE).toMatch(/<GrantRegistrants grant=\{forOpen \? "open" : "member"\} \/>/)
+    expect(PAGE).not.toMatch(/GrantResults/)
+    expect(ROUTES).not.toMatch(/grant\/results'/)
+    expect(REG).toMatch(/useState<"" \| keyof typeof GRANT_AR>\(fromLink \? "" : pageGrant\)/)
+    expect(STATS).toMatch(/<Bars title="القناة والدفعة" items=\{s\.byLink\} \/>/)
+    expect(STATS).toMatch(/<Tile label="المبلغ" value=\{fmtMoney\(s\.revenue, "USD"\)\}/)
+    for (const t of ['القناة والدفعة', 'المبلغ', 'طلب مدفوع', 'بلا وسم', 'هدية من صديق']) expect(t).toBe(plainAr(t))
   })
 })
 
 describe('من عبأ النموذج', () => {
   it('⚠️ قائمة بالأسماء في شاشة المنحة — ببحث وزر واتساب ورسالة جاهزة، وبابها بصلاحية الكوبونات', () => {
-    expect(PAGE).toMatch(/<GrantRegistrants \/>/)
+    expect(PAGE).toMatch(/<GrantRegistrants grant=/)
     expect(REG).toMatch(/apiGet<List>\("\/api\/admin\/member-grant\/registrants"\)/)
     expect(REG).toMatch(/<ListToolbar q=\{q\}/)
     expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.influencer \? INFLUENCER_GRANT_NAME_AR : r\.grant === "open" \? OPEN_GRANT_NAME_AR : undefined\)\)/)

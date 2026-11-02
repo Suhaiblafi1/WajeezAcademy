@@ -19,7 +19,8 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
-import { GrantLandingService, grantResults } from '../../services/grant-landing.service'
+import { GrantLandingService } from '../../services/grant-landing.service'
+import { registrantsFull } from '../../services/grant-registrants.service'
 import { OPEN_GRANT_LAUNCH, applyOpenGrantLaunch, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 import { GRANT_ONCE_AR, OPEN_GRANT_SLUG, grantClosesAt, grantLastDay } from '../../../src/application/commerce/grant'
@@ -147,10 +148,10 @@ describe('⑤ منحة واحدة لكل متعلم على الحملات كله
 describe('⑥ نتائجها وحدها، ومن عبأها في القائمة', () => {
   it('⚠️ نتائج العامة بقناتها ولا تظهر في نتائج الأولى — ومن عبأها في قائمة من عبأ بحملتها', async () => {
     const out = await landing.apply(person({ channel: 'onlyopen' }))
-    const open = await grantResults(prisma, OPEN_GRANT_SLUG)
-    expect(open.rows.find((r) => r.channel === 'onlyopen')?.leads).toBe(1)
-    const first = await grantResults(prisma)
-    expect(first.rows.find((r) => r.channel === 'onlyopen'), 'اختلطت نتائج العامة بالأولى').toBeUndefined()
+    /* ونتائجُها في إحصاءات من عبّأ بمنحتها (٢ نوفمبر ٢٠٢٦) — والشاشةُ تُفتح على منحتها، فلا تختلط بالأولى */
+    const { rows } = await registrantsFull(prisma)
+    const tagged = rows.filter((r) => r.channel === 'onlyopen')
+    expect(tagged.map((r) => r.grant)).toEqual(['open'])
     const row = (await grantRegistrants(prisma)).find((r) => r.id === out.ref)
     expect(row, 'لم يظهر في قائمة من عبأ').toBeTruthy()
     expect(row).toMatchObject({ campaign: OPEN_GRANT_SLUG, influencer: false })
