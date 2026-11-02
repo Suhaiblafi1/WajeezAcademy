@@ -99,6 +99,25 @@ describe('③ زر إلى «تعلمي»', () => {
     expect(body, 'من لا كود له يبقى بلا تسعير').not.toMatch(/if \(!on \|\| !g\.code\) return;/)
     expect(buy.match(/setGrantKnown\(/g)?.length, 'الجواب يكتب من غير السؤال').toBe(1)
   })
+
+  /* «fix it to all» (صاحب المنصة، ٢ نوفمبر ٢٠٢٦) — خير بين تركه يدفع والسؤال قبل الدفع والمنع. ولا إجبار: من له منحة
+     ولم تطبق يسأل قبل الدفع ويختار. والفحص على البنية: الدفع يقف عند السؤال ما لم يختر الدفع بلا منحة، والسؤال يعرض
+     زريه، وزر الدفع العادي لا يظهر معه */
+  it('⚠️ وصاحب المنحة لا يدفع بلا منحته إلا وقد قيل له واختار', () => {
+    const buy = code('src/components/BuyPanel.tsx')
+    expect(buy).toMatch(/const grantHolder = !!autoGrant\?\.code \|\| grantPayTotal !== undefined;/)
+    expect(buy).toMatch(/const grantMissing = grantHolder && !!quote && quote\.grantPct === null && payableIds\.length > 0;/)
+    const pay = buy.match(/const pay = async \(withoutGrant = false\) => \{([\s\S]*?)setPaying\(true\);/)
+    expect(pay, 'الدفع لا يعرف من يدفع بلا منحته').not.toBeNull()
+    expect(pay![1]).toMatch(/if \(grantMissing && !withoutGrant\) \{ setConfirmFull\(true\); return; \}/)
+    const ask = buy.match(/confirmFull && grantMissing && \(([\s\S]*?)\n {12}\)\}/)
+    expect(ask, 'لا سؤال قبل الدفع').not.toBeNull()
+    expect(ask![1]).toMatch(/onClick=\{\(\) => setConfirmFull\(false\)\}/)
+    expect(ask![1]).toMatch(/onClick=\{\(\) => void pay\(true\)\}/)
+    expect(ask![1]).toContain('منحتك لم تطبق على هذا الطلب.')
+    expect(buy, 'زر الدفع العادي يظهر مع السؤال').toMatch(/!nothingLeft && !closedAr && !confirmFull && \(/)
+    expect(buy.match(/void pay\(true\)/g)?.length, 'دفع بلا منحة من غير السؤال').toBe(1)
+  })
 })
 
 describe('④ مشتري المسار: ثلاثة مقترحات', () => {
