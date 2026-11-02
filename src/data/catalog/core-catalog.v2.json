@@ -2592,7 +2592,7 @@
       ],
       "practical_project_ar": "ملف قرار مهني: بيان قرار + جرد أدلة + مصفوفة موزونة + ثلاث فرضيات مع دفاع شفهي 5 دقائق.",
       "title_term_en": "Career Planning & Market Research",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "legacy_title_ar": "دورة التخطيط للمسار المهني وبحث سوق العمل"
     },
@@ -2664,7 +2664,7 @@
       ],
       "practical_project_ar": "رسالتا تواصل + مقابلتان معلوماتيتان موثقتان مع ممارسين مختلفين (الثانية مستقلة) + بنك أسئلة حساسة مجرب + رسالة شكر ومتابعة وسجل صلات + مذكرة تثليث وتحديث فرضية يدافع عنها أمام زميلين.",
       "title_term_en": "Professional Networking",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "legacy_title_ar": "دورة بناء شبكة العلاقات المهنية"
     },
@@ -2737,7 +2737,7 @@
       ],
       "practical_project_ar": "ملف تجربة مهنية: الميثاق واتفاق الجهة المضيفة، المخرج، سجل رصد أثناء التنفيذ، ملاحظة خارجية، ميثاق تجربة ثانية لما بقي غامضا، ومراجعة قرار يدافع عنها أمام لجنة أقران في عشر دقائق.",
       "title_term_en": "Career Prototyping",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -2806,7 +2806,7 @@
       ],
       "practical_project_ar": "مذكرة قرار مهني مع مصفوفة حساسية وسجل اختبار ضغوط وخطة 30 يوما ومحضر مراجعة محاكاة لليوم الثلاثين، ودفاع 7 دقائق.",
       "title_term_en": "Career Decision & Transition Plan",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "legacy_title_ar": "دورة اتخاذ القرار المهني وخطة الانتقال"
     },
@@ -2908,7 +2908,7 @@
       ],
       "practical_project_ar": "ملف تموضع: خريطة أدوار + تحليل 15 إعلانا + عرض قيمة + خطة فجوتين. ثمّ مشروع محفظة + سجل قرارات + نسختان قبل/بعد + دراسة حالة 400–600 كلمة.",
       "title_term_en": "Job Targeting, CV & Portfolio",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "legacy_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني"
     },
@@ -3000,7 +3000,7 @@
       ],
       "practical_project_ar": "لوحة بحث 6 أسابيع + خطة جهات + 6 رسائل + أول مراجعة أسبوعية. ثمّ مقابلة مسجلة 25 دقيقة + تقييم مقيمين + تأمل تحسيني.",
       "title_term_en": "Job Search & Interviews",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "legacy_title_ar": "دورة مهارات المقابلات الوظيفية"
     },
@@ -3084,7 +3084,7 @@
       ],
       "practical_project_ar": "تدقيق 10 مهام عمل مع قرار استخدام/عدم استخدام ومخاطر وضوابط لكل مهمة.",
       "title_term_en": "AI Foundations & Prompt Engineering",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة أساسيات الذكاء الاصطناعي وهندسة الأوامر"
     },
@@ -3156,7 +3156,7 @@
       ],
       "practical_project_ar": "تدقيق مخرج AI من 800–1200 كلمة من عمل المتعلم: rubric + 12 ادعاء بينها حالات صعبة + مصادر + قرار نشر + نسخة مصححة ومذكرة حدود ثقة، مع دفاع 15 دقيقة تعيد فيه اللجنة فحص 3 ادعاءات.",
       "title_term_en": "AI Fact-Checking",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تقييم مخرجات الذكاء الاصطناعي والتحقق منها"
     },
@@ -3228,7 +3228,7 @@
       ],
       "practical_project_ar": "سير عمل مطبق على تقرير مهني مع خط أساس وسجل تحقق وتحليل عائد/مخاطر + قواعد استثناء للحالات الحدية + مصفوفة مصادر + سجل تعديلات بشرية وإفصاح + إجراء تشغيل مكتوب يدافع عنه أمام لجنة.",
       "title_term_en": "AI-Assisted Writing & Research",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة الكتابة والبحث بالذكاء الاصطناعي"
     },
@@ -3298,7 +3298,7 @@
       ],
       "practical_project_ar": "مشروع طيار: ميثاق + مخاطر + بيانات قبل/بعد + مذكرة تفسير نتائج + خطة توسع ومتابعة 30 يوما + عرض قرار 10 دقائق وأسئلة لجنة 15 دقيقة.",
       "title_term_en": "AI Use Cases at Work",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تطبيق الذكاء الاصطناعي في بيئة العمل"
     },
@@ -3382,7 +3382,7 @@
       ],
       "practical_project_ar": "مذكرة سؤال قرار + قاموس بيانات + خطة تحليل لحالة عمل.",
       "title_term_en": "Data Analysis Foundations",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة أساسيات تحليل البيانات وتنظيفها"
     },
@@ -3454,7 +3454,7 @@
       ],
       "practical_project_ar": "شجرة هدف + 6 بطاقات KPI بخط أساس ومستهدف وعتبة + سجل تشغيل تجريبي على بيانات حقيقية + تحليل آثار غير مقصودة واختبار تلاعب من الأقران + مؤشر موازنة + دليل حوكمة ومراجعة.",
       "title_term_en": "KPI & OKR Design",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تصميم مؤشرات الأداء وأهداف OKR"
     },
@@ -3526,7 +3526,7 @@
       ],
       "practical_project_ar": "لوحة من صفحة واحدة على بيانات حقيقية + نسخة تشغيلية للفريق الميداني + سجل قرارات للحالات البصرية الصعبة + مذكرة قرار 250 كلمة + تسجيلا اختبار مستخدم قبل التعديل وبعده + دليل تشغيل.",
       "title_term_en": "Data Visualisation & Dashboards",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات"
     },
@@ -3597,7 +3597,7 @@
       ],
       "practical_project_ar": "حزمة قرار: ميثاق + ملف تحليل + لوحة + مذكرة + إحاطة مسجلة + مذكرة تصحيح + تقرير إعادة إنتاج من زميل + سجل إغلاق ملاحظات اللجنة.",
       "title_term_en": "Data Storytelling",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -3680,7 +3680,7 @@
       ],
       "practical_project_ar": "ميثاق مشروع حقيقي/محاكى + عرض اعتماد 7 دقائق.",
       "title_term_en": "Project Scoping & Planning",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تأسيس المشروع: النطاق والتخطيط والجدولة"
     },
@@ -3752,7 +3752,7 @@
       ],
       "practical_project_ar": "خريطة متحقق منها + خطة مشاركة + مصفوفة حقوق قرار + اجتماع مسجل + مذكرة تصعيد + تقرير حالة من صفحة + دفاع أمام لجنة عن أسبوعين من التشغيل.",
       "title_term_en": "Stakeholder Communication",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إدارة أصحاب المصلحة والتواصل في المشاريع"
     },
@@ -3824,7 +3824,7 @@
       ],
       "practical_project_ar": "سجل مخاطر وتغيير بإشارات وعتبات + احتياطي زمن وكلفة مبرر + محاكاة لجنة بطلبات تغيير صعبة + لوحة متابعة بعد أسبوعين من التشغيل + دفاع أمام لجنة لمشروع المسار.",
       "title_term_en": "Risk & Change Management",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -3893,7 +3893,7 @@
       ],
       "practical_project_ar": "حزمة إغلاق كاملة لمشروع المسار + خطة إغلاق استثنائي لحالة موقوفة أو مقبولة جزئيا + إحاطة تنفيذية 8 دقائق يعقبها نقاش لجنة.",
       "title_term_en": "Project Closure & Benefits",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إغلاق المشاريع وقياس أثرها"
     },
@@ -3974,7 +3974,7 @@
       ],
       "practical_project_ar": "خريطة انتقال + تدقيق وقت + ميثاق قيادة + دفاع موقف أخلاقي.",
       "title_term_en": "First-Time Manager",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة الانتقال إلى الإدارة وقيادة إيقاع الفريق"
     },
@@ -4046,7 +4046,7 @@
       ],
       "practical_project_ar": "محاكاة تفويض مسجلة + موجز + سلم صلاحيات + خطة متابعة + تسجيل جلسة توجيه + تحليل حالة تعثر + ملف تفويض حقيقي بمراجعة ما بعد التنفيذ يعرض أمام أقران.",
       "title_term_en": "Delegation & Coaching",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة التفويض والتوجيه (Coaching)"
     },
@@ -4118,7 +4118,7 @@
       ],
       "practical_project_ar": "محادثة أداء مسجلة لحالة من فريق المتعلم + ملف أدلة + خطة تحسين + مذكرات متابعة وقرار تصعيد + تسجيل محادثة متصاعدة + تسجيل ملاحظة لأعلى ومن أسفل + تأمل تحيز يراجعه مراجع مستقل.",
       "title_term_en": "Feedback & Difficult Conversations",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة التغذية الراجعة والمحادثات الصعبة"
     },
@@ -4188,7 +4188,7 @@
       ],
       "practical_project_ar": "خطة 30/60/90 + خريطة أصحاب مصلحة + تجربة تحسين + ملحق مخاطر انتقال ومحادثات أولى + نموذج مراجعة اليوم التسعين + عرض 12 دقيقة ودفاع أمام لجنة.",
       "title_term_en": "First 90 Days Plan",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة خطة الـ٩٠ يوما الأولى للمدير"
     },
@@ -4266,7 +4266,7 @@
       ],
       "practical_project_ar": "خريطة رحلة مستفيد + 5 أدلة + بيان مشكلة + خط أساس.",
       "title_term_en": "Customer Journey Mapping",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تجربة المستفيد ومهارات خدمة العملاء"
     },
@@ -4338,7 +4338,7 @@
       ],
       "practical_project_ar": "محاكاة شكوى عادية وأخرى حدّية + رد مكتوب نهائي مراجع بقائمة الامتثال + تحليل نمط شكاوى فعلي بسببه الجذري + خطة إجراء تصحيحي بمالك وموعد ومؤشر تحقق + دفاع شفهي أمام لجنة جودة (15 دقيقة).",
       "title_term_en": "Complaint Handling & Recovery",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إدارة الشكاوى وحل النزاعات"
     },
@@ -4411,7 +4411,7 @@
       ],
       "practical_project_ar": "قاموس 8 مؤشرات لخدمة حقيقية بتحليل قابلية التلاعب + استبيان 5 أسئلة مختبر ميدانيا + تحليل بيانات خدمة مفكّك بالفئات ومؤشر عدالة + هدف تحسين بخط أساس ومؤشر موازنة + دفاع شفهي أمام إدارة الخدمة (15 دقيقة).",
       "title_term_en": "Service Quality Measurement",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -4480,7 +4480,7 @@
       ],
       "practical_project_ar": "ميثاق + blueprint + نموذج + اختبار + بيانات قبل/بعد + مصفوفة اعتماديات وتقييم خصوصية + خطة توسع مرحلية + عرض قرار ودفاع أمام لجنة.",
       "title_term_en": "Service Improvement Pilots",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تحسين الخدمات الحكومية بالتجريب"
     },
@@ -4564,7 +4564,7 @@
       ],
       "practical_project_ar": "5 مقابلات موثقة + جدول أدلة + فرضية محدثة + مذكرة استمر/غيّر/توقف.",
       "title_term_en": "Customer Discovery & Value Prop",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة اكتشاف العملاء وصياغة عرض القيمة"
     },
@@ -4636,7 +4636,7 @@
       ],
       "practical_project_ar": "خريطة نموذج + اقتصاديات وحدة + هوامش حسب القناة والمنتج + حاسبة اكتساب واسترداد + خطة تشغيل وقرار فك الاختناق + 3 سيناريوهات نقدية، مع دفاع أمام لجنة تغيّر افتراضا ويعاد الحساب أمامها.",
       "title_term_en": "Business Model & Unit Economics",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة نماذج الأعمال واقتصاديات الوحدة"
     },
@@ -4708,7 +4708,7 @@
       ],
       "practical_project_ar": "مذكرة سعر + مكالمة مبيعات حقيقية مسجلة + عرض تجاري بثلاث صيغ + خطة تنازلات + متابعة مكتوبة + رسالة رفع سعر، مع مراجعة المكالمة أمام لجنة.",
       "title_term_en": "Pricing Strategy",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة استراتيجيات التسعير"
     },
@@ -4778,7 +4778,7 @@
       ],
       "practical_project_ar": "خط 20 فرصة + سجل تجربتين + دليل بيع/رفض + مقارنة مراحل التحويل + نموذج نقدي وخطة 90 يوما بمؤشرات أسبوعية + عرض 10 دقائق أمام لجنة مراجعة.",
       "title_term_en": "First Sale & Growth Plan",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة أول عملية بيع وخطة النمو"
     },
@@ -4870,7 +4870,7 @@
       ],
       "practical_project_ar": "خريطة عملية + مصفوفة أولوية بالوقت ونسبة الخطأ وحجم التكرار + دراسة جدوى مبسطة لنقطة أتمتة واحدة.",
       "title_term_en": "Business Process Automation",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تحليل فرص الأتمتة والربط بين التطبيقات"
     },
@@ -4947,7 +4947,7 @@
       ],
       "practical_project_ar": "سير عمل آلي لاستقبال طلب ومعالجته وإرساله على عملية من عمل المتعلم + مخطط شروط وتفرعات + خطة معالجة أخطاء وإعادة محاولة + مصفوفة اختبار حالات حافة + دليل تشغيل واسترداد، مع دفاع أمام لجنة تحقن عطلا حيا.",
       "title_term_en": "Workflow Automation",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "legacy_title_ar": "دورة بناء سير العمل الآلي"
     },
@@ -5024,7 +5024,7 @@
       ],
       "practical_project_ar": "مساعد داخلي مرتبط بقاعدة معرفة مختارة + سياسة مصادر وحدود إجابة + سجل اختبار للتحقق من الالتزام بالمصدر يشمل الأسئلة الصعبة + سجل تشخيص وإصلاح + إجراء صيانة وتحديث + تقرير تجربة مستخدمين، مع دفاع أمام لجنة.",
       "title_term_en": "Retrieval-Augmented Assistant (RAG)",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "legacy_title_ar": "دورة بناء مساعد ذكي من قاعدة معرفتك"
     },
@@ -5100,7 +5100,7 @@
       ],
       "practical_project_ar": "مخطط وكيل بنقاط تحكم بشرية + سياسة تشغيل وصلاحيات + عملية مؤتمتة عاملة على حالة فعلية + توثيق مراقبة واستثناءات + سجل اختبار ضاغط + حزمة تسليم بخطة إيقاف ورجوع إلى العمل اليدوي + دفاع أمام لجنة.",
       "title_term_en": "AI Agents",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تصميم الوكلاء الأذكياء بإشراف بشري"
     },
@@ -5189,7 +5189,7 @@
       ],
       "practical_project_ar": "وثيقة عميل وتموضع + تقسيم سوق مبرر + عرض قيمة مدعوم بمقابلات موثقة.",
       "title_term_en": "Segmentation & Positioning",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة استراتيجية التسويق ورحلة العميل"
     },
@@ -5266,7 +5266,7 @@
       ],
       "practical_project_ar": "تقويم محتوى + أعمدة محتوى محددة + نماذج منشورة + خطة إعادة استخدام وتوزيع + تدقيق المحتوى القائم بقراراته + دراسة حالة عميل بإذن نشر موثّق + تقويم ربع بحساب الطاقة + عرض تقديميّ ودفاع شفهيّ أمام لجنة (عشر دقائق).",
       "title_term_en": "Content Marketing",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تسويق المحتوى"
     },
@@ -5344,7 +5344,7 @@
       ],
       "practical_project_ar": "سلسلة متابعة آلية لعرض واحد + تقسيم قوائم + مراجعة امتثال للخصوصية وقنوات المراسلة + قائمة منظّفة بقواعدها + مخطّط تفرّع مختبر بالحالات + دليل تشغيل للأعطال + تقرير إطلاق على شريحة حقيقيّة ودفاع شفهيّ أمام مراجعين.",
       "title_term_en": "Lead Nurturing & Automation",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -5419,7 +5419,7 @@
       ],
       "practical_project_ar": "خطة تجارب نمو + لوحة أداء + خط أساس ونتائج قياس + خطة نمو 90 يوما قابلة للتنفيذ + مذكّرة حكم على تجارب ملوّثة النتائج + عرض تقديميّ ودفاع عن قرار دورة القياس.",
       "title_term_en": "Campaign Measurement & Optimisation",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة قياس الحملات التسويقية وتحسينها"
     },
@@ -5508,7 +5508,7 @@
       ],
       "practical_project_ar": "ملف العميل المثالي (ICP) + خريطة سوق + قائمة فرص مرتبة بالأولوية + رسالة قيمة موجهة.",
       "title_term_en": "Ideal Customer Profile & Prospecting",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة استهداف السوق وبناء خط المبيعات"
     },
@@ -5585,7 +5585,7 @@
       ],
       "practical_project_ar": "محاكاة محادثة اكتشاف مسجلة + دليل أسئلة + ملخص احتياج مرتب بالأولوية والأثر + خريطة أصحاب مصلحة بمواضع التعارض + تحليل أربع محاكاة لعملاء صعبين + محادثة اكتشاف حقيقية بملخص اعتمده العميل أو صحّحه + دفاع أمام لجنة عن ترتيب الاحتياجات.",
       "title_term_en": "Consultative Selling & Discovery",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة البيع الاستشاري واكتشاف الاحتياج"
     },
@@ -5662,7 +5662,7 @@
       ],
       "practical_project_ar": "عرض تجاري كامل بخيارات تسعير وجدول فروق + تقديم شفهي مسجل أمام لجنة قرار بأسئلة مفاجئة + ربط موثق بين كل بند وقيمته لدى صاحب القرار + مصفوفة امتثال لكرّاسة شروط + نسختان من العرض قبل مراجعة الأقران وبعدها.",
       "title_term_en": "Proposals & Pitching",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إعداد العروض التجارية وتقديمها"
     },
@@ -5738,7 +5738,7 @@
       ],
       "practical_project_ar": "محاكاة تفاوض مسجلة + خطة تفاوض واتفاق مبدئي + سجل ثلاث صفقات متعثرة بقراراتها + خطة نمو حساب رئيسي + خريطة شراكات + مراجعة حساب بعد تسعين يوما.",
       "title_term_en": "Closing & Account Growth",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إغلاق الصفقات وإدارة الحسابات"
     },
@@ -5828,7 +5828,7 @@
       ],
       "practical_project_ar": "خطة قوى عاملة + تحليل فجوة + بطاقة وظيفة + مصفوفة جدارات بمستوياتها.",
       "title_term_en": "Workforce Planning & Job Design",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تخطيط القوى العاملة والتوظيف المنظم"
     },
@@ -5905,7 +5905,7 @@
       ],
       "practical_project_ar": "نموذج دورة أداء + أهداف ومعايير + دليل محادثة مراجعة + سجل أدلة على مدار الدورة + خطة تحسين أداء لحالة متعثّرة + محضر معايرة بين مقيّمين + تطبيق المحطة الأولى على فريق حقيقي، مع دفاع عن النموذج أمام لجنة تمثّل الإدارة والموظفين.",
       "title_term_en": "Performance Management",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إدارة الأداء الوظيفي"
     },
@@ -5985,7 +5985,7 @@
       ],
       "practical_project_ar": "خطة تعلم وتطوير لقسم + تحليل فجوة قدرة + مسار تطوير وخطة نقل التعلم إلى العمل + تشخيص حالات لا يحلّها التدريب + دليل مقابلة بقاء بالتزاماتها + أداة قياس نقل التعلّم بعد شهر، مع دفاع عن الخطة أمام لجنة بنسختيها الكاملة والمخفّضة.",
       "title_term_en": "Talent Development & Retention",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تطوير المواهب والاحتفاظ بها"
     },
@@ -6064,7 +6064,7 @@
       ],
       "practical_project_ar": "لوحة مؤشرات موظفين + تحليل قرار واحد بالكامل + سياسة استخدام بيانات + مراجعة تحيز وخصوصية + مذكرة قرار لحالة حساسة + سجل اعتراضات لجنة الحوكمة وما تغيّر بسببها.",
       "title_term_en": "People Analytics",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -6152,7 +6152,7 @@
       ],
       "practical_project_ar": "ملخص صحة مالية: قراءة قائمة دخل ومركز مالي وتدفق نقدي + المؤشرات المستخرجة منها وتفسيرها.",
       "title_term_en": "Financial Statements & Costing",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة قراءة القوائم المالية وتحليل التكاليف"
     },
@@ -6229,7 +6229,7 @@
       ],
       "practical_project_ar": "موازنة ربع سنوية على محركات تشغيلية موزعة على الأقسام بمفتاح توزيع معلن + توقع بسيناريوهين + تقرير انحراف يقارن الفعلي بالخطة ويفسر أسبابه + موازنة مرنة تفصل أثر الحجم مع عتبة أهمية + توقع متجدد لبقية السنة + دفاع عن الحزمة في اجتماع مراجعة أداء بإجراءات لها مالك وموعد.",
       "title_term_en": "Budgeting & Variance Analysis",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إعداد الموازنات وتحليل الانحرافات"
     },
@@ -6306,7 +6306,7 @@
       ],
       "practical_project_ar": "توقع تدفق نقدي لثلاثة عشر أسبوعا مختبر بصدمتين ومحدّث بالفعلي + تحليل دورة التحصيل والدفع + جدول أعمار ذمم وسياسة ائتمان وتحصيل + خطة موردين ومخزون راكد بأثرها على الدورة + خيارات تمويل الفجوة بكلفتها + خطة حماية رأس المال العامل يدافع عنها في اجتماع سيولة.",
       "title_term_en": "Cash Flow & Working Capital",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إدارة التدفق النقدي ورأس المال العامل"
     },
@@ -6381,7 +6381,7 @@
       ],
       "practical_project_ar": "مذكرة قرار استثماري بـROI وPayback وNPV + تحليل حساسية + مقارنة بديلين على أساس موحد + لوحة مؤشرات + عرض على الإدارة ودفاع أمام لجنة استثمار + خطة مراجعة ما بعد التنفيذ.",
       "title_term_en": "Capital Budgeting & ROI",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تقييم الاستثمارات وعرض القرار المالي"
     },
@@ -6470,7 +6470,7 @@
       ],
       "practical_project_ar": "موجز استراتيجية منتج: رؤية وهدف + مشكلة سوق وقيمة + حدود المنتج وأصحاب المصلحة.",
       "title_term_en": "Product Strategy & Discovery",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة استراتيجية المنتج واكتشاف المستخدم"
     },
@@ -6547,7 +6547,7 @@
       ],
       "practical_project_ar": "تعريف MVP + نموذج أولي مختبر مع مستخدمين + قصص مستخدم بمعايير قبول + بطاقة تجربة بعتبات معلنة مسبقا + سجل تجربة وقرار موثق + دفاع أمام لجنة في عشر دقائق.",
       "title_term_en": "Minimum Viable Product (MVP)",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة النماذج الأولية والمنتج الأدنى القابل للتطبيق"
     },
@@ -6625,7 +6625,7 @@
       ],
       "practical_project_ar": "خريطة طريق منتج فصلية + قائمة عمل مرتبة + جرد طلبات بقرار ربط أو حذف + مفاضلات موثقة للحالات الضاغطة + مذكرة تعديل للخارطة + خطة تعاون مع الفريق + دفاع أمام لجنة أصحاب مصلحة.",
       "title_term_en": "Roadmap & Backlog",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -6700,7 +6700,7 @@
       ],
       "practical_project_ar": "خطة إطلاق ومؤشرات + لوحة قياس + تجارب واحتفاظ بعد الإطلاق + تشخيص بالدفعات ومذكرة قرار + عرض المنتج أمام لجنة + مراجعة ما بعد الإطلاق وقرار الدورة التالية.",
       "title_term_en": "Product Launch & Metrics",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إطلاق المنتج وقياس مؤشراته"
     },
@@ -6789,7 +6789,7 @@
       ],
       "practical_project_ar": "خريطة الحالة الحالية + SIPOC وحدود العملية + خط أساس للزمن والقيمة.",
       "title_term_en": "Process Mapping & Lean Analysis",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة رسم العمليات ومنهجية Lean"
     },
@@ -6866,7 +6866,7 @@
       ],
       "practical_project_ar": "تقرير A3 لمشكلة تشغيلية: تعريف المشكلة + تحليل 5 Whys وFishbone + اختبار السبب الجذري + جدول أدلّة من الموقع + تحليل حالة متقطّعة أو متعدّدة الأسباب + خطّة اختبار إزالة وإجراء احتواء + دفاع شفهيّ عن التقرير أمام مراجع.",
       "title_term_en": "Root Cause Analysis",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تحليل السبب الجذري وحل المشكلات"
     },
@@ -6943,7 +6943,7 @@
       ],
       "practical_project_ar": "شجرة مؤشرات + لوحة تشغيل بمؤشرات قائدة وتابعة + إيقاع مراجعة معتمد + جدول مخاطر المؤشّرات وموازناتها + بطاقات تعريف بمصادر معتمدة + دليل استجابة للتنبيهات + دفاع شفهيّ عن اللوحة أمام لجنة.",
       "title_term_en": "Operational KPIs",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة مؤشرات الأداء التشغيلي"
     },
@@ -7019,7 +7019,7 @@
       ],
       "practical_project_ar": "تجربة تحسين بدورة PDCA + بيانات قبل وبعد + خطة توحيد وإدارة تغيير + عرض حالة تحسين تشغيلي + خطّة دورة ثانية بقرار المتابعة + قائمة تدقيق استدامة وجدول متابعة لتسعين يوما.",
       "title_term_en": "Continuous Improvement (PDCA)",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة التحسين المستمر ومنهجية PDCA"
     },
@@ -7108,7 +7108,7 @@
       ],
       "practical_project_ar": "موجز تهديدات: جرد أصول وقيمتها + تحليل حادثة معروفة + تقييم احتمال وأثر.",
       "title_term_en": "Cyber Risk & Identity Basics",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة أساسيات الأمن السيبراني وحماية الهويات"
     },
@@ -7185,7 +7185,7 @@
       ],
       "practical_project_ar": "قائمة ضوابط حماية للأجهزة والبيانات والسحابة مطبّقة على جهة حقيقية + سجل جرد وتصنيف للبيانات + تقرير تدقيق إعدادات سحابية + خطة نسخ وتشفير مع محضر اختبار استعادة + توزيع المسؤولية السحابية المشتركة، يعرض ويدافع عنه في عشر دقائق.",
       "title_term_en": "Cloud & Endpoint Security",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "legacy_title_ar": "دورة حماية البيانات وأمن السحابة"
     },
@@ -7262,7 +7262,7 @@
       ],
       "practical_project_ar": "سجل مخاطر + سياسة أمن + خطة معالجة مرتبة بالأولوية ومربوطة بوظائف إطار CSF + جدول مطابقة امتثال + سجل أدلة ومؤشرات + نموذج قبول مخاطرة وتقييم مورّد + عرض على لجنة تحاكي الإدارة بمحضر قراراتها.",
       "title_term_en": "Security Governance & Compliance",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "legacy_title_ar": "دورة حوكمة الأمن السيبراني والامتثال"
     },
@@ -7337,7 +7337,7 @@
       ],
       "practical_project_ar": "خطة استجابة للحوادث + محاكاة Tabletop موثقة + خطة تواصل واستمرارية عمل + محاكاة ثانية لسيناريوهات أصعب + تقرير ما بعد الحادث ودفاع عن الخطة المحدّثة.",
       "title_term_en": "Incident Response & Continuity",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "legacy_title_ar": "دورة الاستجابة للحوادث واستمرارية الأعمال"
     },
@@ -7426,7 +7426,7 @@
       ],
       "practical_project_ar": "خريطة سلسلة إمداد: التدفقات والأطراف + العقد الحرجة + موازنة بين مستوى الخدمة والتكلفة.",
       "title_term_en": "Supply Chain Fundamentals",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة أساسيات سلسلة الإمداد والتنبؤ بالطلب"
     },
@@ -7503,7 +7503,7 @@
       ],
       "practical_project_ar": "سياسة مخزون: تصنيف ABC بقواعد استثناء + مخزون أمان ونقطة طلب مختبران على سيناريوهات الذروة وتقلّب المهلة + برنامج جرد دوري وخطة رفع دقة الجرد + دفاع شفهي أمام لجنة (15 دقيقة).",
       "title_term_en": "Inventory Management",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إدارة المخزون والمستودعات"
     },
@@ -7583,7 +7583,7 @@
       ],
       "practical_project_ar": "حزمة مشتريات: نموذج كلفة كاملة لصفقة فعلية + طلب عرض (RFP) منقّح بالمراجعة + معايير تقييم موزونة ومحضر ترسية مسبّب + تقييم مورد وخطة تفاوض + دفاع شفهي أمام لجنة (15 دقيقة).",
       "title_term_en": "Strategic Sourcing & Selection",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "legacy_title_ar": "دورة التوريد الاستراتيجي واختيار الموردين"
     },
@@ -7659,7 +7659,7 @@
       ],
       "practical_project_ar": "خطة إدارة موردين + بطاقة أداء مورد + لوحة سلسلة بمؤشرات OTIF والدوران والتكلفة + خطة تطوير ومخاطر + تمرين انقطاع لمورد حرج وخطة استجابة + محضر مراجعة أداء ودفاع أمام لجنة.",
       "title_term_en": "Supplier Performance & Risk",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إدارة مخاطر سلسلة الإمداد وقياس أدائها"
     },
@@ -7748,7 +7748,7 @@
       ],
       "practical_project_ar": "خريطة رسالة: فكرة رئيسة واحدة + هيكل قصة ودليل + تحليل جمهور والقرار المطلوب منه.",
       "title_term_en": "Executive Communication",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD",
       "legacy_title_ar": "دورة بناء الرسالة وتصميم العرض التنفيذي"
     },
@@ -7826,7 +7826,7 @@
       "practical_project_ar": "خطاب مسجّل من دقيقتين قبل وبعد، مع جدول المعايير الستّة (النفس · الطبقة · السرعة · الوقفات · الحشو · الجسد) وخطّة تحسين بثلاثة إجراءات وما تغيّر منها فعلا + تسجيلات التكييف لثلاث بيئات + تسجيل استعادة بعد اضطراب مفاجئ + خطاب من خمس دقائق أمام جمهور حقيقيّ يلقى من بطاقة رؤوس نقاط، مع قراءة ثلاثة مستمعين بالمعايير الستّة ومقارنتها بالقراءة الذاتيّة.",
       "legacy_title_ar": "التحكم برهبة المسرح وبناء حضورك",
       "title_term_en": "Public Speaking & Vocal Delivery",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD"
     },
     {
@@ -7902,7 +7902,7 @@
       ],
       "practical_project_ar": "عرض إقناعي شفهي لمقترح حقيقي + بناء حجة بالمنطق والدليل والمصداقية + تدقيق أخلاقي يفصل الإقناع عن التلاعب + تكييف الحجة لثلاثة جماهير + حوار فردي مسجل مع صاحب قرار متردد + معالجة اعتراضات ودعوة فعل مع متابعة أثرها بعد أسبوع.",
       "title_term_en": "Persuasion & Influence",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة الإقناع والتواصل المؤثر"
     },
@@ -7977,7 +7977,7 @@
       ],
       "practical_project_ar": "دليل أسئلة وأجوبة + محاكاة لجنة بأسئلة صعبة + تقييم الإيجاز والصدق تحت الضغط + صيغ أجوبة للأسئلة الحدّية ورسالة متابعة + جلسة أسئلة حقيقية مسجلة ودليل محدّث بما كشفته.",
       "title_term_en": "Handling Tough Q&A",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إدارة الأسئلة والرد تحت الضغط"
     },
@@ -8067,7 +8067,7 @@
       ],
       "practical_project_ar": "خطة تفاوض: مصالح مقابل مواقف + تحليل BATNA وحد أدنى + تحديد ZOPA ومعايير موضوعية.",
       "title_term_en": "Negotiation Preparation (BATNA)",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD"
     },
     {
@@ -8143,7 +8143,7 @@
       ],
       "practical_project_ar": "خريطة تأثير داخلي + خطة رسائل لأصحاب المصلحة + حدود أخلاقية معلنة للإقناع + سجلّ قرارات في مواقف رماديّة + خطّة رصيد علاقات لتسعين يوما + تسلسل لقاءات لمبادرة حقيقيّة بتسجيلات محاكاتها + دفاع شفهيّ أمام لجنة (عشر دقائق).",
       "title_term_en": "Principled Negotiation",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة التأثير الأخلاقي في التفاوض"
     },
@@ -8220,7 +8220,7 @@
       ],
       "practical_project_ar": "خطة محادثة نزاع + محاكاة مسجلة + فصل الحقائق عن الاحتياجات وتحديد خيار الوساطة + تحليل لحظات التصاعد + خطّة محادثة مع طرف أقوى + محضر جلسة وساطة واتّفاقها + دفاع شفهيّ عن خطّة خلاف حقيقيّ أمام مراجعين.",
       "title_term_en": "Conflict De-escalation & Mediation",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة إدارة الخلاف والوساطة"
     },
@@ -8295,7 +8295,7 @@
       ],
       "practical_project_ar": "اتفاق متعدد الأطراف + خريطة أطراف وتحالفات + تسلسل قضايا + التزامات قابلة للتنفيذ والمتابعة + آليّة متابعة وتصعيد + سجلّ مراجعة الأطراف واعتراضاتهم.",
       "title_term_en": "Multi-Party Negotiation",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة التفاوض متعدد الأطراف"
     },
@@ -8387,7 +8387,7 @@
       ],
       "practical_project_ar": "موجز حاجة تدريبية: مشكلة أداء وسياقها + جمهور وقيود + نواتج تعلم قابلة للملاحظة.",
       "title_term_en": "Training Needs Analysis",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تحليل الاحتياجات والتصميم التعليمي"
     },
@@ -8467,7 +8467,7 @@
       ],
       "practical_project_ar": "حقيبة نشاط وتقييم: مهمة أصيلة + سلم تقدير (rubric) بمعايير عادلة + خطة ممارسة متعمدة + سجل معايرة بين مصححين + دليل مصحح بقواعد الحالات الحدية + أعمال متدربين مصححة بتغذية راجعة، يدافع عنها المتعلم أمام لجنة أقران.",
       "title_term_en": "Assessment & Rubric Design",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تصميم التقييمات ومعايير التصحيح"
     },
@@ -8547,7 +8547,7 @@
       ],
       "practical_project_ar": "مواد مدرب: عرض + دليل مشارك + أداة عمل، بمعايير وضوح بصري وإتاحة + نسخة قبل/بعد لمادة قائمة بسجل قراراتها + صيغ طباعة وهاتف وPDF متاح + سجل اختبار مع قراء من الجمهور، تسلم بدفاع أمام مراجعين.",
       "title_term_en": "Instructional Materials Design",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة تصميم المواد التعليمية"
     },
@@ -8626,7 +8626,7 @@
       ],
       "practical_project_ar": "جلسة تجريبية مسجلة + جلسة هجينة مسجلة بسجل قرارات التيسير + وحدة رقمية مصغرة منشورة + خطة تيسير وإدارة مشاركة + قياس أثر ومقارنة تشغيلين + دفاع أمام لجنة.",
       "title_term_en": "Facilitation & Digital Delivery",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "legacy_title_ar": "دورة التيسير وتقديم التدريب رقميا"
     },
@@ -8700,7 +8700,7 @@
       ],
       "practical_project_ar": "ملف إنجليزية العمل: بريدان مهنيان + بريد لموقف حسّاس + تلخيص اجتماع مسجّل + تسجيل مكالمة عمل وبريد تأكيدها + اجتماع قصير يقوده المتعلّم وبريد محضره + تحديث شفهي دقيقتان بالإنجليزية عن مهمة حقيقية، مع الإجابة عن سؤالين من اللجنة.",
       "title_term_en": "Business English",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD",
       "legacy_title_ar": "دورة الإنجليزية للأعمال"
     },
@@ -8773,7 +8773,7 @@
       ],
       "practical_project_ar": "لوحة إعلان واحدة في ثلاث نسخ: الأصل، ونسخة بتسلسل مضبوط، ونسخة على شبكة معلنة، مع ورقة قرار تشرح ما تغيّر ولماذا.",
       "title_term_en": "Visual Design Foundations",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD"
     },
     {
@@ -8845,7 +8845,7 @@
       ],
       "practical_project_ar": "نصّ واحد من بيئة عمل المتعلّم مضبوط في ثلاثة وسائط: مطبوع وشاشة ولوحة بعيدة، بحالاته الصعبة معالجة، مع دفتر اختبار مقروئيّة يوثّق ما سقط وما نجا، ودفاع عن قراراته أمام لجنة.",
       "title_term_en": "Arabic Typography",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD"
     },
     {
@@ -8917,7 +8917,7 @@
       ],
       "practical_project_ar": "حزمة تسليم كاملة لشعار ومطبوع: ملفّ مصدر مرتّب، وأصول مصدّرة بصيغها، وملفّ قراءة يشرح ما في الحزمة.",
       "title_term_en": "Adobe Illustrator & Photoshop",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD"
     },
     {
@@ -8989,7 +8989,7 @@
       ],
       "practical_project_ar": "نظام هويّة كامل لجهة حقيقيّة أو مفترضة: شعار بصيغه، ونظام لونيّ ونصّيّ، ودليل استعمال، وثلاثة تطبيقات منفّذة.",
       "title_term_en": "Brand Identity Systems",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -9061,7 +9061,7 @@
       ],
       "practical_project_ar": "حملة واحدة لجهة حقيقيّة في صور متعدّدة: كرّاسة مطبوعة ومطويّة، وملفّ طباعة مضبوط، وثلاثة مقاسات للشبكات مع منشور شرائح وقصّة، مع بطاقة اتّساق تربط كلّ نسخة بالهويّة وحزمة تسليم تجتاز فحص المطبعة وفريق النشر.",
       "title_term_en": "Print & Social Design",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -9133,7 +9133,7 @@
       ],
       "practical_project_ar": "ملفّ اشتباك مع عميل حقيقيّ أو محاكى: موجز موقّع يسمّي صاحب القبول، وعرض مفهوم مبرّر، واتّفاق جولات وردود على ما خرج عن نطاقه، وسجلّ عرض بما قيل وما تقرّر، ومراجعة ما بعد الإنجاز يدافع عنها أمام لجنة.",
       "title_term_en": "Design Brief & Client Review",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -9208,7 +9208,7 @@
       ],
       "practical_project_ar": "حادثتان مفسّرتان بالمدارس الأربع — إحداهما من محيط المتعلّم — مع تنبّؤات قوبلت بما وقع، وورقة تقول أيّ تفسير يصمد وأيّها يتجاوز حدّه، يدافع عنها أمام زميل مخالف.",
       "title_term_en": "Schools of Psychology",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -9280,7 +9280,7 @@
       ],
       "practical_project_ar": "دفتر ذاكرة من أسبوعين: قياس ما ينسى ومتى، وتجربتان لإبطاء النسيان بنتيجتهما المقيسة، وتدخّل لنسيان متكرّر يطابق سببه، مع عرض شفهيّ يفصل ما تثبته البيانات ممّا توحي به.",
       "title_term_en": "How Memory Works",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -9355,7 +9355,7 @@
       ],
       "practical_project_ar": "خمسة قرارات حقيقيّة من سنة ماضية، مفحوصة بخمسة انحيازات، مع قائمة فحص قبليّة لقرار متكرّر في العمل، وقرار قادم يحصّن قبل اتّخاذه ويراجع بعده.",
       "title_term_en": "Cognitive Biases",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -9427,7 +9427,7 @@
       ],
       "practical_project_ar": "ثلاثة مقاييس شخصيّة — اثنان شائعان وثالث من محيط المتعلّم — مفحوصة بالصدق والثبات، مع حكم مكتوب على ما يصلح كلّ منها له وما لا يصلح، وتوصية لجهة تستعمل أحدها.",
       "title_term_en": "Personality Theories",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -9502,7 +9502,7 @@
       ],
       "practical_project_ar": "اجتماع أو مجموعة حقيقيّة مرصودة بأربع عدسات حضوريّا ورقميّا، مع قرار جماعيّ متعثّر محلّل، وتدخّلين مصمّمين لكسر أثر الجمع — أحدهما إجراء اجتماع — ونتيجتهما.",
       "title_term_en": "Social Psychology",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -9574,7 +9574,7 @@
       ],
       "practical_project_ar": "سجلّ انفعال من أسبوعين بإشاراته المبكّرة وتقديراته ونمط محفّزاته، مع تجربتي تنظيم مقيستي الأثر، ومحاكاة محادثة صعبة، وخطّة استمرار بأداتين ثبت أثرهما.",
       "title_term_en": "Emotions & Regulation",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -9646,7 +9646,7 @@
       ],
       "practical_project_ar": "ثلاث حالات مكتوبة مقروءة بمعياري الشدّة والمدّة وأربع حالات ملتبسة بما ينقص للحكم، مع محاكاة محادثة إحالة ومسار إحالة محلّيّ محقّق الجهات.",
       "title_term_en": "Understanding Mental Health",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -9718,7 +9718,7 @@
       ],
       "practical_project_ar": "ثلاث دراسات منشورة مفحوصة بأداة واحدة، إحداها خبر صحفيّ قوبل بالورقة الأصليّة، مع ادّعاء من بيئة المتعلّم مفحوص دون توجيه، وخلاصة من صفحة لصاحب قرار.",
       "title_term_en": "Reading Psychology Research",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD"
     },
     {
@@ -9790,7 +9790,7 @@
       ],
       "practical_project_ar": "بطاقة توقّع نمائيّ لثلاث مراحل: ما ينتظر فيها وما لا ينتظر، مطبّقة على موقف حقيقيّ من عمل الدارس، ومقابلة بملاحظة وصفيّة لطفل أو مراهق حقيقيّ، ومنها ثلاثة مطالب معاد صوغها على قدر المرحلة.",
       "title_term_en": "Human Development",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -9862,7 +9862,7 @@
       ],
       "practical_project_ar": "حصّة أو جلسة حقيقيّة أعيد تصميمها: حمل معرفيّ مخفّض، واسترجاع مباعد، وتمارين متداخلة، وقياس قبل وبعد ومؤجّل بحدوده، وصفحة إرشاديّة للزملاء تفصل ما ثبت ممّا شاع.",
       "title_term_en": "Science of Learning",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -9934,7 +9934,7 @@
       ],
       "practical_project_ar": "أربع حالات تعليميّة حقيقيّة مفسّرة بأربع نظريّات، ولكلّ منها تدخّل مشتقّ من نظريّتها، وأحدها متابع في القاعة أسبوعين، مع مهمّة نقل تفصل التدريب من الإتقان.",
       "title_term_en": "Learning Theories",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -10006,7 +10006,7 @@
       ],
       "practical_project_ar": "فكرة صعبة من تخصّص الدارس مشروحة ثلاث مرّات لثلاثة مستمعين، مع أسئلة فحص فهم ونتائجها، ونسخة مكتوبة أو مرئيّة تقوم بنفسها، وفكرة ثانية من عمله مشروحة في موقف حقيقيّ.",
       "title_term_en": "Explaining Hard Ideas",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD"
     },
     {
@@ -10078,7 +10078,7 @@
       ],
       "practical_project_ar": "بيئة واحدة مهيّأة فعلا في بيت أو صفّ بأنشطة من أدوات البيت، وقائمة فحص تفرز ما هو من المنهجيّة ممّا ألحق بها، مطبّقة على روضة أو برنامج حقيقيّ.",
       "title_term_en": "Montessori Principles",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -10150,7 +10150,7 @@
       ],
       "practical_project_ar": "سلوك واحد متكرّر مرصود أسبوعين: أثر العقاب عليه، ثمّ نتيجة طبيعيّة بديلة وأثرها المقيس، وحدّ متّفق عليه مع راشد آخر وثباتهما عليه، وخطّة الشهر التالي.",
       "title_term_en": "Positive Discipline",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -10222,7 +10222,7 @@
       ],
       "practical_project_ar": "فراغ حقيقيّ معاد تخطيطه: مخطّط وظائف ومسالك ومناطق بمقاسات محسوبة لا مقدّرة.",
       "title_term_en": "Interior Space Planning",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD"
     },
     {
@@ -10294,7 +10294,7 @@
       ],
       "practical_project_ar": "لوح خامات لمشروع واحد بمواصفة مكتوبة لكلّ خامة وحكم أدائها في موضعها، يشمل مواضعه القاسية وتفاصيل التقائها، واعتماد عيّنة واستلامها، والحكم على بديل مقترح، ويدافع عنه أمام العميل والمنفّذ.",
       "title_term_en": "Materials & Finishes",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD"
     },
     {
@@ -10366,7 +10366,7 @@
       ],
       "practical_project_ar": "مخطّط إضاءة لفراغ حقيقيّ بثلاث طبقات ودوائر تحكّم ومشاهد، وجدول وحدات بمواصفاتها، وقياس فعليّ للشدّة عند كلّ مهمّة قبل التنفيذ وبعده، يدافع عنه أمام العميل والمنفّذ.",
       "title_term_en": "Interior Lighting",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD"
     },
     {
@@ -10438,7 +10438,7 @@
       ],
       "practical_project_ar": "فراغ واحد ممثّل في نموذج ثلاثيّ الأبعاد بمقاساته، ولقطات نهار وليل أمينة لما سينفّذ، ولوحتا عرض وأجواء عرضتا على عميل وعدّلتا بملاحظاته وطوبقتا بالمخطّطات، وسجّل قراره موقّعا.",
       "title_term_en": "3D Visualization",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD"
     },
     {
@@ -10510,7 +10510,7 @@
       ],
       "practical_project_ar": "جدول أثاث وتجهيزات لمشروع واحد بالكمّيّة والمواصفة والمورّد، مع فحص تناسب لكلّ قطعة مع الفراغ ومستعمليه ومسار إدخالها، ورسمة تفصيل لقطعة مفصّلة، يسلّم جاهزا للتوريد بعد الدفاع عنه أمام العميل والمورّد.",
       "title_term_en": "Furniture & FF&E",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD"
     },
     {
@@ -10582,7 +10582,7 @@
       ],
       "practical_project_ar": "ميزانيّة مشروع واحد ببنودها واحتياطها وتقديرها من حصر الكمّيّات، وجدول توريد وتركيب بشروط دفع مربوطة بالإنجاز، وسجلّ تغييرات وقرارات تعثّر بأثر كلّ منها، وحساب ختاميّ يدافع عنه في جلسة مساءلة.",
       "title_term_en": "Interior Budget & Procurement",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD"
     },
     {
@@ -10654,7 +10654,7 @@
       ],
       "practical_project_ar": "حزمة مخطّطات مرقّمة مترابطة لمشروع صغير، سلّمت لمنفّذ وسجّل كلّ سؤال سأله.",
       "title_term_en": "CAD & Technical Drawing",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -10726,7 +10726,7 @@
       ],
       "practical_project_ar": "نموذج مبنى صغير ببياناته، تشتقّ منه حزمة مخطّطات وجدول كمّيّات وتقرير تعارضات.",
       "title_term_en": "BIM Modelling",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD"
     },
     {
@@ -10798,7 +10798,7 @@
       ],
       "practical_project_ar": "حزمة مخطّطات حقيقيّة من ثلاثة تخصّصات مفحوصة كاملة بخريطة قراءة ومصفوفة تنسيق وقطاع تنسيقيّ لأكثر مناطقها ازدحاما، مع سجلّ تعارضات واستفسارات رسميّة مكتوبة، يدافع عنها أمام مراجع.",
       "title_term_en": "Drawing Reading & Coordination",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD"
     },
     {
@@ -10870,7 +10870,7 @@
       ],
       "practical_project_ar": "جدول كمّيّات لمشروع صغير كامل بمعيار قياس معلن، مسعّر بتحليل بنود وعروض موردين مسوّاة، ومراجع من زميل ومدافع عنه أمام مراجع يعيد حصر بنود يختارها.",
       "title_term_en": "Quantity Surveying",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD"
     },
     {
@@ -10942,7 +10942,7 @@
       ],
       "practical_project_ar": "أسبوعان من الإشراف الموثّق على بند حقيقيّ أو محاكى: فحوص قبل التغطية وتقارير عدم مطابقة متابعة حتّى الإغلاق، وتصريح عمل خطر وأحاديث سلامة صباحيّة، وتحقيق في حادث وشيك، وسجلّ انحرافات يدافع عنه أمام مهندس أقدم.",
       "title_term_en": "Site Supervision & HSE",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD"
     },
     {
@@ -11014,7 +11014,7 @@
       ],
       "practical_project_ar": "مستخلص واحد كامل بأدلّته ومرفقاته وردّ موثّق على ما خصم منه، وأمر تغييريّ موثّق بأثره على الوقت والكلفة قبل تنفيذه، ومطالبة تمديد مدّة لحدث واحد، تقدّم في جلسة تفاوض ويسجّل ما قبل منها وما رفض.",
       "title_term_en": "Payment Applications & Claims",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD"
     },
     {
@@ -11086,7 +11086,7 @@
       ],
       "practical_project_ar": "ملفّ حوار من ستّ قطع: حوار معاد الصياغة، وسجلّ ثلاثة مواقف انفعاليّة، ومحاولات فتح حديث مع ابن قليل الكلام، وجملة إصلاح قيلت فعلا، وخلاف بين أخوين أدير بالتيسير، ومحاضر ثلاث جلسات أسريّة جرت فعلا.",
       "title_term_en": "Family Dialogue",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -11155,7 +11155,7 @@
       ],
       "practical_project_ar": "ميثاق بيت بثلاث قواعد متّفق عليها مع الأبناء ومن يشارك في الرعاية، وسجلّ اتّساق لأسبوعين، وقاعدة مراجعة بعد أن لم تعمل، ورصد سلوك الوالد نفسه أربعة عشر يوما، وقراءة للميثاق بعد شهر.",
       "title_term_en": "Positive Discipline",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -11224,7 +11224,7 @@
       ],
       "practical_project_ar": "ملفّ سند لمهمّة متكرّرة: ما ينجز وحده وما يسند، وخطّة رفع بثلاث مراحل مطبّقة على أسبوعين، وسلّم أسئلة يحلّ محلّ الشرح، ورسالة للمعلّم بمؤشّر مشترك، وخطّة نقل الطريقة إلى مهمّة ثانية بعد قراءة الشهر.",
       "title_term_en": "Learning at Home",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD"
     },
     {
@@ -11299,7 +11299,7 @@
       ],
       "practical_project_ar": "خطّة تسليم متدرّجة لثلاث مسؤوليّات، باتّفاق رقميّ ونظام مصروف مشغّلين أربعة أسابيع، وسلّم تراجع عند الخرق، وقرار يتّخذه اليافع وحده، وخريطة تسليم للعام القادم تراجع مع اليافع.",
       "title_term_en": "Gradual Responsibility",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD"
     },
     {
@@ -11374,7 +11374,7 @@
       ],
       "practical_project_ar": "ملفّ اتّصال مؤسّسيّ: خريطة جمهور + دليل رسائل + بيان صحفيّ + حزمة قوالب رقميّة وردود علنيّة + قائمة إعلاميّة ومقترحات قصص + خطّة أزمة مجرّبة في مقابلة مسجّلة وفي محاكاة أيّامها التالية + عرض الملفّ أمام لجنة تحاكي الإدارة مع مؤشّرات متابعة.",
       "title_term_en": "Public Relations & Corporate Communication",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -11458,7 +11458,7 @@
       ],
       "practical_project_ar": "عرض تنفيذيّ مسجّل من عشر دقائق أمام لجنة تحاكي مجلسا: افتتاحيّة قرار + ردّ على ثلاثة اعتراضات + تكييف لتغيّر مفاجئ في شرط الغرفة + خلاصة في ثلاث جمل، ومعه إحاطة خبر سيّئ مسجّلة + عرض في موقف حقيقيّ مقارن بالتشخيص الأوّل مع خطّة تدرّب شخصيّة.",
       "title_term_en": "Executive Presence",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -11540,7 +11540,7 @@
       ],
       "practical_project_ar": "ملفّ عضو الفريق: اتّفاق أدوار مع فريق حقيقيّ ومراجعته معه بعد أسبوعين + حوار إصغاء مسجّل + ملاحظة مستقبلة وتعديلها + ملاحظة مقدّمة لزميل وأثرها + قواعد تواصل للفريق + خطّة حسم خلاف منفّذة وخطّة تعامل مع حالة صعبة.",
       "title_term_en": "Effective Teamwork",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -11623,7 +11623,7 @@
       ],
       "practical_project_ar": "خطّة عمل في عشر صفحات: ملخّص تنفيذيّ + نموذج عمل + سوق ومنافسة بمصادرهما + تشغيل وفريق بمعالم ربعيّة + افتراضات معلنة + توقّعات سنة نقديّة + سجلّ مخاطر مربوط بها + طلب محدّد، تعرض على لجنة تحاكي مموّلا بعينه ويسلّم بعدها سجلّ التعديلات.",
       "title_term_en": "Small Business Plan",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -11705,7 +11705,7 @@
       ],
       "practical_project_ar": "ملفّ استدامة مشروع: تقييم جاهزيّة لمتطلّبات ESG بأدلّته + استبيان مورّدين معبّأ بسنده + خطّ أساس شهريّ للكهرباء والماء والهدر + خريطة تدفّق الموادّ + خطّة فرصة دائريّة محسوبة لثلاثة أشهر بشريك محدّد، يعرض على لجنة تحاكي عميلا كبيرا أو مموّلا.",
       "title_term_en": "Sustainability & Circular Economy for SMEs",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -11790,7 +11790,7 @@
       ],
       "practical_project_ar": "ملفّ تمويل: حساب الاحتياج بسيناريوهاته + خريطة مصادر مختارة + عرض تمويليّ من عشر شرائح + جدول ملكيّة بعد الجولة + غرفة بيانات للعناية الواجبة + مصفوفة بنود الشروط بحدود القبول + رسالة متابعة وتحديث للمموّل، يعرض على لجنة تحاكي مستثمرين ومقرضين.",
       "title_term_en": "Startup Funding",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -11873,7 +11873,7 @@
       ],
       "practical_project_ar": "ملفّ بناء فريق: ميثاق متّفق عليه + تشخيص ثقة في بداية الخطّة ونهايتها + سجلّ ملاحظات لأسبوعين + اجتماع معاد التصميم بسجلّ قراراته + سجلّ تدخّلات في مواقف ضاغطة + خطّة استقبال عضو جديد + خطّة ثلاثين يوما بنتائجها، يدافع عنه أمام أقران.",
       "title_term_en": "Building Effective Teams",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -11957,7 +11957,7 @@
       ],
       "practical_project_ar": "خطّة سنويّة لجهة المتعلّم: تحليل واقع + ثلاث أولويّات وما ترك + أهداف ونتائج رئيسيّة + جدول موارد وطاقة + سجلّ افتراضات ومخاطر + توزيع ربعيّ بمالكين + إيقاع مراجعة مجرّب في محاكاة ربعيّة + صفحة لكلّ فريق، يدافع عنها أمام لجنة تمثّل الإدارة العليا.",
       "title_term_en": "Strategic & Operational Planning",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12040,7 +12040,7 @@
       ],
       "practical_project_ar": "ملفّ تشغيل منهجيّة: قرار اختيار مبرّر + قائمة أعمال مرتّبة + لوحة Kanban أو سبرنت لأسبوعين بسجلّه + محاضر المراجعة والاستعادة + نموذج هجين لمشروع مقيّد بعقد + تنبّؤ بموعد التسليم + سجلّ أعطال وتعديلات + دفاع أمام لجنة بعد دورة ثانية.",
       "title_term_en": "Project Management Methodologies",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12121,7 +12121,7 @@
       ],
       "practical_project_ar": "مساحة عمل لمشروع حقيقيّ: لوحة مهامّ مكتملة الجرد + قنوات نقاش مربوطة + جدول صلاحيّات وملفّات + قواعد استعمال في صفحة + قراءة التزام بعد أسبوعين بالتعديلات وسجلّ الحالات الصعبة + دليل انضمام مختبر بعضو جديد وعرض في عشر دقائق.",
       "title_term_en": "Project Management Tools",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12208,7 +12208,7 @@
       ],
       "practical_project_ar": "ملفّ مشروع ممول: قراءة دعوة + إطار منطقيّ بمؤشّراته + مقترح كامل بميزانيّة + خطّة متابعة وتقييم + تقرير دوريّ محاكى، يعرض على لجنة تحاكي مانحا.",
       "title_term_en": "Grant-Funded Project Management",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12296,7 +12296,7 @@
       ],
       "practical_project_ar": "ملفّ دليل الثقة: سجلّ حوار داخليّ لأسبوعين + إعادة تقدير لموقفين + بطاقات أسئلة لثلاث لحظات ضغط بسجلّ استعمالها + ملاحظة ناقدة محوّلة إلى خطوة منفّذة + تجربتان متدرّجتان تختبران اعتقادا مقيّدا بتوقّعهما ونتيجتهما وقراءتهما + عرض أمام مجموعة صغيرة وخطّة ممارسة لشهر تال.",
       "title_term_en": "Growth Mindset & Self-Talk",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12387,7 +12387,7 @@
       ],
       "practical_project_ar": "ملفّ الحضور المهنيّ: تقديم ذاتيّ مسجّل بثلاث صيغ + محاكاة اجتماع مسجّلة + بريدان مهنيّان + محاكاة مناسبة مهنيّة + ردود مسجّلة على ستّة مواقف محرجة + استقبال وفد بالألقاب وترتيب الجلوس + دليل شخصيّ لقنوات العمل الرقميّة، يختم بمحاكاة يوم عمل متّصل ونقاش أمام لجنة.",
       "title_term_en": "Business Etiquette & Professional Protocol",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12472,7 +12472,7 @@
       ],
       "practical_project_ar": "ملفّ الأسبوع المخطّط: سجلّ وقت لأسبوع فعليّ + منحنى طاقة + أسبوع مخطّط بكتل تركيز + مقارنة الإنجاز بين الأسبوعين + قواعد للأسبوع المضطرب وصيغ اتّفاق على الوقت + مراجعتان أسبوعيّتان + تقديم قصير (10 دقائق) وخطّة استمرار لشهر.",
       "title_term_en": "Time, Focus & Energy Management",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12555,7 +12555,7 @@
       ],
       "practical_project_ar": "ملفّ محتوى: تحليل جمهور + أربع ركائز + تقويم شهر بأغراضه ومقاييسه + منشورات منشورة + قراءة أداء أسبوعين بقراراتها + دليل نبرة + بنك ردود بقواعد التصعيد + سلسلة حملة أو مناسبة + مراجعة أداء الشهر وخطّة الشهر التالي، يدافع عنه شفهيّا أمام لجنة.",
       "title_term_en": "Strategic Social Media Content Writing",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12643,7 +12643,7 @@
       ],
       "practical_project_ar": "ملفّ المال الشخصيّ: تحليل مصروفات شهر فعليّ + ميزانيّة شهريّة مراجعة + تقويم ماليّ سنويّ باقتطاع شهريّ للمواسم + خطّة سداد دين + مقارنة طرق شراء كبير بقرار مكتوب + خطّة صندوق طوارئ + ميزانيّة طوارئ لصدمة دخل + تقييم عرض استثماريّ + خطّة سنة ماليّة متّفق عليها مع الأسرة ومراجعة أوّل شهر منها.",
       "title_term_en": "Personal & Family Money Management",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "recommendable_directly": false,
       "diagnostic_domains": [
@@ -12726,7 +12726,7 @@
       ],
       "practical_project_ar": "تطبيق ويب منشور برابط عامّ: واجهة متجاوبة + تفاعل بـJavaScript + خادم بقاعدة بيانات + مستودع Git بسجلّه + ملفّ تشغيل، مع عرض يشرح قرارا تقنيّا.",
       "title_term_en": "Web Application Development",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12812,7 +12812,7 @@
       ],
       "practical_project_ar": "ملفّ الحصّة المعادة: قياس حصّة أصليّة + خطّة حصّة بثلاث استراتيجيّات + ملاحظة زميل + مقارنة نواتج الطلبة بين الحصّتين + تسجيل نقاش ميسّر + سجلّ تقويم أثناء الحصّة + خطّة وحدة بملاحظة زميل ثانية.",
       "title_term_en": "Active Learning Strategies",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12894,7 +12894,7 @@
       ],
       "practical_project_ar": "ملفّ أثر لتدريب حقيقيّ: سؤال تقييم + خطّة المستويات الأربعة بأدواتها + قياس انتقال بعد شهر + مذكّرة عزل أثر + حساب كلفة وعائد بسيناريوهات محافظة + بيان حدود البيانات ومؤشّراتها البديلة + تقرير أثر في صفحتين، يدافع عنه أمام صاحب قرار في عشر دقائق بتوصية صريحة.",
       "title_term_en": "Training Impact Evaluation",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -12982,7 +12982,7 @@
       ],
       "practical_project_ar": "حزمة لعبة تدريبيّة: هدف تعلّم وآليّته + نموذج قابل للّعب + سجلّ تجريب وتعديل + سجلّ ثغرات وتوازن + تسجيل نقاش ما بعد اللعب + نسختان مكيّفتان لقيدين + دليل ميسّر مجرّب مع مدرّب آخر، يدافع عنها أمام لجنة.",
       "title_term_en": "Training Game Design",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13064,7 +13064,7 @@
       ],
       "practical_project_ar": "حزمة مدرّب بالذكاء الاصطناعيّ: مادّة مولّدة ومراجعة بسجلّ تصحيحاتها + وحدة تدريبيّة كاملة بسير عمل موثّق + سجلّ أخطاء الأداة وقواعد ما لا يسند إليها + نشاط صفّيّ + تقييم معاد التصميم مختبر بأداة AI ومطبّق على متعلّمين + سياسة استعمال للمتعلّمين وإجراء معالجة الاشتباه، يدافع عنها أمام زملاء.",
       "title_term_en": "AI for Trainers & Educators",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13143,7 +13143,7 @@
       ],
       "practical_project_ar": "ملفّ المستوى الأوّل: تسجيل من دقيقتين عن نفسك ويومك وعطلة ماضية + رسالتان قصيرتان + فهم حوارين مسموعين.",
       "title_term_en": "General English — Level 1 (A2)",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13225,7 +13225,7 @@
       ],
       "practical_project_ar": "ملفّ المستوى الثاني: عرض شفهيّ من ثلاث دقائق عن تجربة ورأي فيها + بريد شبه رسميّ + فقرة رأي في 150 كلمة.",
       "title_term_en": "General English — Level 2 (B1)",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13308,7 +13308,7 @@
       ],
       "practical_project_ar": "ملفّ الاستعداد: اختبار تجريبيّ كامل مؤقّت مع تصحيح الكتابة والمحادثة وخطّة تحسين لأربعة أسابيع.",
       "title_term_en": "IELTS & TOEFL Preparation — Level 1",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13391,7 +13391,7 @@
       ],
       "practical_project_ar": "ملفّ الدرجة المستهدفة: اختبار تجريبيّ كامل مؤقّت مع مقال ووصف منقّحين بالمعايير، ومهمّة متكاملة، وخطّة الأسابيع الأخيرة.",
       "title_term_en": "IELTS & TOEFL Preparation — Level 2",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13480,7 +13480,7 @@
       ],
       "practical_project_ar": "ملفّ أداء فريق: بطاقات توقّعات + سجلّ ملاحظة لأسبوعين + محادثة توجيه مسجّلة + خطّة تطوير فرديّة + خطّة تحسين عادلة + خطّة احتفاظ، يعرض على لجنة من المديرين.",
       "title_term_en": "Performance Management & Development for Managers",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13567,7 +13567,7 @@
       ],
       "practical_project_ar": "ملفّ تخطيط متكامل لشركة محاكاة: تنبّؤ + S&OP + جدول رئيسيّ بـATP + MRP وتقرير حمل + سياسة مخزون + خطّة ضبط لورشة، ومعه اختبار تجريبيّ موقوت بتحليل أخطائه.",
       "title_term_en": "CPIM Exam Preparation",
-      "list_price": 300,
+      "list_price": 255,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13649,7 +13649,7 @@
       ],
       "practical_project_ar": "مشروع شبكة محميّة لمنشأة صغيرة في Packet Tracer: عنونة + شبكات افتراضيّة وتوجيه + قوائم تحكّم وتقوية + سجلّ أعطال، يختبر حيّا أثناء العرض.",
       "title_term_en": "Network Security & Hands-on Analysis",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13733,7 +13733,7 @@
       ],
       "practical_project_ar": "بيئة سحابيّة صغيرة على AWS: حساب محميّ + خادم وتخزين وقاعدة بيانات في شبكة افتراضيّة + مصفوفة مسؤوليّة + تقدير كلفة وتنبيه ميزانيّة، تعرض حيّة ثمّ تهدم.",
       "title_term_en": "Cloud Computing Fundamentals (AWS Labs)",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13825,7 +13825,7 @@
       ],
       "practical_project_ar": "ملفّ بائع التجزئة: محاكاة بيع كاملة مسجّلة + دليل منتجات بالفوائد + دليل ردود على الاعتراضات + معالجة شكوى + سجلّ هدف يوميّ لأسبوع.",
       "title_term_en": "Retail Sales Essentials",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -13913,7 +13913,7 @@
       ],
       "practical_project_ar": "خطّة اتصال استراتيجيّة وخطّة عمل تنفيذيّة لجهة حقيقيّة: أهداف + جماهير + رسائل + قنوات + أنشطة بمسؤولين وجدول وميزانيّة + مؤشّرات + مخاطر، تعرض على لجنة تحاكي الإدارة العليا.",
       "title_term_en": "Strategic Communication Plan & Action Plan",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14000,7 +14000,7 @@
       ],
       "practical_project_ar": "ملفّ الهويّتين: بيان هويّة مؤسّسيّة بقيمها ونبرتها وتقرير اتساق + بيان هويّة فرديّة وملفّ رقميّ يطابقه + خطّة تسعين يوما، يعرض على لجنة.",
       "title_term_en": "Corporate & Personal Identity Building",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14093,7 +14093,7 @@
       ],
       "practical_project_ar": "ملف لوجستيات لشركة حقيقية أو محاكاة: خريطة شبكة توزيع + نموذج كلفة تسليم + مصفوفة ناقلين ومستوى خدمة + خطة مسار وتحميل + خطة توزيع + لوحة مؤشرات + خطة تحسين واحدة + عرض شفهي 15 دقيقة أمام لجنة.",
       "title_term_en": "Transportation & Distribution Management",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14182,7 +14182,7 @@
       ],
       "practical_project_ar": "تجربة عادة لأربعة أسابيع: بطاقة السلوك + سجل المحفزات + خطة «إذا… فإني…» + تعديلات البيئة + المتتبع + خطة العودة + تقرير نتائج بقرار + عرض 10 دقائق.",
       "title_term_en": "Habit Building",
-      "list_price": 120,
+      "list_price": 100,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14285,7 +14285,7 @@
       ],
       "practical_project_ar": "ملف حالة شاملة: مواءمة استراتيجية + تقييم شبكة + خطة طلب + مصفوفة توريد + سجل مخاطر + خطة تحسين، مع اختبار تجريبي وتحليل أخطائه.",
       "title_term_en": "CSCP Exam Preparation",
-      "list_price": 225,
+      "list_price": 190,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14373,7 +14373,7 @@
       ],
       "practical_project_ar": "ملف دورة محاسبية لشهر: يومية + أستاذ + ميزان مراجعة + تسويات + قائمتا الدخل والمركز المالي + إقفال + قرار مالي مبرر من القوائم، مع عرض 10 دقائق.",
       "title_term_en": "Financial Accounting Principles",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14463,7 +14463,7 @@
       ],
       "practical_project_ar": "ملف امتثال سنوي لمنشأة صغيرة: حساب ضريبة الدخل + إقرار + حساب ضريبة المبيعات لفترة + فواتير + تقويم مواعيد + مقارنة خيارين بأثرهما الضريبي، مع عرض 10 دقائق.",
       "title_term_en": "Jordanian Taxation in Practice",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14556,7 +14556,7 @@
       ],
       "practical_project_ar": "جلسة تصوير لمنتج حقيقي: موجز + مخطط إضاءة + 12 صورة مختارة معدلة بمقاسات المتجر والشبكات + قبل/بعد + عرض 10 دقائق.",
       "title_term_en": "Product & Food Photography",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14647,7 +14647,7 @@
       ],
       "practical_project_ar": "ثلاثة فيديوهات قصيرة لجهة حقيقية: بطاقات الفكرة + النص وقائمة اللقطات + الفيديوهات المنشورة + سجل الحقوق + تقرير أرقام بقرار.",
       "title_term_en": "Mobile Video Production",
-      "list_price": 175,
+      "list_price": 150,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14738,7 +14738,7 @@
       ],
       "practical_project_ar": "فيديوهان (تعليمي وإعلاني) لجهة حقيقية: النص وقائمة اللقطات + سجل الأوامر + سجل الأدوات والحقوق + قائمة الفحص + مقارنة كلفة + عرض 10 دقائق.",
       "title_term_en": "AI Video Production",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14831,7 +14831,7 @@
       ],
       "practical_project_ar": "ملف حملة صغيرة: بطاقة جمهور + رسالة ودليلها + موجز إبداعي + تقييم مسودات + خطة اختبار + تقرير نتائج بقرار، مع عرض 10 دقائق.",
       "title_term_en": "Advertising & Influence",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -14924,7 +14924,7 @@
       ],
       "practical_project_ar": "ملف تدخل سلوكي: بطاقة سلوك + خريطة رحلة + تشخيص COM-B + مصفوفة بدائل + نموذج أولي + مراجعة أخلاقية + خطة اختبار + تقرير نتيجة، مع عرض 10 دقائق.",
       "title_term_en": "Behavioral Design in the Customer Journey",
-      "list_price": 200,
+      "list_price": 170,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [
@@ -15010,7 +15010,7 @@
       ],
       "practical_project_ar": "ملف المؤسس: بطاقة المؤسس + جرد الموارد + مصفوفة الفرص + اختبار أخطر افتراض + خطة ثلاثين يوما + مراجعة الأسبوع الأول بقرار، مع عرض 10 دقائق.",
       "title_term_en": "Entrepreneurial Mindset",
-      "list_price": 150,
+      "list_price": 125,
       "list_currency": "USD",
       "recommendable_directly": true,
       "diagnostic_domains": [

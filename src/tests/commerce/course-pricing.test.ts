@@ -55,7 +55,7 @@ describe('سعر الدورة من صعوبتها وندرتها', () => {
     expect([...new Set(CORE.courses.map((c) => courseDomainCode(c.course_id)))].filter((d) => !domains.has(d)), 'مجالات بلا درجة').toEqual([])
   })
 
-  it('والمدى المعلن محفوظ — بين ١٢٠ و٢٢٥، وما خرج عنه مسمّى بسببه', () => {
+  it('والمدى المعلن محفوظ — بين ١٠٠ و١٩٠، وما خرج عنه مسمّى بسببه', () => {
     for (const c of CORE.courses) {
       expect(isPriceAllowed(c.course_id, c.list_price), `${c.course_id} ← ${c.list_price}`).toBe(true)
     }
@@ -69,8 +69,8 @@ describe('سعر الدورة من صعوبتها وندرتها', () => {
 
   it('والسعر يصعد مع الدرجة ولا ينزل — الأصعب أو الأندر لا يكون أرخص', () => {
     for (let i = 1; i < PRICE_BY_SCORE.length; i++) expect(PRICE_BY_SCORE[i]).toBeGreaterThan(PRICE_BY_SCORE[i - 1])
-    expect(coursePrice('C-COMX-199', 'تأسيسي')).toBe(120)
-    expect(coursePrice('C-CYB-199', 'ممارس')).toBe(225)
+    expect(coursePrice('C-COMX-199', 'تأسيسي')).toBe(100)
+    expect(coursePrice('C-CYB-199', 'ممارس')).toBe(190)
   })
 
   it('ومستوى أو مجال مجهول: لا سعر محسوب — ولا صفر يقرأ «مجّانا»', () => {
