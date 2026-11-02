@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { conversionAr, funnelAr, type Count, type GrantFunnel, type RegistrantStats } from "@/application/commerce/grant-registrants";
-import { fmtDate } from "@/application/text/format-ar";
+import { fmtDate, fmtMoney } from "@/application/text/format-ar";
 import { Card, Inset } from "@/components/ui/Surface";
 
 /** «28/10» من «2026-10-28» — بلا علامات اتّجاه، فالمحورُ يساريّ */
@@ -106,13 +106,14 @@ export default function GrantRegistrantStats({ s, filtered, funnel }: { s: Regis
       </button>
       {open && (
         <div className="mt-3 grid gap-5">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <Tile label="عبأ النموذج" value={s.total} />
             <Tile label="أخذ كودا" value={s.withCode} />
             <Tile label="اشترى" value={s.bought} note={`${s.boughtPct}% من الكل`} />
             <Tile label="ينتظر الدفع" value={s.pending} />
             <Tile label="لم يشتر بعد" value={s.none} />
             <Tile label="له مستشار" value={s.withAdvisor} />
+            <Tile label="المبلغ" value={fmtMoney(s.revenue, "USD")} note={`${s.orders} طلب مدفوع`} />
             <Tile label="منحة وجيز" value={s.member} note={`ومؤثرين ${s.influencer}${s.open > 0 ? ` · والعامة ${s.open}` : ""}`} />
             <Tile
               label="من فتح الرابط إلى التعبئة"
@@ -124,7 +125,11 @@ export default function GrantRegistrantStats({ s, filtered, funnel }: { s: Regis
           <Funnel f={funnel} />
 
           <div className="grid gap-5 md:grid-cols-2">
-            <Bars title="من أين جاؤوا — ومن اشترى" items={s.bySource} />
+            <div className="grid gap-5">
+              <Bars title="من أين جاؤوا — ومن اشترى" items={s.bySource} />
+              {/* وقناةُ الرابط ودفعتُه — ما كانت تقوله «نتائج الحملة»: أيُّ رسالةٍ وأيُّ دفعةٍ جاءت بمن اشترى وبكم */}
+              <Bars title="القناة والدفعة" items={s.byLink} />
+            </div>
             <div>
               <p className="font-bold">الرسائل التي وصلتهم</p>
               <p className="mt-2 text-read text-muted-foreground">

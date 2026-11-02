@@ -139,6 +139,7 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
       id: r.id, fullName: r.fullName, phone: r.phone, email: r.email, workField: r.workField, careerLevel: r.careerLevel,
       interests: r.interests, channel: r.channel, wave: r.wave, createdAt: r.createdAt, code: r.code, codeActive: r.codeActive,
       state: r.state, advisor: r.advisor, picks: r.picks, influencer: r.influencer, influencerCode: r.influencerCode,
+      orders: r.orders, revenue: r.revenue,
       /* وأيُّ منحةٍ عبّأ — والثالثةُ «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
       grant: grantKindOf(r.campaign),
       pageOpenedAt: r.pageOpenedAt ?? (t.page?.at ? new Date(t.page.at) : null),
@@ -239,6 +240,7 @@ export async function registrantsXlsx(prisma: PrismaClient, now = new Date()): P
   stats.addRow({ k: 'ينتظر الدفع', n: s.pending })
   stats.addRow({ k: 'لم يشتر بعد', n: s.none })
   stats.addRow({ k: 'له مستشار', n: s.withAdvisor })
+  stats.addRow({ k: 'المبلغ المدفوع بأكوادهم (دولار)', n: s.revenue, b: `${s.orders} طلب مدفوع` })
   stats.addRow({ k: 'منحة وجيز', n: s.member })
   stats.addRow({ k: 'منحة مؤثرين وجيز', n: s.influencer })
   stats.addRow({ k: 'منحة وجيز العامة', n: s.open })
@@ -255,6 +257,7 @@ export async function registrantsXlsx(prisma: PrismaClient, now = new Date()): P
     for (const c of funnel.bySource) stats.addRow({ k: c.labelAr, n: c.visitors, b: funnelAr(c) })
   }
   block('المصدر', s.bySource)
+  block('القناة والدفعة', s.byLink)
   block('مجال العمل', s.byField)
   block('المستوى', s.byLevel)
   block('يريد تطوير', s.byInterest)

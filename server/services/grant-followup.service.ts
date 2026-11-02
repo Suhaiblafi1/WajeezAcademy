@@ -87,6 +87,12 @@ export async function courseTitles(prisma: PrismaClient, ids: string[]): Promise
   return new Map(rows.map((c) => [c.id, c.versions[0]?.titleAr ?? c.id]))
 }
 
+/** ما دُفع بالكود: عددُ طلباته المدفوعة ومبلغُها بالدولار، بقرشين */
+function paidByCode(orders: { status: string; total: unknown }[]): { orders: number; revenue: number } {
+  const paid = orders.filter((o) => BOUGHT.includes(o.status))
+  return { orders: paid.length, revenue: Math.round(paid.reduce((s, o) => s + Number(o.total), 0) * 100) / 100 }
+}
+
 export async function grantRegistrants(prisma: PrismaClient) {
   const leads = await prisma.lead.findMany({
     where: { campaign: { in: [...GRANT_SLUGS] }, erasedAt: null },
@@ -95,7 +101,7 @@ export async function grantRegistrants(prisma: PrismaClient) {
       id: true, fullName: true, phone: true, email: true, workField: true, careerLevel: true, interests: true,
       channel: true, wave: true, createdAt: true, grantPicks: true, campaign: true, influencer: { select: { code: true } },
       firstTouch: true, pageTouch: true, pageOpenedAt: true,
-      grantCode: { select: { coupon: { select: { code: true, active: true, orders: { select: { status: true } } } } } },
+      grantCode: { select: { coupon: { select: { code: true, active: true, orders: { select: { status: true, total: true } } } } } },
       cases: {
         where: { status: { notIn: OPEN_CASE } },
         select: {
@@ -125,6 +131,8 @@ export async function grantRegistrants(prisma: PrismaClient) {
       campaign: l.campaign, codeActive: l.grantCode?.coupon.active ?? null,
       firstTouch: l.firstTouch, pageTouch: l.pageTouch, pageOpenedAt: l.pageOpenedAt,
       nextCall: l.cases[0]?.followUps[0] ?? null,
+      /* وما دُفع بكوده وكم طلبا — ولو اشترى به من أهداه إليه: يُنسب لقناة صاحب الكود (كما كانت «نتائج الحملة») */
+      ...paidByCode(orders),
     }
   })
 }

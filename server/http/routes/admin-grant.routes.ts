@@ -9,7 +9,6 @@ import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { GrantService } from '../../services/grant.service'
 import { GrantCoursesService } from '../../services/grant-courses.service'
-import { grantResults } from '../../services/grant-landing.service'
 import { eraseRegistrant, messageRegistrants, registrantsFull, registrantsXlsx } from '../../services/grant-registrants.service'
 import { GRANT_MESSAGE_BODY_MAX, GRANT_MESSAGE_MAX_TO, GRANT_MESSAGE_SUBJECT_MAX } from '../../../src/application/commerce/grant-registrants'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
@@ -48,11 +47,6 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     const { percentOff } = z.object({ percentOff: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query)
     return grants.margins(percentOff)
   })
-
-  app.get('/api/admin/member-grant/results', {
-    preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'نتائج الحملة: من عبأ ومن أخذ كودا ومن اشترى، بالقناة والدفعة ومجال العمل' },
-  }, async () => grantResults(prisma))
 
   /* ═══ من عبّأ النموذج — مصدرُه ورسائلُه ومواعيدُه، وExcel، والحذف، ورسالةٌ يكتبها صاحبُ المنصّة (`grant-registrants.service.ts`) ═══ */
   app.get('/api/admin/member-grant/registrants', {
@@ -114,11 +108,6 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     const { percentOff } = z.object({ percentOff: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query)
     return open.margins(percentOff)
   })
-
-  app.get('/api/admin/open-grant/results', {
-    preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'نتائج المنحة العامة: من عبأ ومن أخذ كودا ومن اشترى، بالقناة والدفعة ومجال العمل' },
-  }, async () => grantResults(prisma, OPEN_GRANT_SLUG))
 
   /* ═══ دوراتُ المنحة — ما يختار منه صاحبُ المنحة (`grant-courses.service.ts`) ═══ */
   app.get('/api/admin/member-grant/open-courses', {

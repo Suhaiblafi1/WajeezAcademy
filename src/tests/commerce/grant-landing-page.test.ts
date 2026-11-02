@@ -594,7 +594,7 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'عاد شرح الكود الطويل').not.toContain('يستعمل مرة واحدة')
     expect(PAGE).toContain('أرسلناه إلى بريدك أيضا.')
     expect(PAGE, 'عادت «ادفع الآن»').not.toContain('ادفع الآن')
-    expect(code('src/pages/admin/GrantResults.tsx'), 'نتائج الحملة تسمي قناتها').toMatch(/share: "من صديق"/)
+    expect(code('src/application/commerce/grant-registrants.ts'), 'نتائج الحملة تسمي قناتها').toMatch(/channel === 'share' \? 'هدية من صديق'/)
   })
 
   it('⚠️ لوح الدفع من صفحة المنحة: «تفصيل السعر» مطوي — والمبلغ ظاهر — ومن لم يكتب كوده يقال له ما يصير إليه', () => {

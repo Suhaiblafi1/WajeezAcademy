@@ -19,6 +19,7 @@
 
 import { hasSignal, sourceLabelAr, type FirstTouch } from '../marketing/signup-source'
 import { zonedClock, zonedDay } from '../trainer/cohort-period'
+import { fmtMoney } from '../text/format-ar'
 
 export type SourceGroup = 'influencer' | 'trainer' | 'share' | 'academy' | 'platform' | 'site' | 'direct' | 'unknown'
 
@@ -146,9 +147,15 @@ export interface StatRow {
   picks: string[]
   source: RegistrantSource
   mails: { purpose: string | null; status: string }[]
+  /** قناةُ رابط الحملة ودفعتُه — لتفصيل «رسائل الأكاديمية» بالقناة والدفعة */
+  channel?: string | null
+  wave?: string | null
+  /** ما دُفع بكوده: الطلباتُ المدفوعة ومبلغُها بالدولار — ولو اشترى به من أُهدي إليه */
+  orders?: number
+  revenue?: number
 }
 
-export interface Count { key: string; labelAr: string; n: number; bought: number }
+export interface Count { key: string; labelAr: string; n: number; bought: number; revenue?: number }
 
 export interface RegistrantStats {
   total: number
@@ -164,6 +171,11 @@ export interface RegistrantStats {
   /** «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
   open: number
   bySource: Count[]
+  /** ما دُفع بأكواد من في القائمة، وكم طلبا — كما كانت «نتائج الحملة» (٢ نوفمبر ٢٠٢٦) */
+  revenue: number
+  orders: number
+  /** قناةُ الرابط ودفعتُه — «البريد · دفعة 1»، ومن جاء بلا وسمٍ «بلا وسم». وبلا منحة المؤثّرين: قناتُها كودُ مؤثّرها */
+  byLink: Count[]
   byDay: { day: string; n: number }[]
   byHour: { hour: number; n: number }[]
   byField: Count[]
@@ -182,13 +194,21 @@ function tally(rows: StatRow[], keys: (r: StatRow) => (string | null)[], label: 
   const m = new Map<string, Count>()
   for (const r of rows) {
     for (const k of new Set(keys(r).filter((x): x is string => !!x))) {
-      const c = m.get(k) ?? { key: k, labelAr: label(k), n: 0, bought: 0 }
+      const c = m.get(k) ?? { key: k, labelAr: label(k), n: 0, bought: 0, revenue: 0 }
       c.n += 1
       if (r.state === 'bought') c.bought += 1
+      c.revenue = Math.round(((c.revenue ?? 0) + (r.revenue ?? 0)) * 100) / 100
       m.set(k, c)
     }
   }
   return [...m.values()].sort((a, b) => b.n - a.n || a.labelAr.localeCompare(b.labelAr, 'ar'))
+}
+
+/** «البريد · دفعة 1» من «email|1» — والهديّةُ باسمها، ومن جاء بلا وسمٍ «بلا وسم» */
+function linkAr(key: string): string {
+  const [channel, wave] = key.split('|')
+  const name = !channel ? 'بلا وسم' : channel === 'share' ? 'هدية من صديق' : sourceLabelAr({ via: 'self', channel }).labelAr
+  return wave ? `${name} · دفعة ${wave}` : name
 }
 
 function median(xs: number[]): number | null {
@@ -218,6 +238,7 @@ export function registrantStats(rows: StatRow[]): RegistrantStats {
   const order = Object.keys(SOURCE_GROUP_AR)
   const bySource = tally(rows, (r) => [r.source.group], (k) => SOURCE_GROUP_AR[k as SourceGroup])
     .sort((a, b) => b.n - a.n || order.indexOf(a.key) - order.indexOf(b.key))
+  const byLink = tally(rows.filter((r) => !r.influencer), (r) => [`${r.channel ?? ''}|${r.wave ?? ''}`], linkAr)
   const mails = rows.flatMap((r) => r.mails)
   const byPurpose = new Map<string, Count>()
   for (const m of mails) {
@@ -239,6 +260,9 @@ export function registrantStats(rows: StatRow[]): RegistrantStats {
     influencer: count((r) => r.influencer),
     open: count((r) => r.grant === 'open'),
     bySource,
+    revenue: Math.round(rows.reduce((sum, r) => sum + (r.revenue ?? 0), 0) * 100) / 100,
+    orders: rows.reduce((sum, r) => sum + (r.orders ?? 0), 0),
+    byLink,
     byDay: [...days.entries()].map(([day, n]) => ({ day, n })).sort((a, b) => a.day.localeCompare(b.day)),
     byHour: hours.map((n, hour) => ({ hour, n })),
     byField: tally(rows, (r) => [r.workField]),
@@ -258,7 +282,8 @@ export function registrantStats(rows: StatRow[]): RegistrantStats {
 }
 
 /** نسبةُ الشراء في مجموعة — «٣ من ١٠ · ٣٠%» */
-export const conversionAr = (c: { n: number; bought: number }): string => `${c.bought} من ${c.n} · ${pct(c.bought, c.n)}%`
+export const conversionAr = (c: { n: number; bought: number; revenue?: number }): string =>
+  `${c.bought} من ${c.n} · ${pct(c.bought, c.n)}%${c.revenue ? ` · ${fmtMoney(c.revenue, 'USD')}` : ''}`
 
 /* ─────────── من فتح الرابط ← عبّأ ← اشترى (٣١ أكتوبر ٢٠٢٦) ───────────
 

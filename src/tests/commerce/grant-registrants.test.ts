@@ -81,10 +81,25 @@ describe('② الإحصاءات', () => {
     expect(s.openToFormMedianMin).toBe(20)
     expect(s.opened).toBe(2)
     expect(s.byInterest).toEqual([
-      { key: 'أ', labelAr: 'أ', n: 2, bought: 0 },
-      { key: 'ب', labelAr: 'ب', n: 1, bought: 0 },
+      { key: 'أ', labelAr: 'أ', n: 2, bought: 0, revenue: 0 },
+      { key: 'ب', labelAr: 'ب', n: 1, bought: 0, revenue: 0 },
     ])
     expect(s.mails).toMatchObject({ total: 2, sent: 1, failed: 1, queued: 0 })
+    /* والمبلغُ وقناةُ الرابط ودفعتُه — ما كانت تقوله «نتائج الحملة» (٢ نوفمبر ٢٠٢٦) */
+    const m = registrantStats([
+      row({ state: 'bought', channel: 'email', wave: '1', orders: 2, revenue: 120 }),
+      row({ channel: 'email', wave: '1' }),
+      row({ channel: 'share' }),
+      row({}),
+      row({ influencer: true, channel: 'sara', state: 'bought', orders: 1, revenue: 50 }),
+    ])
+    expect(m).toMatchObject({ revenue: 170, orders: 3 })
+    expect(m.byLink).toEqual([
+      { key: 'email|1', labelAr: 'البريد · دفعة 1', n: 2, bought: 1, revenue: 120 },
+      { key: '|', labelAr: 'بلا وسم', n: 1, bought: 0, revenue: 0 },
+      { key: 'share|', labelAr: 'هدية من صديق', n: 1, bought: 0, revenue: 0 },
+    ])
+    expect(conversionAr(m.byLink[0])).toBe('1 من 2 · 50% · $120.00')
     expect(s.mails.byPurpose.map((c) => c.labelAr)).toEqual(['كود المنحة', 'تذكير قبل انتهاء المنحة'])
   })
 })

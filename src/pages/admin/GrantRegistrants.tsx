@@ -42,6 +42,8 @@ interface Registrant {
   channel: string | null; wave: string | null; createdAt: string; code: string | null; codeActive: boolean | null; state: State; advisor: string | null;
   /** الدوراتُ التي اختارها في صفحة المنحة بأسمائها */
   picks: string[];
+  /** ما دُفع بكوده: الطلباتُ المدفوعة ومبلغُها بالدولار */
+  orders: number; revenue: number;
   /** من «منحة مؤثرين وجيز» — وبكود أيّ مؤثّر */
   influencer: boolean; influencerCode: string | null;
   /** أيُّ منحةٍ عبّأ — والثالثةُ «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
@@ -68,7 +70,9 @@ function gapAr(from: string, to: string): string | null {
   return `${Math.round(min / 1440)} يوم`;
 }
 
-export default function GrantRegistrants() {
+/** `grant`: منحةُ الشاشة التي تُفتح عليها القائمةُ والإحصاءات — كما كانت «نتائج الحملة» لكلّ حملة (٢ نوفمبر ٢٠٢٦).
+    ومن جاء من رابط ملفّ صاحب المنحة يُبحث عنه في المنح كلّها: كودُه قد يكون من غيرها */
+export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: "" | GrantKind }) {
   const [data, setData] = useState<List | null>(null);
   /* من جاء من رابط ملفّ صاحب المنحة (`/g/<كوده>`) تُفتح له القائمةُ مبحوثا فيها بكوده، ويُنزل إليها */
   const [params] = useSearchParams();
@@ -77,7 +81,7 @@ export default function GrantRegistrants() {
   const [page, setPage] = useState(1);
   const [only, setOnly] = useState<"" | State>("");
   const [source, setSource] = useState<"" | SourceGroup>("");
-  const [grant, setGrant] = useState<"" | keyof typeof GRANT_AR>("");
+  const [grant, setGrant] = useState<"" | keyof typeof GRANT_AR>(fromLink ? "" : pageGrant);
   const [openId, setOpenId] = useState<string | null>(null);
   const [writeTo, setWriteTo] = useState<Registrant[] | null>(null);
   const [removing, setRemoving] = useState<Registrant | null>(null);
