@@ -690,7 +690,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         )}
 
         {/* «ما ستخرج به» من الدورات التي اختارها — أسماؤها وعددُ لقاءاتها ومدرّبيها (٣١ أكتوبر، ثمّ ١ نوفمبر ٢٠٢٦: «لا تكرار»).
-            بطاقةٌ غيرُ عالقة: اللوحُ العالقُ تحتها يبقى قصيرا على الهاتف */}
+            ولوحُ الدفع تحتها في موضعه */}
         {chosen.length > 0 && (
           <Card className="mt-6">
             {/* الرأس: أيقونةٌ والعنوانُ وأرقامُ ما اختاره وسوما */}
@@ -714,8 +714,11 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             </ol>
           </Card>
         )}
+        {/* لوحُ الدفع في موضعه آخرَ الاختيار، لا عالقا أسفلَ الشاشة — قرارُ صاحب المنصّة (٢ نوفمبر ٢٠٢٦): «لا تجعل هذه تظهر
+            بثبات، اجعلها تظهر في النهاية عندما يصل الشخص للأسفل»، و«عدّلها لمنحة المؤثّر كذلك». والصفحةُ واحدةٌ للمنح الثلاث
+            (`variant`)، فاللوحُ واحدٌ لها كلّها. نسخا لـ`sticky bottom-3` الذي كان يغطّي الدوراتِ وهو يتصفّحها */}
         {chosen.length > 0 && (
-          <Card tone="solid" className="sticky bottom-3 mt-4 text-center shadow-lg">
+          <Card tone="solid" id="grant-pay" className="mt-4 text-center">
             {/* ما يدفعه كبيرا، وقيمةُ منحته صغيرةً تحته — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦). والمبالغُ معزولةٌ فلا تنقلب */}
             <p className="text-lg font-black">
               {grantCountAr(chosen.length)} بـ<bdi dir="ltr">{money(payTotal)}</bdi>{" "}
