@@ -40,6 +40,8 @@ import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { publicPathwayById } from "@/data/public-pathways";
 import { restoredSwaps, swapCandidates } from "@/application/catalog/pathway-swap";
 import { useListedCourses } from "@/services/listed-courses";
+import { useSeasonReplacements } from "@/services/season-replacements";
+import ReadySeasonPathway from "@/components/ReadySeasonPathway";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-prices";
@@ -260,6 +262,9 @@ export default function PathwayPage() {
       titleOf: (id) => courseById(id)?.name ?? id,
     });
   }, [swapForId, pathway, editable, baseIds, courseIds, prices, cohorts, pickedCohorts, season, catalogVersion]);
+  /* ═══ وما لا يُشترى هذا الموسم: يُقال صريحا، وبديلان تختار منهما (٢ نوفمبر ٢٠٢٦، `season-replacements.ts`) ═══
+     وإليها ينتهي التشخيص: الخطّةُ المعتمَدةُ تُعرض هنا لا في شاشة النتيجة. */
+  const { unavailable, seasonTitleAr } = useSeasonReplacements(courseIds);
   /* مدرّبُ الدورة من شعبها المفتوحة لا من تخصّصٍ ساكن — `course-trainers.ts` */
   const trainerLine = (c: Course) => trainerLineAr(trainerNamesOf(cohorts.get(c.id)), TRAINER_PENDING_AR);
   /* سعرُ المسار كاملا — أو null إن نقص سعرُ دورةٍ واحدة، فلا مجموعَ ناقصا */
@@ -543,6 +548,8 @@ export default function PathwayPage() {
                 ? {
                     swapForId,
                     pool,
+                    unavailable,
+                    seasonTitleAr,
                     /* الرقمُ من عرض المسار نفسِه (pathwayOffer) لا من ثابتٍ
                        مكتوب: سلّمُ المسار الجاهز غير سلّم البناء الحرّ. */
                     addReason: `دورات مسارك تشترى معا بخصم يصل إلى ${offer.bundleMaxPct}٪ — والدورة وحدها بسعرها كاملا.`,
@@ -565,6 +572,8 @@ export default function PathwayPage() {
                 : {
                     swapOnly: true,
                     swapForId,
+                    unavailable,
+                    seasonTitleAr,
                     pool: swapChoices.map((s) => ({ id: s.courseId, name: courseById(s.courseId)?.name ?? s.courseId, note: s.noteAr })),
                     introAr: "لك أن تستبدل أي دورة بأخرى، وخاصة التي تتعارض مواعيدها. العدد ثابت، فخصم المسار باق.",
                     onReset: baseIds.join() !== readyPathwayCourseIds(pathway.id).join()
@@ -586,6 +595,11 @@ export default function PathwayPage() {
                   }
             }
           />
+
+          {/* وأقربُ مسارٍ جاهزٍ لهذا الموسم — تحت خطّةٍ فيها ما لا يُشترى الآن، والمسارُ الجاهزُ لا يحيل إلى غيره */}
+          {!publicPathwayById(pathway.id) && Object.keys(unavailable).length > 0 && (
+            <ReadySeasonPathway courseIds={courseIds} seasonTitleAr={seasonTitleAr} />
+          )}
 
           {/* ═══ أضف دورة واحدة — من ثلاث (٢٦ أكتوبر ٢٠٢٦) ═══ — والعلّةُ عند `extraId` أعلاه */}
           {extraOptions.length > 0 && (

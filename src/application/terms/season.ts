@@ -80,6 +80,13 @@ export function termOf(date: Date): { year: number; season: TrainingSeason } {
   return { year: y, season: 'nov_jan' }
 }
 
+/** عنوانُ الفصل من مفتاحه — «2026-nov_jan» ← «موسم الشتاء 2026/2027». وما لا يُقرأ `null` */
+export function termTitleOfKey(key: string): string | null {
+  const m = /^(\d{4})-([a-z]{3}_[a-z]{3})$/.exec(key)
+  if (!m || !TRAINING_SEASONS.some((s) => s.value === m[2])) return null
+  return termTitleAr(Number(m[1]), m[2] as TrainingSeason)
+}
+
 /** مفتاحُ الفصل نصّا — «2026-nov_jan» — يقرؤه الخادمُ والواجهةُ معا (موسمُ المسارات العامّة) */
 export const termKey = (year: number, season: TrainingSeason): string => `${year}-${season}`
 

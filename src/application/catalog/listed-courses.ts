@@ -64,6 +64,15 @@ export function listedWhole<T extends { courseIds: readonly string[]; season?: s
   })
 }
 
+/** أتُشترى هذه الدورةُ في موسم البيع؟ — لها شعبةٌ معروضةٌ فيه. و`null` حين لا يُعرف (قبل الجواب أو تعذّره).
+    وخادمٌ أقدمُ بلا فصولٍ يُكتفى فيه بأنّ لها شعبة */
+export function availableThisSeason(courseId: string, listed: ListedCourses): boolean | null {
+  if (listed.state !== 'ready') return null
+  if (!listed.ids.has(courseId)) return false
+  if (!listed.season || !listed.seasons) return true
+  return listed.seasons.get(courseId)?.has(listed.season) ?? false
+}
+
 /* ═══ وما يُقال عن حجم الكتالوج: ما يُعرض، وأنّه دفعةٌ أولى (٢١ أكتوبر ٢٠٢٦) ═══
 
    كانت «من نحن» و«المنهجيّة» تقولان «في الكتالوج ٢٧ مسارا» والقسمُ يعرض ثمانية. فقرّر صاحبُ المنصّة
