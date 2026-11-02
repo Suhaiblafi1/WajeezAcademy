@@ -198,13 +198,16 @@ describe('بوّابة النتيجة وصندوق البريد — كلاهما
      تعرضها**، ولا يشترط أن تكون مكتوبةً فيها. */
   /* ٢٤ أكتوبر ٢٠٢٦: وكودُ أوّل الشراء لا يُعلَن في شاشةٍ أصلا — قرارُ صاحب المنصّة: «سرّيٌّ نعطيه فقط لمن نريد»، واختار
      إخفاءه في كلّ موضع. فيبقى سطرُ العرض بنسبته في بطاقتي الفئات، والكودُ لا يُكتب في صفحةٍ ولا مكوّنٍ ولا مثالِ خانة.
-     والفحصُ على الشيفرة بلا تعليقاتها: التعليقُ يروي القرارَ ولا يعرض شيئا. */
-  it('كود أوّل الشراء لا تعرضه شاشة — والعرض بنسبته باق في بطاقتي الفئات', () => {
+     والفحصُ على الشيفرة بلا تعليقاتها: التعليقُ يروي القرارَ ولا يعرض شيئا.
+     ثمّ (٢ نوفمبر ٢٠٢٦) عاد الكودُ بجانب سطر النسبة في بطاقتي الفئات وحدَهما — قرارُه: «اكتب خصم الشراء الأول جانب
+     كلمة خصم عملية أول شراء». فلا يزال لا يُكتب مثالا في خانةٍ ولا في غيرهما. */
+  it('كود أوّل الشراء بجانب نسبته في بطاقتي الفئات — ولا تعرضه شاشة غيرهما', () => {
     const link = readFileSync(join(process.cwd(), 'src/components/DiscountProofLink.tsx'), 'utf8')
     expect(link, 'الجملة الجديدة').toMatch(/لمعرفة الكود للطلبة وموظفي الحكومة/)
     for (const f of ['src/pages/Pathway.tsx', 'src/pages/CoursePath.tsx']) {
       const src = readFileSync(join(process.cwd(), f), 'utf8')
       expect(src, `${f}: سطر العرض بنسبته`).toMatch(/خصم أول عملية شراء — \{FIRST_TIME_PROMO\.percentOff\}٪/)
+      expect(src, `${f}: الكود بجانب سطره`).toMatch(/٪<\/span>\s*<span[^>]*>· الكود <bdi dir="ltr"[^>]*>\{FIRST_TIME_PROMO\.code\}<\/bdi>/)
       expect(src, `${f}: لا تعرض رابط إثبات الخصم`).toMatch(/<DiscountProofLink\s*\/>/)
     }
     const ui = (dir: string): string[] => readdirSync(join(process.cwd(), dir), { withFileTypes: true }).flatMap((e) =>
@@ -213,7 +216,7 @@ describe('بوّابة النتيجة وصندوق البريد — كلاهما
       const src = readFileSync(join(process.cwd(), f), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
       return /FIRST_TIME_PROMO\.code|WA2026/.test(src)
     })
-    expect(shown, 'شاشة تعرض كود أول الشراء').toEqual([])
+    expect(shown.sort(), 'شاشة غير بطاقتي الفئات تعرض كود أول الشراء').toEqual(['src/pages/CoursePath.tsx', 'src/pages/Pathway.tsx'])
   })
 
   it('الكود نفسه مصدر واحد — لا رقم مكرّر في المكوّن', () => {
