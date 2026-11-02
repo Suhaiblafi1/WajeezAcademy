@@ -97,7 +97,7 @@ describe('صفحةُ المسار', () => {
   const src = readFileSync(new URL('../../pages/Pathway.tsx', import.meta.url), 'utf8')
 
   it('⚠️ المسارُ الجاهزُ يُستبدل فيه — لا «edit» للخطّة المعتمَدة وحدَها', () => {
-    expect(src).toMatch(/swapOnly: true,\s*\n\s*swapForId,\s*\n\s*pool: swapChoices\.map/)
+    expect(src).toMatch(/swapOnly: true,\s*\n\s*swapForId,\s*\n(?:\s*(?:unavailable|seasonTitleAr),\s*\n)*\s*pool: swapChoices\.map/)
   })
 
   it('والبديلةُ على شعبتها التي لا تتعارض', () => {

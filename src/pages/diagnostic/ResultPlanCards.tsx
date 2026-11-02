@@ -26,6 +26,8 @@ import {
 import { pathways, type Pathway } from "@/data/pathways";
 import { useListedCourses } from "@/services/listed-courses";
 import { availabilityNoteAr, listedFirst } from "@/application/catalog/listed-courses";
+import { useSeasonReplacements } from "@/services/season-replacements";
+import ReadySeasonPathway from "@/components/ReadySeasonPathway";
 
 import { Card, Panel, Inset } from "@/components/ui/Surface";
 /** سطرُ المقترح: مهارتُه ومسارُه، ثمّ حالُ شعبته إن عُرفت */
@@ -85,8 +87,10 @@ export function ComposedSwap({
        صار يبلّغ الصفحة، والاعتماد وحده يكتب — بهوية مضيفٍ صريحة. */
     onChange(next);
   };
+  const { unavailable, seasonTitleAr } = useSeasonReplacements(chosenIds, gaps);
 
   return (
+    <>
     <CourseJourney
       courseIds={chosenIds}
       reasons={reasons}
@@ -94,6 +98,8 @@ export function ComposedSwap({
       edit={{
         swapForId,
         pool,
+        unavailable,
+        seasonTitleAr,
         minReached: true,
         maxReached: true,
         swapOnly: true,
@@ -103,6 +109,8 @@ export function ComposedSwap({
         onAdd: () => {},
       }}
     />
+    <ReadySeasonPathway courseIds={chosenIds} seasonTitleAr={seasonTitleAr} />
+    </>
   );
 }
 
@@ -175,6 +183,7 @@ export function PlanCourses({
     persist(next);
   };
 
+  const { unavailable, seasonTitleAr } = useSeasonReplacements(chosenIds, gaps);
   const chosen = chosenIds.map((id) => courseById(id)!).filter(Boolean);
   const totalWeeks = chosen.reduce((s, c) => s + c.weeks, 0);
   const skills = Array.from(new Set(chosen.map((c) => c.skill).filter(Boolean))).slice(0, 8);
@@ -189,12 +198,15 @@ export function PlanCourses({
           pool,
           minReached: chosenIds.length <= MIN_PATHWAY_COURSES,
           maxReached: chosenIds.length >= MAX_PATHWAY_COURSES,
+          unavailable,
+          seasonTitleAr,
           onSwapToggle: setSwapForId,
           onSwapPick: swapPick,
           onRemove: removeCourse,
           onAdd: addCourse,
         }}
       />
+      <ReadySeasonPathway courseIds={chosenIds} seasonTitleAr={seasonTitleAr} />
       <Card className="mt-4 px-5 py-4">
         <p className="text-read leading-5 font-bold text-muted-foreground">
           مسارك المخصص الآن:{" "}

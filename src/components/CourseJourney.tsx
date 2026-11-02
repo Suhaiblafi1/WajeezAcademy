@@ -41,6 +41,10 @@ export interface CourseJourneyEdit {
   introAr?: string;
   /** إعادةُ الدورات كما كانت — تظهر حين يمرّرها النداء (بعد استبدالٍ في المسار الجاهز) */
   onReset?: () => void;
+  /** دوراتٌ لا تُشترى هذا الموسم، وبديلان لكلٍّ (٢ نوفمبر ٢٠٢٦، `season-replacements.ts`) */
+  unavailable?: Record<string, CourseSuggestion[]>;
+  /** اسمُ الموسم في سطرها — «موسم الشتاء 2026/2027» — وبلا اسمٍ «هذا الموسم» */
+  seasonTitleAr?: string | null;
   onSwapToggle: (id: string | null) => void;
   onSwapPick: (oldId: string, newId: string) => void;
   onRemove: (id: string) => void;
@@ -212,7 +216,7 @@ export default function CourseJourney({
                       شعبة مفتوحة · تبدأ {cohortDayAr(cohorts.get(c.id)![0].startsAt)}
                     </p>
                   )}
-                  {!showSchedule && cohortsLoaded && (cohorts.get(c.id)?.length ?? 0) === 0 && (
+                  {!showSchedule && cohortsLoaded && (cohorts.get(c.id)?.length ?? 0) === 0 && !edit?.unavailable?.[c.id] && (
                     <p className="mt-1.5 flex items-center gap-1.5 text-read font-bold text-muted-foreground">
                       <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       {runningOnly(c.id) ? COHORT_RUNNING_AR : "لم تفتح شعبتها بعد"}
@@ -249,6 +253,31 @@ export default function CourseJourney({
                       <span className="font-bold text-teal-light-ink">لماذا هي مساندة لهذا المسار: </span>
                       {supportReasons[c.id]}
                     </p>
+                  )}
+                  {/* ═══ ودورةٌ لا تُشترى هذا الموسم: يُقال ذلك صريحا، وبديلان تختار منهما (٢ نوفمبر ٢٠٢٦) ═══ */}
+                  {edit?.unavailable?.[c.id] && (
+                    <Inset tone="warn" className="mt-3 p-3">
+                      <p className="text-read font-bold text-gold-ink">
+                        هذه الدورة غير متاحة {edit.seasonTitleAr ? `في ${edit.seasonTitleAr}` : "هذا الموسم"}.
+                        {edit.unavailable[c.id].length > 0 ? " نقترح بديلين لتختار منهما:" : " ولا بديل لها الآن."}
+                      </p>
+                      {edit.unavailable[c.id].length > 0 && (
+                        <div className="mt-2 grid gap-1.5">
+                          {edit.unavailable[c.id].map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => edit.onSwapPick(c.id, p.id)}
+                              aria-label={`استبدل «${c.title}» بـ«${p.name}»`}
+                              className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right transition hover:border-teal-light/50 hover:bg-white/[0.07]"
+                            >
+                              <span className="block text-xs font-bold text-foreground">{p.name}</span>
+                              <span className="mt-0.5 block text-fine text-muted-foreground">{p.note}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </Inset>
                   )}
                   {/* ═══ والدورةُ العالقةُ في تعارض: لا موعدَ لها لا يتعارض — فالاستبدالُ بابُها (٣١ أكتوبر ٢٠٢٦، `pathway-swap.ts`) ═══ */}
                   {edit && showSchedule && !swapOpen && stuckInClash(c.id, chosen, cohortsOf) && (
