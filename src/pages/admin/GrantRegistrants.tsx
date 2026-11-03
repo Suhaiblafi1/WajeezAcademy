@@ -53,7 +53,8 @@ interface Registrant {
   /** ما كُتب لبريده، وما هو آتٍ له */
   mails: Mail[]; upcoming: Upcoming[];
 }
-interface List { mailOn: boolean; rows: Registrant[]; funnel: GrantFunnel }
+/** `funnel` للمنح كلّها، و`funnels` لكلّ منحةٍ وحدَها (٣ نوفمبر ٢٠٢٦) */
+interface List { mailOn: boolean; rows: Registrant[]; funnel: GrantFunnel; funnels: Record<GrantKind, GrantFunnel> }
 
 /** «31/10، 2:42 م» — بلا سنةٍ ولا ثوانٍ: كلُّه في الحملة نفسِها، والعمودُ ضيّق */
 const when = (v: string) => fmtDateWith(v, { day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
@@ -103,6 +104,12 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
   if (!rows || !data) return null;
   const view = paginate(matched, page, 25);
   const filtered = matched.length !== rows.length;
+  /* ═══ الإحصاءاتُ لمنحة الصفحة أو للمنح كلّها (٣ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «الإحصاءاتُ يجب أن تكون لكلّ المنح أو المنحةِ المفعّلة بالصفحة». فالمنحةُ نطاقُها كلُّها — الأرقامُ
+     و«من فتح الرابط» معا — وكان القِمعُ يعدّ زوّارَ المنح كلِّها تحت أرقام منحةٍ واحدة. و«بحسب التصفية» لما سوى المنحة. */
+  const scopeAr = grant ? GRANT_AR[grant] : "كل المنح";
+  const narrowed = !!(only || source || q.trim());
+  const funnel = grant ? data.funnels[grant] : data.funnel;
   const reset = () => setPage(1);
   const groups = (Object.keys(SOURCE_GROUP_AR) as SourceGroup[]).filter((g) => rows.some((r) => r.source.group === g));
 
@@ -129,7 +136,19 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
         </Button>
       </div>
 
-      <GrantRegistrantStats s={stats} filtered={filtered} funnel={data.funnel} />
+      {/* النطاقُ يُختار فوق الإحصاءات بزرّين — والقائمةُ تحتها تتبعه */}
+      {pageGrant && (
+        <div role="group" aria-label="نطاق الإحصاءات" className="mt-3 flex flex-wrap gap-2">
+          <Button tone={grant === pageGrant ? "primary" : "secondary"} aria-pressed={grant === pageGrant} onClick={() => { setGrant(pageGrant); reset(); }}>
+            {GRANT_AR[pageGrant]}
+          </Button>
+          <Button tone={grant === "" ? "primary" : "secondary"} aria-pressed={grant === ""} onClick={() => { setGrant(""); reset(); }}>
+            كل المنح
+          </Button>
+        </div>
+      )}
+
+      <GrantRegistrantStats s={stats} scopeAr={scopeAr} allGrants={!grant} filtered={narrowed} funnel={funnel} />
 
       <Card className="mt-3">
         <div className="mb-3 grid gap-2 sm:grid-cols-3">

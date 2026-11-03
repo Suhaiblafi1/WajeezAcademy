@@ -179,7 +179,9 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
         <Button disabled={busy || !changed || !pctOk || !maxOk || !coursesOk} onClick={() => setConfirm(true)}>احفظ</Button>
       </Card>
 
-      {forInfluencer ? <InfluencersPanel /> : <GrantRegistrants grant={forOpen ? "open" : "member"} />}
+      {/* ومنحةُ المؤثرين لها إحصاءاتُها ومن عبّأ نموذجَها أيضا، تحت مؤثّريها (٣ نوفمبر ٢٠٢٦) */}
+      {forInfluencer && <InfluencersPanel />}
+      <GrantRegistrants grant={forInfluencer ? "influencer" : forOpen ? "open" : "member"} />
 
       <GrantCourses percentOff={pctOk ? pctNum : null} />
 

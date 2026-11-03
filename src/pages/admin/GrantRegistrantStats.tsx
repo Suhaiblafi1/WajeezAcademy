@@ -93,7 +93,10 @@ function Funnel({ f }: { f: GrantFunnel }) {
   );
 }
 
-export default function GrantRegistrantStats({ s, filtered, funnel }: { s: RegistrantStats; filtered: boolean; funnel: GrantFunnel }) {
+/** `scopeAr`: منحةُ الإحصاءات أو «كل المنح» — والأرقامُ والقِمعُ كلاهما لها. و`filtered`: تصفيةٌ سوى المنحة */
+export default function GrantRegistrantStats({ s, scopeAr, allGrants, filtered, funnel }: {
+  s: RegistrantStats; scopeAr: string; allGrants: boolean; filtered: boolean; funnel: GrantFunnel;
+}) {
   const [open, setOpen] = useState(true);
   const peakDay = Math.max(1, ...s.byDay.map((d) => d.n));
   const peakHour = Math.max(1, ...s.byHour.map((h) => h.n));
@@ -101,7 +104,7 @@ export default function GrantRegistrantStats({ s, filtered, funnel }: { s: Regis
   return (
     <Card className="mt-3">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between gap-2 text-start">
-        <span className="font-black">الإحصاءات{filtered ? " — بحسب التصفية" : ""}</span>
+        <span className="font-black">الإحصاءات — {scopeAr}{filtered ? " · بحسب التصفية" : ""}</span>
         <ChevronDown className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
       {open && (
@@ -114,7 +117,8 @@ export default function GrantRegistrantStats({ s, filtered, funnel }: { s: Regis
             <Tile label="لم يشتر بعد" value={s.none} />
             <Tile label="له مستشار" value={s.withAdvisor} />
             <Tile label="المبلغ" value={fmtMoney(s.revenue, "USD")} note={`${s.orders} طلب مدفوع`} />
-            <Tile label="منحة وجيز" value={s.member} note={`ومؤثرين ${s.influencer}${s.open > 0 ? ` · والعامة ${s.open}` : ""}`} />
+            {/* وتوزيعُها على المنح حين تكون للمنح كلّها — وفي منحةٍ واحدةٍ رقمٌ يكرّر «عبأ النموذج» */}
+            {allGrants && <Tile label="منحة وجيز" value={s.member} note={`ومؤثرين ${s.influencer} · والعامة ${s.open}`} />}
             <Tile
               label="من فتح الرابط إلى التعبئة"
               value={s.openToFormMedianMin === null ? "—" : `${s.openToFormMedianMin} د`}

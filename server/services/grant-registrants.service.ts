@@ -31,7 +31,7 @@ import { renderMail } from './mail-template'
 import { liveChannels } from './notification.service'
 import { eraseLeadCases, ERASED_NAME_AR } from './guest-erasure.service'
 import { BOUGHT, GRANT_REMINDERS, grantRegistrants } from './grant-followup.service'
-import { grantVisitFunnel } from './grant-visit.service'
+import { grantVisitFunnels } from './grant-visit.service'
 import { cleanTouch, storedSource, type FirstTouch } from '../../src/application/marketing/signup-source'
 import { GRANT_CAMPAIGNS, GRANT_KIND_SLUG, GRANT_SLUGS, grantKindOf } from '../../src/application/commerce/grant'
 import {
@@ -151,8 +151,9 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
     }
   })
   /* ومن فتح الرابطَ ولم يعبّئ — «فتح ← عبّأ ← اشترى» لكلّ مصدر (`grant-visit.service.ts`) */
-  const funnel = await grantVisitFunnel(prisma, new Map(rows.map((r) => [r.id, r.state])))
-  return { mailOn, rows, funnel }
+  const funnels = await grantVisitFunnels(prisma, new Map(rows.map((r) => [r.id, r.state])))
+  /* `funnel` للمنح كلّها (ورقةُ Excel)، و`funnels` لكلّ منحةٍ وحدَها — تقرؤه الشاشةُ بالمنحة التي تعرضها */
+  return { mailOn, rows, funnel: funnels.all, funnels }
 }
 
 export type FullRegistrant = Awaited<ReturnType<typeof registrantsFull>>['rows'][number]
