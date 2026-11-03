@@ -988,7 +988,7 @@ export default function TrainerRunOps() {
   return (
     <div className="space-y-8">
       {/* ── الطابور: ما ينتظر قرارك من غيرك ── */}
-      <section id="qualification-requests" className="scroll-mt-4">
+      <section id="qualification-requests" className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)]">
         <h3 className="flex items-center gap-2 text-sm font-black">
           <Clock className="h-4 w-4 text-gold-ink" />
           طلبات التأهيل المعلّقة
@@ -1365,13 +1365,13 @@ export default function TrainerRunOps() {
                     </Inset>
                   )}
 
-                  <div id={`${t.profileId}-plans`} className="scroll-mt-4" />
+                  <div id={`${t.profileId}-plans`} className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)]" />
                   <TrainerCourses trainer={t} />
                   {reminders.has(t.profileId) && <PrepReminderRow row={reminders.get(t.profileId)!} deadline={deadline} onSent={() => void load()} />}
 
-                  <div id={`${t.profileId}-profile`} className="scroll-mt-4" />
+                  <div id={`${t.profileId}-profile`} className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)]" />
                   <PublicProfileEditor trainer={t} onSaved={load} />
-                  <div id={`${t.profileId}-suggest`} className="scroll-mt-4" />
+                  <div id={`${t.profileId}-suggest`} className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)]" />
                   {/* والمفتاحُ يحمل آخرَ اقتراح: كلُّ إرسالٍ أو قرارٍ يبدأ الحقولَ من جديد */}
                   <PitchEditor key={`${t.profileId}:${t.pitchLatest?.id ?? ""}:${t.pitchLatest?.status ?? ""}:${t.pitchLines.join("|")}`} trainer={t} onSaved={load} />
                   <BioSuggestEditor key={`${t.profileId}:bio:${t.bioLatest?.id ?? ""}:${t.bioLatest?.status ?? ""}`} trainer={t} onSaved={load} />

@@ -99,12 +99,21 @@ describe('شريط القرار على الهاتف', () => {
 describe('شريط القرار على الحاسوب', () => {
   it('⚠️ صفّ الأزرار يلصق تحت الترويسة لا تحتها', () => {
     expect(STRIP_CLS, 'فقد لصوقه على الحاسوب — والفعل في متناول اليد قرار قائم').toContain('lg:sticky')
-    /* والإزاحةُ ارتفاعُ الترويسة نفسُها: لو تبدّل أحدُهما وحدَه عاد الصفُّ يغيب تحتها
-       أو يترك فرجةً يمرّ فيها المتن */
+    /* والإزاحةُ ارتفاعُ الترويسة نفسُها — وشريطِ الألسنة اللاصق تحتها إن كان (٣ نوفمبر ٢٠٢٦). لو تبدّل
+       أحدُها وحدَه عاد الصفُّ يغيب تحتهما أو يترك فرجةً يمرّ فيها المتن. فالإطارُ يكتبها في
+       `--admin-sticky-top`، والصفُّ يقرؤها منه، والقيمتان مجموعُ الارتفاعين المكتوبين */
     const headerRow = /<header\b[^>]*>\s*<div className="([^"]*)"/.exec(LAYOUT)?.[1] ?? ''
     const headerH = /(?:^|\s)h-(\d+)(?:\s|$)/.exec(headerRow)?.[1]
     expect(headerH, 'لا ارتفاع مكتوبا لترويسة الإدارة').toBeDefined()
-    expect(tokens(STRIP_CLS, /^lg:top-/), 'الصفّ لا يلصق عند حافّة الترويسة').toEqual([`lg:top-${headerH}`])
+    expect(tokens(STRIP_CLS, /^lg:top-/), 'الصفّ لا يلصق عند حافّة ما فوقه').toEqual(['lg:top-[var(--admin-sticky-top)]'])
+    const tabsCls = classesAt(LAYOUT, openBefore(LAYOUT, '<PortalTabs\n                look="chip"', 'div'))
+    expect(tabsCls, 'شريط الألسنة لا يلصق عند حافّة الترويسة').toEqual(expect.arrayContaining(['sticky', `top-${headerH}`]))
+    const tabsRem = Number(/^h-\[([\d.]+)rem\]$/.exec(tokens(tabsCls, /^h-\[/)[0] ?? '')?.[1])
+    const headerRem = Number(headerH) / 4
+    const set = /"--admin-sticky-top": tabbed \? "([\d.]+)rem" : "([\d.]+)rem"/.exec(LAYOUT)
+    expect(set, 'الإطار لا يكتب موضع اللصوق').not.toBeNull()
+    expect(Number(set![1]), 'موضع اللصوق ليس الترويسة والألسنة معا').toBe(headerRem + tabsRem)
+    expect(Number(set![2]), 'موضع اللصوق بلا ألسنة ليس الترويسة').toBe(headerRem)
   })
 
   it('⚠️ والبطاقة الحاضنة بلا صندوق على الحاسوب — وإلّا حبست الملتصق فيها', () => {
@@ -138,8 +147,8 @@ describe('فهرس الأقسام', () => {
   })
 
   it('⚠️ ومن قفز إلى قسم وقع عنوانه تحت الصفّ اللاصق لا خلفه', () => {
-    /* يلصق فوق القسم ١٧٩ بكسلا في أسوأ حال: الترويسةُ ٦٥ وصفّا أزرارٍ ١١٤ (تحت
-       ١٣٦٦). فالهامشُ لا يقلّ عن ٤٥ (×٤ بكسل) — وكان `scroll-mt-28` وحدَه */
+    /* يلصق فوق القسم ٢٣٩ بكسلا في أسوأ حال: الترويسةُ ٦٥ وشريطُ الألسنة ٦٠ (٣ نوفمبر ٢٠٢٦) وصفّا
+       أزرارٍ ١١٤ (تحت ١٣٦٦). فالهامشُ لا يقلّ عن ٦٠ (×٤ بكسل) — وكان `scroll-mt-28` وحدَه */
     const first = APPS.indexOf('id="sec-profile"')
     const last = APPS.indexOf('id="sec-rubric"')
     expect(first, 'لا مرساة لأوّل قسم').toBeGreaterThan(-1)
@@ -149,7 +158,7 @@ describe('فهرس الأقسام', () => {
       if (!scroll) continue
       const box = extentAt(APPS, m.index!, 'div')
       expect(box.includes('id="sec-profile"') && box.includes('id="sec-rubric"') && last > first, 'الهامش لا يحيط بالأقسام كلّها').toBe(true)
-      expect(Number(scroll), 'الهامش أقصر ممّا يلصق فوقه').toBeGreaterThanOrEqual(45)
+      expect(Number(scroll), 'الهامش أقصر ممّا يلصق فوقه').toBeGreaterThanOrEqual(60)
       found = true
     }
     expect(found, 'لا هامش وصول للأقسام على الحاسوب').toBe(true)

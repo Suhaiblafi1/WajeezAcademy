@@ -455,7 +455,7 @@ function CoursesStep({
     const idea = ideas[p.id];
     const details = proposalDetailRows(idea?.details ?? null);
     return (
-    <li key={p.id} id={`idea-${p.id}`} tabIndex={-1} className="scroll-mt-28 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-teal/60">
+    <li key={p.id} id={`idea-${p.id}`} tabIndex={-1} className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)] rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-teal/60">
       <Card className={`bg-paper/20 p-3.5 ${focusIdea === p.id ? "ring-1 ring-teal/50" : ""}`}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-[12rem] flex-1">

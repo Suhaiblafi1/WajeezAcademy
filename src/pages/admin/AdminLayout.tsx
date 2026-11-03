@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { Crown } from "lucide-react";
-import { placeOf, sectionsFor, waitingCounts, type AdminNavItem, type WaitingInput } from "./nav-map";
+import { placeOf, sectionTabs, sectionsFor, tabOf, waitingCounts, type AdminNavItem, type WaitingInput } from "./nav-map";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -130,9 +130,22 @@ export default function AdminLayout({ children, title }: { children: React.React
   /* أين أنا — والقسمُ يضيء في الشريط، وألسنتُه في الأعلى. و«حسابي» لا قسمَ له فلا ألسنة */
   const place = placeOf(location.pathname, sections);
   const waiting = waitingCounts(sections, { badges, inbox });
+  /* ألسنةُ القسم كما تُرسم: ما طُوي تحت لسانٍ (`inTab`) يضيء لسانَه، ويُضاف عددُه إليه */
+  const tabs = place ? sectionTabs(place.section) : [];
+  const here = place && tabOf(place.section, place.item);
+  const tabCount = (it: AdminNavItem) => place!.section.items
+    .filter((x) => x === it || (x.inTab === it.to && !tabs.includes(x)))
+    .reduce((n, x) => n + (waiting.byTab[x.to] ?? 0), 0);
+  const tabbed = tabs.length > 1;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
+    /* `--admin-sticky-top`: أين يلصق ما يلصق في الشاشات — تحت الترويسة (`h-16`)، وتحت شريط الألسنة إن كان
+       (`h-[3.75rem]`). مصدرٌ واحدٌ يقرؤه شريطُ القرار في ملفّ المدرّب وتنبيهُ الشعب، فلا يغيب أحدُهما تحت الآخر. */
+    <div
+      dir="rtl"
+      className="min-h-screen bg-paper text-foreground"
+      style={{ "--admin-sticky-top": tabbed ? "7.75rem" : "4rem" } as React.CSSProperties}
+    >
       <SearchPalette />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="flex h-16 w-full items-center justify-between px-5 sm:px-8">
@@ -213,22 +226,29 @@ export default function AdminLayout({ children, title }: { children: React.React
                   التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
         <div className="min-w-0 flex-1 py-6 lg:py-8">
           {/* صفحاتُ القسم — ولسانٌ واحدٌ لا يُعرض: من يرى «الأتعاب» وحدَها تحت «المدربون» لا يحتاج شريطا.
-              ولا يُطبع: تنقّلٌ لا مستند. */}
-          {place && place.section.items.length > 1 && (
-            <PortalTabs
-              look="chip"
-              label={`صفحات ${place.section.title}`}
-              className="mb-6 print:hidden"
-              tabs={place.section.items.map((it) => ({
-                to: it.to,
-                end: it.end,
-                label: it.tab,
-                icon: it.icon,
-                count: waiting.byTab[it.to] || undefined,
-                countLabel: COUNT_LABEL_AR[it.badge ?? "inbox"],
-                active: place.item.to === it.to,
-              }))}
-            />
+              ولا يُطبع: تنقّلٌ لا مستند.
+
+              ═══ ويلصق تحت الترويسة في كلّ الصفحات الداخلية (٣ نوفمبر ٢٠٢٦) ═══
+              قرارُ صاحب المنصّة: «ابقِ هذا الشريطَ ثابتا لكلّ الصفحات الداخلية». فمن نزل في شاشةٍ طويلة يرى
+              صفحاتِ قسمه ولا يصعد إليها. وارتفاعُه مكتوبٌ (`h-[3.75rem]`: حبّةٌ بـ٤٤ بكسلا وثمانيةٌ فوقها وتحتها)
+              لأنّ ما يلصق تحته يقرؤه من `--admin-sticky-top`. وأرضيّتُه أرضيّةُ الترويسة: يمرّ تحته متنٌ لا يُقرأ معه. */}
+          {place && tabbed && (
+            <div className="sticky top-16 z-30 mb-4 flex h-[3.75rem] items-center bg-paper/90 backdrop-blur print:hidden">
+              <PortalTabs
+                look="chip"
+                label={`صفحات ${place.section.title}`}
+                className="w-full"
+                tabs={tabs.map((it) => ({
+                  to: it.to,
+                  end: it.end,
+                  label: it.tab,
+                  icon: it.icon,
+                  count: tabCount(it) || undefined,
+                  countLabel: COUNT_LABEL_AR[it.badge ?? "inbox"],
+                  active: here?.to === it.to,
+                }))}
+              />
+            </div>
           )}
           {/* ولا يُطبع: عنوانُ الشاشة يكرّر ما في ترويسة المطبوع («الطلب
               WJ-TR-…» فوق الاسم ورقمِه)، وهو عنوانُ أداةٍ لا عنوانُ مستند. */}

@@ -1016,7 +1016,7 @@ c.gatesActivation
 
       {/* ═══ شاشةُ التركيب ═══ */}
       {openFor && prefill && (
-        <Card id="contract-composer" className="mb-6 scroll-mt-4 p-4">
+        <Card id="contract-composer" className="mb-6 scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)] p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-black">تركيبُ عقدٍ لـ{prefill.fullName}</h2>
             <Button size="sm" onClick={() => { setOpenFor(null); setPrefill(null); setPreview(""); }}>
@@ -1294,7 +1294,7 @@ c.gatesActivation
             واللسانُ من `TabBar` لا مكتوبٌ في مكانه: فيه وقفةٌ واحدةٌ للشريط
             كلِّه وتنقّلٌ بالأسهم يعكس في العربيّة، وأدوارُ `tablist` صريحة —
             وكتابتُه بيدي كانت تُسقط ذلك كلَّه، وأمسكها `staff-surface`. */}
-        <div id="contracts-list" className="scroll-mt-4" />
+        <div id="contracts-list" className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)]" />
         {contracts.length > 0 && (
           <TabBar
             className="mb-3"

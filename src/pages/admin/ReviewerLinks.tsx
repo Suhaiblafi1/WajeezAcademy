@@ -147,7 +147,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
   }
 
   return (
-    <Panel as="article" id="sec-links" className="scroll-mt-28 print:hidden">
+    <Panel as="article" id="sec-links" className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)] print:hidden">
       <h4 className="text-sm font-black">
         <Link2 className="ms-1 inline h-3.5 w-3.5" aria-hidden="true" /> روابط القرّاء
       </h4>

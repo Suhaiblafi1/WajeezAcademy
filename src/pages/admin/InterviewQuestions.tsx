@@ -85,7 +85,7 @@ export default function InterviewQuestions({ a, defaultOpen = false }: Interview
   const total = personal.length + axes.reduce((n, x) => n + x.questions.length, 0)
 
   return (
-    <Panel as="article" id="sec-questions" className="scroll-mt-28">
+    <Panel as="article" id="sec-questions" className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)]">
       <details open={defaultOpen} className="group">
         <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-black transition hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
           <ChevronDown className="h-4 w-4 shrink-0 text-teal-light-ink transition-transform group-open:rotate-180" aria-hidden="true" />

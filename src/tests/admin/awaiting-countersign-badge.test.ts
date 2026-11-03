@@ -109,7 +109,7 @@ describe('والشارة تعرض حيث ينتظر العمل', () => {
      شارةٌ تقول «٠» تُقرأ عملا ينتظر، ومن رآها فتح الشاشةَ فلم يجد شيئا.
      ومن تكرّر عليه ذلك كفّ عن النظر إليها — فتموت وهي حيّة. */
   it('ولا شارة عند الصفر', () => {
-    expect(layout, 'يمرّ الصفر إلى اللسان عددا').toMatch(/count: waiting\.byTab\[it\.to\] \|\| undefined/)
+    expect(layout, 'يمرّ الصفر إلى اللسان عددا').toMatch(/count: tabCount\(it\) \|\| undefined/)
     expect(layout, 'يمرّ الصفر إلى القسم عددا').toMatch(/count: waiting\.bySection\[s\.title\] \|\| undefined/)
     expect(layout, 'قسم الشريط يعرض صفره').toMatch(/\{n > 0 && \(/)
     expect(bare('src/components/ui/PortalTabs.tsx'), 'اللسان يعرض صفره').toMatch(/if \(!count\) return null/)

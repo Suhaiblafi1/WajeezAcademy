@@ -125,10 +125,14 @@ describe('③ والإطار', () => {
   })
 
   it('⚠️ والألسنة بأسمائها القصيرة ونشاطها من موضعها — ولسان واحد لا يعرض شريطا', () => {
-    const from = LAYOUT.indexOf('{place && place.section.items.length > 1 && (')
+    /* والألسنةُ ما يُرسم منها (`sectionTabs`) لا بنودُ القسم كلُّها: المنحُ الثلاثُ لسانٌ واحد (٣ نوفمبر ٢٠٢٦) */
+    const from = LAYOUT.indexOf('{place && tabbed && (')
+    expect(from, 'الشريط بلا شرط').toBeGreaterThan(-1)
     const tabs = LAYOUT.slice(from, LAYOUT.indexOf('<h1', from))
-    expect(tabs, 'شريط لسان واحد').toContain('place.section.items.length > 1')
+    expect(LAYOUT, 'شريط لسان واحد').toMatch(/const tabbed = tabs\.length > 1;/)
+    expect(LAYOUT).toMatch(/const tabs = place \? sectionTabs\(place\.section\) : \[\];/)
     expect(tabs).toMatch(/label: it\.tab,/)
-    expect(tabs, 'النشاط من المطابقة لا من الموضع — فصفحة التفصيل بلا لسان مضيء').toMatch(/active: place\.item\.to === it\.to,/)
+    expect(LAYOUT).toMatch(/const here = place && tabOf\(place\.section, place\.item\);/)
+    expect(tabs, 'النشاط من المطابقة لا من الموضع — فصفحة التفصيل بلا لسان مضيء').toMatch(/active: here\?\.to === it\.to,/)
   })
 })

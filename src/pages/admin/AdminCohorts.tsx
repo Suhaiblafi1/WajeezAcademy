@@ -314,7 +314,7 @@ export default function AdminCohorts() {
   return (
     <AdminLayout title="تشغيل الشعب">
       {flash && (
-        <Card as="p" tone={flash.kind === "error" ? "danger" : "accent"} role={flash.kind === "error" ? "alert" : "status"} className={`sticky top-[4.5rem] z-30 mb-5 flex items-center gap-2 px-4 py-3 text-sm font-bold backdrop-blur ${flash.kind === "error" ? "text-red-200" : "text-teal-light-ink"}`}>
+        <Card as="p" tone={flash.kind === "error" ? "danger" : "accent"} role={flash.kind === "error" ? "alert" : "status"} className={`sticky top-[calc(var(--admin-sticky-top,4rem)_+_0.5rem)] z-20 mb-5 flex items-center gap-2 px-4 py-3 text-sm font-bold backdrop-blur ${flash.kind === "error" ? "text-red-200" : "text-teal-light-ink"}`}>
           {flash.kind === "error"
             ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
             : <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />}

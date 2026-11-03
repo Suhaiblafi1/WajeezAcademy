@@ -63,7 +63,7 @@ function FoldSection({ icon: Icon, title, children, defaultOpen = false, id, omi
     return () => window.removeEventListener("hashchange", openIfTargeted);
   }, [id]);
   return (
-    <Panel as="article" id={id} className={`scroll-mt-28 ${omitFromPrint ? 'print:hidden' : ''}`}>
+    <Panel as="article" id={id} className={`scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)] ${omitFromPrint ? 'print:hidden' : ''}`}>
       <button type="button" onClick={() => setOpen(!open)}
         aria-expanded={open} aria-controls={bodyId}
         className="flex w-full cursor-pointer items-center justify-between text-sm font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-4 focus-visible:ring-offset-paper">

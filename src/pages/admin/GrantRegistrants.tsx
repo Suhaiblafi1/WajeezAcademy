@@ -115,7 +115,7 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
 
   return (
     <>
-      <h2 id="grant-registrants" className="mt-6 scroll-mt-24 text-lg font-black">من عبأ النموذج</h2>
+      <h2 id="grant-registrants" className="mt-6 scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)] text-lg font-black">من عبأ النموذج</h2>
       <p className="mt-1 text-read text-muted-foreground">
         من لم يشتر بعد ساعة تفتح له حالة عند مستشار يتصل به خلال ساعتين. وزر واتساب يفتح المحادثة ورسالة المتابعة جاهزة.
       </p>
