@@ -10,7 +10,7 @@
       بمصدره، ويُعدّ ما بعده (`visits`، `lastAt`). ولا اسمَ ولا عنوانَ ولا بصمةَ جهاز.
    ٢) **ومن عبّأ النموذجَ من المتصفّح نفسِه يُربط بزيارته** (`linkGrantVisit` من `apply`) — وإن لم تُسجَّل زيارتُه (حُجبت أو
       سبقها النموذج) تُكتب حينها، فلا يزيد من عبّأ على من فتح.
-   ٣) **والقائمةُ تقرؤها** (`grantVisitFunnel`): لكلّ مصدرٍ كم فتح وكم عبّأ وكم اشترى، باسم المصدر نفسِه الذي في عمود
+   ٣) **والقائمةُ تقرؤها** (`grantVisitFunnels`): لكلّ مصدرٍ كم فتح وكم عبّأ وكم اشترى، باسم المصدر نفسِه الذي في عمود
       «المصدر» (`registrantSource`).
 
    والحارس: `server/tests/commerce/grant-visit.test.ts`. */
@@ -18,7 +18,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { cleanTouch, type FirstTouch } from '../../src/application/marketing/signup-source'
 import { normalizeInfluencerCode } from '../../src/application/commerce/influencer'
-import { INFLUENCER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
+import { GRANT_KINDS, INFLUENCER_GRANT_SLUG, grantKindOf, type GrantKind, type GrantSlug } from '../../src/application/commerce/grant'
 import { grantFunnel, registrantSource, type GrantFunnel, type RegistrantState } from '../../src/application/commerce/grant-registrants'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
 
@@ -68,23 +68,36 @@ export async function linkGrantVisit(
   await prisma.grantVisit.updateMany({ where: { campaign: slug, visitorId, leadId: null }, data: { leadId } })
 }
 
-/** لكلّ مصدرٍ: كم فتح الرابط، وكم عبّأ منهم، وكم اشترى */
-export async function grantVisitFunnel(prisma: PrismaClient, stateOf: Map<string, RegistrantState>): Promise<GrantFunnel> {
+/** لكلّ مصدرٍ: كم فتح الرابط، وكم عبّأ منهم، وكم اشترى — للمنح كلّها (`all`) ولكلّ منحةٍ وحدَها.
+
+    ولكلّ منحةٍ قِمعُها (٣ نوفمبر ٢٠٢٦): قال صاحبُ المنصّة «الإحصاءاتُ يجب أن تكون لكلّ المنح أو المنحةِ المفعّلة بالصفحة»،
+    وكان «من فتح الرابط» يعدّ زوّارَ المنح كلِّها تحت أرقام منحةٍ واحدة. وقراءةٌ واحدةٌ تُقسَم، لا أربعُ قراءات. */
+export async function grantVisitFunnels(
+  prisma: PrismaClient, stateOf: Map<string, RegistrantState>,
+): Promise<Record<'all' | GrantKind, GrantFunnel>> {
   const visits = await prisma.grantVisit.findMany({
     orderBy: { firstAt: 'asc' },
     select: { campaign: true, pageTouch: true, firstTouch: true, influencerCode: true, firstAt: true, leadId: true },
   })
   /* والمجموعةُ وحدَها تُقرأ هنا — فلا يُسأل عن اسم صاحب رابط المدرّب */
-  return grantFunnel(visits.map((v) => {
+  const rows = visits.map((v) => {
     const page = cleanTouch(v.pageTouch)
     return {
-      group: registrantSource({
-        influencer: v.campaign === INFLUENCER_GRANT_SLUG, influencerCode: v.influencerCode,
-        channel: page?.channel ?? null, wave: page?.wave ?? null, pageTouch: page, firstTouch: cleanTouch(v.firstTouch),
-      }).group,
-      day: zonedDay(v.firstAt),
-      filled: !!v.leadId,
-      state: v.leadId ? stateOf.get(v.leadId) ?? null : null,
+      kind: grantKindOf(v.campaign),
+      firstAt: v.firstAt,
+      visit: {
+        group: registrantSource({
+          influencer: v.campaign === INFLUENCER_GRANT_SLUG, influencerCode: v.influencerCode,
+          channel: page?.channel ?? null, wave: page?.wave ?? null, pageTouch: page, firstTouch: cleanTouch(v.firstTouch),
+        }).group,
+        day: zonedDay(v.firstAt),
+        filled: !!v.leadId,
+        state: v.leadId ? stateOf.get(v.leadId) ?? null : null,
+      },
     }
-  }), visits[0]?.firstAt ?? null)
+  })
+  const of = (list: typeof rows) => grantFunnel(list.map((r) => r.visit), list[0]?.firstAt ?? null)
+  const out = { all: of(rows) } as Record<'all' | GrantKind, GrantFunnel>
+  for (const k of GRANT_KINDS) out[k] = of(rows.filter((r) => r.kind === k))
+  return out
 }

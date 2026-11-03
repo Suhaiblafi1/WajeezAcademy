@@ -80,13 +80,35 @@ describe('دورات المنحة', () => {
 describe('نتائج الحملة', () => {
   it('⚠️ في إحصاءات من عبأ — بالقناة والدفعة والمبلغ، وتفتح على منحة الشاشة، ونصوصها بلا تشكيل', () => {
     /* صارت «نتائج الحملة» في الإحصاءات فوق القائمة (٢ نوفمبر ٢٠٢٦) — والجدولُ القديمُ وبابُه ذهبا */
-    expect(PAGE).toMatch(/<GrantRegistrants grant=\{forOpen \? "open" : "member"\} \/>/)
+    expect(PAGE).toMatch(/<GrantRegistrants grant=\{forInfluencer \? "influencer" : forOpen \? "open" : "member"\} \/>/)
     expect(PAGE).not.toMatch(/GrantResults/)
     expect(ROUTES).not.toMatch(/grant\/results'/)
     expect(REG).toMatch(/useState<"" \| keyof typeof GRANT_AR>\(fromLink \? "" : pageGrant\)/)
     expect(STATS).toMatch(/<Bars title="القناة والدفعة" items=\{s\.byLink\} \/>/)
     expect(STATS).toMatch(/<Tile label="المبلغ" value=\{fmtMoney\(s\.revenue, "USD"\)\}/)
     for (const t of ['القناة والدفعة', 'المبلغ', 'طلب مدفوع', 'بلا وسم', 'هدية من صديق']) expect(t).toBe(plainAr(t))
+  })
+})
+
+/* ═══ الإحصاءاتُ لمنحة الصفحة أو للمنح كلّها (٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «الإحصاءاتُ يجب أن تكون لكلّ المنح أو المنحةِ المفعّلة بالصفحة». فالأرقامُ والقِمعُ بالنطاق نفسِه،
+   ويُختار بزرّين فوق الإحصاءات — وفي الصفحات الثلاث، منحةُ المؤثرين معها. */
+describe('نطاق الإحصاءات', () => {
+  it('⚠️ القمع بمنحة الإحصاءات لا بالمنح كلها دائما', () => {
+    expect(REG).toMatch(/const funnel = grant \? data\.funnels\[grant\] : data\.funnel;/)
+    expect(REG).toMatch(/<GrantRegistrantStats s=\{stats\} scopeAr=\{scopeAr\} allGrants=\{!grant\} filtered=\{narrowed\} funnel=\{funnel\} \/>/)
+    expect(REG, 'القمع للمنح كلها في كل صفحة').not.toMatch(/funnel=\{data\.funnel\}/)
+  })
+
+  it('⚠️ وزران فوقها: منحة الصفحة وكل المنح — والعنوان يسمي النطاق', () => {
+    expect(REG).toMatch(/onClick=\{\(\) => \{ setGrant\(pageGrant\); reset\(\); \}\}/)
+    expect(REG).toMatch(/onClick=\{\(\) => \{ setGrant\(""\); reset\(\); \}\}>\s*كل المنح/)
+    expect(STATS).toMatch(/الإحصاءات — \{scopeAr\}/)
+    expect(STATS, 'توزيع المنح في منحة واحدة').toMatch(/\{allGrants && <Tile label="منحة وجيز"/)
+  })
+
+  it('⚠️ ومنحة المؤثرين لها إحصاءاتها', () => {
+    expect(PAGE).toMatch(/<GrantRegistrants grant=\{forInfluencer \? "influencer"/)
   })
 })
 

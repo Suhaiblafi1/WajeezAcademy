@@ -108,6 +108,19 @@ describe('③ فتح ← عبأ ← اشترى لكل مصدر', () => {
     expect(trainer(f).filled - trainer(before).filled).toBe(1)
     expect(f.since).not.toBeNull()
   })
+
+  /* ولكلّ منحةٍ قِمعُها (٣ نوفمبر ٢٠٢٦): «الإحصاءاتُ لكلّ المنح أو المنحةِ المفعّلة بالصفحة» — وكان زائرُ منحةٍ يُعدّ في غيرها */
+  it('⚠️ ولكل منحة قمعها — زائر منحة لا يعد في غيرها، والكل مجموعها', async () => {
+    const before = (await registrantsFull(prisma)).funnels
+    await visit(randomUUID(), { at: new Date().toISOString() })
+    await app.inject({ method: 'POST', url: '/api/public/grant/visit', payload: { campaign: 'open', visitorId: randomUUID(), source: { page: { at: new Date().toISOString() } } } })
+    await app.inject({ method: 'POST', url: '/api/public/grant/visit', payload: { campaign: 'open', visitorId: randomUUID(), source: { page: { at: new Date().toISOString() } } } })
+    const { funnel, funnels } = await registrantsFull(prisma)
+    expect(funnels.member.visitors - before.member.visitors).toBe(1)
+    expect(funnels.open.visitors - before.open.visitors).toBe(2)
+    expect(funnels.influencer.visitors - before.influencer.visitors).toBe(0)
+    expect(funnel.visitors).toBe(funnels.member.visitors + funnels.influencer.visitors + funnels.open.visitors)
+  })
 })
 
 describe('④ الباب يرد ما ليس رقما عشوائيا بشكله', () => {
