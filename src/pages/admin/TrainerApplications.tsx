@@ -1487,8 +1487,9 @@ function TrainerApplicationsPage() {
             قطّ. وأمر صاحبُ المنصّة بإصلاحه.
 
             فصار قطعتَين على الحاسوب:
-            · **صفُّ الأزرار يلصق تحت الترويسة** — `lg:top-16` هو ارتفاعُها (`h-16`)،
-              والقيمتان في فضاء التكبير نفسِه (`--app-scale`) فتتطابقان بلا قياس.
+            · **صفُّ الأزرار يلصق تحت الترويسة** — وتحت شريط ألسنة القسم اللاصق معها (٣ نوفمبر
+              ٢٠٢٦): `--admin-sticky-top` من `AdminLayout` هو ارتفاعُهما معا، والقيمُ في فضاء
+              التكبير نفسِه (`--app-scale`) فتتطابق بلا قياس.
               ونغمتُه صلبة: ما يمرّ تحته متنٌ يُقرأ.
             · **وما ينقص بطاقةٌ تحته تمضي مع التمرير.** وسببُ التعطيل لا يضيع
               بمضيّها: الزرُّ المعطَّلُ يحمله في `title`، والتجاوزُ يفتح نافذةً تقوله.
@@ -1504,7 +1505,7 @@ function TrainerApplicationsPage() {
         {/* ولا شريطَ فارغا: من لا قرارَ في حاله (نشطٌ يعمل معنا) خطوتُه في الرأس، و«لا إجراءات متاحة» تحتها ضجيج */}
         {available.length > 0 && (
         <Card className="-mx-1 mb-4 !px-4 !py-3 lg:contents">
-          <Card tone="solid" className="max-lg:contents lg:sticky lg:top-16 lg:z-20 lg:-mx-1 lg:mb-3 lg:!px-4 lg:!py-2">
+          <Card tone="solid" className="max-lg:contents lg:sticky lg:top-[var(--admin-sticky-top)] lg:z-20 lg:-mx-1 lg:mb-3 lg:!px-4 lg:!py-2">
             {/* والاسمُ ورقمُ الطلب في رأس الملفّ فوقه (٢٤ أكتوبر ٢٠٢٦) — وكانا هنا على الهاتف وحدَه */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -1596,10 +1597,12 @@ function TrainerApplicationsPage() {
             يُعطى الدرجات. فترتيبُ الصفحة صار ترتيبَ الفعل. */}
         {/* ومن قفز من الفهرس إلى قسمٍ وقع عنوانُه تحت صفّ الأزرار اللاصق لا
             خلفه. فعلى الحاسوب يلصق فوقه ما ارتفاعُه ١٢٧ بكسلا (الترويسةُ وصفٌّ
-            واحد) أو ١٧٩ (صفّان، تحت ١٣٦٦)، و`scroll-mt-28` الذي على كلّ قسمٍ ١١٢
+            واحد) أو ١٧٩ (صفّان، تحت ١٣٦٦)، و`scroll-mt-28` الذي كان على كلّ قسمٍ ١١٢
             وحدَها — فكان العنوانُ يقع تحت الشريط. والهامشُ هنا يعمّ الأقسامَ كلَّها
-            أينما كُتبت (`TrainerOps` و`InterviewQuestions` وأخواتُهما). */}
-        <div className="space-y-5 lg:[&_[id^=sec-]]:scroll-mt-48">
+            أينما كُتبت (`TrainerOps` و`InterviewQuestions` وأخواتُهما).
+            ثمّ لصق شريطُ ألسنة القسم بين الترويسة والصفّ (٣ نوفمبر ٢٠٢٦، ستّون بكسلا):
+            فأسوأُ الحال ٢٣٩، والهامشُ ٢٥٦ (`scroll-mt-64`). */}
+        <div className="space-y-5 lg:[&_[id^=sec-]]:scroll-mt-64">
           <div className="space-y-4">
             {/* تبويبان لا عمودٌ طويل.
 
@@ -1707,7 +1710,7 @@ function TrainerApplicationsPage() {
                  أثرُ ما وقع على الطلب: من فعل ماذا ومتى. */
               <>
                 <Panel as="article">
-                  <h4 id="sec-history" className="flex scroll-mt-28 items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
+                  <h4 id="sec-history" className="flex scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)] items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
                   <ol className="mt-3 space-y-2">
                     {a.statusHistory.map((h, i) => (
                       <li key={i} className="flex items-center gap-2 text-read text-muted-foreground">
@@ -1723,7 +1726,7 @@ function TrainerApplicationsPage() {
               </>
             ) : (
             <>
-            <Panel as="article" id="sec-profile" className="scroll-mt-28">
+            <Panel as="article" id="sec-profile" className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)]">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-black">{a.fullName}</h3>
@@ -1800,7 +1803,7 @@ function TrainerApplicationsPage() {
 
             {/* الوثائق الخاصة */}
             <Panel as="article">
-              <h4 id="sec-docs" className="flex scroll-mt-28 items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> الوثائق — روابط موقعة تنتهي خلال دقائق</h4>
+              <h4 id="sec-docs" className="flex scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)] items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> الوثائق — روابط موقعة تنتهي خلال دقائق</h4>
               {a.documents.length === 0 ? (
                 <p className="mt-3 text-read text-muted-foreground">لم يرفع المرشح وثائق بعد.</p>
               ) : (
@@ -1942,7 +1945,7 @@ function TrainerApplicationsPage() {
                 فذهب النموذجُ وبقيت المقارنة: وهي وحدَها ما لا يُغني عنه
                 الرابط، إذ لا يرى قارئٌ رأيَ زميله قبل أن يكتب رأيَه. */}
             <Panel as="article">
-              <h4 id="sec-rubric" className="scroll-mt-28 text-sm font-black">التقييمات — {a.reviews.length}</h4>
+              <h4 id="sec-rubric" className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)] text-sm font-black">التقييمات — {a.reviews.length}</h4>
               {a.reviews.length === 0 ? (
                 <p className="mt-2 text-read leading-6 text-muted-foreground">
                   لا تقييم بعد. أنشئ رابطا لقارئ من «روابط القرّاء» أعلاه، وتقييمه يظهر هنا.

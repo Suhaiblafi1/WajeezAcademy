@@ -13,7 +13,9 @@
 
    ═══ و«منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) ═══
 
-   `variant="open"`: منحةُ الأولى نفسُها للجميع بصفّها هي — إعداداتُها ونتائجُها، ومن عبّأ نموذجَها في القائمة نفسِها. */
+   `variant="open"`: منحةُ الأولى نفسُها للجميع بصفّها هي — إعداداتُها ونتائجُها، ومن عبّأ نموذجَها في القائمة نفسِها.
+
+   ═══ والثلاثُ لسانٌ واحدٌ «المنح»، والتنقّلُ بينها في رأس الصفحة (٣ نوفمبر ٢٠٢٦، `GrantSwitcher`) ═══ */
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
@@ -21,6 +23,8 @@ import AdminLayout from "./AdminLayout";
 import GrantCourses from "./GrantCourses";
 import GrantRegistrants from "./GrantRegistrants";
 import InfluencersPanel from "./InfluencersPanel";
+import GrantSwitcher from "./GrantSwitcher";
+import type { GrantVariant } from "./grant-screens";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiGet, apiPut, ApiError } from "@/services/api";
@@ -48,7 +52,7 @@ const RULE_AR: Record<string, string> = {
   fixed_per_cohort: "مبلغ ثابت للشعبة",
 };
 
-export default function AdminMemberGrant({ variant = "members" }: { variant?: "members" | "influencer" | "open" }) {
+export default function AdminMemberGrant({ variant = "members" }: { variant?: GrantVariant }) {
   const forInfluencer = variant === "influencer";
   const forOpen = variant === "open";
   const api = forInfluencer ? "/api/admin/influencer-grant" : forOpen ? "/api/admin/open-grant" : "/api/admin/member-grant";
@@ -115,6 +119,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: "m
   if (offline) {
     return (
       <AdminLayout title={nameAr}>
+        <GrantSwitcher current={variant} />
         <Panel className="grid place-items-center py-16 text-center">
           <ServerOff className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
@@ -125,6 +130,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: "m
   if (!s) {
     return (
       <AdminLayout title={nameAr}>
+        <GrantSwitcher current={variant} />
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-light-ink" /></div>
       </AdminLayout>
     );
@@ -134,6 +140,8 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: "m
 
   return (
     <AdminLayout title={nameAr}>
+      {/* المنحُ الثلاثُ وروابطُها العامّة — في رأس الصفحة دائما، لا ألسنةٌ في شريط «المال» (`GrantSwitcher`) */}
+      <GrantSwitcher current={variant} />
       <Card>
         <p className="text-read font-bold">
           {s.open ? "المنحة مشغلة" : s.active ? "المنحة انتهت" : "المنحة موقوفة"}

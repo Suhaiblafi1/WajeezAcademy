@@ -190,7 +190,7 @@ export default function TermClashes() {
 
           {stuck.length > 0 && (
             <Card as="section">
-              <h3 id="stuck" className="scroll-mt-4 text-read font-black">ما لم يحل</h3>
+              <h3 id="stuck" className="scroll-mt-[calc(var(--admin-sticky-top,4rem)_+_1rem)] text-read font-black">ما لم يحل</h3>
               <ul className="mt-2 space-y-2">
                 {stuck.map((r) => (
                   <li key={r.cohortId} className="text-read leading-6">

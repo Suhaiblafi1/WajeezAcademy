@@ -47,6 +47,9 @@ export interface AdminNavItem {
   match?: string[];
   /** لسانٌ يعدّ ما ينتظرك كلَّه — وقسمُه يعدّ عددَه لا مجموعَ ألسنته */
   all?: true;
+  /** شاشةٌ تُبلَغ من داخل لسانٍ آخر لا من لسانٍ لها (مسارُ ذاك اللسان) — يضيء هو فيها، وهي في
+      الدليل والبحث باسمها. كالمنح الثلاث تحت «المنح» (٣ نوفمبر ٢٠٢٦، `sectionTabs`) */
+  inTab?: string;
   /** شارةُ عددٍ تُعرَض إلى جانب الاسم — ومفتاحُها يقول أيَّ عددٍ تقرأ.
 
       ولمَ مفتاحٌ لا رقم: الخريطةُ ثابتةٌ تُقرأ مرّةً، والعددُ يتغيّر مع
@@ -227,13 +230,17 @@ export const allSections: AdminNavSection[] = [
         descAr: "طابورُ طلبات التسجيل، والفواتيرُ والاستردادات" },
       /* «منحة وجيز» (٢٠ أكتوبر ٢٠٢٦، وكانت «منحة أعضاء وجيز»): نسبتُها بيد صاحب المنصّة يغيّرها متى شاء، وفحصُ الهامش
          تحتها — بصلاحيّة الكوبونات، فالمنحةُ كوبونٌ بحملة. */
-      { to: "/admin/member-grant", label: "منحة وجيز", tab: "المنحة", icon: Gift, need: "commerce.manage",
+      /* والمنحُ الثلاثُ لسانٌ واحدٌ «المنح» (٣ نوفمبر ٢٠٢٦): قال صاحبُ المنصّة «ضع روابطَ المنح في مكانٍ معيّنٍ
+         في صفحة المنح» — فالتنقّلُ بينها في رأس صفحتها (`GrantSwitcher`)، لا ثلاثةُ ألسنةٍ في شريط «المال». */
+      { to: "/admin/member-grant", label: "منحة وجيز", tab: "المنح", icon: Gift, need: "commerce.manage",
         descAr: "نسبة المنحة وعددها وآخر يوم لها، وهامش كل شعبة بعدها" },
       /* «منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦): إعداداتُها، والمؤثّرون بأكوادهم وعمولاتهم وما دُفع لهم */
       { to: "/admin/influencer-grant", label: "منحة مؤثرين وجيز", tab: "منحة المؤثرين", icon: Megaphone, need: "commerce.manage",
+        inTab: "/admin/member-grant",
         descAr: "نسبة منحة المؤثرين، والمؤثرون بأكوادهم وعمولاتهم وما دفع لهم" },
       /* «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦): منحةُ الأولى نفسُها للجميع، بنسبتها ونتائجها هي */
       { to: "/admin/open-grant", label: "منحة وجيز العامة", tab: "المنحة العامة", icon: Gift, need: "commerce.manage",
+        inTab: "/admin/member-grant",
         descAr: "نسبة المنحة العامة وعددها وآخر يوم لها، ونتائجها" },
       { to: "/admin/reports", label: "التقارير والتصدير", tab: "التقارير", icon: BarChart3, need: "reports.view",
         descAr: "أرقامُ المنصّة مفصَّلةً، وتصديرُها إلى ملفّ" },
@@ -290,6 +297,20 @@ export function sectionsFor(permissions: readonly string[] | undefined): AdminNa
    (`match`) لصفحة تفصيلٍ مسارُها من غير أهله (`/admin/plans/…` تحت «الخطط»).
    و«الرئيسية» (`end`) بالمطابقة التامّة وحدَها — وإلّا أضاءت في كلّ صفحة. وما لا مكانَ له
    (`/admin/account` من قائمة الحساب) لا يضيء شيئا، ولا تُعرض له ألسنة. */
+/* ═══ ألسنةُ القسم كما تُرسم — وما يُبلَغ من داخل لسانٍ يضيء ذاك اللسان (٣ نوفمبر ٢٠٢٦) ═══
+
+   `inTab` يطوي الشاشةَ تحت لسانٍ آخر في قسمها. فإن لم يكن ذاك اللسانُ لصاحب الجلسة (صلاحيّتُه غيرُ صلاحيّتها)
+   عادت لسانا وحدَها — فلا تصير شاشةً لا بابَ لها. */
+export function sectionTabs(section: AdminNavSection): AdminNavItem[] {
+  const shown = new Set(section.items.map((it) => it.to));
+  return section.items.filter((it) => !it.inTab || !shown.has(it.inTab));
+}
+
+/** اللسانُ الذي يضيء لشاشة — هي نفسُها، أو اللسانُ الذي تُبلَغ منه */
+export function tabOf(section: AdminNavSection, item: AdminNavItem): AdminNavItem {
+  return sectionTabs(section).includes(item) ? item : section.items.find((it) => it.to === item.inTab) ?? item;
+}
+
 export function placeOf(
   pathname: string,
   sections: readonly AdminNavSection[],
