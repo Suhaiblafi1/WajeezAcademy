@@ -69,7 +69,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
     if (name.trim().length < 2) return
     setBusy(true)
     try {
-      const r = await apiPost<{ url: string; emailDelivery: string | null }>(
+      const r = await apiPost<{ url: string; emailDelivery: string | null; reused?: boolean }>(
         `/api/admin/trainer-applications/${applicationId}/dossier-links`,
         {
           reviewerName: name.trim(),
@@ -80,7 +80,10 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
       setFresh({ url: r.url, name: name.trim() })
       setCopied(false)
       /* ما جرى للبريد يُقال صراحةً: «أُنشئ» وحدَها تُقرأ «وصل» — وقد لا يكون */
-      if (send && email.trim()) {
+      /* وقارئٌ له رابطٌ حيٌّ بهذا الملفّ يُردّ رابطُه ولا تصله رسالةٌ ثانية */
+      if (r.reused) {
+        toast('لهذا القارئ رابط قائم — لم نرسل له بريدا ثانيا. ولرابط جديد اضغط «جدّده وانسخه»')
+      } else if (send && email.trim()) {
         toast(r.emailDelivery === 'sent' ? `أرسل الرابط إلى ${email.trim()}` : 'أنشئ الرابط، لكن لم يرسل البريد — انسخه يدويّا')
       }
       setName('')

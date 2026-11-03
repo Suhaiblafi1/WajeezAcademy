@@ -172,7 +172,9 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       sendEmail: body.sendEmail ?? false,
       ...(body.days ? { ttlMs: body.days * 24 * 3600_000 } : {}),
     })
-    return reply.status(201).send({ url: made.url, link: made.link, emailDelivery: made.emailDelivery })
+    /* ورابطٌ قائمٌ لقارئه يُردّ لا يُنشأ — فلا 201 ولا بريدٌ ثانٍ */
+    return reply.status(made.reused ? 200 : 201)
+      .send({ url: made.url, link: made.link, emailDelivery: made.emailDelivery, reused: made.reused })
   })
 
   app.get('/api/admin/trainer-applications/:id/dossier-links', {

@@ -80,6 +80,8 @@ export interface UnbookedDigest {
   bodyAr: string
   /** السطورُ المعروضةُ وحدَها — لمن أراد عرضَها في شاشة */
   lines: string[]
+  /** أرقامُ المتأخّرين كلِّهم لا المعروضين وحدَهم — تُحفظ مع الملخّص ليُعرف بها الجديدُ غدا */
+  references: string[]
 }
 
 const DAY_MS = 86_400_000
@@ -155,7 +157,21 @@ export function unbookedDigest(rows: readonly UnbookedRow[], now: Date = new Dat
     titleAr: unbookedTitleAr(late.length),
     bodyAr: parts.join('\n\n'),
     lines,
+    references: late.map((r) => r.reference),
   }
+}
+
+/* ═══ ولا يخرج إلّا بجديد (٣ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «يجب أن لا يبعث إلّا إذا كان هناك شيءٌ جديدٌ لم يكن في التلخيص السابق».
+   فالجديدُ متقدّمٌ متأخّرٌ لم يرد في آخر ملخّصٍ وصل هذا الموظّف. ومن خرج من القائمة (حجز أو
+   رُدّ) ليس جديدا — نقصُ القائمة لا يُبعث له. وملخّصٌ قديمٌ بلا أرقامٍ محفوظة يُعدّ كأن لم يكن،
+   فيخرج مرّةً ثمّ يُقاس عليه. */
+export function hasNewSinceLast(current: readonly string[], previousData: unknown): boolean {
+  const prev = (previousData as { references?: unknown } | null | undefined)?.references
+  if (!Array.isArray(prev)) return current.length > 0
+  const seen = new Set(prev.filter((x): x is string => typeof x === 'string'))
+  return current.some((ref) => !seen.has(ref))
 }
 
 /** أفي نافذة الصباح نحن؟ — بتوقيت الأكاديمية لا بتوقيت الخادم.

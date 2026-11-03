@@ -71,6 +71,8 @@ const LEARNER: Table = {
   'payment.succeeded': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
   /* ي-٤: الردُّ وردُّ طلبِه كلاهما في «الفواتير» — الصفُّ نفسُه يحمل الخبر */
   'order.seats_held': { path: '/student/billing', ctaAr: 'أتمم الدفع' },
+  /* وكان بلا وجهة فخرج بريدُه بلا زرّ (٣ نوفمبر ٢٠٢٦) */
+  'order.cancelled_abandoned': { path: '/student/billing', ctaAr: 'افتح فواتيرك' },
   'payment.refunded': { path: '/student/billing', ctaAr: 'افتح كشف فواتيرك' },
   /* والخبرُ يقول «راسل الدعم إن كان لديك ما تضيفه» — فبابُه الدعمُ لا الفاتورة (١٩ أكتوبر ٢٠٢٦) */
   'payment.refund_rejected': { path: '/student/support', ctaAr: 'راسل الدعم' },
@@ -163,6 +165,7 @@ const STAFF: Table = {
   'staff.task.done': { path: '/admin/tasks', ctaAr: 'افتح المهامّ' },
   'admin.support.ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
+  'admin.order_paid': { path: '/admin/finance', ctaAr: 'افتح المال' },
   'admin.contact_message': { path: '/admin/support', ctaAr: 'افتح رسائل الموقع' },
   'admin.trainer_application': { path: '/admin/trainers', ctaAr: 'افتح طلب الانضمام' },
   /* وطلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦) — طابورُه حيث يُقبل بنسبته أو يُعتذر له */

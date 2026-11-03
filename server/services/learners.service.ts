@@ -263,8 +263,12 @@ export class LearnersService {
         where: { id: userId },
         data: {
           ...(patch.displayName !== undefined ? { displayName: patch.displayName } : {}),
-          /* تبديلُ البريد يُسقط توثيقَه: العنوانُ الجديد لم يُثبت أحدٌ ملكيّته */
-          ...(patch.email !== undefined ? { email: patch.email, emailVerifiedAt: null } : {}),
+          /* تبديلُ البريد يُسقط توثيقَه: العنوانُ الجديد لم يُثبت أحدٌ ملكيّته. ورابطُ توثيقٍ
+             وصل العنوانَ القديم يُبطَل معه — وإلّا وثّق فتحُه العنوانَ الجديد. والبريدُ نفسُه لا
+             يُسقط شيئا (٣ نوفمبر ٢٠٢٦). */
+          ...(patch.email !== undefined && patch.email.toLowerCase() !== before.email.toLowerCase()
+            ? { email: patch.email, emailVerifiedAt: null, emailVerifyTokenHash: null, emailVerifyExpiresAt: null }
+            : {}),
           ...(patch.status !== undefined
             ? { status: patch.status, suspendedAt: patch.status === 'suspended' ? new Date() : null }
             : {}),

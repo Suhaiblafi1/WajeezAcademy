@@ -48,7 +48,7 @@ import { MIN_SESSION_MS } from '../../src/application/trainer/session-length'
 import { notPermanentAuditWhere } from '../../src/application/audit/retention'
 import { BOOKABLE_STATUSES } from '../../src/application/trainer/application-options'
 import { LIVE_INTERVIEW } from '../services/trainer-interview-state'
-import { isDigestHour, unbookedDigest } from '../../src/application/trainer/unbooked-digest'
+import { hasNewSinceLast, isDigestHour, unbookedDigest } from '../../src/application/trainer/unbooked-digest'
 import { getCalendlyConfig, recordCalendlySync } from '../services/integrations.service'
 import { CalendlyWebhookService } from '../services/calendly-webhook.service'
 import { CHECKOUT_HOLD_MS, TEAM_HOLD_MS, teamHeldOrderIds } from '../services/commerce/seat-hold'
@@ -261,7 +261,8 @@ export async function sendVerificationReminders(prisma: PrismaClient, now = new 
     }
   }
 
-  for (const step of VERIFY_REMINDERS) {
+  for (const [i, step] of VERIFY_REMINDERS.entries()) {
+    const prior = i > 0 ? VERIFY_REMINDERS[i - 1] : null
     const candidates = await prisma.user.findMany({
       where: {
         emailVerifiedAt: null,
@@ -271,6 +272,20 @@ export async function sendVerificationReminders(prisma: PrismaClient, now = new 
           lte: new Date(now.getTime() - step.afterMs),
           gte: new Date(now.getTime() - VERIFY_WINDOW_MS),
         },
+        /* ═══ ثلاثةُ أعطابٍ رُفعت (٣ نوفمبر ٢٠٢٦) ═══
+           ① من ذُكِّر بهذه الخطوة يخرج من الاستعلام لا من الحلقة — وإلّا ملأ أقدمُ مئةٍ
+              مذكَّرين السقفَ كلَّ ساعةٍ فلا يبلغ التذكيرُ من سجّل بعدهم.
+           ② والثاني لا يقع إلّا بعد الأوّل بمسافته — وإلّا خرجا معا في دورةٍ واحدة لمن تجاوز
+              الأيّامَ الأربعة (قناةٌ أُغلقت أيّاما، أو أوّلُ دورةٍ بعد النشر)، وأبطل الثاني رابطَ الأوّل.
+           ③ ومن بيده رابطٌ حيٌّ (طلبه بنفسه للتوّ) لا يُسكّ له غيرُه: التذكيرُ كان يُبطل رابطا
+              عمرُه دقائق، ويقول له «الرابط الأوّل انتهت صلاحيّته» وهو لم ينته. فيُرجأ حتّى ينتهي. */
+        notifications: {
+          none: { templateKey: step.key },
+          ...(prior
+            ? { some: { templateKey: prior.key, queuedAt: { lte: new Date(now.getTime() - (step.afterMs - prior.afterMs)) } } }
+            : {}),
+        },
+        OR: [{ emailVerifyExpiresAt: null }, { emailVerifyExpiresAt: { lte: now } }],
       },
       orderBy: { createdAt: 'asc' },
       take: LIMITS.verifyReminders,
@@ -304,7 +319,8 @@ export async function sendVerificationReminders(prisma: PrismaClient, now = new 
           title: step.last ? 'تذكير أخير بتوثيق بريدك' : 'بقي توثيق بريدك',
           body: step.last
             ? 'أرسلنا رابطا جديدا إلى بريدك، وهذا آخر تذكير نرسله في هذا الشأن.'
-            : 'أرسلنا رابطا جديدا إلى بريدك. والتوثيق مطلوب للشراء والشهادة.',
+            /* والشراءُ لا ينتظر التوثيقَ بقرار صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦) — الشهادةُ وحدَها */
+            : 'أرسلنا رابطا جديدا إلى بريدك. والتوثيق مطلوب لإصدار شهادتك.',
           audience: 'learner',
         })
       } catch {
@@ -1255,16 +1271,24 @@ export async function digestUnbookedApplicants(prisma: PrismaClient, now = new D
   let done = 0
   let failed = 0
   let already = 0
+  let unchanged = 0
   for (const userId of staff) {
     const sentToday = await prisma.notification.count({
       where: { userId, templateKey: DIGEST_KEY, queuedAt: { gte: new Date(now.getTime() - DIGEST_WINDOW_MS) } },
     })
     if (sentToday > 0) { already += 1; continue }
+    /* ولا يخرج إلّا بمن لم يرد في آخر ملخّصٍ وصله (`hasNewSinceLast`) — والمقياسُ ما وصل لا ما حووِل */
+    const last = await prisma.notification.findFirst({
+      where: { userId, templateKey: DIGEST_KEY, status: 'sent' },
+      orderBy: { queuedAt: 'desc' },
+      select: { data: true },
+    })
+    if (last && !hasNewSinceLast(digest.references, last.data)) { unchanged += 1; continue }
     try {
       const row = await notifications.notify({
         userId, channel: 'email', templateKey: DIGEST_KEY, audience: 'staff',
         title: digest.titleAr, body: digest.bodyAr,
-        data: { count: digest.count, oldestDays: digest.oldestDays },
+        data: { count: digest.count, oldestDays: digest.oldestDays, references: digest.references },
       })
       if (row?.status === 'sent') done += 1
       else failed += 1
@@ -1279,7 +1303,8 @@ export async function digestUnbookedApplicants(prisma: PrismaClient, now = new D
     summaryAr: `${digest.titleAr} (أقدمهم ${digest.oldestAr})`
       + ` — وصل ${done} من الإدارة`
       + (failed > 0 ? `، وسقط ${failed} عند المزوّد` : '')
-      + (already > 0 ? `، وسبق اليوم ${already}` : ''),
+      + (already > 0 ? `، وسبق اليوم ${already}` : '')
+      + (unchanged > 0 ? `، ولا جديد لـ${unchanged} منذ ملخّصهم السابق` : ''),
     done, failed, ms: Date.now() - started,
   }
 }
