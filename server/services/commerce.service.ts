@@ -9,7 +9,7 @@ import { FIRST_TIME_PROMO } from '../../src/application/commerce/first-time-prom
 import { ReferralService } from './referral.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
-import { safeNotify, publicSiteUrl } from './notification.service'
+import { safeNotify, notifyRole, publicSiteUrl } from './notification.service'
 import { AdvisorService } from './advisor.service'
 import {
   convertFromUsd, isPresentmentCurrency, type PresentmentCurrency,
@@ -981,6 +981,21 @@ export class CommerceService {
         body: `استلمنا دفعتك (${num(order.total)} ${order.currency}) عن ${what}. ${tail}`,
         templateKey: 'payment.succeeded',
         data: { orderId, total: num(order.total), enrolled: converted.length, of: targets.size },
+      })
+
+      /* ═══ والإدارةُ تعلم بالدفعة (٣ نوفمبر ٢٠٢٦) ═══
+         قرارُ صاحب المنصّة: «تأكّد أنّه يصل السوبر أدمن ومديرَ الأكاديميّة أيضا» — ولم يكن للدفع
+         جرسٌ عند أحدٍ من الإدارة. فجرسٌ لا بريد، والماليّةُ معهما (`finance.view` يفتح «المال»
+         للثلاثة). ولا يُسقط التسويةَ تعثّرُه: `notifyRole` لا ترمي. */
+      const buyer = await this.prisma.user.findUnique({ where: { id: order.userId }, select: { displayName: true } })
+      const items = order.items.length > 1 ? `${order.items.length} دورات` : `«${order.items[0]?.titleAr ?? 'طلب'}»`
+      await notifyRole(this.prisma, ['super_admin', 'academic_manager', 'finance'], {
+        channel: 'in_app',
+        title: 'دفعة جديدة',
+        body: `${buyer?.displayName ?? 'متعلّم'} دفع ${num(order.total)} ${order.currency} عن ${items}.`
+          + (failed.length > 0 ? ` وبقيت ${failed.length} دون تسجيل — تحتاج متابعة.` : ''),
+        templateKey: 'admin.order_paid',
+        data: { orderId, total: num(order.total) },
       })
     }
   }

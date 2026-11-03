@@ -81,9 +81,25 @@ describe('تذكيرُ توثيق البريد', () => {
 
   it('ثمّ الثاني بعد أربعةٍ — ثمّ لا ثالثَ مهما أُعيدت الدورة', async () => {
     const id = await unverifiedAgedBy(9 * DAY, 'day9')
-    /* دورتان: الأولى تُرسل الأوّلَ، والثانيةُ الثانيَ — فلا يخرج تذكيران
-       في لحظةٍ واحدةٍ على صاحبٍ واحد. */
+    /* ═══ والثاني بعد الأوّل بمسافته، لا في الدورة التالية (٣ نوفمبر ٢٠٢٦) ═══
+       كان هذا الفحصُ يقبل الاثنين من دورتين متتاليتين — أي بعد دقائق، والثاني يُبطل رابطَ الأوّل.
+       فمن تجاوز الأيّامَ الأربعة يصله الأوّلُ وحدَه، ثمّ الثاني بعد ثلاثة. والأيّامُ تُمضى بيدٍ:
+       يُرجَع الجرسُ الأوّل ويُنهى رابطُه. */
     await sendVerificationReminders(prisma)
+    await sendVerificationReminders(prisma)
+    expect(
+      (await bellsFor(id)).map((b) => b.templateKey),
+      'خرج التذكيران معا لمن تجاوز الأيّامَ الأربعة',
+    ).toEqual(['account.verify.reminder.1'])
+    /* وانتهاءُ الرابط وحدَه لا يستعجل الثاني: المسافةُ من الأوّل شرطٌ مستقلّ */
+    await prisma.user.update({ where: { id }, data: { emailVerifyExpiresAt: new Date(Date.now() - HOUR) } })
+    await sendVerificationReminders(prisma)
+    expect((await bellsFor(id)).length, 'خرج الثاني قبل مضيّ ثلاثة أيّام على الأوّل').toBe(1)
+    await prisma.notification.updateMany({
+      where: { userId: id, templateKey: 'account.verify.reminder.1' },
+      data: { queuedAt: new Date(Date.now() - 3 * DAY - HOUR) },
+    })
+    await prisma.user.update({ where: { id }, data: { emailVerifyExpiresAt: new Date(Date.now() - HOUR) } })
     await sendVerificationReminders(prisma)
     expect(
       (await bellsFor(id)).map((b) => b.templateKey).sort(),
@@ -94,6 +110,31 @@ describe('تذكيرُ توثيق البريد', () => {
     for (let i = 0; i < 3; i += 1) await sendVerificationReminders(prisma)
     expect((await bellsFor(id)).length, 'وصل تذكيرٌ ثالث').toBe(2)
   })
+
+  it('ومن بيده رابطٌ حيٌّ لا يُسكّ له غيرُه — فلا يموت رابطٌ طلبه للتوّ', async () => {
+    const id = await unverifiedAgedBy(2 * DAY, 'live')
+    const issued = await auth.issueEmailVerification(id)
+    const before = await prisma.user.findUniqueOrThrow({ where: { id }, select: { emailVerifyTokenHash: true } })
+    await sendVerificationReminders(prisma)
+    expect(await bellsFor(id), 'ذُكِّر وبيده رابطٌ حيّ').toEqual([])
+    const after = await prisma.user.findUniqueOrThrow({ where: { id }, select: { emailVerifyTokenHash: true } })
+    expect(after.emailVerifyTokenHash, 'أُبطل رابطٌ طلبه صاحبُه للتوّ').toBe(before.emailVerifyTokenHash)
+    expect(issued).not.toBeNull()
+  })
+
+  it('ومن ذُكِّر لا يملأ سقفَ الدورة — فيبلغ التذكيرُ من سجّل بعدهم', async () => {
+    /* أقدمُ الحسابات مذكَّرون كلُّهم، والسقفُ مئة: لو بقوا في الاستعلام لَملؤوه كلَّ ساعة */
+    for (let i = 0; i < 101; i += 1) {
+      const old = await unverifiedAgedBy(3 * DAY + i * 60_000, `cap${i}`)
+      await prisma.notification.create({
+        data: { userId: old, channel: 'in_app', templateKey: 'account.verify.reminder.1', title: 'ت', body: 'ت' },
+      })
+    }
+    const id = await unverifiedAgedBy(2 * DAY, 'newer')
+    await sendVerificationReminders(prisma)
+    expect((await bellsFor(id)).map((b) => b.templateKey), 'حجب المذكَّرون من سجّل بعدهم')
+      .toEqual(['account.verify.reminder.1'])
+  }, 120_000)
 
   it('ومن وثّق لا يُذكَّر بما فعله', async () => {
     const id = await unverifiedAgedBy(9 * DAY, 'done')

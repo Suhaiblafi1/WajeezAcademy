@@ -108,6 +108,24 @@ export class TrainerDossierLinkService {
       throw new AuthError('applicant_email', 'هذا بريد المتقدّم نفسه — ولا يصل الرابط صاحب الملفّ', 422)
     }
 
+    /* ═══ والبريدُ للجديد وحدَه (٣ نوفمبر ٢٠٢٦) ═══
+
+       قرارُ صاحب المنصّة عن «ملفّ متقدّم لمراجعتك»: «فقط إذا كان جديدا». فقارئٌ له رابطٌ حيٌّ
+       بهذا الملفّ لا يُنشأ له ثانٍ ولا تصله رسالةٌ ثانية — يُردّ رابطُه القائم ليُنسخ. ومن أراد
+       رابطا جديدا له فبابُه «جدّد» (`rotate`)، فعلٌ ظاهرٌ يقول إنّ الأوّلَ بطل. */
+    if (readerEmail) {
+      const live = await this.prisma.trainerDossierLink.findFirst({
+        where: {
+          applicationId, revokedAt: null, expiresAt: { gt: new Date() }, tokenClear: { not: null },
+          reviewerEmail: { equals: readerEmail, mode: 'insensitive' },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+      if (live?.tokenClear) {
+        return { link: live, url: `${publicSiteUrl()}/r/${live.tokenClear}`, emailDelivery: null, reused: true as const }
+      }
+    }
+
     const token = newToken()
     const link = await this.prisma.trainerDossierLink.create({
       data: {
@@ -141,7 +159,7 @@ export class TrainerDossierLinkService {
     const emailDelivery = input.sendEmail
       ? await this.mailLink(link, app.reference, url, actorId, applicationId)
       : null
-    return { link, url, emailDelivery }
+    return { link, url, emailDelivery, reused: false as const }
   }
 
   /* رسالةُ الرابط — يتقاسمها الإنشاءُ والتجديد، فلا نصّان يفترقان يوما */

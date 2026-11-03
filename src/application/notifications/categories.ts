@@ -151,6 +151,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'order.cancelled_abandoned', 'trainer_payout',
       /* وكشفُ عمولة المستشار كمستحقّات المدرّب (١٩ أكتوبر ٢٠٢٦) — مالُه لا يُكتَم خبرُه */
       'advisor_payout',
+      /* ودفعةٌ وصلت — جرسُ الإدارة (٣ نوفمبر ٢٠٢٦)، خبرُ مالٍ لا يُكتَم كأخواته */
+      'admin.order_paid',
     ],
   },
   {

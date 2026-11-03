@@ -108,3 +108,26 @@ describe('توثيقُ البريد بين الطلب والحساب', () => {
     expect(user.emailVerifiedAt, 'وُثّق حسابٌ ببريدٍ لم يُفتح منه رابط').toBeNull()
   })
 })
+
+/* وتبديلُ الموظّف بريدَ المتعلّم (٣ نوفمبر ٢٠٢٦): رابطُ توثيقٍ وصل العنوانَ القديم لا يوثّق الجديد،
+   والبريدُ نفسُه لا يُسقط التوثيق. نُقض شرطُ مسح الرمز فسقط الأوّل، وشرطُ «البريد نفسه» فسقط الثاني. */
+describe('تبديلُ البريد بيد الموظّف', () => {
+  it('رابطُ العنوان القديم يبطل — فلا يوثّق العنوانَ الجديد', async () => {
+    const { LearnersService } = await import('../../services/learners.service')
+    const { userId } = await auth.register(`swap-old-${S}@test.local`, PASS, 'متعلّم')
+    const issued = await auth.issueEmailVerification(userId)
+    await new LearnersService(prisma).updateAccount({ kind: 'all' }, userId, userId, { email: `swap-new-${S}@test.local` })
+    await expect(auth.verifyEmail(issued!.token), 'وثّق رابطُ العنوان القديم العنوانَ الجديد')
+      .rejects.toMatchObject({ code: 'invalid_token' })
+  })
+
+  it('والبريدُ نفسُه لا يُسقط التوثيق', async () => {
+    const { LearnersService } = await import('../../services/learners.service')
+    const email = `swap-same-${S}@test.local`
+    const { userId } = await auth.register(email, PASS, 'متعلّم')
+    await prisma.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } })
+    await new LearnersService(prisma).updateAccount({ kind: 'all' }, userId, userId, { email })
+    const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
+    expect(u.emailVerifiedAt, 'حُفظ البريدُ نفسُه فسقط توثيقُه').not.toBeNull()
+  })
+})

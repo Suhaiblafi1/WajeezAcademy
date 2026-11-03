@@ -39,7 +39,9 @@ export class SupportService {
     })
     await recordAudit(this.prisma, { actorId: userId, action: 'support.ticket.create', entityType: 'support_ticket', entityId: ticket.id })
     /* تذكرة جديدة تُشعِر فريق الدعم فوراً — لا تنتظر من يفتح الشاشة صدفة */
-    await notifyRole(this.prisma, ['super_admin', 'support'], {
+    /* والمديرُ الأكاديميُّ معهما — قرارُ صاحب المنصّة (٣ نوفمبر ٢٠٢٦): «تأكّد أنّه يصل السوبر أدمن
+       ومديرَ الأكاديميّة أيضا». وهو يفتح «الدعم» بصلاحيّته (`support.operate`). */
+    await notifyRole(this.prisma, ['super_admin', 'academic_manager', 'support'], {
       channel: 'in_app',
       title: 'تذكرة دعم جديدة',
       body: `فتحت تذكرة «${input.subject}» (${input.category ?? 'other'}) — بانتظار من يلتقطها في «تذاكر الدعم».`,

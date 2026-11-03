@@ -30,7 +30,8 @@ export interface ContactInput {
 }
 
 /** من يُخبَر في الجرس — من يُخبَر بتذكرة الدعم نفسِها */
-const CONTACT_STAFF_ROLES = ['super_admin', 'support']
+/* والمديرُ الأكاديميُّ معهما (٣ نوفمبر ٢٠٢٦) — ويفتح «رسائل الموقع» بصلاحيّة الدعم (`support.operate`) */
+const CONTACT_STAFF_ROLES = ['super_admin', 'academic_manager', 'support']
 
 const ENTITY_AR: Record<string, string> = {
   individual: 'فرد', company: 'شركة أو قطاع خاص', gov: 'جهة حكومية',

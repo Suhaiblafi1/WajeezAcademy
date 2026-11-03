@@ -190,6 +190,30 @@ describe('ملخّصُ من لم يحجز', () => {
     await emailChannel(true)
   })
 
+  /* ═══ ولا يخرج إلّا بجديد (٣ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «يجب أن لا يبعث إلّا إذا كان هناك شيءٌ جديدٌ لم يكن في التلخيص السابق».
+     والملخّصُ السابقُ يُجعل «وصل» وأمسِ بيدٍ: بوّابةُ `MAIL_LIVE` تُسقط الإرسالَ هنا، والساعةُ محقونة. */
+  it('ولا يخرج ثانيةً بالقائمة نفسِها — ويخرج حين يتأخّر متقدّمٌ جديد', async () => {
+    await clearDigests()
+    await digestUnbookedApplicants(prisma, MORNING)
+    const yesterday = async () => prisma.notification.updateMany({
+      where: { templateKey: DIGEST_KEY }, data: { status: 'sent', queuedAt: daysBefore(1) },
+    })
+    await yesterday()
+
+    const same = await digestUnbookedApplicants(prisma, MORNING)
+    expect(await digestsOf(reviewerId), 'خرج ملخّصٌ بلا جديدٍ على السابق').toHaveLength(1)
+    expect(same.summaryAr, 'لم يقل خبرُه لماذا امتنع').toContain('لا جديد')
+
+    const fresh = await applicantCompletedDaysAgo('digest-fresh@test.local', 'سلمى الجديدة', 4)
+    await yesterday()
+    await digestUnbookedApplicants(prisma, MORNING)
+    const all = await digestsOf(reviewerId)
+    expect(all, 'تأخّر متقدّمٌ جديدٌ ولم يخرج له ملخّص').toHaveLength(2)
+    expect(all.some((d) => d.body.includes(fresh.reference)), 'الملخّصُ الجديدُ لا يسمّي الجديد').toBe(true)
+    await applicantUntouched()
+  })
+
   it('ولا يخرج فارغا — صباحٌ لا متأخّرَ فيه لا رسالةَ له', async () => {
     /* يُحجز لكلّ من في الطابور، فلا يبقى متأخّر */
     const open = await prisma.trainerApplication.findMany({

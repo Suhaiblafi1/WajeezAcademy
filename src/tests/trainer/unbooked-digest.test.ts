@@ -21,7 +21,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DIGEST_FROM_HOUR, DIGEST_NAMES, DIGEST_TO_HOUR, UNBOOKED_AFTER_DAYS,
-  isDigestHour, lateToBook, unbookedDigest, unbookedTitleAr, type UnbookedRow,
+  hasNewSinceLast, isDigestHour, lateToBook, unbookedDigest, unbookedTitleAr, type UnbookedRow,
 } from '@/application/trainer/unbooked-digest'
 
 const NOW = new Date('2026-09-19T10:00:00Z')
@@ -182,5 +182,20 @@ describe('⑧ نافذة الصباح بتوقيت الأكاديمية', () => 
 
   it('والنافذة ثلاث ساعات لا لحظة — فدورة تتأخّر لا تفوّت اليوم', () => {
     expect(DIGEST_TO_HOUR - DIGEST_FROM_HOUR).toBeGreaterThanOrEqual(2)
+  })
+})
+
+/* ولا يخرج إلّا بجديد — قرارُ صاحب المنصّة (٣ نوفمبر ٢٠٢٦) */
+describe('الجديدُ منذ الملخّص السابق', () => {
+  it('القائمةُ نفسُها أو أنقصُ منها ليست جديدا', () => {
+    expect(hasNewSinceLast(['A', 'B'], { references: ['A', 'B'] })).toBe(false)
+    expect(hasNewSinceLast(['A'], { references: ['A', 'B'] })).toBe(false)
+  })
+  it('ومن لم يرد في السابق جديد', () => {
+    expect(hasNewSinceLast(['A', 'C'], { references: ['A', 'B'] })).toBe(true)
+  })
+  it('وملخّصٌ قديمٌ بلا أرقامٍ محفوظة كأن لم يكن', () => {
+    expect(hasNewSinceLast(['A'], { count: 1 })).toBe(true)
+    expect(hasNewSinceLast(['A'], null)).toBe(true)
   })
 })
