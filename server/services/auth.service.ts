@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs'
 import type { PrismaClient } from '@prisma/client'
 import { MAIL_LINK_TTL_MS, RESET_LINK_TTL_MS } from '../../src/application/links/mail-link-window'
 import { linkLeadsAfterVerification } from './lead-link'
+import { proveApplicationFromAccount } from './email-proof'
 import { recordSignupSource, type SignupVia } from './signup-source.service'
 
 /** الدور الأرضيّ لكلّ حساب — يُمنح عند التسجيل ولا يُنزع بترقية */
@@ -427,8 +428,12 @@ export class AuthService {
       /* أمن: تغيير كلمة المرور يبطل كل الجلسات القائمة */
       this.prisma.session.updateMany({ where: { userId: row.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ])
-    /* وما أثبته الرابطُ يلحق به عميلُه المحتمل — والعلّةُ في `lead-link.ts` */
-    if ('emailVerifiedAt' in proved) await linkLeadsAfterVerification(this.prisma, row.userId)
+    /* وما أثبته الرابطُ يلحق به عميلُه المحتمل — والعلّةُ في `lead-link.ts` —
+       وطلبُ انضمامه ببريده نفسِه (`email-proof.ts`) */
+    if ('emailVerifiedAt' in proved) {
+      await proveApplicationFromAccount(this.prisma, row.userId)
+      await linkLeadsAfterVerification(this.prisma, row.userId)
+    }
   }
 
   /* ── توثيق البريد (١هـ) ───────────────────────────────────────────────
@@ -466,6 +471,8 @@ export class AuthService {
       where: { id: user.id },
       data: { emailVerifiedAt: new Date(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null },
     })
+    /* وطلبُ انضمامه ببريده نفسِه يوثَّق معه — فلا تطلب منه رسالةُ الطلب ما وثّقه (`email-proof.ts`) */
+    await proveApplicationFromAccount(this.prisma, user.id)
     await linkLeadsAfterVerification(this.prisma, user.id)
     return { userId: user.id, alreadyVerified: false }
   }
@@ -504,6 +511,7 @@ export class AuthService {
       where: { id: userId },
       data: { emailVerifiedAt: new Date(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null },
     })
+    await proveApplicationFromAccount(this.prisma, userId)
     await linkLeadsAfterVerification(this.prisma, userId, actorId)
     return { alreadyVerified: false, email: user.email }
   }

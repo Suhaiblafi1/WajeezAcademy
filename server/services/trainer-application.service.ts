@@ -30,6 +30,8 @@ import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/lin
 import { INVITATION_ACTION } from '../../src/application/trainer/interview-invitation'
 import { nextTrainerApplicationReference, isReferenceCollision, REFERENCE_ATTEMPTS } from './trainer-application-reference'
 import { recordSignupSource } from './signup-source.service'
+import { proveAccountFromApplication } from './email-proof'
+import { linkLeadsAfterVerification } from './lead-link'
 /* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
 import { fmtDateLong } from '../../src/application/text/format-ar'
@@ -542,12 +544,24 @@ export class TrainerApplicationService {
     app: { id: string; reference: string; email: string; fullName: string; createdAt: Date; phone: string | null
       phoneCountryCode: string | null; deliveryMode: string | null; contactChannel: string | null
       contactAltEmail: string | null; specialties: { specialty: string }[] },
-    verifyToken: string,
+    /** null: البريدُ موثَّقٌ أصلا — فلا يُطلب منه توثيقُ ما وثّقه */
+    verifyToken: string | null,
     /** أُجّل عند إرساله لإغلاق الاستقبال — فيُقال ذلك بدل «نتواصل لتحديد موعد» */
     intakeDeferred = false,
   ): Promise<DirectMailStatus> {
     const site = publicSiteUrl()
-    const link = `${site}/join-trainer/verify?ref=${encodeURIComponent(app.reference)}&token=${encodeURIComponent(verifyToken)}`
+    const verifyBlocks = verifyToken
+      ? ([
+        { kind: 'p', text: 'وقبل أن نبدأ مراجعته، نحتاج أن نتأكّد أنّ هذا البريد يصلك — فعليه وحده نتواصل معك.' },
+        {
+          kind: 'cta', label: 'وثّق بريدك',
+          href: `${site}/join-trainer/verify?ref=${encodeURIComponent(app.reference)}&token=${encodeURIComponent(verifyToken)}`,
+        },
+        /* والمدّةُ من الثابت لا بيدٍ هنا: رقمٌ في الخدمة وجملةٌ في الرسالة
+           يفترقان عند أوّل تعديل — فيَعِد النصُّ بما لا يفي به الرمز. */
+        { kind: 'callout', text: `الرابط صالح ${MAIL_LINK_WINDOW_AR}، ويفتح مرّة واحدة.` },
+      ] as const)
+      : ([] as const)
     const channel = app.contactChannel ? contactChannelLabel(app.contactChannel) : 'البريد الإلكتروني'
     const channelValue = this.contactValue(app)
     const delivery = app.deliveryMode === 'remote' ? 'عن بعد' : app.deliveryMode === 'in_person' ? 'حضوري' : 'حضوري وعن بعد'
@@ -560,11 +574,7 @@ export class TrainerApplicationService {
         greetingName: app.fullName,
         heading: 'وصلنا طلبك للانضمام إلى مدربي أكاديمية وجيز',
         blocks: [
-          { kind: 'p', text: 'وقبل أن نبدأ مراجعته، نحتاج أن نتأكّد أنّ هذا البريد يصلك — فعليه وحده نتواصل معك.' },
-          { kind: 'cta', label: 'وثّق بريدك', href: link },
-          /* والمدّةُ من الثابت لا بيدٍ هنا: رقمٌ في الخدمة وجملةٌ في الرسالة
-             يفترقان عند أوّل تعديل — فيَعِد النصُّ بما لا يفي به الرمز. */
-          { kind: 'callout', text: `الرابط صالح ${MAIL_LINK_WINDOW_AR}، ويفتح مرّة واحدة.` },
+          ...verifyBlocks,
           { kind: 'h', text: 'تفاصيل طلبك' },
           { kind: 'facts', rows: [
             { label: 'رقم الطلب', value: app.reference },
@@ -628,7 +638,7 @@ export class TrainerApplicationService {
     if (app.emailVerifyExpiresAt && app.emailVerifyExpiresAt < new Date()) {
       throw new AuthError('expired_token', 'رابط التأكيد منتهي — اطلب رسالة جديدة من صفحة الانضمام', 410)
     }
-    await this.prisma.$transaction(async (tx) => {
+    const accountProved = await this.prisma.$transaction(async (tx) => {
       await tx.trainerApplication.update({
         where: { id: app.id },
         data: { emailVerifiedAt: new Date(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null },
@@ -643,7 +653,11 @@ export class TrainerApplicationService {
          فالترحيلُ نقل ما بقي منها إلى `draft`. والتحقّقُ يظلّ يكتب
          `emailVerifiedAt` ويُسجّل أثرَه كما كان: هو خبرٌ عن البريد لا
          نقلةٌ في الطابور. */
+      /* وحسابُه ببريده نفسِه يوثَّق معه — وإلّا طرقه تذكيرُ «بقي توثيق بريدك»
+         بعد يومٍ وقد وثّق للتوّ (`email-proof.ts`) */
+      return proveAccountFromApplication(tx, app)
     })
+    if (accountProved && app.userId) await linkLeadsAfterVerification(this.prisma, app.userId)
     const row = await this.prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id }, select: { status: true } })
     return { status: row.status as TrainerStatus, alreadyVerified: false }
   }
@@ -938,6 +952,13 @@ export class TrainerApplicationService {
     const firstCompletion = app.status === 'draft'
     /* يُحكم مرّةً بساعة الإرسال، فتتّفق عليه الحالةُ والبريدُ وإشعارُ الفريق */
     const intakeDeferred = firstCompletion && intakeClosedNow(done)
+    /* ومن كان حسابُه ببريد الطلب نفسِه موثَّقا فقد أثبت العنوان — لا يُطلب منه ثانيةً
+       (`email-proof.ts`). والطلبُ يرث توثيقَه، فلا رمزَ ولا زرَّ «وثّق بريدك» في رسالته. */
+    const account = app.userId && !app.emailVerifiedAt
+      ? await this.prisma.user.findUnique({ where: { id: app.userId }, select: { email: true, emailVerifiedAt: true } })
+      : null
+    const inheritsProof = !!account?.emailVerifiedAt && account.email.toLowerCase() === app.email.toLowerCase()
+    const needsVerify = firstCompletion && !app.emailVerifiedAt && !inheritsProof
     const verifyToken = newToken()
     await this.prisma.$transaction(async (tx) => {
       await tx.trainerApplication.update({
@@ -982,9 +1003,10 @@ export class TrainerApplicationService {
           ...(sentPhone ? { phone, phoneCountryCode } : {}),
           ...(contact ? { contactChannel: contact.channel, contactAltEmail } : {}),
           /* رمزُ التأكيد يُصدَر مع أوّل إكمال — وبريدُه يحمله */
-          ...(firstCompletion && !app.emailVerifiedAt
+          ...(needsVerify
             ? { emailVerifyTokenHash: sha256(verifyToken), emailVerifyExpiresAt: new Date(Date.now() + VERIFY_TTL_MS) }
             : {}),
+          ...(inheritsProof ? { emailVerifiedAt: account!.emailVerifiedAt } : {}),
         },
       })
       await recordAudit(tx, {
@@ -1025,7 +1047,8 @@ export class TrainerApplicationService {
       const full = await this.prisma.trainerApplication.findUniqueOrThrow({
         where: { id: app.id }, include: { specialties: true },
       })
-      emailDelivery = await this.sendConfirmationEmail(full, verifyToken, intakeDeferred)
+      /* وكان الرمزُ يُرسَل ولو وُثّق الطلبُ قبلُ ولم يُكتب له رمز — زرٌّ يطلب ما تمّ */
+      emailDelivery = await this.sendConfirmationEmail(full, needsVerify ? verifyToken : null, intakeDeferred)
       /* الطلب اكتمل وصار «مقدماً» — أشعر لجنة الاستقبال فوراً */
       await notifyRole(this.prisma, ['super_admin', 'academic_manager', 'operations_manager'], {
         channel: 'in_app',
