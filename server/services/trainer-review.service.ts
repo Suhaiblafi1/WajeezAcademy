@@ -12,6 +12,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
 import { holdsRoleBeyondTrainer } from '../auth/permissions'
 import { recordAudit } from './audit'
+import { linkLeadsAfterVerification } from './lead-link'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import { changeGroupsBetween } from '../../src/application/trainer/contract-changelog'
@@ -5871,12 +5872,18 @@ export class TrainerReviewService {
       throw new AuthError('email_taken', 'يوجد حساب بهذا البريد — سجّل الدخول واطلب ربط الملف من الإدارة', 409)
     }
 
+    /* ورابطُ الدعوة لم يصل إلّا هذا البريدَ — فمن فتحه أثبت العنوان، كما في
+       «نسيت كلمة المرور» (`auth.service.ts`، البند ٦٧). ولولاه طرقه تذكيرُ «بقي
+       توثيق بريدك» وقد دخل من رسالةٍ في صندوقه (`email-proof.ts`). */
+    const proof = { emailVerifiedAt: new Date(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null }
+    const newlyProved = !existing?.emailVerifiedAt
     const out = await this.prisma.$transaction(async (tx) => {
       const user = existing
         ? await tx.user.update({
             where: { id: existing.id },
             data: {
               passwordHash: await bcrypt.hash(password, 10),
+              ...(existing.emailVerifiedAt ? {} : proof),
               roles: {
                 deleteMany: { roleId: 'trainer_applicant' },
                 connectOrCreate: { where: { userId_roleId: { userId: existing.id, roleId: 'trainer' } }, create: { roleId: 'trainer' } },
@@ -5887,6 +5894,7 @@ export class TrainerReviewService {
             data: {
               email, displayName: displayName?.trim() || app.fullName,
               passwordHash: await bcrypt.hash(password, 10),
+              ...proof,
               roles: { create: { roleId: 'trainer' } },
             },
           })
@@ -5898,7 +5906,10 @@ export class TrainerReviewService {
       })
       /* تفعيل الحالة — من onboarding أو contract_pending إلى active */
       const from = app.status
-      await tx.trainerApplication.update({ where: { id: app.id }, data: { status: 'active' } })
+      await tx.trainerApplication.update({
+        where: { id: app.id },
+        data: { status: 'active', ...(app.emailVerifiedAt ? {} : proof) },
+      })
       await tx.trainerStatusHistory.create({
         data: { applicationId: app.id, fromStatus: from, toStatus: 'active', actorId: user.id, note: 'إنشاء الحساب عبر الدعوة الآمنة' },
       })
@@ -5906,6 +5917,7 @@ export class TrainerReviewService {
     })
     /* والتأكيدُ خارجَ المعاملة على عرف هذا الملفّ («الدعوةُ والبريدُ خارجَ
        المعاملة»): بريدٌ يُخفق لا ينقض حسابا أُنشئ. */
+    if (newlyProved) await linkLeadsAfterVerification(this.prisma, out.userId)
     await this.confirmActivation(email, app.fullName)
     return out
   }
