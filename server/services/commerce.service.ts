@@ -23,9 +23,9 @@ import { TrainerDiscountService } from './trainer-discount.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
 import { assertFirstPurchase } from './commerce/first-purchase'
 import { payByOf, teamHeldOrderIds } from './commerce/seat-hold'
-import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse } from './commerce/coupon-ledger'
+import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse, idLockKey } from './commerce/coupon-ledger'
 import { GRANT_CHECKOUT_ONLY_AR } from '../../src/application/commerce/grant'
-import { nextInvoiceNumber } from './commerce/invoice-number'
+import { COMMERCE_LOCKS, nextInvoiceNumber } from './commerce/invoice-number'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { assertSeasonOpen, cohortAcceptsRegistration, PLAN_GATE_SELECT, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
 
@@ -430,6 +430,18 @@ export class CommerceService {
           create: { userId, cohortId: c.id, status: 'seat_held', orderId: o.id, decidedAt: new Date(), referralCode: referralCode ?? null },
         })
       }
+      /* ═══ والسعةُ تُعدّ ثانيةً بعد القفل (٤ نوفمبر ٢٠٢٦) ═══
+         فحصُ السلّة (`cohortBlocker`) قبل المعاملة: مشتريان لآخر مقعدٍ في اللحظة نفسِها يقرآن «بقي مقعد» كلاهما — وجُرّب
+         فحُجز مقعدان في شعبةٍ سعتُها واحد، والثاني يدفع ثمَّ لا مقعد له. وقفلُ رقم الفاتورة يُمسك حتّى تُثبَّت المعاملة،
+         فما بعده يرى حجزَ من سبقه: يُعدّ هنا ومعه حجزُ هذا الطلب، وتُردّ المعاملةُ كلُّها إن زاد على السعة. */
+      for (const c of cohorts) {
+        if (!c.capacity) continue
+        const [enrolled, held] = await Promise.all([
+          tx.enrollment.count({ where: { cohortId: c.id, status: 'enrolled' } }),
+          tx.enrollmentRequest.count({ where: { cohortId: c.id, status: 'seat_held' } }),
+        ])
+        if (enrolled + held > c.capacity) throw new AuthError('capacity_full', `لا مقاعد متاحة في «${c.title}»`, 409)
+      }
       return { order: o, invoice }
     })
 
@@ -633,6 +645,20 @@ export class CommerceService {
     if (!order.invoice) throw new AuthError('no_invoice', 'لا فاتورة لهذا الطلب', 409)
 
     const existing = await this.prisma.payment.findUnique({ where: { idempotencyKey } })
+    if (existing && existing.invoiceId === order.invoice.id) return existing // idempotent — نفس المفتاح يعيد نفس الدفعة
+
+    /* ═══ ولا دفعَ إلّا لطلبٍ ينتظر الدفع (٤ نوفمبر ٢٠٢٦) ═══
+       كان يُردّ المدفوعُ وحدَه. فمن فتح «الفواتير» ثمّ عاد بعد ساعةٍ أُلغي فيها طلبُه (`reclaim_abandoned_orders`)
+       دفع عن طلبٍ ملغى: فُكّ مقعدُه وقد يكون بيع لغيره، وأُفرج عن استعمال كوده فقد يتجاوز كودُ المنحة حدَّه — ثمّ يُسوّى
+       الطلبُ بعد ذلك. ومن رُدّ له بعضُ ثمنه دُفع طلبُه ثانيةً كاملا. وجُرّب الاثنان فمرّا. */
+    if (order.status === 'cancelled') {
+      throw new AuthError('order_cancelled', 'ألغي هذا الطلب لأنه لم يدفع في وقته، ولم يقتطع منك شيء. اشتر الدورة من جديد.', 409)
+    }
+    if (order.status !== 'pending_payment') {
+      throw new AuthError('already_paid', 'دفع هذا الطلب من قبل، فلا يدفع ثانية', 409)
+    }
+
+    if (existing) return existing
     if (existing) return existing // idempotent — نفس المفتاح يعيد نفس الدفعة
 
     /* وبابُ الموسم هنا لا في رأس النداء: ما فوقَه **قراءاتٌ تُعيد ما وقع**
@@ -1012,7 +1038,9 @@ export class CommerceService {
     if (!payment || !['succeeded', 'partially_refunded'].includes(payment.status)) {
       throw new AuthError('bad_state', 'لا استرداد إلا لدفعة ناجحة أو مستردة جزئيا', 409)
     }
-    const refunded = payment.refunds.filter((r) => r.status === 'processed').reduce((s, r) => s + num(r.amount), 0)
+    /* والمعلَّقُ يُعدّ مع المنفَّذ (٤ نوفمبر ٢٠٢٦): كان طلبا ردٍّ بمئةٍ لكلٍّ منهما يُقبلان على دفعةٍ بمئة، ثمّ يُنفَّذان
+       فيُقيَّد ردُّ مئتين. ويُفحص ثانيةً عند التنفيذ بقفل (`processRefund`) */
+    const refunded = payment.refunds.filter((r) => r.status === 'processed' || r.status === 'pending').reduce((s, r) => s + num(r.amount), 0)
     if (input.amount <= 0 || refunded + input.amount > num(payment.amount)) {
       throw new AuthError('bad_amount', 'مبلغ الاسترداد يتجاوز المتبقي من الدفعة')
     }
@@ -1034,7 +1062,10 @@ export class CommerceService {
     if (!refund) throw new AuthError('not_found', 'الاسترداد غير موجود', 404)
     if (refund.status !== 'pending') throw new AuthError('bad_state', 'الاسترداد بت فيه مسبقا', 409)
     if (!approve) {
-      const r = await this.prisma.refund.update({ where: { id: refundId }, data: { status: 'rejected', approvedBy: actorId } })
+      /* بشرط الحالة — فلا يُرفض ردٌّ يُنفَّذ في اللحظة نفسِها */
+      const moved = await this.prisma.refund.updateMany({ where: { id: refundId, status: 'pending' }, data: { status: 'rejected', approvedBy: actorId } })
+      if (moved.count === 0) throw new AuthError('bad_state', 'الاسترداد بت فيه مسبقا', 409)
+      const r = await this.prisma.refund.findUniqueOrThrow({ where: { id: refundId } })
       await recordAudit(this.prisma, { actorId, action: 'refund.reject', entityType: 'refund', entityId: refundId, reason: note })
       /* ولا يُترك صاحبُ الطلب على وعد: في مسار رحيل المدرّب يُقال له صراحةً
          «رُفع الطلبُ إلى الماليّة» ثمّ لا يصله جواب. */
@@ -1053,24 +1084,36 @@ export class CommerceService {
     const config = await getPaymentConfig(this.prisma)
     const provider = getPaymentProvider(config)
     let providerRefundRef: string | null = null
-    try {
-      const done = await provider.refund({
-        providerRef: refund.payment.providerRef ?? '',
-        amount: num(refund.amount),
-        currency: refund.payment.currency,
-        reasonAr: note,
-      })
-      providerRefundRef = done.providerRefundRef
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      await recordAudit(this.prisma, {
-        actorId, action: 'refund.provider_failed', entityType: 'refund', entityId: refundId, reason: msg,
-      })
-      throw new AuthError('refund_provider_failed', `تعذّر ردّ المبلغ عند المزود، فلم يقيّد الاسترداد: ${msg}`, 502)
-    }
+    let providerError: string | null = null
 
+    /* ═══ والردُّ يُرسَل إلى المزوّد مرّةً واحدة (٤ نوفمبر ٢٠٢٦) ═══
+       كان الفحصُ «أهو معلَّق؟» قبل نداء المزوّد بلا قفل: نقرتان على «اعتمد» تقرآن «معلَّق» كلتاهما، فيُرسَل الردُّ إلى
+       المزوّد مرّتين — ويُقيَّد مرّة. وجُرّب فمرّ. فيُقفل لكلّ دفعةٍ في معاملةٍ تحمل نداءَ المزوّد، ويُسأل ثانيةً بعد القفل:
+       أما زال معلَّقا؟ وأيسعه ما بقي من الدفعة بعد ما رُدّ منها؟ والثانيةُ تنتظر الأولى فترى أنّها نُفّذت. والقفلُ يزول
+       بانتهاء المعاملة أو سقوطِ الاتّصال، فلا يعلق ردٌّ بعطبٍ في الخادم. */
     let refundedTotal = 0
     const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${COMMERCE_LOCKS}::int, ${idLockKey(refund.paymentId)}::int)`
+      /* وصفُّه مقفلٌ حتّى تنتهي — فرفضٌ في اللحظة نفسِها ينتظرها ثمّ يجده نُفّذ */
+      const [now] = await tx.$queryRaw<{ status: string }[]>`SELECT "status" FROM "Refund" WHERE "id" = ${refundId}::uuid FOR UPDATE`
+      if (now?.status !== 'pending') throw new AuthError('bad_state', 'الاسترداد بت فيه مسبقا', 409)
+      const before = (await tx.refund.findMany({ where: { paymentId: refund.paymentId, status: 'processed' } }))
+        .reduce((s, x) => s + num(x.amount), 0)
+      if (before + num(refund.amount) > num(refund.payment.amount) + 0.001) {
+        throw new AuthError('bad_amount', 'مبلغ الاسترداد يتجاوز المتبقي من الدفعة', 409)
+      }
+      try {
+        const done = await provider.refund({
+          providerRef: refund.payment.providerRef ?? '',
+          amount: num(refund.amount),
+          currency: refund.payment.currency,
+          reasonAr: note,
+        })
+        providerRefundRef = done.providerRefundRef
+      } catch (e) {
+        providerError = e instanceof Error ? e.message : String(e)
+        throw new AuthError('refund_provider_failed', `تعذّر ردّ المبلغ عند المزود، فلم يقيّد الاسترداد: ${providerError}`, 502)
+      }
       const r = await tx.refund.update({ where: { id: refundId }, data: { status: 'processed', approvedBy: actorId, processedAt: new Date() } })
       const processed = await tx.refund.findMany({ where: { paymentId: refund.paymentId, status: 'processed' } })
       const totalRefunded = processed.reduce((s, x) => s + num(x.amount), 0)
@@ -1079,6 +1122,13 @@ export class CommerceService {
       await tx.payment.update({ where: { id: refund.paymentId }, data: { status: fully ? 'refunded' : 'partially_refunded' } })
       await tx.order.update({ where: { id: refund.payment.invoice.orderId }, data: { status: fully ? 'refunded' : 'partially_refunded' } })
       return r
+    }, { timeout: 60_000, maxWait: 30_000 }).catch(async (e) => {
+      if (providerError !== null) {
+        await recordAudit(this.prisma, {
+          actorId, action: 'refund.provider_failed', entityType: 'refund', entityId: refundId, reason: providerError,
+        })
+      }
+      throw e
     })
     /* ═══ وخصمُ المدرّب يتبع الثمنَ في الردّ — البند 4-10 ═══
 
