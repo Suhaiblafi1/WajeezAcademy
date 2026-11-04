@@ -76,7 +76,7 @@ export default function BuyLinkPreview({ preview: p, courseName }: { preview: Ch
         <p className="text-read leading-5 text-gold-ink">في الرابط شعبة غير موجودة، فتجاهلناها.</p>
       )}
       {!p.accountChecked && (
-        <p className="text-fine leading-5 text-muted-foreground">
+        <p className="text-read leading-5 text-muted-foreground">
           نتأكد بعد دخولك من أنك غير مسجل في هذه الدورات ومن أهليتك للكود. والسعر النهائي يثبت عند الدفع.
         </p>
       )}
