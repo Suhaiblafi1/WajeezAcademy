@@ -26,7 +26,7 @@ interface Order {
   /** آخرُ لحظةٍ للدفع قبل أن يُفرَج عن المقعد — من الخادم (`seat-hold.ts`)، ولما لم يُدفع وحدَه */
   payBy?: string | null;
 }
-interface PaymentProviderInfo { driver: "test" | "manual" | "moyasar" | "stripe" }
+interface PaymentProviderInfo { driver: "test" | "manual" | "stripe" }
 interface TicketLite { id: string; subject: string; status: string }
 
 /* حالاتُ الطلب بأسمائها كما يكتبها الخادم.
@@ -53,11 +53,10 @@ const PAYMENT_STATUS: Record<string, string> = {
   partially_refunded: "رد جزء منها", refunded: "ردت كلها",
 };
 const REFUND_STATUS: Record<string, string> = { pending: "قيد المراجعة", processed: "أعيد المبلغ", rejected: "لم يقبل" };
-const PROVIDER_AR: Record<string, string> = { test: "تجريبي", manual: "يدوي", moyasar: "بطاقة", stripe: "بطاقة" };
+const PROVIDER_AR: Record<string, string> = { test: "تجريبي", manual: "يدوي", stripe: "بطاقة" };
 const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة كليا", void: "ملغاة" };
 const PAY_LABEL: Record<string, string> = {
   test: "ادفع الآن (مزود اختباري — لا مال حقيقي)",
-  moyasar: "ادفع الآن — صفحة دفع آمنة (مدى/البطاقات)",
   stripe: "ادفع الآن — صفحة دفع آمنة (Stripe)",
   manual: "الدفع يدوي — حوّل بنكيا ثم أكّد مع المالية",
 };

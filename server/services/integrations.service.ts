@@ -10,7 +10,7 @@ import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
 import { getZoomConfig, zoomMissing, zoomReady } from './zoom.service'
 import { WHATSAPP_SPOTS } from '../../src/application/site/whatsapp'
 
-export type PaymentDriver = 'test' | 'manual' | 'moyasar' | 'stripe'
+export type PaymentDriver = 'test' | 'manual' | 'stripe'
 
 export interface PaymentConfig {
   enabled: boolean
@@ -50,6 +50,10 @@ export async function getPaymentConfig(prisma: PrismaClient): Promise<PaymentCon
   if (env.PAYMENT_PUBLISHABLE_KEY) base.publishableKey = env.PAYMENT_PUBLISHABLE_KEY
   if (env.PAYMENT_SECRET_KEY) base.secretKey = env.PAYMENT_SECRET_KEY
   if (env.PAYMENT_WEBHOOK_SECRET) base.webhookSecret = env.PAYMENT_WEBHOOK_SECRET
+  /* ═══ وMoyasar محذوف — وما بقي من اسمه يُقرأ «يدويّا» لا «اختباريّا» (٤ نوفمبر ٢٠٢٦) ═══
+     السائقُ المجهولُ يسقط إلى المزوّد الاختباريّ، وهو يسوّي الطلبَ فورا بلا مال. فإعدادٌ قديمٌ كُتب فيه Moyasar كان يصير
+     شراءً بلا ثمن. فيُقرأ يدويّا: يُقال للمشتري إنّ الدفع الإلكترونيّ غير متاح، ويرى المديرُ «يدوي» فيختار Stripe. */
+  if ((base.driver as string) === 'moyasar') base.driver = 'manual'
   return base
 }
 
@@ -121,7 +125,7 @@ function currentSender(value: string): string {
 /* ── الحفظ من شاشة الإدارة — قناع لا يكتب، وكل تغيير موثق ── */
 
 /** المزودون المستضافون — يخرج إليهم المشتري ثمّ يعود بروابطَ نبنيها نحن */
-const HOSTED_DRIVERS = new Set(['stripe', 'moyasar'])
+const HOSTED_DRIVERS = new Set(['stripe'])
 
 export async function savePaymentConfig(prisma: PrismaClient, actorId: string, input: Partial<PaymentConfig>) {
   /* لا يُفعَّل مزوّدٌ مستضاف وعنوانُ الموقع غيرُ مضبوط.

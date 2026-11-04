@@ -284,12 +284,9 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
   }, async (req) => {
     const { provider } = z.object({ provider: z.string().max(30) }).parse(req.params)
     /* التوقيع، بترتيب المصادر: ترويسة Stripe الرسمية أولا، ثم ترويسة العقد
-       العام، ثم رمز مشترك في الجسم لأسلوب Moyasar. كانت ترويسة Stripe غير
-       مقروءة أصلا، فحدثُه الحقيقي يصل بلا توقيع يُعرَف فيُرفض. */
-    const bodyToken = (req.body as Record<string, unknown> | null)?.secret_token
-    const signature = String(
-      req.headers['stripe-signature'] ?? req.headers['x-payment-signature'] ?? bodyToken ?? '',
-    )
+       العام. كانت ترويسة Stripe غير مقروءة أصلا، فحدثُه الحقيقي يصل بلا توقيع
+       يُعرَف فيُرفض. وكان يُقرأ رمزٌ مشتركٌ في الجسم لـMoyasar — حُذف معه. */
+    const signature = String(req.headers['stripe-signature'] ?? req.headers['x-payment-signature'] ?? '')
     /* الجسم الخام كما وصل — لا إعادة تسلسل. مُلتقَط في محلّل المحتوى (app.ts).
        والرجوع إلى JSON.stringify احتياطٌ للمسارات التي لا تمرّ بالمحلّل. */
     const rawBody = (req as unknown as { rawBody?: string }).rawBody ?? JSON.stringify(req.body)

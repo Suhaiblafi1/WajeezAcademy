@@ -39,12 +39,6 @@ describe('عنوانُ الموقع شرطٌ لتفعيل مزوّدٍ مستض�
     ).rejects.toThrow(/APP_URL/)
   })
 
-  it('وMoyasar مثلُه — الروابطُ تُبنى بالطريقة نفسِها', async () => {
-    await expect(
-      savePaymentConfig(NEVER_TOUCHED, 'actor', { enabled: true, driver: 'moyasar' }),
-    ).rejects.toThrow(/APP_URL/)
-  })
-
   /* الحارسُ يجب ألّا يزيد عن حدّه: هذه الثلاثُ حالاتٍ مشروعة، ولو رفضها
      لأقفل على صاحب المنصّة لوحتَه بلا سبب. ونصلُ فيها إلى القاعدة فعلا،
      فانفجارُ المُهيّئ الوهميّ هو الدليلُ على أنّ الحارسَ لم يعترض. */

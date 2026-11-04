@@ -89,8 +89,8 @@ describe('الصيغ الأخرى لم تنكسر', () => {
     expect(verifyPaymentWebhook(BODY, sig, SECRET, NOW)).toBe(true)
   })
 
-  it('رمز مشترك — أسلوب Moyasar', () => {
-    expect(verifyPaymentWebhook(BODY, SECRET, SECRET, NOW)).toBe(true)
-    expect(verifyPaymentWebhook(BODY, 'not-the-secret', SECRET, NOW)).toBe(false)
+  /* وكان يُقبل السرُّ نفسُه رمزا مشتركا (أسلوب Moyasar) — حُذف معه (٤ نوفمبر ٢٠٢٦): لا حدثَ بلا توقيعٍ يُحسب */
+  it('⚠️ والسر نفسه رمزا مشتركا لا يقبل — حذف مع Moyasar', () => {
+    expect(verifyPaymentWebhook(BODY, SECRET, SECRET, NOW)).toBe(false)
   })
 })

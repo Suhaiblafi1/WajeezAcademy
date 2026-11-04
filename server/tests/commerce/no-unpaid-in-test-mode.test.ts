@@ -27,6 +27,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { isTestProviderActive } from '../../services/payments/provider'
+import { getPaymentConfig } from '../../services/integrations.service'
 import { reclaimAbandonedOrders } from '../../worker/jobs'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
@@ -62,7 +63,6 @@ describe('المزوّدُ المُستقرُّ لا الإعدادُ المعل
 
   it('ومزوّدٌ حقيقيٌّ **بلا مفتاحٍ سرّيّ** ← اختباريٌّ كذلك — وهذا ما يُخطئه الحكمُ على السائق', () => {
     expect(isTestProviderActive({ enabled: true, driver: 'stripe' })).toBe(true)
-    expect(isTestProviderActive({ enabled: true, driver: 'moyasar' })).toBe(true)
   })
 
   it('وبمفتاحٍ حقيقيٍّ ليس اختباريّا', () => {
@@ -133,5 +133,24 @@ describe('الطلبُ المهجورُ يُلغى ويُفرِج عن مقعد�
     const r = await reclaimAbandonedOrders(prisma)
     expect((await prisma.order.findUniqueOrThrow({ where: { id: out.orderId } })).status).toBe('pending_payment')
     expect(r.summaryAr).toContain('دفعةٌ ناجحة')
+  })
+})
+
+/* ═══ وMoyasar محذوف (٤ نوفمبر ٢٠٢٦) — وإعدادٌ قديمٌ باسمه لا يصير شراءً بلا ثمن ═══
+   السائقُ المجهولُ يسقط إلى الاختباريّ فيُسوّى الطلبُ فورا بلا مال. فما بقي من اسمه يُقرأ يدويّا (`getPaymentConfig`). */
+describe('إعداد قديم باسم Moyasar', () => {
+  it('⚠️ يقرأ يدويا لا اختباريا — بمفتاحه أو بلا مفتاح', async () => {
+    await prisma.integrationSetting.upsert({
+      where: { provider: 'payment' },
+      update: { enabled: true, config: { driver: 'moyasar', secretKey: 'sk_old_x' } },
+      create: { provider: 'payment', enabled: true, config: { driver: 'moyasar', secretKey: 'sk_old_x' } },
+    })
+    try {
+      const config = await getPaymentConfig(prisma)
+      expect(config.driver).toBe('manual')
+      expect(isTestProviderActive(config), 'إعداد Moyasar القديم يسوي الطلب بلا مال').toBe(false)
+    } finally {
+      await prisma.integrationSetting.deleteMany({ where: { provider: 'payment' } })
+    }
   })
 })

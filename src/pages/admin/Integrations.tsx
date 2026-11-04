@@ -21,7 +21,7 @@ const labelCls = "block text-fine font-bold text-muted-foreground";
 
 interface IntegrationsView {
   payment: {
-    enabled: boolean; driver: "test" | "manual" | "moyasar" | "stripe"; envSourced: boolean;
+    enabled: boolean; driver: "test" | "manual" | "stripe"; envSourced: boolean;
     siteUrl: string; siteUrlExplicit: boolean;
     publishableKey: string; secretKey: string; webhookSecret: string; hasSecret: boolean; hasWebhookSecret: boolean;
   };
@@ -54,7 +54,6 @@ interface CalendlyRegisterReply {
 const DRIVER_AR: Record<string, string> = {
   test: "اختباري — نجاح فوري بلا مال حقيقي",
   manual: "يدوي — تحويل بنكي/كاش تسجله المالية",
-  moyasar: "Moyasar — صفحة دفع مستضافة (مدى/البطاقات)",
   stripe: "Stripe — صفحة Checkout مستضافة",
 };
 
@@ -272,7 +271,7 @@ export default function Integrations() {
                   {Object.entries(DRIVER_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
-              {(payForm.driver === "moyasar" || payForm.driver === "stripe") && (
+              {payForm.driver === "stripe" && (
                 <>
                   <div>
                     <label className={labelCls}>المفتاح العلني (Publishable)</label>
@@ -313,7 +312,6 @@ export default function Integrations() {
                         فبقاءُ النصّ القديم يدفع صاحبَ المنصّة إلى بناء ما لا لزوم له.
                         حارسُ الصيغة: server/tests/commerce/stripe-signature.test.ts */}
                     <p className="mt-1"><b className="text-foreground">Stripe:</b> أضف هذا العنوان في لوحته مباشرة وضع <span dir="ltr" className="font-mono">whsec_…</span> في «سر التوقيع» — بلا وسيط ولا رمز مشترك. والحدث المطلوب <span dir="ltr" className="font-mono">checkout.session.completed</span> فقط؛ غيره يسجّل ويهمل.</p>
-                    <p className="mt-1"><b className="text-foreground">Moyasar:</b> أدخل «سر التوقيع» نفسه رمزا مشتركا في لوحتهم.</p>
                   </Inset>
                 </>
               )}
