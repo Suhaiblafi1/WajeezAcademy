@@ -982,7 +982,12 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
   let unreachable = 0
   const commerce = new CommerceService(prisma)
   for (const order of stale) {
-    if ((order.invoice?.payments ?? []).length > 0) { withPayment++; continue }
+    /* وطلبٌ له دفعةٌ نجحت لا يُلغى — يُسوّى إن لم يُسوَّ (تعثّرت تسويتُه بعد نقل الدفعة، ٤ نوفمبر ٢٠٢٦) */
+    if ((order.invoice?.payments ?? []).length > 0) {
+      withPayment++
+      try { if (await commerce.confirmWithProvider(order.id, null) === 'paid') settled++ } catch { unreachable++ }
+      continue
+    }
     /* ═══ وصفحةُ دفعٍ ما زالت مفتوحة لا يُلغى طلبُها (٣١ أكتوبر ٢٠٢٦) ═══
        المهلةُ من إنشاء الطلب، و«أكمل الدفع» يفتح صفحةً جديدة: من ضغطه في الدقيقة الخامسة والخمسين كان طلبُه يُلغى بعد
        دقائق وصفحتُه مفتوحة. وصفحةُ Stripe تُغلق بعد ساعةٍ من فتحها (`expires_at`)، فما فُتح بعد حدّ المهلة ينتظر إغلاقَها. */
