@@ -48,7 +48,7 @@ describe('عنوان خطّاف الدفع — الوثيقة تطابق الش�
 
   it('وكلّ عنوان خطّاف تكتبه الوثائق يبدأ بالمسار المسجّل', () => {
     /* البادئةُ ما قبل مُعامل المزوّد: `‎/api/webhooks/payments/`.
-       فيُقبل `‎…/stripe` و`‎…/moyasar` و`‎…/:provider` سواءً. */
+       فيُقبل `‎…/stripe` و`‎…/:provider` سواءً. */
     const prefix = registeredWebhookPath().replace(/:\w+.*$/, '')
 
     for (const doc of DOCS) {

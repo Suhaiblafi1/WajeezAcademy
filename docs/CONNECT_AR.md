@@ -203,22 +203,24 @@ nslookup -type=MX  wajeezacademy.com
 
 ---
 
-## ٢) الدفع (Stripe أو Moyasar)
+## ٢) الدفع (Stripe)
 
 ### ما أحتاجه
 
-| القيمة | Stripe | Moyasar |
-| --- | --- | --- |
-| المفتاح المنشور | `pk_live_…` | المفتاح المنشور |
-| المفتاح السرّي | `sk_live_…` | المفتاح السرّي |
-| سرّ الـwebhook | `whsec_…` | الرمز المشترك |
+| القيمة | Stripe |
+| --- | --- |
+| المفتاح المنشور | `pk_live_…` |
+| المفتاح السرّي | `sk_live_…` |
+| سرّ الـwebhook | `whsec_…` |
+
+> وحُذف Moyasar من المنصّة (٤ نوفمبر ٢٠٢٦) — صاحبُ المنصّة يستعمل Stripe وحدَه.
 
 ### أين يُوضع
 
 **إمّا** في `deploy/.env.production` على الخادم (ثمّ `bash deploy/deploy.sh`):
 
 ```
-PAYMENT_DRIVER=stripe        (أو moyasar)
+PAYMENT_DRIVER=stripe
 PAYMENT_PUBLISHABLE_KEY=…
 PAYMENT_SECRET_KEY=…
 PAYMENT_WEBHOOK_SECRET=…

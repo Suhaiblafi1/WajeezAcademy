@@ -73,7 +73,7 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
   }, async (req) => {
     const body = z.object({
       enabled: z.boolean(),
-      driver: z.enum(['test', 'manual', 'moyasar', 'stripe']),
+      driver: z.enum(['test', 'manual', 'stripe']),
       publishableKey: z.string().max(200).optional(),
       secretKey: z.string().max(200).optional(),
       webhookSecret: z.string().max(200).optional(),
@@ -208,12 +208,10 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
     if (config.driver === 'manual') return { ok: true, message: 'الدفع اليدوي جاهز — يسجل من شاشة المالية بصلاحية موثقة' }
     if (!config.secretKey) return { ok: false, message: 'لا مفتاح سري محفوظا — أدخله واحفظ ثم افحص' }
 
-    const probe = config.driver === 'moyasar'
-      ? { url: 'https://api.moyasar.com/v1/payments?page=1', auth: `Basic ${Buffer.from(`${config.secretKey}:`).toString('base64')}` }
-      : { url: 'https://api.stripe.com/v1/balance', auth: `Bearer ${config.secretKey}` }
+    const probe = { url: 'https://api.stripe.com/v1/balance', auth: `Bearer ${config.secretKey}` }
     try {
       const res = await fetch(probe.url, { headers: { Authorization: probe.auth } })
-      if (res.ok) return { ok: true, message: `اتصال ${config.driver === 'moyasar' ? 'Moyasar' : 'Stripe'} ناجح — المفاتيح صحيحة` }
+      if (res.ok) return { ok: true, message: 'اتصال Stripe ناجح — المفاتيح صحيحة' }
       if (res.status === 401 || res.status === 403) return { ok: false, message: 'رفض المزود المفتاح السري — تأكد من نسخه كاملا' }
       return { ok: false, message: `رد المزود غير متوقع (HTTP ${res.status})` }
     } catch {

@@ -781,7 +781,7 @@ export class CommerceService {
       }
     }
 
-    /* نجاح موقَّت: نجد الفاتورة برقمها، أو بالدفعة المعلقة التي تحمل مرجع المزود (فاتورة Moyasar المستضافة) */
+    /* نجاح موقَّت: نجد الفاتورة برقمها، أو بالدفعة المعلقة التي تحمل مرجع المزود */
     if (payload.status === 'succeeded') {
       const invoice = payload.invoiceNumber
         ? await this.prisma.invoice.findUnique({ where: { number: payload.invoiceNumber } })
@@ -1445,18 +1445,10 @@ export class CommerceService {
 }
 
 /* تطبيع حمولات webhook إلى عقد واحد: { eventId, invoiceNumber?, status, providerRef? }.
-   العقد العام صريح؛ Moyasar يرسل كائن الدفعة (id + status=paid + metadata.invoiceNumber)؛
+   العقد العام صريح؛
    Stripe يرسل حدثا (type=checkout.session.completed + data.object.metadata.invoiceNumber). */
 function normalizeWebhookPayload(provider: string, raw: unknown): { eventId?: string; invoiceNumber?: string; status?: string; providerRef?: string } {
   const p = (raw ?? {}) as Record<string, unknown>
-  if (provider === 'moyasar') {
-    const meta = (p.metadata ?? {}) as Record<string, unknown>
-    return {
-      eventId: String(p.id ?? p.eventId ?? ''), providerRef: String(p.id ?? p.providerRef ?? ''),
-      status: p.status === 'paid' ? 'succeeded' : (p.status as string | undefined),
-      invoiceNumber: (meta.invoiceNumber ?? p.invoiceNumber) as string | undefined,
-    }
-  }
   if (provider === 'stripe') {
     const obj = (((p.data ?? {}) as Record<string, unknown>).object ?? {}) as Record<string, unknown>
     const meta = (obj.metadata ?? {}) as Record<string, unknown>

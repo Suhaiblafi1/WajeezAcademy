@@ -1,5 +1,6 @@
 /* مزود الدفع — واجهة مجردة يختارها قرار المالك من شاشة التكاملات (أو البيئة).
-   المزودون الحقيقيون (Moyasar/Stripe) يعملان بصفحات دفع مستضافة لديهم:
+   والمزوّدُ الحقيقيُّ Stripe وحدَه يعمل بصفحة دفعٍ مستضافةٍ لديه — حُذف Moyasar بقرار صاحب المنصّة
+   (٤ نوفمبر ٢٠٢٦): «i am not going to use this Moyasar or crypto never.. only stripe types of payements»:
    لا بيانات بطاقات تمر بخادمنا أبدا، ورجوع المتصفح ليس دليل دفع —
    النجاح يأتي فقط عبر webhook موقَّت أو تسجيل يدوي موثق. */
 
@@ -24,7 +25,7 @@ export interface ChargeResult {
 }
 
 export interface RefundInput {
-  /** مرجع المزود المحفوظ مع الدفعة — جلسة Checkout عند Stripe، فاتورة عند Moyasar */
+  /** مرجع المزود المحفوظ مع الدفعة — جلسة Checkout عند Stripe */
   providerRef: string
   amount: number
   currency: string
@@ -77,64 +78,9 @@ export class ManualPaymentProvider implements PaymentProvider {
   }
 }
 
-/* أصغر وحدة عملة — Moyasar وStripe يقبلان المبالغ بها لا بالوحدة الكبرى */
+/* أصغر وحدة عملة — Stripe يقبل المبالغ بها لا بالوحدة الكبرى */
 const MINOR_UNIT: Record<string, number> = { JOD: 1000, KWD: 1000, BHD: 1000, OMR: 1000, SAR: 100, USD: 100, AED: 100, QAR: 100, EGP: 100 }
 const toMinor = (amount: number, currency: string) => Math.round(amount * (MINOR_UNIT[currency.toUpperCase()] ?? 100))
-
-/** Moyasar — فاتورة مستضافة: POST /v1/invoices يعيد صفحة دفع عندهم، التسوية عبر webhook */
-export class MoyasarProvider implements PaymentProvider {
-  readonly name = 'moyasar'
-  private secretKey: string
-  constructor(secretKey: string) { this.secretKey = secretKey }
-  async createCharge(input: ChargeInput): Promise<ChargeResult> {
-    const res = await fetch('https://api.moyasar.com/v1/invoices', {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${this.secretKey}:`).toString('base64')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        amount: toMinor(input.amount, input.currency),
-        currency: input.currency.toUpperCase(),
-        description: `${input.descriptionAr} — فاتورة ${input.invoiceNumber}`,
-        callback_url: input.callbackUrl,
-        metadata: { invoiceNumber: input.invoiceNumber },
-      }),
-    })
-    const data = (await res.json().catch(() => null)) as { id?: string; url?: string; message?: string } | null
-    if (!res.ok || !data?.id || !data.url) {
-      throw new Error(`moyasar_charge_failed: ${data?.message ?? `HTTP ${res.status}`}`)
-    }
-    return { provider: this.name, providerRef: data.id, status: 'pending', redirectUrl: data.url }
-  }
-
-  async refund(input: RefundInput): Promise<{ providerRefundRef: string }> {
-    const res = await fetch(`https://api.moyasar.com/v1/payments/${encodeURIComponent(input.providerRef)}/refund`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${this.secretKey}:`).toString('base64')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ amount: toMinor(input.amount, input.currency) }),
-    })
-    const data = (await res.json().catch(() => null)) as { id?: string; message?: string } | null
-    if (!res.ok || !data?.id) throw new Error(`moyasar_refund_failed: ${data?.message ?? `HTTP ${res.status}`}`)
-    return { providerRefundRef: data.id }
-  }
-
-  /* مرجعُنا فاتورةُ Moyasar، والردُّ على الدفعة التي سدّدتها — فيُحفظ معرّفُها هي */
-  async lookupCharge(providerRef: string): Promise<ChargeLookup> {
-    const res = await fetch(`https://api.moyasar.com/v1/invoices/${encodeURIComponent(providerRef)}`, {
-      headers: { Authorization: `Basic ${Buffer.from(`${this.secretKey}:`).toString('base64')}` },
-    })
-    const data = (await res.json().catch(() => null)) as
-      | { status?: string; payments?: { id?: string; status?: string }[]; message?: string }
-      | null
-    if (!res.ok || !data) throw new Error(`moyasar_lookup_failed: ${data?.message ?? `HTTP ${res.status}`}`)
-    const paidPayment = (data.payments ?? []).find((p) => p.status === 'paid' && p.id)
-    return { paid: data.status === 'paid' || !!paidPayment, providerRef: paidPayment?.id ?? providerRef }
-  }
-}
 
 /** Stripe — جلسة Checkout مستضافة: POST /v1/checkout/sessions يعيد رابط دفع، التسوية عبر webhook */
 export class StripeProvider implements PaymentProvider {
@@ -230,8 +176,6 @@ export class StripeProvider implements PaymentProvider {
 export function getPaymentProvider(config: PaymentConfig): PaymentProvider {
   if (!config.enabled) return new TestPaymentProvider()
   switch (config.driver) {
-    case 'moyasar':
-      return config.secretKey ? new MoyasarProvider(config.secretKey) : new TestPaymentProvider()
     case 'stripe':
       return config.secretKey ? new StripeProvider(config.secretKey) : new TestPaymentProvider()
     case 'manual':
@@ -266,7 +210,7 @@ export const STRIPE_TIMESTAMP_TOLERANCE_S = 300
       وحده، مع نافذة زمنية. كانت هذه الصيغة غير مدعومة أصلا، فكان كل حدث Stripe
       حقيقي يُرفض: مالٌ يُقبض والتسجيل لا يُسوّى.
     · «hmac=<hex>» صريحة، أو HMAC hex مجرد — العقد العام.
-    · رمز مشترك — أسلوب Moyasar.
+    وكان يُقبل السرُّ نفسُه رمزا مشتركا (أسلوب Moyasar) — حُذف مع Moyasar، فلا يُقبل حدثٌ بلا توقيعٍ يُحسب.
 
     @param nowS الوقت بالثواني — مُحقَن للاختبار وحده، وافتراضه الساعة الحقيقية. */
 export function verifyPaymentWebhook(
@@ -305,5 +249,5 @@ export function verifyPaymentWebhook(
   const expected = createHmac('sha256', secret).update(rawBody).digest('hex')
   if (signature.startsWith('hmac=')) return eq(expected, signature.slice(5))
   if (/^[0-9a-f]{64}$/i.test(signature)) return eq(expected, signature) // HMAC مجرد — العقد الأصلي
-  return eq(secret, signature) // رمز مشترك — أسلوب Moyasar
+  return false
 }
