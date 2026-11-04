@@ -65,3 +65,12 @@ describe('الكود يعود بعد التسجيل', () => {
     expect(parsePendingCheckout(JSON.stringify({ ...base, couponCode: 'x y' }), now)?.couponCode).toBeUndefined()
   })
 })
+
+describe('نص صفحة المنحة في الإدارة يقول القاعدة القائمة', () => {
+  it('⚠️ لا «يستعمل مرة واحدة» — والكود حتى حد دوراته في كل المشتريات', async () => {
+    const { readFileSync } = await import('node:fs')
+    const page = readFileSync('src/pages/admin/MemberGrant.tsx', 'utf8')
+    expect(page).not.toContain('يستعمل مرة واحدة')
+    expect(page).toMatch(/ويستعمل في أكثر من شراء حتى \{s\.maxCourses\} دورات على الكود كله/)
+  })
+})
