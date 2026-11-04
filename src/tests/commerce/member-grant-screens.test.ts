@@ -146,6 +146,22 @@ describe('لوح الشراء', () => {
   })
 })
 
+/* بلاغُ المراجعة (٤ نوفمبر ٢٠٢٦): كودُ صفحة المنحة كان يغلب كودَ حسابه — فإن رُدّ («منحة واحدة لكل متعلم») عُرض عليه الدفعُ
+   بلا منحة، وكودُه الذي اشترى به باقٍ بدوراته */
+describe('لوح الشراء · كود الصفحة المردود', () => {
+  it('⚠️ يسأل عن كود حسابه ولو فتح بكود الصفحة', () => {
+    const effect = BUY.match(/useEffect\(\(\) => \{[^]*?fetchMyGrant\(\)/)?.[0] ?? ''
+    expect(effect, 'لا سؤال عن كود الحساب').not.toBe('')
+    expect(effect, 'لا يسأل حين يفتح بكود الصفحة').not.toMatch(/if \(initialCoupon\) return/)
+  })
+
+  it('⚠️ وإن رد كود الصفحة لسبب في المنحة جرب كود حسابه قبل أن يقال السبب', () => {
+    const handler = BUY.match(/COUPON_ERRORS\.has\(e\.code\)\) \{[^]*?setCouponError\(e\.message\)/)?.[0] ?? ''
+    expect(handler, 'لا يجرب كود الحساب').toMatch(/GRANT_OWN_ERRORS\.has\(e\.code\) && fallback[^]*?setApplied\(fallback\)[^]*?return;/)
+    expect(BUY).toMatch(/GRANT_OWN_ERRORS[^=]*= new Set\(\["grant_once", "grant_used", "grant_closed"\]\)/)
+  })
+})
+
 describe('النصوص', () => {
   it('بلا تشكيل إعرابي', () => {
     const texts = [

@@ -173,6 +173,23 @@ describe('③ والمنحة المغلقة لا تسقط العميل', () => {
   })
 })
 
+/* بلاغُ المراجعة (٤ نوفمبر ٢٠٢٦): من عبّأ النموذجَ ثانيةً والمنحةُ مغلقة أُرسل إليه «منحتك جاهزة — اختر دوراتك» */
+describe('③ب ومن عبأه ثانية والمنحة مغلقة', () => {
+  it('⚠️ لا يرسل إليه كوده ثانية ولا يقال «أرسلناه» — بل سبب الإغلاق', async () => {
+    const p = person()
+    await landing.apply(p)
+    await grants.update({ active: false }, ownerId)
+    try {
+      const out = await landing.apply(p)
+      expect(out.grant, 'قيل له أرسلناه إلى بريدك والمنحة مغلقة').toBeNull()
+      expect(out.reasonAr).toBe('المنحة مغلقة الآن')
+      expect(await prisma.outboxMail.count({ where: { to: p.email, purpose: 'grant.code' } }), 'أرسل كوده ثانية والمنحة مغلقة').toBe(1)
+    } finally {
+      await grants.update({ active: true }, ownerId)
+    }
+  })
+})
+
 describe('④ وما لا يقبل يرد', () => {
   it('⚠️ رقم ليس رقما، ومجال من غير القائمة', async () => {
     await expect(landing.apply(person({ phone: 'abc' }))).rejects.toMatchObject({ code: 'bad_phone' })
@@ -321,6 +338,18 @@ describe('⑧ب وكود منحته لصاحب الحساب ببريد النم�
     expect((await landing.myCode(owner)).code, 'لم يعد كود بقيت له دورات').toBe(out.grant!.code)
     await buy((await grants.settings()).maxCourses - 1)
     expect(await landing.myCode(owner)).toEqual({ code: null })
+  })
+
+  /* بلاغُ المراجعة (٤ نوفمبر ٢٠٢٦): من اشترى بكود منحةٍ أخرى أُعطي كودَ هذه فسعّرت به الصفحة، ثمّ رُدّ عند الدفع */
+  it('⚠️ ومن اشترى بكود منحة غيره لا يعطى كود هذه — يرد عند الدفع', async () => {
+    const p = person()
+    await landing.apply(p)
+    const gifted = (await landing.apply(person())).grant!.code!
+    const owner = (await new AuthService(prisma).register(p.email, 'Owner#12345', p.fullName)).userId
+    const commerce = new CommerceService(prisma)
+    const o = await commerce.checkout(owner, [(await cohort(nextCourse())).id], gifted)
+    await commerce.payOrder(o.orderId, owner, `gl-once-${o.orderId}`)
+    expect(await landing.myCode(owner), 'أعطي كودا يرد عند الدفع').toEqual({ code: null })
   })
 
   /* كلُّ كودٍ يحمل نسبتَه يومَ أُعطي — فإن غيّر صاحبُ المنصّة نسبةَ الحملة بعده سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة */

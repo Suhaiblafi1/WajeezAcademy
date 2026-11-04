@@ -74,8 +74,9 @@ describe('③ زر إلى «تعلمي»', () => {
   /* «امنحه فرصة استعمال الكود، أوضحه في المنصة له، وفعّله تلقائيا عند أي شراء» (صاحب المنصة، ٣١ أكتوبر ٢٠٢٦) */
   it('⚠️ وكود منحته يطبق وحده حين لا كود مكتوبا — ويقال أنه طبق، ولوحته تعرضه', () => {
     const buy = code('src/components/BuyPanel.tsx')
-    expect(buy).toMatch(/if \(initialCoupon\) return;\s*let on = true;\s*void fetchMyGrant\(\)\.then\(\(g\) => \{/)
-    expect(buy).toMatch(/setApplied\(\(a\) => a \|\| g\.code!\);/)
+    /* ويُسأل ولو فتح اللوحُ بكود الصفحة — ليُجرَّب كودُ حسابه إن رُدّ ذاك (٤ نوفمبر ٢٠٢٦) — لكنّه لا يُطبَّق وحده إلّا بلا كودٍ مكتوب */
+    expect(buy).toMatch(/let on = true;\s*void fetchMyGrant\(\)\.then\(\(g\) => \{/)
+    expect(buy).toMatch(/if \(initialCoupon\) \{[\s\S]*?\} else \{\s*setCoupon\(\(c\) => c \|\| g\.code!\);\s*setApplied\(\(a\) => a \|\| g\.code!\);\s*\}/)
     expect(buy).toMatch(/طبقنا كود \{autoGrant\.nameAr\} تلقائيا\./)
     const dash = code('src/pages/student/Dashboard.tsx')
     expect(dash.match(/<MyGrantCard className="mt-6" \/>/g)?.length, 'لوحة بلا بطاقة منحته').toBe(dash.match(/<MyAdvisorCard className="mt-6" \/>/g)?.length)
@@ -95,7 +96,7 @@ describe('③ زر إلى «تعلمي»', () => {
     const body = asked![1]
     expect(body.indexOf('setApplied'), 'الكود لا يطبق').toBeGreaterThan(-1)
     expect(body.indexOf('setGrantKnown(true)'), 'الجواب لا يكتب').toBeGreaterThan(body.indexOf('setApplied'))
-    expect(body, 'الجواب يكتب لمن له كود وحده').toMatch(/if \(g\.code\) \{[^}]*\}\s*setGrantKnown\(true\);\s*$/)
+    expect(body, 'الجواب يكتب لمن له كود وحده').toMatch(/if \(g\.code\) \{[\s\S]*\n {6}\}\s*setGrantKnown\(true\);\s*$/)
     expect(body, 'من لا كود له يبقى بلا تسعير').not.toMatch(/if \(!on \|\| !g\.code\) return;/)
     expect(buy.match(/setGrantKnown\(/g)?.length, 'الجواب يكتب من غير السؤال').toBe(1)
   })

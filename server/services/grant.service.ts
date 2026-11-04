@@ -24,7 +24,8 @@
    ٥) **والحملةُ تُقرأ عند الاستعمال** — إيقافُها يوقف كلَّ كود، وتمديدُ نهايتها يمدّه.
    ٥ب) **وعلى عددٍ من الدورات بحدٍّ أقصى للكود كلِّه** — «يحقّ لك فقط ٤ دورات»، ثمّ «٥ دورات على هذا الكود نفسِه».
       والحدُّ بيد صاحب المنصّة كالنسبة. والمعدودُ دوراتُ طلباته المحجوزة والمدفوعة بثمنٍ (الهديّةُ لا تُعدّ). وشراءان
-      متزامنان في نافذتين قد يتجاوزانه بدورة — لا قفلَ عليه.
+      متزامنان في نافذتين كانا يتجاوزانه بسلّةٍ كاملة، فصار يُعاد فحصُه في معاملة الطلب بعد قفل رقم الفاتورة
+      (`assertHeld`، ٤ نوفمبر ٢٠٢٦) — ومعه «منحةٌ واحدةٌ لكلّ متعلّم».
    ٦) **وعند الشراء المباشر وحدَه** — بابا الموافقة الإداريّة يردّانه، كما يردّان كودَ المدرّب:
       فيهما لا يُسأل أهو أوّلُ منحةٍ لصاحبه ولا أيُّ السعرين أقلّ.
 
@@ -41,12 +42,12 @@ import { cohortLeadTrainers } from './cohort-lead'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
   GRANT_CAMPAIGNS, GRANT_CLOSED_AR, GRANT_CODE_PREFIX, GRANT_ONCE_AR, GRANT_SOLD_OUT_AR,
-  MEMBER_GRANT_SLUG, grantPrice, grantUsedUpAr, type GrantSlug,
+  MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, type GrantSlug,
 } from '../../src/application/commerce/grant'
 import { influencerCommission } from '../../src/application/commerce/influencer'
 
 /** ما يحسب منحةً مستعملة: طلبٌ ينتظر الدفعَ بها أو دُفع — والمردودُ كلُّه يُعيدها */
-const GRANT_HOLDS = ['pending_payment', 'paid', 'partially_refunded']
+export const GRANT_HOLDS = ['pending_payment', 'paid', 'partially_refunded']
 
 /** الشعبُ التي تُعرض في فحص الهامش — ما يُشترى اليوم أو يكاد */
 const MARGIN_STATUSES = ['open', 'full', 'active']
@@ -151,6 +152,9 @@ export class GrantService {
         const had = await this.prisma.grantCode.findUnique({
           where: { leadId: input.leadId }, include: { coupon: { select: { code: true, percentOff: true } } },
         })
+        /* والمغلقةُ لا تعيد كودَه — كان يُرسَل إليه ثانيةً «منحتك جاهزة — اختر دوراتك» وهي مغلقة، ويُقال في الصفحة «أرسلناه
+           إلى بريدك» (٤ نوفمبر ٢٠٢٦). فيُقال له السببُ كمن لم يأخذ كودا. والنافدةُ أكوادُها تعيده: كودُه أُعطي قبل أن تنفد */
+        if (had && !isOpen(c, now)) throw new AuthError('grant_closed', GRANT_CLOSED_AR, 409)
         if (had) return { code: had.coupon.code, percentOff: had.coupon.percentOff ?? c.percentOff, closesAt: c.closesAt, reused: true }
       }
       try {
@@ -201,6 +205,31 @@ export class GrantService {
     /* على الحملتين معا — من اشترى بمنحةٍ لا يأخذ فوقها كودَ منحةٍ آخر، وكودُه نفسُه يعود إليه حتى حدّه */
     const once = await this.prisma.order.findFirst({
       where: { userId, status: { in: GRANT_HOLDS }, couponId: { not: coupon.id }, coupon: { grantCode: { isNot: null } } },
+      select: { id: true },
+    })
+    if (once) throw new AuthError('grant_once', GRANT_ONCE_AR, 409)
+  }
+
+  /** يُعاد فحصُ حدّ الكود و«منحةٌ واحدةٌ لكلّ متعلّم» في معاملة الطلب نفسِها، بعد قفل رقم الفاتورة (٤ نوفمبر ٢٠٢٦).
+
+      الفحصُ في التسعير (`priceFor`) يقول للمشتري في موضعه ولا يمنع شراءين متزامنين: كلاهما يقرأ ما بقي قبل أن يحجز
+      الآخر. فجُرّب فمرّ طلبان بأربع دوراتٍ على كودٍ حدُّه أربع — ثماني دوراتٍ بالمنحة، لا «دورةٌ زائدة» كما كان يُظنّ —
+      ومرّ للمتعلّم نفسِه كودا منحتين من نافذتين. وقفلُ رقم الفاتورة (`nextInvoiceNumber`) يُمسك حتّى تُثبَّت المعاملة،
+      فما بعده يرى طلبَ من سبقه: يُعدّ هنا ما على الكود سوى هذا الطلب، وتُردّ المعاملةُ كلُّها إن تجاوز. */
+  async assertHeld(tx: Prisma.TransactionClient, input: { couponId: string; orderId: string; userId: string; maxCourses: number; paidCount: number }) {
+    const others = await tx.orderItem.count({
+      where: { unitPrice: { gt: 0 }, order: { id: { not: input.orderId }, couponId: input.couponId, status: { in: GRANT_HOLDS } } },
+    })
+    const left = input.maxCourses - others
+    if (left <= 0) throw new AuthError('grant_used', grantUsedUpAr(input.maxCourses), 409)
+    if (input.paidCount > left) {
+      throw new AuthError('grant_max_courses', left < input.maxCourses ? grantCoursesLeftAr(left) : grantMaxCoursesAr(input.maxCourses), 409)
+    }
+    const once = await tx.order.findFirst({
+      where: {
+        userId: input.userId, id: { not: input.orderId }, status: { in: GRANT_HOLDS },
+        couponId: { not: input.couponId }, coupon: { grantCode: { isNot: null } },
+      },
       select: { id: true },
     })
     if (once) throw new AuthError('grant_once', GRANT_ONCE_AR, 409)

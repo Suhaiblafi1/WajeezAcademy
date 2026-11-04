@@ -31,12 +31,12 @@ import { TrainerCodeBudgetService, type PurchaseLine } from '../trainer-code-bud
 import { budgetCovers, CODE_UNAVAILABLE_AR, MAX_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from '../registration-window'
 import { GrantService } from '../grant.service'
-import { GRANT_NOT_BETTER_AR, grantCoursesLeftAr, grantMaxCoursesAr } from '../../../src/application/commerce/grant'
+import { GRANT_NOT_BETTER_AR, grantCoursesLeftAr, grantMaxCoursesAr, grantUsedUpAr } from '../../../src/application/commerce/grant'
 
 export class CartService {
   private prisma: PrismaClient
   private budgets: TrainerCodeBudgetService
-  private grants: GrantService
+  readonly grants: GrantService
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.budgets = new TrainerCodeBudgetService(prisma)
@@ -407,6 +407,8 @@ export class CartService {
     if (coupon?.grantCode) {
       const max = coupon.grantCode.campaign.maxCourses
       const left = await this.grants.coursesLeft(coupon)
+      /* وما نفد بين الفحصين (شراءٌ متزامنٌ سبقه) يُقال «استعملت كل دوراته» لا «بقي لك 0 دورات» */
+      if (left <= 0) throw new AuthError('grant_used', grantUsedUpAr(max), 409)
       if (pricing.paidCount > left) {
         throw new AuthError('grant_max_courses', left < max ? grantCoursesLeftAr(left) : grantMaxCoursesAr(max), 409)
       }
@@ -431,6 +433,8 @@ export class CartService {
       grantPct: coupon?.grantCode ? coupon.percentOff : null,
       /* واسمُ حملته — «منحة وجيز» أو «منحة مؤثرين وجيز» */
       grantNameAr: coupon?.grantCode?.campaign.nameAr ?? null,
+      /* وحدُّ دوراته — يُعاد فحصُه في معاملة الطلب بعد القفل (`GrantService.assertHeld`) */
+      grantMaxCourses: coupon?.grantCode?.campaign.maxCourses ?? null,
       trainerCode: trainerCode ? { id: trainerCode.id, profileId: trainerCode.profileId } : null,
       /* ومن اشترى بكود «شارك دوراتك» يُحسب لصاحبه بأجر الإحالة (`share-code.ts`) */
       shareProfileId: shareCode?.profileId ?? null,
