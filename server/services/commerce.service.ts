@@ -371,7 +371,7 @@ export class CommerceService {
     const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds)
     /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
     const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
-    const { pricing, couponId, couponMaxUses, trainerCode, shareProfileId, trainerPurchase } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
+    const { pricing, couponId, couponMaxUses, trainerCode, shareProfileId, trainerPurchase, grantMaxCourses } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
     const { subtotal, discount, total } = pricing
     /* ═══ ومن اشترى بكود «شارك دوراتك» يُحسب لصاحبه بأجر الإحالة (٢٦ أكتوبر ٢٠٢٦) ═══
        قرارُ صاحب المنصّة: «نعم، احسبه بأجر الإحالة» — من كتب الكودَ ولم يدخل من رابطه جاء بالمدرّب كمن دخل.
@@ -406,6 +406,10 @@ export class CommerceService {
           orderId: o.id, amount: total, currency,
         },
       })
+      /* وكودُ المنحة يُفحص ثانيةً هنا — بعد قفل رقم الفاتورة، فيرى طلبَ شراءٍ متزامنٍ سبقه (`GrantService.assertHeld`) */
+      if (couponId && grantMaxCourses !== null) {
+        await this.cart.grants.assertHeld(tx, { couponId, orderId: o.id, userId, maxCourses: grantMaxCourses, paidCount: pricing.paidCount })
+      }
       /* والكوبونُ يُحجز استعمالُه مع الطلب — ولكود المدرّب صفٌّ بما مُنح منه،
          يصير دَينا عليه حين يُدفع لا الآن (`coupon-ledger.ts`) */
       if (couponId) {

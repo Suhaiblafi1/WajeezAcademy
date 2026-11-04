@@ -93,6 +93,9 @@ interface QuoteItem {
    زرَّ دفع، والمشتري يبحث عن السبب. ومع كود المدرّب صار للكود أسبابُ ردٍّ
    مفهومة (لدوراتِ مدرّبٍ ليست في سلّتك · استعملتَه من قبل)، فيُقال السببُ تحت
    خانته ويُسعَّر الطلبُ بلا كود — والقرارُ للمشتري. */
+/* ما يُردّ به كودُ المنحة لسببٍ فيه هو لا في السلّة — فيُجرَّب بعده كودُ حسابه. والباقةُ الأرخص وعددُ الدورات من السلّة:
+   يقعان على كود حسابه كما وقعا على كود الصفحة */
+const GRANT_OWN_ERRORS: ReadonlySet<string> = new Set(["grant_once", "grant_used", "grant_closed"]);
 const COUPON_ERRORS: ReadonlySet<string> = new Set(["bad_coupon", "code_used", "code_not_applicable", "code_unavailable", ...GRANT_ERROR_CODES]);
 
 /** ما استبعده الخادمُ من السلّة وسببُه — نصُّ السبب منه لا مُلفَّقٌ هنا */
@@ -207,15 +210,31 @@ export default function BuyPanel({
      لمن عاد إلى صفحة المنحة فقيل له «أرسلناه إلى بريدك» (لا كودَ مكتوبا)، ولمن يشتري من صفحة دورة. فينتظر التسعيرُ
      الجوابَ، والسؤالُ لا يرمي (`fetchMyGrant` يردّ «لا كود» عند الفشل)، فلا يعلق اللوح. */
   const [grantKnown, setGrantKnown] = useState(!!initialCoupon);
+  /* ═══ وكودُ الصفحة إن رُدّ يُبدَل بكود حسابه (٤ نوفمبر ٢٠٢٦) ═══
+     صفحةُ المنحة تفتح اللوحَ بكودها هي. ومن عبّأ نموذجين واشترى بكود الأخرى رُدّ كودُ هذه («منحة واحدة لكل متعلم») وعُرض
+     عليه الدفعُ بلا منحة — وكودُه الذي اشترى به باقٍ بدوراته. فيُسأل عن كود حسابه هنا أيضا، ولا ينتظره التسعير: إن رُدّ
+     كودُ الصفحة بسببٍ من المنحة نفسِها (لا من السلّة) جُرّب كودُ حسابه مرّةً واحدة. */
+  const fallbackGrant = useRef("");
+  const fallbackTried = useRef(false);
   useEffect(() => {
-    if (initialCoupon) return;
     let on = true;
     void fetchMyGrant().then((g) => {
       if (!on) return;
       if (g.code) {
         setAutoGrant(g);
-        setCoupon((c) => c || g.code!);
-        setApplied((a) => a || g.code!);
+        if (initialCoupon) {
+          fallbackGrant.current = g.code;
+          /* وكودُ الصفحة رُدّ قبل أن يصل هذا — فيُجرَّب الآن */
+          if (rejectedCode.current === initialCoupon && g.code !== initialCoupon && !fallbackTried.current) {
+            fallbackTried.current = true;
+            setCouponError(null);
+            setCoupon(g.code);
+            setApplied(g.code);
+          }
+        } else {
+          setCoupon((c) => c || g.code!);
+          setApplied((a) => a || g.code!);
+        }
       }
       setGrantKnown(true);
     });
@@ -308,6 +327,14 @@ export default function BuyPanel({
     } catch (e) {
       /* الكودُ وحدَه رُدّ: يُقال سببُه تحت خانته، ويُعاد التسعيرُ بلا كود */
       if (code && e instanceof ApiError && COUPON_ERRORS.has(e.code)) {
+        const fallback = fallbackGrant.current;
+        if (GRANT_OWN_ERRORS.has(e.code) && fallback && fallback !== code && !fallbackTried.current) {
+          fallbackTried.current = true;
+          setCouponError(null);
+          setCoupon(fallback);
+          setApplied(fallback);
+          return;
+        }
         setCouponError(e.message);
         rejectedCode.current = code;
         setApplied("");

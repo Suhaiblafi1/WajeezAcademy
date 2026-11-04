@@ -262,6 +262,29 @@ describe('⑧ والحملة تقرأ عند الاستعمال', () => {
   })
 })
 
+/* بلاغُ المراجعة (٤ نوفمبر ٢٠٢٦): شراءان في اللحظة نفسِها كانا يمرّان — ثماني دوراتٍ على كودٍ حدُّه أربع، ومنحتان لمتعلّمٍ واحد */
+describe('⑧ب والشراءان المتزامنان', () => {
+  it('⚠️ على كود واحد لا يتجاوزان حده — يمر أحدهما ويرد الآخر', async () => {
+    const { code } = await grants.issue({ leadId: await lead() })
+    const [a, b] = [await learner(), await learner()]
+    const [ca, cb] = [await cohorts(4), await cohorts(4)]
+    const r = await Promise.allSettled([commerce.checkout(a, ca, code), commerce.checkout(b, cb, code)])
+    expect(r.filter((x) => x.status === 'fulfilled'), 'مر الطلبان فوق حد الكود').toHaveLength(1)
+    const rejected = r.find((x) => x.status === 'rejected') as PromiseRejectedResult
+    expect(rejected.reason).toMatchObject({ code: 'grant_used' })
+    const coupon = await prisma.coupon.findUniqueOrThrow({ where: { code } })
+    expect(await prisma.orderItem.count({ where: { unitPrice: { gt: 0 }, order: { couponId: coupon.id, status: 'pending_payment' } } })).toBe(4)
+  })
+
+  it('⚠️ ومتعلم واحد بكودين لا يأخذ منحتين', async () => {
+    const [c1, c2] = [(await grants.issue({ leadId: await lead() })).code, (await grants.issue({ leadId: await lead() })).code]
+    const u = await learner()
+    const r = await Promise.allSettled([commerce.checkout(u, await cohorts(1), c1), commerce.checkout(u, await cohorts(1), c2)])
+    expect(r.filter((x) => x.status === 'fulfilled'), 'أخذ منحتين').toHaveLength(1)
+    expect((r.find((x) => x.status === 'rejected') as PromiseRejectedResult).reason).toMatchObject({ code: 'grant_once' })
+  })
+})
+
 describe('⑨ وعند الشراء المباشر وحده', () => {
   it('⚠️ موافقة طلب التسجيل الإدارية ترده', async () => {
     const u = await learner()

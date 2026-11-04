@@ -31,7 +31,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { AdvisorService } from './advisor.service'
-import { GrantService } from './grant.service'
+import { GRANT_HOLDS, GrantService } from './grant.service'
 import { GrantCoursesService } from './grant-courses.service'
 import { enqueueMail } from './outbox.service'
 import { renderMail } from './mail-template'
@@ -293,6 +293,14 @@ export class GrantLandingService {
     })
     const coupon = lead?.grantCode?.coupon
     if (!lead || !coupon || (await this.grants.coursesLeft(coupon)) <= 0) return { code: null }
+    /* ═══ ومن اشترى بكود منحةٍ غيرِه لا يُعطى هذا (٤ نوفمبر ٢٠٢٦) ═══
+       منحةٌ واحدةٌ لكلّ متعلّم (`assertUsable`)، فهذا الكودُ يُردّ عند الدفع. وكان يُعطى فتسعّر به الصفحةُ ولوحُ الدفع، ثمّ
+       يُردّ فيُعرض عليه الدفعُ بلا منحة — وكودُه الذي اشترى به باقٍ بدوراته. فلا يُعطى، ولوحُ الدفع يطبّق كودَه (`learnerGrant`) */
+    const other = await this.prisma.order.findFirst({
+      where: { userId, status: { in: GRANT_HOLDS }, couponId: { not: coupon.id }, coupon: { grantCode: { isNot: null } } },
+      select: { id: true },
+    })
+    if (other) return { code: null }
     await recordAudit(this.prisma, {
       action: 'coupon.grant_claim', entityType: 'lead', entityId: lead.id, actorId: userId, ip,
       meta: { campaign: this.slug },
