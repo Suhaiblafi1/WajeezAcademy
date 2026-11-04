@@ -763,12 +763,23 @@ export class CommerceService {
     const payload = normalizeWebhookPayload(provider, JSON.parse(rawBody))
     if (!payload.eventId) throw new AuthError('bad_payload', 'الحدث بلا معرف')
 
+    /* ═══ والحدثُ الذي لم يكتمل يُعاد (٤ نوفمبر ٢٠٢٦) ═══
+       كان يُكتب «رأيناه» قبل أن يُعالَج، ويُردّ كلُّ ما بعده مكرَّرا. فإن تعثّرت المعالجةُ في وسطها أعاد المزوّدُ الحدثَ
+       فقيل له «مكرّر» — وبقي مالٌ مقبوضٌ بلا تسوية. فالمكرّرُ ما اكتمل (`processedAt`)، وما لم يكتمل يُعالَج ثانيةً:
+       كلُّ خطوةٍ فيه بشرط حالتها، والتسويةُ مرّةً واحدة (`settleOrder`). */
     const seen = await this.prisma.paymentWebhookEvent.findUnique({
       where: { provider_eventId: { provider, eventId: payload.eventId } },
     })
-    if (seen) return { duplicate: true } // idempotency — لا أثر مزدوج
-
-    await this.prisma.paymentWebhookEvent.create({ data: { provider, eventId: payload.eventId, payload: payload as object } })
+    if (seen?.processedAt) return { duplicate: true } // idempotency — لا أثر مزدوج
+    if (!seen) {
+      try {
+        await this.prisma.paymentWebhookEvent.create({ data: { provider, eventId: payload.eventId, payload: payload as object } })
+      } catch (e) {
+        /* الحدثُ نفسُه في اللحظة نفسِها — يعالجه الأوّل، وإن تعثّر أعاده المزوّد */
+        if ((e as { code?: string }).code === 'P2002') return { duplicate: true }
+        throw e
+      }
+    }
 
     /* نجاح موقَّت: نجد الفاتورة برقمها، أو بالدفعة المعلقة التي تحمل مرجع المزود (فاتورة Moyasar المستضافة) */
     if (payload.status === 'succeeded') {
@@ -804,6 +815,8 @@ export class CommerceService {
           })
           settle = true
         }
+        /* ودفعةٌ نجحت ولم تُسوَّ فاتورتُها (تعثّرٌ بعد نقلها) تُسوّى الآن — والتسويةُ لا تقع مرّتين */
+        if (!settle) settle = await this.prisma.payment.count({ where: { invoiceId: invoice.id, status: 'succeeded' } }) > 0
         if (settle) await this.settleOrder(invoice.orderId, null)
       }
     }
@@ -834,7 +847,13 @@ export class CommerceService {
       where: { id: orderId }, include: { invoice: { include: { payments: true } } },
     })
     if (!order?.invoice) return 'none'
-    if (order.status === 'paid' || order.invoice.payments.some((p) => p.status === 'succeeded')) return 'paid'
+    if (order.status === 'paid') return 'paid'
+    /* دفعةٌ نجحت والطلبُ لم يُسوَّ — تعثّرت تسويتُه بعد نقل الدفعة. كان يُقال «دُفع» ويُترك، والعاملُ يتخطّاه لأنّ له دفعة:
+       مالٌ مقبوضٌ وطلبٌ «بانتظار الدفع» أبدا. فيُسوّى هنا (مرّةً واحدة، `settleOrder`) — ولو أُلغي: المالُ وصل */
+    if (order.invoice.payments.some((p) => p.status === 'succeeded')) {
+      if (order.invoice.status !== 'paid') await this.settleOrder(orderId, actorId)
+      return 'paid'
+    }
     const pending = order.invoice.payments.filter((p) => p.status === 'pending' && p.providerRef)
     if (pending.length === 0) return 'none'
     const provider = getPaymentProvider(await getPaymentConfig(this.prisma))
@@ -913,10 +932,16 @@ export class CommerceService {
 
   /** تسوية الطلب بعد دفع مؤكد — فاتورة مدفوعة + طلب مدفوع + تحويل حجز المقعد إلى تسجيل فعلي */
   private async settleOrder(orderId: string, actorId: string | null) {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.invoice.update({ where: { orderId }, data: { status: 'paid', paidAt: new Date() } })
+    /* ═══ وتُسوّى مرّةً واحدة (٤ نوفمبر ٢٠٢٦) ═══
+       صار يناديها أكثرُ من باب لطلبٍ واحد — الحدثُ يُعاد، وسؤالُ المزوّد، والعاملُ — فالفاتورةُ تُنقل بشرط ألّا تكون
+       مدفوعة، ومن لم ينقلها لم يُسوِّ شيئا: لا تسجيلَ ثانيا ولا «تأكد دفعك» مرّتين. */
+    const claimed = await this.prisma.$transaction(async (tx) => {
+      const moved = await tx.invoice.updateMany({ where: { orderId, status: { not: 'paid' } }, data: { status: 'paid', paidAt: new Date() } })
+      if (moved.count === 0) return false
       await tx.order.update({ where: { id: orderId }, data: { status: 'paid', paidAt: new Date() } })
+      return true
     })
+    if (!claimed) return
     /* تحويل **كل** طلبات التسجيل المرتبطة بالطلب — لا أوّلها (التوصية ٣).
 
        كان هنا `findFirst`: من اشترى خطّةً بأربع دورات ودفع مرّة واحدة كان

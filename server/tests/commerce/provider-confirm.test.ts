@@ -191,3 +191,49 @@ describe('المشغّلُ يسأل قبل أن يُلغي «المهجور»', 
     expect((await orderOf(orderId)).status, 'أُلغي ولم نعرف أدُفع أم لا').toBe('pending_payment')
   })
 })
+
+/* ═══ والحدثُ الذي لم يكتمل يُعاد، والدفعةُ الناجحةُ تُسوّى مرّةً واحدة (٤ نوفمبر ٢٠٢٦) ═══
+   كان الحدثُ يُكتب «رأيناه» قبل معالجته، فإن تعثّرت المعالجةُ أعاده المزوّدُ فقيل «مكرّر». ودفعةٌ نُقلت إلى «نجحت» ثمّ
+   تعثّرت تسويتُها بقيت كذلك أبدا: السؤالُ يقول «دُفع» ويترك، والعاملُ يتخطّى ما له دفعة. */
+describe('الحدث الذي لم يكتمل والدفعة التي لم تسوّ', () => {
+  const resend = async (orderId: string, eventId: string) => {
+    const order = await orderOf(orderId)
+    const t = Math.floor(Date.now() / 1000)
+    const body = JSON.stringify({
+      id: eventId, type: 'checkout.session.completed',
+      data: { object: { id: order.invoice!.payments[0].providerRef, metadata: { invoiceNumber: order.invoice!.number } } },
+    })
+    const sig = `t=${t},v1=${createHmac('sha256', WEBHOOK_SECRET).update(`${t}.${body}`).digest('hex')}`
+    return commerce.handleWebhook('stripe', body, sig)
+  }
+  /** تعثّرت التسويةُ بعد أن نُقلت الدفعةُ إلى «نجحت» — والحدثُ مكتوبٌ ولم يكتمل */
+  const stuck = async (tag: string) => {
+    const at = await atCheckout(tag)
+    await prisma.payment.update({ where: { id: at.paymentId }, data: { status: 'succeeded', succeededAt: new Date() } })
+    await prisma.paymentWebhookEvent.create({ data: { provider: 'stripe', eventId: `evt_${tag}`, payload: {} } })
+    return at
+  }
+
+  it('⚠️ يعيده المزود فيعالج — لا «مكرر» — ويسوى الطلب', async () => {
+    const { userId, cohortId, orderId } = await stuck('resend-unfinished')
+    expect(await resend(orderId, 'evt_resend-unfinished'), 'قيل مكرر لحدث لم يكتمل').toEqual({ duplicate: false })
+    expect((await orderOf(orderId)).status, 'مال مقبوض وطلب بانتظار الدفع').toBe('paid')
+    expect(await prisma.enrollment.findFirst({ where: { userId, cohortId } })).not.toBeNull()
+    expect(await resend(orderId, 'evt_resend-unfinished'), 'المكتمل يعاد').toEqual({ duplicate: true })
+  })
+
+  it('⚠️ وسؤال المزوّد يسوّيه — مرة واحدة ولو سئل مرتين', async () => {
+    const { userId, orderId } = await stuck('confirm-stuck')
+    expect(await commerce.confirmWithProvider(orderId, userId)).toBe('paid')
+    expect(await commerce.confirmWithProvider(orderId, userId)).toBe('paid')
+    expect((await orderOf(orderId)).status, 'قيل دفع وترك').toBe('paid')
+    expect(await prisma.notification.count({ where: { userId, templateKey: 'payment.succeeded', channel: 'in_app' } }), 'سوي مرتين').toBe(1)
+  })
+
+  it('⚠️ والعامل لا يتخطاه — يسويه', async () => {
+    const { orderId } = await stuck('worker-stuck')
+    await age(orderId, 3)
+    await reclaimAbandonedOrders(prisma)
+    expect((await orderOf(orderId)).status, 'تخطاه العامل لأن له دفعة').toBe('paid')
+  })
+})
