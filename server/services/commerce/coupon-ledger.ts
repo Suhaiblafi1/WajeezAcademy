@@ -213,7 +213,12 @@ async function ledgerFailed(prisma: PrismaClient, orderId: string, step: 'use' |
 /** مفتاحُ قفل رصيد المدرّب — من معرّفه، في فضاء أقفال التجارة. والاصطدامُ بين
     مدرّبَين لا يُفسد شيئا: يُصفّ شراءاهما وحسب */
 export function trainerLockKey(profileId: string): number {
-  const hex = profileId.replace(/-/g, '').slice(0, 8)
+  return idLockKey(profileId)
+}
+
+/** مفتاحُ قفلٍ من أيّ معرّف — في فضاء أقفال التجارة. وبه يُقفل ردُّ دفعةٍ واحدة (`processRefund`) */
+export function idLockKey(id: string): number {
+  const hex = id.replace(/-/g, '').slice(0, 8)
   const n = Number.parseInt(hex, 16)
   /* إلى ما بعد مفتاح تسلسل الفواتير، وفي مدى int4 الموجب */
   return 1000 + (Number.isFinite(n) ? n % 2_000_000_000 : 0)
