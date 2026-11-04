@@ -41,10 +41,14 @@ export interface UsableCoupon {
   restrictedToUserId: string | null
 }
 
-export function assertCouponUsable(coupon: UsableCoupon | null, userId: string): void {
+export function assertCouponUsable(coupon: UsableCoupon | null, userId: string | null): void {
   if (!coupon || !coupon.active) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
   if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new AuthError('bad_coupon', 'الكوبون منتهي')
   if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new AuthError('bad_coupon', 'استنفد الكوبون عدد استخداماته')
+  /* وزائرٌ بلا حساب لا يُعرف أهو صاحبُه — فيُقال له أن يدخل، لا «ليس لحسابك» (معاينةُ رابط الشراء) */
+  if (coupon.restrictedToUserId && userId === null) {
+    throw new AuthError('bad_coupon', 'هذا الكود لحساب محدد. سجل الدخول لنحسب سعرك به')
+  }
   if (coupon.restrictedToUserId && coupon.restrictedToUserId !== userId) {
     throw new AuthError('bad_coupon', 'هذا الكوبون ليس لحسابك')
   }

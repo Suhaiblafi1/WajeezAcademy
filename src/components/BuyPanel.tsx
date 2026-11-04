@@ -51,6 +51,7 @@ import { apiPost, ApiError } from "@/services/api";
 import { clearLocalSession } from "@/services/auth";
 import { readReferral } from "@/application/commerce/referral";
 import { clearPendingCheckout } from "@/services/pending-checkout";
+import { lastTouch } from "@/services/first-touch";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { useMySessions } from "@/services/my-sessions";
 import { clashWarnAr, clashesOf, freeAlternative, type TimedCohort } from "@/application/learning/cohort-overlap";
@@ -433,6 +434,8 @@ export default function BuyPanel({
         ...(applied ? { couponCode: applied } : {}),
         /* رمزُ دعوة المدرّب إن هبط الزائرُ برابطه — والخادمُ يقرّر قبولَه */
         ...(readReferral() ? { referralCode: readReferral()! } : {}),
+        /* ومصدرُ زيارته — حملةُ واتساب وغيرُها، يُكتب في أثر الطلب ولا يمسّ السعر (٤ نوفمبر ٢٠٢٦) */
+        ...(lastTouch() ? { touch: lastTouch() } : {}),
       });
       /* الطلبُ أُنشئ — فلا «أكمل شراءك» بعده على ما صار في «فواتيري» (`pending-checkout.ts`) */
       clearPendingCheckout();

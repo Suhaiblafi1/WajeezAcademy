@@ -25,6 +25,8 @@ export interface PendingCheckout {
   intent: PendingIntent
   /** الشعبةُ التي اختارها لكلّ دورة */
   cohortByCourse: Record<string, string>
+  /** الكودُ المكتوبُ في خانته — يعود معه ولا يُنسى بالتسجيل (رابطُ الشراء الجاهز، ٤ نوفمبر ٢٠٢٦) */
+  couponCode?: string
   at: number
 }
 
@@ -33,6 +35,7 @@ export interface PendingCheckout {
 const PATH_RE = /^\/(pathways|build|grant)\/[A-Za-z0-9_-]{1,80}$|^\/grant\/i\/[A-Z0-9]{3,20}\/build$/
 const ID_RE = /^[A-Za-z0-9_-]{1,80}$/
 const KINDS = new Set(['pathway', 'course', 'courses'])
+const CODE_RE = /^[A-Z0-9-]{2,40}$/
 
 /** يقرأ المحفوظَ ويفحصه — أو `null` إن لم يصحّ أو شاخ */
 export function parsePendingCheckout(raw: string | null, now: number): PendingCheckout | null {
@@ -55,6 +58,7 @@ export function parsePendingCheckout(raw: string | null, now: number): PendingCh
     path: o.path,
     intent: { title: i.title, amount: typeof i.amount === 'number' ? i.amount : 0, kind: i.kind as PendingIntent['kind'], courseIds },
     cohortByCourse,
+    ...(typeof o.couponCode === 'string' && CODE_RE.test(o.couponCode) ? { couponCode: o.couponCode } : {}),
     at: o.at,
   }
 }

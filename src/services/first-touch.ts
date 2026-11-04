@@ -4,7 +4,7 @@
    في ذاكرة المتصفّح المحليّة، وبـ`safe-storage` فلا تُسقط صفحةً حيث تُمنع الذاكرة — ومن
    مُنعت عنده سُجّل بلا مصدر، ولا ينكسر شيء. */
 
-import { keepTouch, touchFromLocation, type FirstTouch } from "@/application/marketing/signup-source";
+import { hasSignal, keepTouch, touchFromLocation, type FirstTouch } from "@/application/marketing/signup-source";
 import { safeGet, safeSet } from "./safe-storage";
 
 const KEY = "wajeez_first_touch";
@@ -29,6 +29,22 @@ export function captureFirstTouch(): void {
   const before = stored();
   const keep = keepTouch(before, fresh);
   if (keep !== before) safeSet(KEY, JSON.stringify(keep));
+  /* وآخرُ زيارةٍ بإشارة — ما يُنسب إليه الشراءُ نفسُه (رابطُ حملة واتساب مثلا)، لا أوّلُ ما جاء منه قبل أشهر */
+  if (hasSignal(fresh)) safeSet(LAST_KEY, JSON.stringify(fresh));
+}
+
+const LAST_KEY = "wajeez_last_touch";
+
+/** آخرُ زيارةٍ جاءت بمصدر — تُرسَل مع الشراء فتُكتب في أثر طلبه (`checkout`)، ولا تمسّ السعر */
+export function lastTouch(): FirstTouch | null {
+  const raw = safeGet(LAST_KEY);
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw) as unknown;
+    return v && typeof v === "object" ? (v as FirstTouch) : null;
+  } catch {
+    return null;
+  }
 }
 
 /** ما يُرسَل مع إنشاء الحساب — أو لا شيء */

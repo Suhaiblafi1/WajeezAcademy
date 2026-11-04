@@ -197,12 +197,14 @@ export class GrantService {
   }
 
   /** أيُستعمل هذا الكودُ لهذا المتعلّم الآن؟ — يُسأل عند التسعير قبل فحص الكوبون العامّ، فيُقال السببُ بلغة المنحة */
-  async assertUsable(coupon: GrantCoupon, userId: string, now = new Date()): Promise<void> {
+  async assertUsable(coupon: GrantCoupon, userId: string | null, now = new Date()): Promise<void> {
     const campaign = coupon.grantCode?.campaign
     if (!campaign) return
     if (!isOpen(campaign, now)) throw new AuthError('grant_closed', GRANT_CLOSED_AR, 409)
     if ((await this.coursesLeft(coupon)) <= 0) throw new AuthError('grant_used', grantUsedUpAr(campaign.maxCourses), 409)
-    /* على الحملتين معا — من اشترى بمنحةٍ لا يأخذ فوقها كودَ منحةٍ آخر، وكودُه نفسُه يعود إليه حتى حدّه */
+    /* على الحملتين معا — من اشترى بمنحةٍ لا يأخذ فوقها كودَ منحةٍ آخر، وكودُه نفسُه يعود إليه حتى حدّه.
+       وزائرٌ بلا حساب (معاينةُ رابط الشراء) لا مشترياتِ له تُعدّ — فيُسأل عنه بعد دخوله */
+    if (userId === null) return
     const once = await this.prisma.order.findFirst({
       where: { userId, status: { in: GRANT_HOLDS }, couponId: { not: coupon.id }, coupon: { grantCode: { isNot: null } } },
       select: { id: true },

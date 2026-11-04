@@ -41,6 +41,10 @@ import { courseAudienceView } from "@/application/catalog/course-audience";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { FIRST_TIME_PROMO, isFirstTimePromo, promoDiscountOn } from "@/application/commerce/first-time-promo";
 import { savePathDraft } from "@/services/path-drafts";
+import { parseBuildLink } from "@/application/commerce/build-link";
+import { useCheckoutPreview } from "@/services/checkout-preview";
+import { fetchMyGrant } from "@/services/my-grant";
+import BuyLinkPreview from "@/components/BuyLinkPreview";
 import {
   courseById, courseFullById,
   pathwayCourses, weeksLabel, TRAINER_PENDING_AR, type Course,
@@ -118,7 +122,13 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      `?resume=1` مع شراءٍ محفوظٍ لهذه الصفحة: دوراتُه وشعبُها كما تركها، ويُفتح اللوحُ له
      (`pending-checkout.ts`). كان يعود إلى «منصّتي» ويبدأ اختيارَه من جديد. */
   const [resumed] = useState(() => (courseId ? resumedCheckoutFor(`/build/${courseId}`) : null));
-  const [picked, setPicked] = useState<string[]>(() => resumed?.intent.courseIds ?? (courseId ? [courseId] : []));
+  /* ═══ ورابطُ الشراء الجاهز يحمل دوراتِه وكودَه (٤ نوفمبر ٢٠٢٦) ═══
+     `?add=دورة:شعبة,…&code=…` — يفتح المسارَ بها كلِّها والكودُ في خانته (`build-link.ts`). وما فيه يُنظَّف شكلا هنا
+     ويُصدَّق في الخادم: ما لا شعبةَ متاحةً له يُترك بإشعار، والسعرُ من المعاينة. ومن عاد من التوثيق يجد ما تركه. */
+  const [link] = useState(() => (courseId && !resumed ? parseBuildLink(window.location.search, courseId) : null));
+  const [rawPicked, setPicked] = useState<string[]>(
+    () => resumed?.intent.courseIds ?? (courseId ? [courseId, ...(link?.adds.map((a) => a.courseId) ?? [])] : []),
+  );
   /* الشعبةُ المختارة لكلّ دورة — أقربُ متاحٍ افتراضا، ويبدّلها من شاء.
      وقرارُ صاحب المنصّة: «يختار الشعب المفتوحة للدورة حسب التوفّر». والاختيارُ
      يعيش هنا لا في لوح الشراء: السعرُ المعروض في هذه الصفحة سعرُ الشعبة
@@ -129,7 +139,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   const [cohortChoice, setCohortChoice] = useState<Record<string, string>>(() => {
     if (resumed) return resumed.cohortByCourse;
     const asked = new URLSearchParams(window.location.search).get("cohort");
-    return asked && courseId ? { [courseId]: asked } : {};
+    const fromLink = Object.fromEntries((link?.adds ?? []).flatMap((a) => (a.cohortId ? [[a.courseId, a.cohortId]] : [])));
+    return asked && courseId ? { ...fromLink, [courseId]: asked } : fromLink;
   });
   const [user, setUser] = useState<string | null>(readUserName);
   /* الجلسةُ الحقيقيّة للبريد: لوحُ الشراء يقرأ العنوانَ منها، و`readUserName`
@@ -156,15 +167,41 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   /* الكود يُكتب هنا ويُطبَّق بزر — لا فور الكتابة: التطبيق التلقائي يجعل كل
      حرف يُكتب محاولةً فاشلة، فيرى المتعلم رفضا وهو في منتصف كلمة. */
-  const [promoInput, setPromoInput] = useState("");
-  const [promoApplied, setPromoApplied] = useState<string | null>(null);
-  /* كودٌ لا تعرفه الصفحة — كودُ مدرّبٍ أو فئة: يُحمل إلى لوح الدفع ويحكم فيه الخادم */
-  const [pendingCode, setPendingCode] = useState<string | null>(null);
+  const [linkCode] = useState(() => resumed?.couponCode ?? link?.code ?? null);
+  const [promoInput, setPromoInput] = useState(linkCode ?? "");
+  const [promoApplied, setPromoApplied] = useState<string | null>(linkCode && isFirstTimePromo(linkCode) ? linkCode : null);
+  /* كودٌ لا تعرفه الصفحة — كودُ مدرّبٍ أو فئة أو منحة: يُسعَّر في المعاينة ويحكم فيه الخادم */
+  const [pendingCode, setPendingCode] = useState<string | null>(linkCode && !isFirstTimePromo(linkCode) ? linkCode : null);
   /* كودُ أوّل شراءٍ لا يُخصم لمن اشترى من قبل — وسببُه يُقال هنا لا في لوح الدفع وحدَه */
   const [promoRefused, setPromoRefused] = useState<string | null>(null);
   /* ما تجاوز السقف يُحفظ لمرحلة تالية بدل أن يُرفض بصمت */
   const [deferred, setDeferred] = useState<string[]>([]);
 
+  /* ما في الرابط ولا يُشترى — دورةٌ لا نعرفها أو لا شعبةَ متاحةً لها، أو شعبةٌ طُلبت ولم تعد متاحة. يُقال ولا
+     يُسقط أخواته، والدورةُ تُترك من المسار. والحكمُ بعد وصول الكتالوج والشعب لا قبله */
+  const linkCheck = useMemo(() => {
+    void catalogVersion;
+    const drop = new Set<string>();
+    const notes: string[] = [];
+    if (!link || !pricesLoaded || !hasCoreCatalog()) return { drop, notes };
+    if (link.dropped > 0) notes.push(`تجاهلنا ${link.dropped} من دورات الرابط: صيغة غير صحيحة أو أكثر من ${MAX_BUILT_COURSES} دورات.`);
+    const asked = new URLSearchParams(window.location.search).get("cohort");
+    const wanted: { courseId: string; cohortId: string | null }[] = [{ courseId, cohortId: asked }, ...link.adds];
+    for (const w of wanted) {
+      const c = courseById(w.courseId);
+      const options = cohorts.get(w.courseId) ?? [];
+      if (w.courseId !== courseId && (!c || options.length === 0)) {
+        drop.add(w.courseId);
+        notes.push(c ? `«${c.name}» لا شعبة متاحة لها الآن، فتركناها.` : `دورة في الرابط غير موجودة (${w.courseId})، فتركناها.`);
+        continue;
+      }
+      if (w.cohortId && options.length > 0 && !options.some((o) => o.id === w.cohortId)) {
+        notes.push(`الشعبة المطلوبة لـ«${c?.name ?? w.courseId}» غير متاحة أو ممتلئة، فاخترنا أقرب شعبة.`);
+      }
+    }
+    return { drop, notes };
+  }, [link, pricesLoaded, catalogVersion, cohorts, courseId]);
+  const picked = useMemo(() => rawPicked.filter((id) => !linkCheck.drop.has(id)), [rawPicked, linkCheck]);
   useEffect(() => {
     if (anchor) track("course_path_opened", { course: anchor.id, pathway: anchor.pathwayId });
   }, [anchor]);
@@ -211,6 +248,26 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     () => bundleNudge(picked, suggestions.map((s) => s.courseId), priceOf),
     [picked, suggestions, priceOf],
   );
+
+  /* ═══ والسعرُ النهائيُّ من الخادم قبل الدفع (٤ نوفمبر ٢٠٢٦) ═══
+     المعاينةُ تسعّر الشعبَ المختارة والكودَ بحساب الفاتورة نفسِه (`useCheckoutPreview`)، فيرى سعرَه بعد المنحة هنا
+     لا في لوح الدفع وحدَه. ومن دخل حسابَه بلا كودٍ مكتوب يُسعَّر بكود منحته — كما يطبّقه لوحُ الشراء وحدَه (`BuyPanel`)،
+     فلا يفترق الرقمان. */
+  const [myGrantCode, setMyGrantCode] = useState<string | null>(null);
+  const signedIn = Boolean(session);
+  useEffect(() => {
+    if (!signedIn) return;
+    let on = true;
+    void fetchMyGrant().then((g) => { if (on) setMyGrantCode(g.code); });
+    return () => { on = false; };
+  }, [signedIn]);
+  const previewCohortIds = useMemo(
+    () => picked.flatMap((id) => { const c = cohortOf(id); return c && c.currency === baseCurrency ? [c.id] : []; }),
+    [picked, cohortOf, baseCurrency],
+  );
+  const typedCode = promoApplied ?? pendingCode;
+  const previewState = useCheckoutPreview(previewCohortIds, typedCode ?? myGrantCode, pricesLoaded);
+  const preview = previewState.state === "ready" ? previewState.preview : previewState.state === "loading" ? previewState.last : null;
 
   /* هل صارت مختاراته مسارا جاهزا بعينه؟ حينها نقوله له بدل ادّعاء تركيب جديد */
   const matchesPathway = useMemo(() => {
@@ -322,6 +379,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
       path: `/build/${courseId}`,
       intent: { ...intent, courseIds: picked },
       cohortByCourse: Object.fromEntries(picked.flatMap((cid) => (cohortOf(cid) ? [[cid, cohortOf(cid)!.id]] : []))),
+      /* والكودُ معها — فمن خرج ليوثّق بريده عاد وكودُه في خانته */
+      ...(typedCode ? { couponCode: typedCode } : {}),
     });
     if (user) setCheckout(intent);
     else setPending(intent);
@@ -335,7 +394,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           : matchesPathway
             ? `مسار «${anchor.pathwayName}» كاملا (${picked.length} دورات)`
             : `مسارك المبني: ${name.trim() || `${picked.length} دورات`}`,
-      amount: finalPayable,
+      amount: preview?.total ?? finalPayable,
       kind: picked.length === 1 ? "course" : matchesPathway ? "pathway" : "courses",
     });
 
@@ -548,6 +607,16 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             </span>
           </div>
 
+          {/* ما في الرابط ولم يُضف — يُقال بسببه، والباقي في المسار */}
+          {linkCheck.notes.length > 0 && (
+            <Inset as="ul" tone="warn" className="mt-3 space-y-1 px-3.5 py-2.5 text-read leading-5 text-gold-ink" data-testid="build-link-notes">
+              {linkCheck.notes.map((n) => <li key={n}>{n}</li>)}
+            </Inset>
+          )}
+          {previewState.state === "failed" && (
+            <p className="mt-2 text-read leading-5 text-muted-foreground">{previewState.messageAr} السعر أدناه قبل الكود.</p>
+          )}
+
           <ol className="mt-3.5 space-y-2">
             {pickedCourses.map((c, i) => {
               const options = cohorts.get(c.id) ?? [];
@@ -612,7 +681,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               يقابل قرارا اتخذه المتعلم بنفسه. وبلا خصمٍ ولا كود يبقى رقمٌ
               واحد: تكرارُه سطرين كان يُكبّر الصندوق ولا يُضيف علما. */}
           <Card className="mt-3 p-3">
-            {pricing.allPriced ? (
+            {pricing.allPriced && preview ? (
+              <BuyLinkPreview preview={preview} courseName={(id) => courseById(id)?.name ?? id} />
+            ) : pricing.allPriced ? (
               <dl className="space-y-1 text-xs">
                 {hasBreakdown && (
                   <>
@@ -702,11 +773,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   تطبيق
                 </Button>
               </div>
-              {promoApplied && (
+              {promoApplied && !preview && (
                 <p className="mt-1.5 text-read font-bold text-teal-light-ink">طبّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}{promoOnTop ? ` ${FIRST_TIME_PROMO.topLineAr}` : ""}.</p>
               )}
               {promoRefused && <p className="mt-1.5 text-read leading-6 text-gold-ink">{promoRefused}</p>}
-              {pendingCode && (
+              {pendingCode && !preview && (
                 <p className="mt-1.5 text-read leading-6 text-gold-ink">
                   نتحقق من الكود <span dir="ltr" className="font-mono">{pendingCode}</span> عند الدفع، ونبيّن على أي دوراتك ينطبق.
                 </p>
