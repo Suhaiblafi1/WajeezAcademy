@@ -833,7 +833,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 أي أنّ الإضافية تكلّفك ١٠١ بدل ١٢٥» — فطلب صاحبُ المنصّة
                 اختصارَها (٨ سبتمبر ٢٠٢٦). والمجموعُ الجديد لا يُقال: يراه في
                 بطاقة السعر فور الإضافة، وما يقرّر به هو كلفةُ الدورة وحدَها. */}
-            {nudge && (
+            {/* ولا يُقال «أضف دورة يرتفع خصمك» لمن طُبّقت منحتُه: المنحةُ بدلُ خصم البناء، فلا يرتفع شيء (٥ نوفمبر ٢٠٢٦) */}
+            {nudge && !(preview?.grantNameAr && preview.couponDiscount > 0) && (
               <Inset as="p" tone="warn" className="mt-3 flex items-start gap-2 px-3.5 py-2.5 text-read font-semibold leading-5 text-gold-ink">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
