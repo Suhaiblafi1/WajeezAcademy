@@ -29,6 +29,9 @@ import { derivedSecret } from './storage.service'
 import { buildLinkPath, type BuildLinkAdd } from '../../src/application/commerce/build-link'
 import { MAX_BUILT_COURSES } from '../../src/application/commerce/discount-policy'
 import { isWhatsappCampaign, WHATSAPP_CAMPAIGN_TRACKING } from '../../src/application/commerce/buy-link-campaign'
+import { cleanReason, firstNameAr, goPath } from '../../src/application/commerce/private-path'
+import { mintPrivatePath } from './private-path.service'
+import { publicSiteUrl } from './site-url'
 
 export type BuyLinkKind = 'admin' | 'advisor'
 
@@ -47,6 +50,8 @@ export interface BuyLinkInput {
   code?: string | null
   /** رابطُ حملة واتساب — للسوبر أدمن وحدَه، ولا عمولةَ مستشارٍ عليه */
   whatsapp?: boolean
+  /** سببُ كلّ دورةٍ في «المسار الخاصّ» — بمعرّفها، قصيرا (`PATH_REASON_MAX`) */
+  reasons?: Record<string, string>
 }
 
 const sign = (payload: string) => createHmac('sha256', derivedSecret('buy-link')).update(payload).digest('base64url').slice(0, 22)
@@ -68,7 +73,7 @@ export function verifyBuyLinkToken(token: unknown): { linkId: string; kind: BuyL
 }
 
 /** ما يُكتب في أثر الطلب عن رابطه — بعد التصديق، ومن أثر توليده لا من الرابط */
-export async function buyLinkForOrder(prisma: PrismaClient, token: unknown): Promise<{ id: string; kind: BuyLinkKind; by: string } | null> {
+export async function buyLinkForOrder(prisma: PrismaClient, token: unknown): Promise<{ id: string; kind: BuyLinkKind; by: string; whatsapp?: true } | null> {
   const v = verifyBuyLinkToken(token)
   if (!v) return null
   const ev = await prisma.auditEvent.findFirst({
@@ -77,7 +82,10 @@ export async function buyLinkForOrder(prisma: PrismaClient, token: unknown): Pro
   })
   const kind = (ev?.meta as { kind?: string } | null)?.kind
   if (!ev?.actorId || kind !== v.kind) return null
-  return { id: v.linkId, kind: v.kind, by: ev.actorId }
+  /* ورابطُ حملة واتساب يُقال في أثر الطلب من توليده لا من وسم المتصفّح — فصفحةُ المسار الخاصّ (`/go`) لا وسمَ في عنوانها،
+     و«اشترى عبر حملة واتساب» يبقى صحيحا (`orderViaAr`) — ٥ نوفمبر ٢٠٢٦ */
+  const whatsapp = (ev.meta as { whatsapp?: unknown } | null)?.whatsapp === true
+  return { id: v.linkId, kind: v.kind, by: ev.actorId, ...(whatsapp ? { whatsapp: true as const } : {}) }
 }
 
 /** طلباتٌ لا عمولةَ مستشارٍ عليها — رابطُ السوبر أدمن أو حملةُ واتساب، من أثر طلبها (قرارُ «Hybrid») */
@@ -179,17 +187,40 @@ export class BuyLinkService {
     if (input.whatsapp && r.kind !== 'admin') throw new AuthError('forbidden', 'رابط حملة واتساب للمدير الأعلى وحده', 403)
     code = code ?? null
 
+    /* ═══ والمسارُ الخاصّ يُصدَّق بالمعاينة نفسِها قبل أن يُرسل (٥ نوفمبر ٢٠٢٦) ═══
+       صفحتُه تعرض سعرا وزرَّ «أكمل التسجيل» — فما يردّه الدفعُ يُقال لمن يولّده الآن لا للمتعلّم بعد أن يفتحه: كودٌ لا
+       يسع عددَ الدورات، أو شعبةٌ امتلأت أو مسجَّلٌ فيها. والمعاينةُ هي حسابُ الدفع نفسُه (`CommerceService.preview`). */
+    /* والمسارُ لمن اختيرت لكلّ دورةٍ فيه شعبتُها — والأداةُ تختارها دائما. وما سواه (نداءٌ بلا شعب) رابطُ `/build` الطويلُ كما كان */
+    const asPath = wanted.every((w) => !!w.cohortId)
+    if (asPath) {
+      const { CommerceService } = await import('./commerce.service')
+      const check = await new CommerceService(this.prisma).preview(r.userId ?? null, cohortIds, code ?? undefined)
+      if (check.couponError) throw new AuthError('path_code', check.couponError.messageAr, 409)
+      if (check.excluded.length > 0) throw new AuthError('path_unavailable', check.excluded[0].messageAr, 409)
+    }
+
     const linkId = randomUUID()
     const token = buyLinkToken(linkId, r.kind)
     const tracking: Record<string, string> = { ...(input.whatsapp ? WHATSAPP_CAMPAIGN_TRACKING : {}), bl: token }
     const path = buildLinkPath({ courseId: input.courseId, cohortId: input.cohortId ?? null, adds, code, tracking })
+    const goCode = !asPath ? null : await mintPrivatePath(this.prisma, actor.userId, {
+      linkId, token, kind: r.kind,
+      learnerKey: r.userId ? `user:${r.userId}` : `lead:${r.leadId}`,
+      firstName: firstNameAr(r.name),
+      courses: wanted.map((w) => ({ courseId: w.courseId, cohortId: w.cohortId!, reasonAr: cleanReason(input.reasons?.[w.courseId]) })),
+      code, whatsapp: Boolean(input.whatsapp),
+    })
     await recordAudit(this.prisma, {
       actorId: actor.userId, action: 'buy_link.generate', entityType: r.entityType, entityId: r.entityId,
       meta: {
         linkId, kind: r.kind, learner: { name: r.name, leadId: r.leadId, userId: r.userId },
-        courses: wanted, code, whatsapp: Boolean(input.whatsapp),
+        courses: wanted, code, whatsapp: Boolean(input.whatsapp), goCode,
       },
     })
-    return { path, linkId }
+    return {
+      path, linkId,
+      goPath: goCode ? goPath(goCode) : null,
+      goUrl: goCode ? `${publicSiteUrl()}${goPath(goCode)}` : null,
+    }
   }
 }

@@ -4946,6 +4946,9 @@ model ShortLink {
   /// بصمةُ ما رُسمت منه الصورة — فلا تُرفع ثانيةً إلّا إن تغيّر
   previewSig   String?
   previewAt    DateTime?
+  /// تفاصيلُ «المسار الخاصّ» حين يكون غرضُه `private_path` (٥ نوفمبر ٢٠٢٦) — الاسمُ الأوّلُ والدوراتُ بأسبابها والكودُ
+  /// ورمزُ من ولّده، ونسختُه الأحدثُ إن كانت. وفارغٌ لكلّ رابطٍ سواه. والشكلُ في `src/application/commerce/private-path.ts`
+  payload      Json?
   opens        ShortLinkOpen[]
 }
 
