@@ -9,8 +9,8 @@ export const WHATSAPP_CAMPAIGN_TRACKING = { utm_source: 'whatsapp', utm_campaign
     هنا (مصدرُ الزيارة الأوّل في عمود «المصدر») — ٥ نوفمبر ٢٠٢٦ */
 export function orderViaAr(meta: unknown): string | null {
   if (!meta || typeof meta !== 'object') return null
-  const m = meta as { touch?: unknown; buyLink?: { kind?: unknown } }
-  if (isWhatsappCampaign(m.touch)) return 'حملة واتساب'
+  const m = meta as { touch?: unknown; buyLink?: { kind?: unknown; whatsapp?: unknown } }
+  if (isWhatsappCampaign(m.touch) || m.buyLink?.whatsapp === true) return 'حملة واتساب'
   if (m.buyLink?.kind === 'admin') return 'رابط من الإدارة'
   if (m.buyLink?.kind === 'advisor') return 'رابط من المستشار'
   return null

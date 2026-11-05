@@ -17,6 +17,7 @@ import { useCheckoutPreview } from "@/services/checkout-preview";
 import { courseById } from "@/data/courses";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { MAX_BUILT_COURSES } from "@/application/commerce/discount-policy";
+import { PATH_REASON_MAX } from "@/application/commerce/private-path";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { toast } from "@/components/Toast";
 
@@ -33,7 +34,7 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
   const { cohorts, loaded } = useCourseCohorts();
   const [prep, setPrep] = useState<Prepared | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [picked, setPicked] = useState<{ courseId: string; cohortId: string }[]>([]);
+  const [picked, setPicked] = useState<{ courseId: string; cohortId: string; reason: string }[]>([]);
   const [adding, setAdding] = useState("");
   const [code, setCode] = useState("");
   const [whatsapp, setWhatsapp] = useState(false);
@@ -64,7 +65,7 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
   const add = (courseId: string) => {
     const first = cohorts.get(courseId)?.[0];
     if (!first || picked.some((p) => p.courseId === courseId) || picked.length >= MAX_BUILT_COURSES) return;
-    setPicked((p) => [...p, { courseId, cohortId: first.id }]);
+    setPicked((p) => [...p, { courseId, cohortId: first.id, reason: "" }]);
     setLink(null);
   };
 
@@ -74,12 +75,14 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
     setError(null);
     try {
       const [first, ...rest] = picked;
-      const r = await apiPost<{ path: string }>(endpoint, {
+      /* والرابطُ رابطُ «المسار الخاصّ» القصير — صفحةٌ باسم المتعلّم بدوراته وأسبابها (`/go/…`، ٥ نوفمبر ٢٠٢٦) */
+      const r = await apiPost<{ path: string; goUrl: string | null }>(endpoint, {
         courseId: first.courseId, cohortId: first.cohortId,
         adds: rest.map((p) => ({ courseId: p.courseId, cohortId: p.cohortId })),
         code: usedCode, ...(whatsapp ? { whatsapp: true } : {}),
+        reasons: Object.fromEntries(picked.filter((p) => p.reason.trim()).map((p) => [p.courseId, p.reason.trim()])),
       });
-      const full = `${window.location.origin}${r.path}`;
+      const full = r.goUrl ?? `${window.location.origin}${r.path}`;
       setLink(full);
       try { await navigator.clipboard.writeText(full); toast("نسخنا الرابط"); } catch { /* يُنسخ باليد من الحقل */ }
     } catch (e) {
@@ -117,6 +120,11 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
                       <option key={o.id} value={o.id}>{o.title}{o.startsAt ? ` — ${cohortDayAr(o.startsAt)}` : ""} — {o.amount} {o.currency}</option>
                     ))}
                   </select>
+                  <input
+                    aria-label="سبب اختيار الدورة" className={`${staffControlCls} mt-1 w-full`} maxLength={PATH_REASON_MAX}
+                    placeholder="لماذا هذه الدورة له؟ (سطر قصير)" value={p.reason}
+                    onChange={(e) => { const v = e.target.value; setPicked((x) => x.map((y) => (y.courseId === p.courseId ? { ...y, reason: v } : y))); setLink(null); }}
+                  />
                 </Card>
               ))}
               {picked.length < MAX_BUILT_COURSES && (
