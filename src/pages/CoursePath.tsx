@@ -19,6 +19,7 @@ import {
   MonitorPlay, Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles, Flag,
 } from "lucide-react";
 import SeoHead from "@/components/SeoHead";
+import { courseSeo } from "@/application/site/catalog-pages";
 import SiteFooter from "@/components/SiteFooter";
 import AuthGate from "@/components/AuthGate";
 import Modal from "@/components/Modal";
@@ -412,11 +413,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
-      <SeoHead
-        title={`ابن مسارك من «${anchor.name}»`}
-        description={`ابدأ بدورة «${anchor.name}» وأضف إليها ما يكملها — وادفع ثمن ما اخترته وحده.`}
-        path={`/build/${anchor.id}`}
-      />
+      <SeoHead {...courseSeo(anchor)} />
 
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">

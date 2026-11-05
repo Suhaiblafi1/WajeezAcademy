@@ -74,6 +74,17 @@
 	# الصفحةُ تُرسم بجافاسكربت، وزاحفُ واتساب وفيسبوك لا يشغّله فكان يقرأ وسومَ
 	# الرئيسة. فيجيبه الخادمُ بصورة المدرّب ودوراته. ومحرّكاتُ البحث ليست منه:
 	# لها الصفحةُ كما يراها الناس. والعلّةُ في `server/services/link-preview.ts`.
+	# خريطةُ الموقع وllms.txt حيّتان من الخادم: بما يُعرض الآن من مساراتٍ ودورات
+	# (server/services/seo-feeds.service.ts). ونسختاهما الساكنتان في dist/ لمن يخدم بلا خادم.
+	@seoFeeds path /sitemap.xml /llms.txt
+	handle @seoFeeds {
+		reverse_proxy app:7101 {
+			header_up X-Real-IP {remote_host}
+			lb_try_duration 30s
+			lb_try_interval 250ms
+		}
+	}
+
 	@previewCrawler {
 		path /t/*
 		header_regexp User-Agent (?i)(facebookexternalhit|facebookcatalog|WhatsApp/|LinkedInBot|Twitterbot|TelegramBot|Slackbot|Discordbot|SkypeUriPreview|Pinterestbot|redditbot|Embedly)

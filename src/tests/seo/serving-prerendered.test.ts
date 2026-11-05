@@ -45,6 +45,20 @@ describe('Caddy — الملفّ الذي يخدم', () => {
   })
 })
 
+describe('Caddy — خريطة الموقع وllms.txt من الخادم', () => {
+  /* الساكنتان في `dist/` تعرفان الصفحاتِ العامّةَ وحدَها؛ والحيّتان تعرفان ما يُعرض الآن من
+     مساراتٍ ودورات (`server/services/seo-feeds.service.ts`). فإن لم يوجّههما Caddy إلى الخادم
+     قُدّمت الساكنتان، ولم يُدعَ الزاحفُ إلى مسارٍ واحد. */
+  it('يوجّه /sitemap.xml و/llms.txt إلى الخادم قبل الملفّات الساكنة', () => {
+    const matcher = /@seoFeeds\s+path\s+([^\n]+)/.exec(CADDY)?.[1] ?? ''
+    expect(matcher.split(/\s+/)).toEqual(expect.arrayContaining(['/sitemap.xml', '/llms.txt']))
+    const handle = CADDY.indexOf('handle @seoFeeds')
+    expect(handle, 'لا handle @seoFeeds').toBeGreaterThan(-1)
+    expect(CADDY.slice(handle, CADDY.indexOf('}', CADDY.indexOf('reverse_proxy', handle)))).toContain('reverse_proxy app:7101')
+    expect(handle, 'الملفّات الساكنة تسبقه فتبتلعه').toBeLessThan(CADDY.indexOf('root * /srv/web'))
+  })
+})
+
 describe('Apache — النسخة الموازية', () => {
   /* ⚠️ لا يُقرأ على الإنتاج (خادمُنا Caddy)، لكنّه يبقى متطابقا لمن يقرؤه */
   it('يقدّم صفحة المسار المهيّأة إن وجدت', () => {
