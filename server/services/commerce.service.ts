@@ -1049,7 +1049,12 @@ export class CommerceService {
     for (const target of targets.values()) {
       try {
         /* المصدرُ يُختم هنا — عند التسوية، من الرمز الذي حُمل مع الحجز */
-        await this.enrollments.enroll(target.cohortId, target.userId, actorId, { referralCode: target.referralCode ?? undefined, announce: false })
+        const seat = await this.enrollments.enroll(target.cohortId, target.userId, actorId, { referralCode: target.referralCode ?? undefined, announce: false })
+        /* ومن لم يجد مقعدا (لا حجزَ له باقٍ والشعبةُ امتلأت) لا يُقال له «صارت مقاعدك تسجيلا» — يُقيَّد ويُتابَع (٥ نوفمبر ٢٠٢٦) */
+        if (seat.status === 'waitlisted') {
+          failed.push({ cohortId: target.cohortId, reason: 'وضع في قائمة الانتظار — امتلأت الشعبة' })
+          continue
+        }
       } catch (err) {
         /* مسجل مسبقا (مثل إعادة معالجة) — لا يمنع التحويل */
         if (!(err instanceof AuthError && err.code === 'already_enrolled')) {
