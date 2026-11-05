@@ -29,7 +29,7 @@ interface Prepared {
 }
 
 export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string; onClose: () => void }) {
-  void usePublishedContent();
+  void usePublishedContent({ lite: true });
   const { cohorts, loaded } = useCourseCohorts();
   const [prep, setPrep] = useState<Prepared | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -19,6 +19,15 @@ import {
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 let inflight: Promise<void> | null = null;
+/* ═══ والنسخةُ الخفيفة — بلا متون الدروس (٥ نوفمبر ٢٠٢٦) ═══
+   «ابنِ مسارك» تنتظر الكتالوجَ كاملا (٢ ميغا مضغوطا) ولا تقرأ متونَ الوحدات: عشرُ ثوانٍ إلى ستَّ عشرةَ على الهاتف.
+   فلها نسخةٌ خفيفة (`?lite=1`). ولا تُثبَّت فوق الكاملة أبدا، ولا تُغني عنها: صفحةٌ تطلب الكاملةَ تجلبها كما كانت —
+   فصفحاتُ الدروس لا ترى كتالوجا بلا متون. */
+let liteInflight: Promise<void> | null = null;
+let fullInstalled = false;
+/* طُلبت الكاملةُ مرّةً فلا تُثبَّت الخفيفةُ بعدها — وإن كانت مثبَّتةً تُرفع، فترى الصفحةُ «جار التحميل» كأوّل زيارة لا وحداتٍ بلا متون */
+let fullWanted = false;
+let liteActive = false;
 
 async function fetchJson(path: string): Promise<unknown | null> {
   try {
@@ -37,6 +46,11 @@ async function fetchJson(path: string): Promise<unknown | null> {
    عند تعذّر الجلب أو نقص البيانات: يُحضر الاحتياطي المضمن كسولا (البند ع-١)
    فلا يهبط الكتالوج في حزمة الدخول ولا يفقد الموقع محتواه عند انقطاع API. */
 export function ensurePublishedContent(): Promise<void> {
+  fullWanted = true;
+  if (liteActive && !fullInstalled) {
+    liteActive = false;
+    installCoreCatalogRaw({ launch_pathways: [], courses: [], modules: [], library_resources: [] });
+  }
   if (inflight) return inflight;
   inflight = (async () => {
     let installed = false;
@@ -60,6 +74,7 @@ export function ensurePublishedContent(): Promise<void> {
       ) {
         installCoreCatalogRaw(c as CoreCatalogRaw);
         installed = true;
+        fullInstalled = true;
       }
       const m = methodology as { references?: MethodologyReference[] } | null;
       if (m && Array.isArray(m.references) && m.references.length > 0) {
@@ -68,16 +83,31 @@ export function ensurePublishedContent(): Promise<void> {
     } catch {
       /* انقطاع شبكة أو خادم — الاحتياطي أدناه */
     }
-    if (!installed) await loadBundledCoreCatalog();
+    if (!installed) { await loadBundledCoreCatalog(); fullInstalled = true; }
   })();
   return inflight;
 }
 
+/** النسخةُ الخفيفة — لصفحةٍ لا تقرأ متونَ الدروس. وإن تعذّرت فالكاملةُ كما كانت */
+export function ensureLiteContent(): Promise<void> {
+  if (fullInstalled || fullWanted) return fullWanted && !fullInstalled ? ensurePublishedContent() : Promise.resolve();
+  if (liteInflight) return liteInflight;
+  liteInflight = (async () => {
+    const c = (await fetchJson("/api/public/core-catalog?lite=1")) as Partial<CoreCatalogRaw> | null;
+    const ok = c && Array.isArray(c.launch_pathways) && c.launch_pathways.length > 0 && Array.isArray(c.courses) && c.courses.length > 0 && Array.isArray(c.modules);
+    /* والكاملةُ إن سبقتها لا تُستبدل بها */
+    if (ok && !fullInstalled && !fullWanted) { installCoreCatalogRaw(c as CoreCatalogRaw); liteActive = true; }
+    else if (!ok) await ensurePublishedContent();
+  })();
+  return liteInflight;
+}
+
 /** خطاف الصفحات العامة: يبدأ الجلب ويعيد الرسم عند تثبيت اللقطة المنشورة */
-export function usePublishedContent(): number {
+export function usePublishedContent(opts: { lite?: boolean } = {}): number {
   const version = useSyncExternalStore(onCoreCatalogInstalled, getCatalogVersion);
+  const lite = opts.lite === true;
   useEffect(() => {
-    void ensurePublishedContent();
-  }, []);
+    void (lite ? ensureLiteContent() : ensurePublishedContent());
+  }, [lite]);
   return version;
 }
