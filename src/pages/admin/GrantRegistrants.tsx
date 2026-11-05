@@ -13,7 +13,9 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
-import { ChevronDown, FileDown, Mail, MessageCircle, Send, Trash2 } from "lucide-react";
+import { ChevronDown, FileDown, Link2, Mail, MessageCircle, Send, Trash2 } from "lucide-react";
+import { useRealSession } from "@/services/session";
+import BuyLinkBuilder from "@/components/BuyLinkBuilder";
 import { apiDelete, apiDownload, apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateWith } from "@/application/text/format-ar";
 import { matchesQuery } from "@/application/text/search-ar";
@@ -85,6 +87,10 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
   const [grant, setGrant] = useState<"" | keyof typeof GRANT_AR>(fromLink ? "" : pageGrant);
   const [openId, setOpenId] = useState<string | null>(null);
   const [writeTo, setWriteTo] = useState<Registrant[] | null>(null);
+  /* «جهّز رابط شراء» للمدير الأعلى وحدَه — والخادمُ يحكم به كذلك (`buy-link.service.ts`، ٥ نوفمبر ٢٠٢٦) */
+  const { user: me } = useRealSession();
+  const canLink = me?.roles.includes("super_admin") ?? false;
+  const [linkFor, setLinkFor] = useState<Registrant | null>(null);
   const [removing, setRemoving] = useState<Registrant | null>(null);
   const [downloading, setDownloading] = useState(false);
   const load = useCallback(() => apiGet<List>("/api/admin/member-grant/registrants").then(setData).catch(() => setData(null)), []);
@@ -252,6 +258,11 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
                             التفاصيل ({r.mails.length}) <ChevronDown className={`h-4 w-4 transition ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                           </button>
                           {next && !isOpen && <p className="text-read text-muted-foreground">التالي: <span className="whitespace-nowrap">{when(next.at)}</span></p>}
+                          {canLink && (
+                            <button type="button" onClick={() => setLinkFor(r)} className="mt-1 inline-flex items-center gap-1 whitespace-nowrap font-bold text-teal-light-ink">
+                              <Link2 className="h-4 w-4" aria-hidden="true" /> جهز رابط شراء
+                            </button>
+                          )}
                         </td>
                       </tr>
                       {isOpen && (
@@ -270,6 +281,7 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
         )}
       </Card>
 
+      {linkFor && <BuyLinkBuilder endpoint={`/api/admin/buy-links/lead/${linkFor.id}`} onClose={() => setLinkFor(null)} />}
       {writeTo && <WriteMail to={writeTo} mailOn={data.mailOn} onClose={() => setWriteTo(null)} onSent={() => { setWriteTo(null); void load(); }} />}
       {removing && <Remove r={removing} onClose={() => setRemoving(null)} onDone={() => { setRemoving(null); setOpenId(null); void load(); }} />}
     </>

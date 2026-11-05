@@ -24,6 +24,7 @@ import { assertCouponUsable, num } from './commerce/cart-types'
 import { assertFirstPurchase } from './commerce/first-purchase'
 import { payByOf, teamHeldOrderIds } from './commerce/seat-hold'
 import type { FirstTouch } from '../../src/application/marketing/signup-source'
+import { buyLinkForOrder } from './buy-link.service'
 import { CODE_ATTEMPTS_AR, type CodeAttemptGuard } from './commerce/code-attempts'
 import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse, idLockKey } from './commerce/coupon-ledger'
 import { GRANT_CHECKOUT_ONLY_AR, GRANT_ERROR_CODES } from '../../src/application/commerce/grant'
@@ -418,6 +419,9 @@ export class CommerceService {
     /* مصدرُ الزيارة التي اشترى منها — حملةُ واتساب (`utm_source=whatsapp`) وغيرُها. يُكتب في أثر الطلب
        ليُعرف من أين جاء، ولا يدخل الحسابَ ولا العمولة (٤ نوفمبر ٢٠٢٦) */
     touch: FirstTouch | null = null,
+    /* رمزُ رابط الشراء الموقَّع (`bl`) — يُصدَّق هنا ويُكتب في أثر الطلب، ومنه تُعرف روابطُ السوبر أدمن التي لا عمولةَ
+       مستشارٍ عليها (`buy-link.service.ts`، ٥ نوفمبر ٢٠٢٦). ولا يمسّ السعر */
+    buyLinkToken: string | null = null,
   ) {
     /* وهذا هو الحارسُ الحقيقيّ لا ما في الواجهة: الشاشةُ تُخفي الزرَّ، وهذا
        يردّ من لم يُخفَ عنه — من فتح تبويبَه قبل الإغلاق، ومن ينادي المسارَ
@@ -427,6 +431,7 @@ export class CommerceService {
     /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
     const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
     const { pricing, couponId, couponMaxUses, trainerCode, shareProfileId, trainerPurchase, grantMaxCourses } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
+    const buyLink = await buyLinkForOrder(this.prisma, buyLinkToken)
     const { subtotal, discount, total } = pricing
     /* ═══ ومن اشترى بكود «شارك دوراتك» يُحسب لصاحبه بأجر الإحالة (٢٦ أكتوبر ٢٠٢٦) ═══
        قرارُ صاحب المنصّة: «نعم، احسبه بأجر الإحالة» — من كتب الكودَ ولم يدخل من رابطه جاء بالمدرّب كمن دخل.
@@ -520,6 +525,7 @@ export class CommerceService {
         gift: pricing.lines.find((l) => l.isGift)?.courseId ?? null,
         ...(trainerCode ? { trainerCodeId: trainerCode.id, trainerProfileId: trainerCode.profileId } : {}),
         ...(touch ? { touch } : {}),
+        ...(buyLink ? { buyLink } : {}),
       },
     })
     /* ═══ والساعةُ التي تنقضي تُقال لصاحبها (ي-٤) ═══

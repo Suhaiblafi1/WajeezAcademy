@@ -52,6 +52,7 @@ import { clearLocalSession } from "@/services/auth";
 import { readReferral } from "@/application/commerce/referral";
 import { clearPendingCheckout } from "@/services/pending-checkout";
 import { lastTouch } from "@/services/first-touch";
+import { buyLinkToken } from "@/services/buy-link-token";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { useMySessions } from "@/services/my-sessions";
 import { clashWarnAr, clashesOf, freeAlternative, type TimedCohort } from "@/application/learning/cohort-overlap";
@@ -436,6 +437,8 @@ export default function BuyPanel({
         ...(readReferral() ? { referralCode: readReferral()! } : {}),
         /* ومصدرُ زيارته — حملةُ واتساب وغيرُها، يُكتب في أثر الطلب ولا يمسّ السعر (٤ نوفمبر ٢٠٢٦) */
         ...(lastTouch() ? { touch: lastTouch() } : {}),
+        /* ورمزُ رابط الشراء الموقَّع إن جاء منه — الخادمُ يصدّقه (٥ نوفمبر ٢٠٢٦) */
+        ...(buyLinkToken() ? { buyLink: buyLinkToken() } : {}),
       });
       /* الطلبُ أُنشئ — فلا «أكمل شراءك» بعده على ما صار في «فواتيري» (`pending-checkout.ts`) */
       clearPendingCheckout();

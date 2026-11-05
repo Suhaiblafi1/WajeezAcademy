@@ -52,6 +52,7 @@ const PHRASES: Record<string, string> = {
   'refund.provider_failed': 'إخفاق الاسترداد عند المزوّد',
   'order.checkout': 'إنشاء طلب شراء',
   'order.cancel': 'إلغاء طلب شراء',
+  'buy_link.generate': 'تجهيز رابط شراء لمتعلم',
   'order.settle_partial': 'تسوية جزئيّة لطلب',
   'cohort.create': 'إنشاء شعبة',
   'cohort.delete_trainerless': 'حذف شعبة بلا مدرّب ولا متعلّم',
