@@ -44,6 +44,7 @@ import { savePathDraft } from "@/services/path-drafts";
 import { parseBuildLink } from "@/application/commerce/build-link";
 import { useCheckoutPreview } from "@/services/checkout-preview";
 import { fetchMyGrant } from "@/services/my-grant";
+import { rememberBuyLink } from "@/services/buy-link-token";
 import BuyLinkPreview from "@/components/BuyLinkPreview";
 import {
   courseById, courseFullById,
@@ -151,6 +152,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      الزائرُ أو سجّل حسابا بينهما. والمفتاحُ يقرؤه `BuyPanel` وحدَه. */
   const [searchParams] = useSearchParams();
   useEffect(() => {
+    /* ورمزُ رابط الشراء الموقَّع إن جاء به — يُرسَل مع الشراء ويصدّقه الخادم (`buy-link-token.ts`) */
+    rememberBuyLink(searchParams.get("bl")?.trim());
     const ref = searchParams.get("ref")?.trim();
     if (!ref) return;
     try { sessionStorage.setItem(REFERRAL_KEY, ref); } catch { /* تخزينٌ معطَّل — يمرّ الشراءُ عامّا */ }

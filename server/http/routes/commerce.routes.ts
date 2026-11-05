@@ -88,9 +88,11 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
       referralCode: z.string().max(40).optional(),
       /* مصدرُ هذه الزيارة (utm و`ch` و`ref`) — يُكتب في أثر الطلب ولا يمسّ السعر (٤ نوفمبر ٢٠٢٦) */
       touch: z.unknown().optional(),
+      /* رمزُ رابط الشراء الموقَّع — يُصدَّق في الخادم، والمزوَّرُ يُهمَل (٥ نوفمبر ٢٠٢٦) */
+      buyLink: z.string().max(120).optional(),
     }).parse(req.body)
     return reply.status(201).send(await commerce.checkout(
-      req.auth!.userId, body.cohortIds, body.couponCode, body.referralCode, cleanTouch(body.touch),
+      req.auth!.userId, body.cohortIds, body.couponCode, body.referralCode, cleanTouch(body.touch), body.buyLink ?? null,
     ))
   })
 
@@ -122,8 +124,10 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
     const body = z.object({
       cohortIds: z.array(z.string().uuid()).min(1).max(10),
       couponCode: z.string().trim().min(2).max(40).optional(),
+      /* أداةُ رابط الشراء تسعّر للمتعلّم لا لمن يولّده — فلا تُفحص منحةُ المدير أو المستشار نفسِه (٥ نوفمبر ٢٠٢٦) */
+      asVisitor: z.boolean().optional(),
     }).parse(req.body)
-    return commerce.preview(req.auth?.userId ?? null, body.cohortIds, body.couponCode, { key: req.ip, codes: codeAttempts })
+    return commerce.preview(body.asVisitor ? null : req.auth?.userId ?? null, body.cohortIds, body.couponCode, { key: req.ip, codes: codeAttempts })
   })
 
   /* كودُ أوّل شراء — أيُخصم لهذا الحساب؟ (١٩ أكتوبر ٢٠٢٦). صفحةُ الدورة تطرح خصمَه من السعر

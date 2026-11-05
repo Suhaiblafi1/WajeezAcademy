@@ -45,6 +45,7 @@ import { registerAdvisorRoutes } from './routes/advisor.routes'
 import { registerCalendarRoutes } from './routes/calendar.routes'
 import { registerTermRoutes } from './routes/term.routes'
 import { registerCommerceRoutes } from './routes/commerce.routes'
+import { registerBuyLinkRoutes } from './routes/buy-link.routes'
 import { registerZoomWebhookRoutes } from './routes/zoom-webhook.routes'
 import { registerCalendlyWebhookRoutes } from './routes/calendly-webhook.routes'
 import { registerWhatsAppHookRoutes } from './routes/whatsapp-hook.routes'
@@ -342,6 +343,7 @@ export async function buildApp(prisma: PrismaClient) {
      الإنتاج بلا أن يشتكي أحد. (٨ سبتمبر ٢٠٢٦) ويحرسه `server/tests/terms/term-routes.test.ts`. */
   registerTermRoutes(app, prisma)
   registerCommerceRoutes(app, prisma)
+  registerBuyLinkRoutes(app, prisma)
   registerSupportRoutes(app, prisma)
   registerRatingRoutes(app, prisma)
   registerPlacementRoutes(app, prisma)

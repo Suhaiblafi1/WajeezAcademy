@@ -13,6 +13,7 @@ import {
   ESCALATE_AFTER_HOURS, FOLLOW_UP_GRACE_HOURS, FOLLOW_UP_LEAD_MINUTES, REMIND_AFTER_HOURS, REMIND_WINDOW_DAYS,
 } from '../../src/application/advisor/contact-sla'
 import { countAr } from '../../src/application/text/count-ar'
+import { commissionExcludedOrders } from './buy-link.service'
 
 const HOUR_MS = 3_600_000
 
@@ -208,13 +209,18 @@ export async function attributedOrders(prisma: PrismaClient, advisorId: string):
     /* ونوبتان له على العميل نفسِه لا تعدّان الدفعةَ مرّتين — تُحسب إن وقعت في إحداهما */
     return (windows.get(o.userId) ?? []).some((w) => when >= w.from && (!w.to || when < w.to))
   })
-  if (inTurn.length === 0) return []
+  /* ═══ ولا عمولةَ على رابط السوبر أدمن ولا رابط حملة واتساب (٥ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة («Hybrid»): تبقى القاعدةُ أعلاه كما هي، وتُستثنى دفعةٌ جاءت من رابطٍ ولّده السوبر أدمن أو من حملة
+     واتساب — من أثر طلبها لا من الرابط (`commissionExcludedOrders` في `buy-link.service.ts`) */
+  const excluded = await commissionExcludedOrders(prisma, inTurn.map((o) => o.id))
+  const counted = inTurn.filter((o) => !excluded.has(o.id))
+  if (counted.length === 0) return []
 
   const refunds = await prisma.refund.findMany({
-    where: { status: 'processed', payment: { invoice: { orderId: { in: inTurn.map((o) => o.id) } } } },
+    where: { status: 'processed', payment: { invoice: { orderId: { in: counted.map((o) => o.id) } } } },
     select: { id: true, amount: true, processedAt: true, createdAt: true, payment: { select: { invoice: { select: { orderId: true } } } } },
   })
-  return inTurn.map((o) => ({
+  return counted.map((o) => ({
     id: o.id, userId: o.userId, total: Number(o.total), paidAt: o.paidAt ?? o.createdAt,
     refunds: refunds
       .filter((r) => r.payment.invoice.orderId === o.id)

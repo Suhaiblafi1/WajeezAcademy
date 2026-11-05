@@ -56,7 +56,7 @@ export type PreviewState =
   | { state: "failed"; messageAr: string };
 
 /** يسعّر الشعبَ والكودَ كلّما تبدّلا — بمهلةٍ قصيرة فلا يُنادى الخادمُ لكلّ نقرةٍ متتالية */
-export function useCheckoutPreview(cohortIds: readonly string[], code: string | null, enabled = true): PreviewState {
+export function useCheckoutPreview(cohortIds: readonly string[], code: string | null, enabled = true, asVisitor = false): PreviewState {
   const [st, setSt] = useState<PreviewState>({ state: "idle" });
   const key = `${[...cohortIds].sort().join(",")}|${code ?? ""}`;
   useEffect(() => {
@@ -67,6 +67,7 @@ export function useCheckoutPreview(cohortIds: readonly string[], code: string | 
       apiPost<CheckoutPreview>("/api/public/checkout/preview", {
         cohortIds: [...new Set(cohortIds)].slice(0, 10),
         ...(code ? { couponCode: code } : {}),
+        ...(asVisitor ? { asVisitor: true } : {}),
       })
         .then((preview) => { if (on) setSt({ state: "ready", preview }); })
         .catch((e) => {
@@ -81,6 +82,6 @@ export function useCheckoutPreview(cohortIds: readonly string[], code: string | 
     }, 250);
     return () => { on = false; clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- المفتاحُ يجمع الشعبَ والكود
-  }, [key, enabled]);
+  }, [key, enabled, asVisitor]);
   return st;
 }

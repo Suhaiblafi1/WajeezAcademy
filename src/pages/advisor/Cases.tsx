@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
   CalendarClock, CheckCircle2, ChevronLeft, ClipboardList, FileText, Loader2, MessageSquarePlus,
-  PhoneCall, Plus, Send, ServerOff, StickyNote, UserRound, GraduationCap, BadgePercent,
+  PhoneCall, Plus, Send, ServerOff, StickyNote, UserRound, GraduationCap, BadgePercent, Link2,
 } from "lucide-react";
+import BuyLinkBuilder from "@/components/BuyLinkBuilder";
 import AdvisorLayout from "./AdvisorLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import Pipeline from "./Pipeline";
@@ -74,6 +75,8 @@ export default function AdvisorCases() {
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [detail, setDetail] = useState<CaseDetail | null>(null);
+  /* «جهّز رابط شراء» لمتعلّم هذه الحالة — والخادمُ يردّ ما ليس مسندا إليه (`buy-link.service.ts`، ٥ نوفمبر ٢٠٢٦) */
+  const [linkOpen, setLinkOpen] = useState(false);
   /* نتيجةُ المتابعة تُكتب في نافذة المنصّة: كانت `window.prompt("نتيجة
      المتابعة؟")` — سؤالٌ بلا سياقٍ في حوارٍ يملك المتصفّحُ كتمَه. */
   const [closingFollowUp, setClosingFollowUp] = useState<{ id: string; whenAr: string } | null>(null);
@@ -237,6 +240,14 @@ export default function AdvisorCases() {
               خصم على فاتورته أو تعديل على خطته. لا ينفذ إلا بموافقة الإدارة، ويبقى مسجلا.
             </p>
             <RequestsPanel key={detail.id} caseId={detail.id} />
+          </Card>
+
+          {/* رابطُ شراءٍ جاهز — دوراتٌ وشعبٌ وكودُه هو، ومعاينةُ سعره */}
+          <Card as="section">
+            <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><Link2 className="h-4 w-4" /> رابط شراء</h2>
+            <p className="mb-3 text-read leading-6 text-muted-foreground">اختر دوراته وشعبها، وانسخ رابطا يفتح السعر النهائي.</p>
+            <Button tone="secondary" onClick={() => setLinkOpen(true)}>جهز رابط شراء</Button>
+            {linkOpen && <BuyLinkBuilder endpoint={`/api/advisor/cases/${detail.id}/buy-link`} onClose={() => setLinkOpen(false)} />}
           </Card>
 
           {/* تسجيل تواصل */}
