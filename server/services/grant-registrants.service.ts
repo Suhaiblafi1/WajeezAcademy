@@ -34,6 +34,7 @@ import { BOUGHT, GRANT_REMINDERS, grantRegistrants } from './grant-followup.serv
 import { grantVisitFunnels } from './grant-visit.service'
 import { cleanTouch, storedSource, type FirstTouch } from '../../src/application/marketing/signup-source'
 import { GRANT_CAMPAIGNS, GRANT_KIND_SLUG, GRANT_SLUGS, grantKindOf } from '../../src/application/commerce/grant'
+import { orderViaAr } from '../../src/application/commerce/buy-link-campaign'
 import {
   GRANT_MESSAGE_MAX_TO, MAIL_STATE_AR, SOURCE_GROUP_AR, conversionAr, funnelAr, mailPurposeAr, messageParagraphs, registrantSource, registrantStats,
   type MailState, type RegistrantSource, type Upcoming,
@@ -114,6 +115,27 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
   })
   const refName = new Map(refLinks.map((l) => [l.code, l.profile.application.fullName || l.profile.user?.displayName || null]))
 
+  /* ═══ ومن أين جاء شراؤه — حملةُ واتساب أو رابطُ الإدارة أو المستشار (٥ نوفمبر ٢٠٢٦) ═══
+     من أثر طلبه (`order.checkout`) لا من زيارته الأولى: من عبّأ النموذجَ من فيسبوك ثمّ اشترى من رابط واتساب يُقال الاثنان،
+     كلٌّ في عموده. والطلبُ طلبُ كوده أو طلبٌ مدفوعٌ ببريده — كما يُعدّ «اشترى» (`grantRegistrants`) */
+  const codes = base.map((r) => r.code).filter((c): c is string => !!c)
+  const viaOrders = codes.length === 0 && emails.length === 0 ? [] : await prisma.order.findMany({
+    where: {
+      status: { in: [...BOUGHT, 'pending_payment'] },
+      OR: [{ coupon: { code: { in: codes } } }, { user: { email: { in: emails } } }],
+    },
+    select: { id: true, coupon: { select: { code: true } }, user: { select: { email: true } } },
+  })
+  const viaEvents = viaOrders.length === 0 ? [] : await prisma.auditEvent.findMany({
+    where: { action: 'order.checkout', entityId: { in: viaOrders.map((o) => o.id) } },
+    select: { entityId: true, meta: true },
+  })
+  const viaOf = new Map(viaEvents.map((e) => [e.entityId, orderViaAr(e.meta)]))
+  const viaFor = (r: { code: string | null; email: string | null }) => [...new Set(viaOrders
+    .filter((o) => (r.code && o.coupon?.code === r.code) || (r.email && o.user.email.toLowerCase() === r.email.toLowerCase()))
+    .map((o) => viaOf.get(o.id))
+    .filter((v): v is string => !!v))]
+
   const rows = base.map((r, n) => {
     const t = touches[n]
     const source: RegistrantSource = registrantSource({
@@ -140,6 +162,8 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
       interests: r.interests, channel: r.channel, wave: r.wave, createdAt: r.createdAt, code: r.code, codeActive: r.codeActive,
       state: r.state, advisor: r.advisor, picks: r.picks, influencer: r.influencer, influencerCode: r.influencerCode,
       orders: r.orders, revenue: r.revenue,
+      /* من أين جاء شراؤه — «حملة واتساب» وأخواتها، فارغةٌ لما سواها */
+      boughtVia: viaFor(r),
       /* وأيُّ منحةٍ عبّأ — والثالثةُ «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
       grant: grantKindOf(r.campaign),
       pageOpenedAt: r.pageOpenedAt ?? (t.page?.at ? new Date(t.page.at) : null),
@@ -181,6 +205,7 @@ export async function registrantsXlsx(prisma: PrismaClient, now = new Date()): P
     { header: 'أول زيارة للموقع', key: 'firstSeen', width: 18 },
     { header: 'عبأ النموذج', key: 'created', width: 18 },
     { header: 'الحالة', key: 'state', width: 14 },
+    { header: 'اشترى عبر', key: 'via', width: 18 },
     { header: 'الكود', key: 'code', width: 16 },
     { header: 'المستشار', key: 'advisor', width: 18 },
     { header: 'مجال العمل', key: 'field', width: 20 },
@@ -199,7 +224,7 @@ export async function registrantsXlsx(prisma: PrismaClient, now = new Date()): P
       grant: GRANT_CAMPAIGNS[GRANT_KIND_SLUG[r.grant]].nameAr,
       source: SOURCE_GROUP_AR[r.source.group], sourceLabel: r.source.labelAr, sourceDetail: r.source.detailAr ?? '',
       opened: stamp(r.pageOpenedAt), firstSeen: stamp(r.firstSeenAt), created: stamp(r.createdAt),
-      state: STATE_AR[r.state], code: r.code ?? '', advisor: r.advisor ?? '',
+      state: STATE_AR[r.state], via: r.boughtVia.join('، '), code: r.code ?? '', advisor: r.advisor ?? '',
       field: r.workField ?? '', level: r.careerLevel ?? '', interests: r.interests.join('، '), picks: r.picks.join('، '),
       mailCount: r.mails.length, lastMail: last ? `${last.purposeAr} · ${stamp(last.sentAt ?? last.createdAt)}` : '',
       next: next ? `${next.labelAr} · ${stamp(next.at)}` : '',

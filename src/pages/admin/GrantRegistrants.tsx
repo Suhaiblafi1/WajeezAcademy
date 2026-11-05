@@ -46,6 +46,8 @@ interface Registrant {
   picks: string[];
   /** ما دُفع بكوده: الطلباتُ المدفوعة ومبلغُها بالدولار */
   orders: number; revenue: number;
+  /** من أين جاء شراؤه — «حملة واتساب» أو رابطُ الإدارة أو المستشار، من أثر طلبه (٥ نوفمبر ٢٠٢٦) */
+  boughtVia: string[];
   /** من «منحة مؤثرين وجيز» — وبكود أيّ مؤثّر */
   influencer: boolean; influencerCode: string | null;
   /** أيُّ منحةٍ عبّأ — والثالثةُ «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
@@ -178,6 +180,12 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
           </select>
         </div>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} placeholder="ابحث بالاسم أو الرقم أو البريد أو الكود" unit="شخصا" />
+        {/* طلباتُ حملة واتساب في هذا العرض — عددٌ يُقرأ قبل القائمة (٥ نوفمبر ٢٠٢٦) */}
+        {matched.some((r) => r.boughtVia.includes("حملة واتساب")) && (
+          <p className="mb-2 text-read text-muted-foreground" data-testid="whatsapp-buyers">
+            اشترى عبر حملة واتساب: <b className="text-foreground">{matched.filter((r) => r.boughtVia.includes("حملة واتساب")).length}</b>
+          </p>
+        )}
         {view.rows.length === 0 ? (
           <p className="text-read text-muted-foreground">لا أحد بعد.</p>
         ) : (
@@ -247,6 +255,7 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
                         </td>
                         <td className={`p-2 font-bold ${r.state === "bought" ? "text-teal-light-ink" : ""}`}>
                           {STATE_AR[r.state]}
+                          {r.boughtVia.length > 0 && <><br /><span className="font-normal text-teal-light-ink">عبر {r.boughtVia.join("، ")}</span></>}
                           {r.code && <><br /><span dir="ltr" className="whitespace-nowrap font-normal text-muted-foreground">{r.code}{r.codeActive === false ? " · مبطل" : ""}</span></>}
                         </td>
                         <td className="p-2">{r.advisor ?? "—"}</td>
