@@ -132,6 +132,7 @@ describe('⑥ الشعبةُ المختارةُ تصل الدفع', () => {
   it('⚠️ و«سجّل في هذه الشعبة» يحمل شعبتَه — وصفحةُ الدورة تختارها', () => {
     expect(code('src/pages/TrainerPublic.tsx')).toMatch(/to=\{`\/build\/\$\{c\.courseId\}\?cohort=\$\{c\.id\}`\}/)
     expect(code('src/pages/Calendar.tsx')).toMatch(/to=\{`\/build\/\$\{e\.courseId\}\?cohort=\$\{e\.cohortId\}`\}/)
-    expect(code('src/pages/CoursePath.tsx')).toMatch(/get\("cohort"\);\s*return asked && courseId \? \{ \[courseId\]: asked \} : \{\};/)
+    /* وشعبةُ `?cohort=` للدورة الأولى تغلب ما في `add` من شعب (رابطُ الشراء الجاهز، ٤ نوفمبر ٢٠٢٦) */
+    expect(code('src/pages/CoursePath.tsx')).toMatch(/get\("cohort"\);[^]*?return asked && courseId \? \{ \.\.\.fromLink, \[courseId\]: asked \} : fromLink;/)
   })
 })

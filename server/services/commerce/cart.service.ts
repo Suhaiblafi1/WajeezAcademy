@@ -69,8 +69,10 @@ export class CartService {
    * قبل أن يدفع أيّ دورةٍ من خطّته لم تُفتح بعد — لا أن يكتشفها بعد الدفع.
    */
 
+  /* و`userId` فارغٌ لزائرٍ بلا حساب — معاينةُ رابط الشراء (`CommerceService.preview`، ٤ نوفمبر ٢٠٢٦): يُفحص ما يخصّ
+     الشعبةَ (التسجيلُ والسعرُ والسعة)، ويُترك ما يخصّ الحسابَ (مسجّلٌ أو له حجز) لما بعد دخوله. */
   async cohortBlocker(
-    userId: string,
+    userId: string | null,
     c: CartCohort,
   ): Promise<{ reason: string; messageAr: string; orderId?: string } | null> {
     if (!['open', 'full', 'active'].includes(c.status)) {
@@ -80,7 +82,7 @@ export class CartService {
     if (!window.open) return { reason: window.code === 'flag_off' ? 'closed' : window.code, messageAr: window.reasonAr }
     if (c.price === null) return { reason: 'no_price', messageAr: `«${c.title}» بلا سعر معلن` }
 
-    const already = await this.prisma.enrollment.findFirst({
+    const already = userId === null ? null : await this.prisma.enrollment.findFirst({
       where: { userId, cohortId: c.id, status: { in: ['enrolled', 'completed'] } },
     })
     if (already) return { reason: 'already_enrolled', messageAr: `أنت مسجّل في «${c.title}» بالفعل` }
@@ -101,7 +103,7 @@ export class CartService {
 
        وحجزٌ بلا طلب (طلبُ مراجعةٍ إداريّة) لا يمنع شيئا: لا مالَ فيه
        يُفقد، والشراءُ المباشر يتقدّم عليه كما كان. */
-    const hold = await this.prisma.enrollmentRequest.findUnique({
+    const hold = userId === null ? null : await this.prisma.enrollmentRequest.findUnique({
       where: { userId_cohortId: { userId, cohortId: c.id } },
     })
     if (hold?.status === 'seat_held' && hold.orderId) {
@@ -138,7 +140,7 @@ export class CartService {
 
      ويبقى الرميُ لما ليس سببَ استبعادٍ أصلا بل خللٌ في الطلب نفسِه: سلّةٌ
      فارغة، أو معرّفُ شعبةٍ لا وجودَ لها. */
-  async classifyCart(userId: string, cohortIds: string[]) {
+  async classifyCart(userId: string | null, cohortIds: string[]) {
     if (cohortIds.length === 0) throw new AuthError('empty_cart', 'لا شعبة في طلبك')
     const unique = [...new Set(cohortIds)]
 
@@ -216,7 +218,8 @@ export class CartService {
 
      وما خُصم عن الطلب السابق من `bundleDiscount`، ولطلبٍ قبل هذا العمود: خصمُه
      كلُّه إن لم يكن فيه كوبون، وإلّا يُعاد حسابُ باقته من بنوده. */
-  async planCarryFor(userId: string, cohorts: CartCohort[], currency: string): Promise<PlanCarry | null> {
+  async planCarryFor(userId: string | null, cohorts: CartCohort[], currency: string): Promise<PlanCarry | null> {
+    if (userId === null) return null
     const plan = await this.prisma.learnerPlan.findFirst({
       where: { userId, status: 'active' },
       orderBy: { updatedAt: 'desc' },
@@ -302,7 +305,7 @@ export class CartService {
     return again.bundleDiscount + again.capDiscount
   }
 
-  async couponFor(userId: string, couponCode?: string) {
+  async couponFor(userId: string | null, couponCode?: string) {
     if (!couponCode) return null
     const coupon = await this.prisma.coupon.findUnique({
       where: { code: couponCode.trim().toUpperCase() },
@@ -318,13 +321,14 @@ export class CartService {
     assertCouponUsable(coupon, userId)
     /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
     if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
-    await assertFirstPurchase(this.prisma, coupon, userId)
+    /* وما يخصّ الحسابَ (أوّلُ شراء · استعمالُه كودَ المدرّب) يُسأل حين يُعرف الحساب */
+    if (userId !== null) await assertFirstPurchase(this.prisma, coupon, userId)
     /* ═══ وكودُ المدرّب مرّةً لكلّ متعلّم ═══
 
        يُقال هنا عند التسعير — قبل أن يضغط «ادفع» — لا عند الطلب وحدَه. والقيدُ
        الجزئيُّ في القاعدة هو الحارسُ الحقيقيّ للمتزامنَين (`reserveCouponUse`)؛
        وهذا لتُقال الجملةُ في موضعها. */
-    if (coupon.trainerCode) {
+    if (coupon.trainerCode && userId !== null) {
       const used = await this.prisma.trainerCodeRedemption.findFirst({
         where: { codeId: coupon.trainerCode.id, userId, status: { in: [...CODE_USE_COUNTS] } },
         select: { id: true },
@@ -335,7 +339,7 @@ export class CartService {
   }
 
   async priceFor(
-    userId: string,
+    userId: string | null,
     cohorts: CartCohort[],
     couponCode?: string,
     /* عملةُ السلّة — يلزم الحسابَ لأنّ سقفَ مبلغ الباقة مبلغٌ لا نسبة.

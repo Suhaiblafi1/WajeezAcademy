@@ -23,8 +23,10 @@ import { TrainerDiscountService } from './trainer-discount.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
 import { assertFirstPurchase } from './commerce/first-purchase'
 import { payByOf, teamHeldOrderIds } from './commerce/seat-hold'
+import type { FirstTouch } from '../../src/application/marketing/signup-source'
+import { CODE_ATTEMPTS_AR, type CodeAttemptGuard } from './commerce/code-attempts'
 import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse, idLockKey } from './commerce/coupon-ledger'
-import { GRANT_CHECKOUT_ONLY_AR } from '../../src/application/commerce/grant'
+import { GRANT_CHECKOUT_ONLY_AR, GRANT_ERROR_CODES } from '../../src/application/commerce/grant'
 import { COMMERCE_LOCKS, nextInvoiceNumber } from './commerce/invoice-number'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { assertSeasonOpen, cohortAcceptsRegistration, PLAN_GATE_SELECT, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
@@ -41,6 +43,12 @@ export { assertCouponUsable, type UsableCoupon } from './commerce/cart-types'
    ولا دفترَ استعمال. وقبولُه فيهما يُطبّق نسبتَه على دوراتِ غيره فيُحسم منه
    ما لم يمنحه. فيُردّ بجملةٍ تقول أين يُستعمل. */
 const TRAINER_CODE_CHECKOUT_ONLY_AR = 'كود المدرّب يستعمل عند الشراء المباشر من صفحة الدورة — لا في موافقة الطلبات'
+
+/* ما يُردّ به الكودُ وحدَه لا السلّة — فتُعرض المعاينةُ بلا كودٍ وسببِه، لا خطأً يُسقطها.
+   وهي ما يُسقط به لوحُ الشراء الكودَ ويُسعّر بدونه (`COUPON_ERRORS` في `BuyPanel.tsx`)، ومعها عملةُ كود المدرّب */
+export const PREVIEW_COUPON_ERRORS: ReadonlySet<string> = new Set([
+  'bad_coupon', 'code_used', 'code_not_applicable', 'code_unavailable', 'code_currency', ...GRANT_ERROR_CODES,
+])
 
 export class CommerceService {
   private referrals: ReferralService
@@ -307,7 +315,7 @@ export class CommerceService {
      فالتطابقُ بنيةٌ لا اتّفاق: لا حسابَ في الواجهة يُقارَن بحسابٍ في الخادم.
 
      ولا يكتب هذا النداءُ شيئا: لا حجزَ مقعد، ولا عدَّ استعمالٍ للكوبون. */
-  async quote(userId: string, cohortIds: string[], couponCode?: string) {
+  async quote(userId: string | null, cohortIds: string[], couponCode?: string) {
     /* التسعيرُ لا يُسقط السلّةَ بمانعٍ في بندٍ منها.
 
        كان ينادي `validatedCart` الصارم، فيرمي عند أوّل شعبةٍ يملكها المشتري
@@ -350,6 +358,48 @@ export class CommerceService {
     }
   }
 
+  /* ─────────── معاينةُ رابط الشراء: السعرُ قبل الحساب وقبل الدفع (٤ نوفمبر ٢٠٢٦) ───────────
+
+     رابطٌ يُرسَل في حملةٍ (واتساب أو بريد أو مستشار) يفتح `/build` بدوراته وكوده، ويرى المتعلّمُ سعرَه بعد المنحة
+     قبل أن يُطلب منه حساب. وهي `quote` نفسُها — النداءُ نفسُه لـ`priceCart` الذي يكتب به `checkout` الفاتورة —
+     فلا حسابَ ثانيا في الواجهة ولا هنا. ولا يكتب شيئا: لا طلبَ ولا فاتورةَ ولا جلسةَ دفع ولا حجزَ استعمالٍ للكود.
+
+     وفيها ثلاثةُ فروقٍ عن `quote`، كلُّها في العرض لا في الحساب:
+       ١) **زائرٌ بلا حساب** (`userId` فارغ) يُسعَّر بما يخصّ الشعبةَ والكود، وما يخصّ حسابَه (مسجّلٌ فيها · منحةٌ
+          استعملها · أوّلُ شراء) يُفحص حين يدخل — ويقوله `accountChecked`.
+       ٢) **كودٌ مردودٌ لا يُسقط المعاينة**: يُقال سببُه ويُعرض السعرُ بلا كود — كما يفعل لوحُ الشراء بنفسه
+          (`COUPON_ERRORS` في `BuyPanel.tsx`). والدفعُ يبقى المرجع: `checkout` يرمي بالسبب نفسِه.
+       ٣) **شعبةٌ لا وجودَ لها تُعدّ ولا تُسقط أخواتها** (`unknownCohorts`) — الرابطُ من خارجنا، فلا يُوثق بما فيه.
+
+     ولا يُذكر فيها صاحبُ الكود: اسمُ الحملة وحدَه («منحة وجيز») كما في `quote`. */
+  async preview(
+    userId: string | null, cohortIds: string[], couponCode?: string,
+    guard?: { key: string; codes: CodeAttemptGuard },
+  ) {
+    const unique = [...new Set(cohortIds)]
+    const known = new Set((await this.prisma.cohort.findMany({ where: { id: { in: unique } }, select: { id: true } })).map((c) => c.id))
+    const ids = unique.filter((id) => known.has(id))
+    if (ids.length === 0) throw new AuthError('empty_cart', 'لا دورة متاحة في هذا الرابط', 404)
+    const code = couponCode?.trim().toUpperCase() || undefined
+    let couponError: { code: string; messageAr: string } | null = null
+    let q: Awaited<ReturnType<CommerceService['quote']>>
+    if (code && guard && !guard.codes.allows(guard.key, code)) {
+      couponError = { code: 'too_many_codes', messageAr: CODE_ATTEMPTS_AR }
+      q = await this.quote(userId, ids)
+    } else {
+      try {
+        q = await this.quote(userId, ids, code)
+      } catch (e) {
+        if (!code || !(e instanceof AuthError) || !PREVIEW_COUPON_ERRORS.has(e.code)) throw e
+        /* وما يُعدّ تجربةً هو الكودُ غيرُ الصالح وحدَه — لا كودٌ صالحٌ لا يسع سلّتَه */
+        if (e.code === 'bad_coupon') guard?.codes.reject(guard.key, code)
+        couponError = { code: e.code, messageAr: e.messageAr }
+        q = await this.quote(userId, ids)
+      }
+    }
+    return { ...q, couponError, unknownCohorts: unique.length - ids.length, accountChecked: userId !== null }
+  }
+
   /* ─────────── الشراء المباشر: لا طلبَ ولا انتظارَ موافقة ───────────
 
      كان المسلك الوحيد: يطلب المتعلّم ← تراجع الإدارة وتوافق ← يُنشأ الطلب ←
@@ -363,7 +413,12 @@ export class CommerceService {
      ولا يُبنى مسلكُ تسويةٍ ثانٍ: تُكتب `enrollmentRequest` مباشرةً بحالة
      `seat_held` مربوطةً بالطلب، فتعمل `settleOrder` القائمة كما هي. «الطلب»
      هنا سجلُّ حجزِ مقعدٍ داخليّ لا خطوةَ موافقةٍ بشريّة. */
-  async checkout(userId: string, cohortIds: string[], couponCode?: string, referralCode?: string) {
+  async checkout(
+    userId: string, cohortIds: string[], couponCode?: string, referralCode?: string,
+    /* مصدرُ الزيارة التي اشترى منها — حملةُ واتساب (`utm_source=whatsapp`) وغيرُها. يُكتب في أثر الطلب
+       ليُعرف من أين جاء، ولا يدخل الحسابَ ولا العمولة (٤ نوفمبر ٢٠٢٦) */
+    touch: FirstTouch | null = null,
+  ) {
     /* وهذا هو الحارسُ الحقيقيّ لا ما في الواجهة: الشاشةُ تُخفي الزرَّ، وهذا
        يردّ من لم يُخفَ عنه — من فتح تبويبَه قبل الإغلاق، ومن ينادي المسارَ
        بلا شاشةٍ أصلا. */
@@ -464,6 +519,7 @@ export class CommerceService {
         couponDiscount: pricing.couponDiscount, discount,
         gift: pricing.lines.find((l) => l.isGift)?.courseId ?? null,
         ...(trainerCode ? { trainerCodeId: trainerCode.id, trainerProfileId: trainerCode.profileId } : {}),
+        ...(touch ? { touch } : {}),
       },
     })
     /* ═══ والساعةُ التي تنقضي تُقال لصاحبها (ي-٤) ═══

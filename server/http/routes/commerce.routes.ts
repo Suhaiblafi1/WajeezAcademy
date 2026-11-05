@@ -15,6 +15,8 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { CommerceService } from '../../services/commerce.service'
 import { firstPurchasePromoFor } from '../../services/commerce/first-purchase'
+import { CodeAttemptGuard } from '../../services/commerce/code-attempts'
+import { cleanTouch } from '../../../src/application/marketing/signup-source'
 import { AuthError } from '../../services/auth.service'
 import { requireAuth, requirePermission } from '../auth-plugin'
 
@@ -84,8 +86,12 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
       couponCode: z.string().trim().min(2).max(40).optional(),
       /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل بلا خطأ */
       referralCode: z.string().max(40).optional(),
+      /* مصدرُ هذه الزيارة (utm و`ch` و`ref`) — يُكتب في أثر الطلب ولا يمسّ السعر (٤ نوفمبر ٢٠٢٦) */
+      touch: z.unknown().optional(),
     }).parse(req.body)
-    return reply.status(201).send(await commerce.checkout(req.auth!.userId, body.cohortIds, body.couponCode, body.referralCode))
+    return reply.status(201).send(await commerce.checkout(
+      req.auth!.userId, body.cohortIds, body.couponCode, body.referralCode, cleanTouch(body.touch),
+    ))
   })
 
   /* تسعيرٌ بلا كتابة — الرقمُ الذي يراه المشتري قبل أن يضغط.
@@ -102,6 +108,22 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
       couponCode: z.string().trim().min(2).max(40).optional(),
     }).parse(req.body)
     return commerce.quote(req.auth!.userId, body.cohortIds, body.couponCode)
+  })
+
+  /* ═══ معاينةُ رابط الشراء — عامّةٌ بلا حساب (٤ نوفمبر ٢٠٢٦) ═══
+     رابطُ `/build` بدوراته وكوده يُسعَّر هنا قبل الدخول وقبل الدفع، بالحساب نفسِه وبلا كتابة (`CommerceService.preview`).
+     ومن دخل يُسعَّر بحسابه كما في `quote`. وسقفان: النداءاتُ كلُّها (`rateLimit`)، والأكوادُ المردودةُ من العنوان
+     نفسِه (`CodeAttemptGuard`) — فلا تصير بابا لتجربة الأكواد. */
+  const codeAttempts = new CodeAttemptGuard()
+  app.post('/api/public/checkout/preview', {
+    config: { rateLimit: { max: 60, timeWindow: '10 minutes' } },
+    schema: { tags: ['commerce'], summary: 'معاينة سعر رابط الشراء قبل الحساب والدفع — بلا حجز ولا كتابة' },
+  }, async (req) => {
+    const body = z.object({
+      cohortIds: z.array(z.string().uuid()).min(1).max(10),
+      couponCode: z.string().trim().min(2).max(40).optional(),
+    }).parse(req.body)
+    return commerce.preview(req.auth?.userId ?? null, body.cohortIds, body.couponCode, { key: req.ip, codes: codeAttempts })
   })
 
   /* كودُ أوّل شراء — أيُخصم لهذا الحساب؟ (١٩ أكتوبر ٢٠٢٦). صفحةُ الدورة تطرح خصمَه من السعر
