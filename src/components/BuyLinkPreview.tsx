@@ -64,7 +64,7 @@ export default function BuyLinkPreview({ preview: p, courseName }: { preview: Ch
 
       {p.couponError && (
         <p className="text-read leading-5 text-gold-ink" data-testid="buy-link-coupon-error">
-          لم نطبق الكود: {p.couponError.messageAr} السعر أعلاه بدونه.
+          لم نطبق الكود: {p.couponError.messageAr.replace(/[.،]\s*$/, "")}. السعر أعلاه بدونه.
         </p>
       )}
       {p.excluded.map((e) => (
