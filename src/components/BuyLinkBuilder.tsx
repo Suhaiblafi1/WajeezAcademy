@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Copy, Link2, Trash2 } from "lucide-react";
 import Modal from "@/components/Modal";
 import Button from "@/components/ui/Button";
+import { Card, Inset } from "@/components/ui/Surface";
 import BuyLinkPreview from "@/components/BuyLinkPreview";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useCourseCohorts } from "@/services/cohort-prices";
@@ -90,7 +91,7 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
 
   return (
     <Modal onClose={onClose} label="جهز رابط شراء" panelClassName="w-full max-w-lg">
-      <div className="space-y-3 rounded-2xl bg-paper p-4 text-foreground" data-testid="buy-link-builder">
+      <Inset tone="solid" className="space-y-3 text-foreground" data-testid="buy-link-builder">
         <h2 className="flex items-center gap-2 text-base font-black"><Link2 className="h-4 w-4" /> جهز رابط شراء</h2>
         {error && <p className="text-read text-gold-ink">{error}</p>}
         {!prep ? (
@@ -101,7 +102,7 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
 
             <div className="space-y-2">
               {picked.map((p, i) => (
-                <div key={p.courseId} className="rounded-xl border border-border p-2">
+                <Card key={p.courseId} className="p-2">
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-read font-bold">{i + 1}. {courseById(p.courseId)?.name ?? p.courseId}</span>
                     <button type="button" aria-label="احذف الدورة" onClick={() => { setPicked((x) => x.filter((y) => y.courseId !== p.courseId)); setLink(null); }}>
@@ -116,7 +117,7 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
                       <option key={o.id} value={o.id}>{o.title}{o.startsAt ? ` — ${cohortDayAr(o.startsAt)}` : ""} — {o.amount} {o.currency}</option>
                     ))}
                   </select>
-                </div>
+                </Card>
               ))}
               {picked.length < MAX_BUILT_COURSES && (
                 <select
@@ -155,7 +156,7 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
               </label>
             )}
 
-            {shown && <div className="rounded-xl border border-border p-3"><BuyLinkPreview preview={shown} courseName={(id) => courseById(id)?.name ?? id} /></div>}
+            {shown && <Card className="p-3"><BuyLinkPreview preview={shown} courseName={(id) => courseById(id)?.name ?? id} /></Card>}
             {preview.state === "failed" && <p className="text-read text-gold-ink">{preview.messageAr}</p>}
 
             <Button tone="confirm" onClick={() => void generate()} disabled={busy || picked.length === 0} className="w-full">
@@ -166,7 +167,7 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
             )}
           </>
         )}
-      </div>
+      </Inset>
     </Modal>
   );
 }
