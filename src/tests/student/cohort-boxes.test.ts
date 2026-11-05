@@ -167,6 +167,7 @@ describe('٤) صفحة الفريق: «لم يصل» غير «لا أحد»', ()
   it('⚠️ والطلب يعاد حين يخفق — لا تحديث باليد', () => {
     expect(page).toMatch(/withRetry\(\(\) => apiGet<PublicTrainer\[\]>\('\/api\/trainers\/public'\)/)
     expect(page).toMatch(/useAutoRefresh\(load/)
-    expect(code('src/services/cohort-prices.ts')).toMatch(/withRetry\(async \(\) => \{\s*const r = await fetch\(`\$\{API_BASE\}\/api\/public\/cohorts`\)\s*if \(!r\.ok\) throw/)
+    /* والطلبُ المبكرُ يُؤخذ في المحاولة الأولى وحدَها، والإعادةُ طلبٌ عاديّ (`early-fetch.ts`، ٥ نوفمبر ٢٠٢٦) */
+    expect(code('src/services/cohort-prices.ts')).toMatch(/withRetry\(async \(\) => \{\s*const r = await \(\(API_BASE === '' \? takeEarly\('\/api\/public\/cohorts'\) : null\) \?\? fetch\(`\$\{API_BASE\}\/api\/public\/cohorts`\)\)\s*if \(!r\.ok\) throw/)
   })
 })
