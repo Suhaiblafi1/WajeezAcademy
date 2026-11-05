@@ -59,6 +59,29 @@ describe('Caddy — خريطة الموقع وllms.txt من الخادم', () =>
   })
 })
 
+describe('Caddy — صفحة المدرّب من الخادم', () => {
+  /* `/t/:slug` يكتبها الخادمُ مُهيَّأة (`server/services/trainer-seo-page.ts`) — اسمُه ببوّابةٍ في القاعدة.
+     فإن لم يوجّهها Caddy إليه قُدّم قالبُ الرئيسة بـcanonicalها، وعاد العطب. */
+  const block = (name: string) => {
+    const at = CADDY.indexOf(`handle ${name} {`)
+    return at < 0 ? '' : CADDY.slice(at, CADDY.indexOf('\n\t}\n', at))
+  }
+
+  it('يوجّه /t/* كلّه إلى الخادم بمطابق مسمّى', () => {
+    expect(CADDY).toMatch(/@trainerPage\s+path\s+\/t\/\*/)
+    expect(block('@trainerPage')).toContain('reverse_proxy app:7101')
+    expect(CADDY.indexOf('handle @trainerPage'), 'الملفّات الساكنة تسبقه').toBeLessThan(CADDY.indexOf('root * /srv/web'))
+  })
+
+  it('وزاحف المعاينة قبله ومعلَّم — وغيره تمحى عنه العلامة', () => {
+    /* `handle /t/*` بمسارٍ عارٍ كان Caddy يرتّبه قبل @previewCrawler فيبتلع زاحفَ المعاينة؛ والمسمّى يحفظ الترتيب */
+    expect(CADDY.replace(/#.*$/gm, '')).not.toMatch(/handle \/t\/\*/)
+    expect(CADDY.indexOf('handle @previewCrawler')).toBeLessThan(CADDY.indexOf('handle @trainerPage'))
+    expect(block('@previewCrawler')).toMatch(/header_up X-Wajeez-Preview 1/)
+    expect(block('@trainerPage')).toMatch(/header_up -X-Wajeez-Preview/)
+  })
+})
+
 describe('Apache — النسخة الموازية', () => {
   /* ⚠️ لا يُقرأ على الإنتاج (خادمُنا Caddy)، لكنّه يبقى متطابقا لمن يقرؤه */
   it('يقدّم صفحة المسار المهيّأة إن وجدت', () => {

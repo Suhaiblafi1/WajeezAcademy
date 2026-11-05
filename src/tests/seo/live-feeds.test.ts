@@ -15,8 +15,8 @@ const PATHWAYS = publicPathwaysJson.pathways as { id: string; course_ids: string
 const SEASON = '2026-nov_jan'
 
 /** خدمةٌ بجوابٍ مُصطنَع: دوراتُ `open` لها شعبةٌ في الفصل، وكلُّها منشورة */
-function serviceWith(open: string[]) {
-  const svc = new SeoFeedsService({} as PrismaClient)
+function serviceWith(open: string[], trainers: { publicSlug: string; headline: string | null; application: { fullName: string } }[] = []) {
+  const svc = new SeoFeedsService({ trainerProfile: { findMany: async () => trainers } } as unknown as PrismaClient)
   const allIds = [...new Set(PATHWAYS.flatMap((p) => p.course_ids))]
   ;(svc as unknown as { catalog: unknown }).catalog = {
     listedCourses: async () => ({
@@ -54,7 +54,7 @@ describe('ما يعرض الآن', () => {
   })
 
   it('وإن تعذّرت القاعدة رُدّت الصفحات العامّة لا خطأ', async () => {
-    const svc = new SeoFeedsService({} as PrismaClient)
+    const svc = new SeoFeedsService({ trainerProfile: { findMany: async () => [] } } as unknown as PrismaClient)
     ;(svc as unknown as { catalog: unknown }).catalog = {
       listedCourses: async () => {
         throw new Error('db down')
@@ -65,6 +65,13 @@ describe('ما يعرض الآن', () => {
     const live = await svc.liveOrEmpty(() => (logged = true))
     expect(logged).toBe(true)
     expect(liveSitemap(live)).toBe(sitemapXml('https://www.wajeezacademy.com', PUBLIC_PAGES))
+  })
+
+  it('والمدرّب الذي يجوز عرض اسمه يدخل الخريطة وllms.txt — والبوّابة في الاستعلام نفسه', async () => {
+    const live = await serviceWith([], [{ publicSlug: 'sameer', headline: 'مدرب تسويق', application: { fullName: 'سمير' } }]).live()
+    expect(live.trainers).toEqual([{ path: '/t/sameer', title: 'سمير', note: 'مدرب تسويق' }])
+    expect(liveSitemap(live)).toContain('<loc>https://www.wajeezacademy.com/t/sameer</loc>')
+    expect(liveLlmsTxt(live)).toContain('## المدربون')
   })
 
   it('وllms.txt يسمّي المسارات المعروضة بقسمها', async () => {

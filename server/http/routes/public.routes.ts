@@ -13,6 +13,7 @@ import { deadLinkPage, previewPage, trainerPagePreview } from '../../services/li
 import { SHORT_PURPOSE } from '../../services/trainer-share-code.service'
 import { recordOpen } from '../../services/link-opens'
 import { SeoFeedsService, liveLlmsTxt, liveSitemap } from '../../services/seo-feeds.service'
+import { readTemplate, trainerNotFoundHtml, trainerSeoHtml } from '../../services/trainer-seo-page'
 import { publicSiteUrl } from '../../services/site-url'
 import { readSeasonGate } from '../../services/registration-window'
 import { RegistrationInterestService, INTEREST_CONSENT_AR, INTEREST_SOURCES } from '../../services/registration-interest.service'
@@ -241,13 +242,25 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
       .send(previewPage({ origin, code, target, title: row.previewTitle, text: row.previewText ?? '', sig: row.previewSig }))
   })
 
-  /* ═══ صفحةُ المدرّب العامّة لزاحف المعاينة وحدَه (٢٧ أكتوبر ٢٠٢٦) ═══
-     Caddy لا يمرّر إلى هنا إلّا زاحفَ معاينةٍ (`@previewCrawler`)، والناسُ ومحرّكاتُ البحث يبلغون الصفحةَ نفسَها.
-     والعلّةُ في `trainerPagePreview` (`link-preview.ts`). */
+  /* ═══ صفحةُ المدرّب العامّة `/t/:slug` (٢٧ أكتوبر · ٥ نوفمبر ٢٠٢٦) ═══
+     يمرّرها Caddy كلَّها إلى هنا. وزاحفُ المعاينة (واتساب وفيسبوك…) يعلّمه Caddy بـ`x-wajeez-preview`
+     فيُجاب بصورة رابطه المصمَّمة كما كان (`trainerPagePreview` في `link-preview.ts`). وسواه — إنسانا
+     كان أو محرّكَ بحث — صفحتُه مكتوبةً في قالب التطبيق: وسومُه ونصُّه وبياناتُه المنظّمة
+     (`trainer-seo-page.ts`). والبوّابةُ واحدة: `trainerPublicPage`. */
   app.get('/t/:slug', { schema: { hide: true } }, async (req, reply) => {
     const { slug } = z.object({ slug: z.string().min(1).max(160) }).parse(req.params)
     const origin = publicSiteUrl()
     const page = await catalog.trainerPublicPage(slug).catch(() => null)
+    const template = readTemplate()
+    const preview = req.headers['x-wajeez-preview'] === '1'
+
+    if (!preview && template) {
+      /* لا تخزين: الصفحةُ تشير إلى أصول البناء، وصفحةٌ مخزّنةٌ بعد نشرٍ تطلب أصولا حُذفت */
+      reply.header('cache-control', 'no-cache').type('text/html; charset=utf-8')
+      if (!page) return reply.status(404).send(trainerNotFoundHtml(template))
+      return reply.send(trainerSeoHtml(template, page))
+    }
+
     if (!page) return reply.redirect(`${origin}/`, 302)
     const link = await prisma.shortLink.findFirst({
       where: { target: new URL(`/t/${slug}`, origin).pathname, purpose: SHORT_PURPOSE, revokedAt: null, previewSig: { not: null } },
