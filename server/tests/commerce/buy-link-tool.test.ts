@@ -150,7 +150,7 @@ describe('④ الدورات والشعب تصدق', () => {
       .rejects.toMatchObject({ code: 'bad_course' })
     const lead = (await prisma.lead.create({ data: { fullName: 'ص', phone: '0795000004' } })).id
     await expect(links.generate(SUPER(), { leadId: lead }, { courseId: a.courseId, cohortId: b.id })).rejects.toMatchObject({ code: 'bad_cohort' })
-    const six = pool.slice(0, 6).map((courseId) => ({ courseId }))
+    const six = pool.slice(0, 6).map((courseId) => ({ courseId, cohortId: null }))
     await expect(links.generate(SUPER(), { leadId: lead }, { courseId: a.courseId, adds: six })).rejects.toMatchObject({ code: 'too_many' })
   })
 })
