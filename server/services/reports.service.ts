@@ -44,7 +44,7 @@ const COLUMN_AR: Record<string, string> = {
   waitingOver2Days: 'بلا تواصل منذ يومين', revenueInTheirTime: 'دفعات طلابه وهم عنده', commissionOwed: 'العمولة المستحقة', commissionPaid: 'العمولة المصروفة',
   trainer: 'المدرب', cohort: 'الشعبة', sessionsDone: 'جلسات منجزة', submissionsReviewed: 'تسليمات مراجعة', avgScorePct: 'متوسط الدرجة ٪',
   monthCurrency: 'الشهر والعملة', revenue: 'الإيراد',
-  kind: 'النوع', provider: 'المزود', total: 'الإجمالي',
+  kind: 'النوع', provider: 'المزود', currency: 'العملة', total: 'الإجمالي',
   session: 'الجلسة', bucket: 'الفئة',
   course: 'الدورة', capacity: 'السعة',
   month: 'الشهر', issued: 'مصدرة', revoked: 'ملغاة',
@@ -316,15 +316,29 @@ export class ReportsService {
       },
       {
         key: 'payments-refunds', titleAr: 'الدفعات والاسترداد',
-        methodAr: 'الدفعات بالمزود والحالة، والاستردادات المنفذة بمجاميعها',
+        methodAr: 'الدفعات بالمزود والحالة والعملة، والاستردادات بحالتها وعملة دفعتها — كلٌّ في المدة',
+        /* ═══ وبالعملة، وفي المدة (٥ نوفمبر ٢٠٢٦) ═══
+           الدفعةُ تُسجَّل بما اقتُطع فعلا — بالدولار أو الدرهم أو الريال (`payOrder`). وكان المجموعُ يجمعها رقما واحدا: ١٠٠ دولار
+           و٣٦٧ درهما «٤٦٧». والاستردادُ لم يكن يقرأ المدةَ أصلا. فصفٌّ لكلّ عملة، والاستردادُ بعملة دفعته وفي المدة. */
         run: async (f) => {
           const [payments, refunds] = await Promise.all([
-            p.payment.groupBy({ by: ['provider', 'status'], _count: true, _sum: { amount: true }, where: hasRange(f) ? { createdAt: dayRange(f) } : undefined }),
-            p.refund.groupBy({ by: ['status'], _count: true, _sum: { amount: true } }),
+            p.payment.groupBy({ by: ['provider', 'status', 'currency'], _count: true, _sum: { amount: true }, where: hasRange(f) ? { createdAt: dayRange(f) } : undefined }),
+            p.refund.findMany({
+              where: hasRange(f) ? { createdAt: dayRange(f) } : undefined,
+              select: { status: true, amount: true, payment: { select: { currency: true } } },
+            }),
           ])
+          const refundRows = new Map<string, { status: string; currency: string; count: number; total: number }>()
+          for (const r of refunds) {
+            const key = `${r.status} ${r.payment.currency}`
+            const row = refundRows.get(key) ?? { status: r.status, currency: r.payment.currency, count: 0, total: 0 }
+            row.count += 1
+            row.total = Math.round((row.total + Number(r.amount)) * 100) / 100
+            refundRows.set(key, row)
+          }
           return [
-            ...payments.map((r) => ({ kind: 'دفعة', provider: r.provider, status: r.status, count: r._count, total: Number(r._sum.amount ?? 0) })),
-            ...refunds.map((r) => ({ kind: 'استرداد', provider: '—', status: r.status, count: r._count, total: Number(r._sum.amount ?? 0) })),
+            ...payments.map((r) => ({ kind: 'دفعة', provider: r.provider, status: r.status, currency: r.currency, count: r._count, total: Number(r._sum.amount ?? 0) })),
+            ...[...refundRows.values()].map((r) => ({ kind: 'استرداد', provider: '—', status: r.status, currency: r.currency, count: r.count, total: r.total })),
           ]
         },
       },

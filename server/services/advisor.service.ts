@@ -1,7 +1,7 @@
 /* خدمة المستشارين — حالات العملاء من لحظة التشخيص حتى التسجيل أو الإغلاق.
    القاعدة: المستشار يرى الحالات المسندة إليه فقط، والملاحظات الداخلية لا تظهر للعميل. */
 
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
@@ -150,6 +150,19 @@ export interface AttributedOrder {
   refunds: { id: string; amount: number; processedAt: Date }[]
 }
 
+/* ═══ والاستردادُ بعملة الطلب لا بعملة البطاقة (٥ نوفمبر ٢٠٢٦) ═══
+   الطلبُ والعمولةُ بالدولار، والدفعةُ تُسجَّل بما اقتُطع فعلا — بالدرهم مثلا (`payOrder`). وكان الاستردادُ يُطرح بمبلغه
+   كما هو: طلبٌ بمئة دولارٍ دُفع ٣٦٧٫٢٥ درهما ثمّ رُدّ كلُّه يُحسم من المستشار ٣٦٫٧٣ بعمولة ١٠ — ثلاثةُ أضعافٍ ونصف.
+   فيُحوَّل بنسبته من دفعته: ما رُدّ من الدفعة نسبةً يُردّ من الطلب نسبةً. وبعملةٍ واحدةٍ يبقى كما كان. */
+function refundInOrderCurrency(
+  r: { amount: Prisma.Decimal; payment: { amount: Prisma.Decimal; currency: string } },
+  o: { total: Prisma.Decimal; currency: string },
+): number {
+  const paidAmount = Number(r.payment.amount)
+  if (r.payment.currency === o.currency || !(paidAmount > 0)) return Number(r.amount)
+  return Math.round((Number(o.total) * Number(r.amount)) / paidAmount * 100) / 100
+}
+
 /** صافي الدفعة بعد ما رُدّ منها — ولا ينزل عن صفر */
 export const netOf = (o: AttributedOrder) => Math.max(0, o.total - o.refunds.reduce((s, r) => s + r.amount, 0))
 
@@ -201,7 +214,7 @@ export async function attributedOrders(prisma: PrismaClient, advisorId: string):
 
   const paid = await prisma.order.findMany({
     where: { userId: { in: [...windows.keys()] }, status: { in: ['paid', 'partially_refunded', 'refunded'] } },
-    select: { id: true, userId: true, total: true, paidAt: true, createdAt: true },
+    select: { id: true, userId: true, total: true, currency: true, paidAt: true, createdAt: true },
   })
   const inTurn = paid.filter((o) => {
     /* `paidAt` قد يغيب على صفٍّ قديم — فيُقرأ تاريخُ الطلب بدلا منه */
@@ -218,13 +231,16 @@ export async function attributedOrders(prisma: PrismaClient, advisorId: string):
 
   const refunds = await prisma.refund.findMany({
     where: { status: 'processed', payment: { invoice: { orderId: { in: counted.map((o) => o.id) } } } },
-    select: { id: true, amount: true, processedAt: true, createdAt: true, payment: { select: { invoice: { select: { orderId: true } } } } },
+    select: {
+      id: true, amount: true, processedAt: true, createdAt: true,
+      payment: { select: { amount: true, currency: true, invoice: { select: { orderId: true } } } },
+    },
   })
   return counted.map((o) => ({
     id: o.id, userId: o.userId, total: Number(o.total), paidAt: o.paidAt ?? o.createdAt,
     refunds: refunds
       .filter((r) => r.payment.invoice.orderId === o.id)
-      .map((r) => ({ id: r.id, amount: Number(r.amount), processedAt: r.processedAt ?? r.createdAt })),
+      .map((r) => ({ id: r.id, amount: refundInOrderCurrency(r, o), processedAt: r.processedAt ?? r.createdAt })),
   }))
 }
 

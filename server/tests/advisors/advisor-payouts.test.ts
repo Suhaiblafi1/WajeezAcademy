@@ -282,3 +282,24 @@ describe('⑥ والعامل', () => {
     expect(await prisma.auditEvent.findFirst({ where: { action: 'worker.advisor_payouts' } })).not.toBeNull()
   })
 })
+
+/* بلاغُ المراجعة (٥ نوفمبر ٢٠٢٦): الطلبُ والعمولةُ بالدولار، والدفعةُ بما اقتُطع (الدرهم مثلا). وكان الاستردادُ يُحسم بمبلغه كما
+   هو: ١٠٠ دولار دُفعت ٣٦٧٫٢٥ درهما ورُدّت كلُّها — عمولتها ١٠ ويُحسم ٣٦٫٧٣ */
+describe('⑦ والاسترداد بعملة الطلب لا بعملة البطاقة', () => {
+  it('⚠️ دفعة بالدرهم ردت كلها: يحسم ما عمولته — لا ثلاثة أضعافه ونصف', async () => {
+    const a = await advisor(10)
+    const s = await student(a)
+    const n = ++seq
+    const order = await prisma.order.create({ data: { userId: s, status: 'refunded', subtotal: 100, total: 100, currency: 'USD', paidAt: P1.mid, createdAt: P1.mid } })
+    const invoice = await prisma.invoice.create({ data: { number: `WJ-INV-T-${n}`, orderId: order.id, amount: 100, status: 'paid', paidAt: P1.mid } })
+    const payment = await prisma.payment.create({
+      data: { invoiceId: invoice.id, provider: 'test', amount: 367.25, currency: 'AED', status: 'refunded', idempotencyKey: `payout-aed-${n}`, succeededAt: P1.mid },
+    })
+    await prisma.refund.create({ data: { paymentId: payment.id, amount: 367.25, reason: 'استرداد', status: 'processed', processedAt: P1.mid, createdAt: P1.mid } })
+    expect(await attributedRevenue(prisma, a), 'صافي الدفعة بعد ردها كلها').toBe(0)
+    const { planItems } = await import('../../services/advisor-payout.service')
+    const items = await planItems(prisma, a, 10, new Date())
+    expect(items.map((i) => [i.kind, i.amount]), 'حسم بعملة البطاقة').toEqual([['commission', 10], ['refund', -10]])
+  })
+})
+

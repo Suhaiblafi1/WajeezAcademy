@@ -65,6 +65,25 @@ describe('التقارير التشغيلية', () => {
     expect(Array.isArray(support.rows)).toBe(true)
   })
 
+  /* بلاغُ المراجعة (٥ نوفمبر ٢٠٢٦): الدفعةُ تُسجَّل بما اقتُطع — بالدولار أو الدرهم — وكان الجدولُ يجمعها رقما واحدا،
+     والاستردادُ لا يقرأ المدة */
+  it('2ب) الدفعات والاسترداد: صف لكل عملة، والاسترداد في المدة وحدها', async () => {
+    const { userId } = await new AuthService(prisma).register('report-currency@test.local', 'Learner#12345', 'مشتر')
+    const order = await prisma.order.create({ data: { userId, status: 'paid', subtotal: 100, total: 100, currency: 'USD' } })
+    const invoice = await prisma.invoice.create({ data: { number: 'WJ-INV-REPORT-CUR', orderId: order.id, amount: 100, status: 'paid' } })
+    const at = new Date('2026-06-15')
+    await prisma.payment.create({ data: { invoiceId: invoice.id, provider: 'report-cur', amount: 100, currency: 'USD', status: 'succeeded', idempotencyKey: 'report-cur-usd', createdAt: at } })
+    const qar = await prisma.payment.create({ data: { invoiceId: invoice.id, provider: 'report-cur', amount: 367.25, currency: 'QAR', status: 'succeeded', idempotencyKey: 'report-cur-qar', createdAt: at } })
+    await prisma.refund.create({ data: { paymentId: qar.id, amount: 40, reason: 'استرداد', status: 'processed', createdAt: at } })
+    await prisma.refund.create({ data: { paymentId: qar.id, amount: 50, reason: 'استرداد قديم', status: 'processed', createdAt: new Date('2020-01-01') } })
+    const { rows } = await reports.run('payments-refunds', { from: new Date('2026-06-01'), to: new Date('2026-06-30') })
+    const mine = (rows as { kind: string; provider: string; currency?: string; total: number; count: number }[])
+    const paid = mine.filter((r) => r.kind === 'دفعة' && r.provider === 'report-cur')
+    expect(paid.map((r) => [r.currency, r.total]).sort(), 'جمعت عملتان في رقم').toEqual([['QAR', 367.25], ['USD', 100]])
+    const back = mine.filter((r) => r.kind === 'استرداد' && r.currency === 'QAR')
+    expect(back.map((r) => [r.count, r.total]), 'استرداد خارج المدة حسب').toEqual([[1, 40]])
+  })
+
   it('3) مفتاح تقرير مجهول يرفض برسالة واضحة', async () => {
     await expect(reports.run('nope')).rejects.toThrow(/unknown_report/)
   })
