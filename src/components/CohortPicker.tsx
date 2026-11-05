@@ -28,7 +28,7 @@ import { Link } from "react-router";
 import { CalendarDays, Check, ChevronDown, ChevronLeft, TriangleAlert, Users } from "lucide-react";
 import type { CohortOption, CohortTrainer } from "@/services/cohort-prices";
 import { daysLabelAr, untilLabelAr } from "@/utils/format";
-import { cohortDayAr } from "@/application/learning/cohort-gate";
+import { cohortWhen } from "@/application/catalog/cohort-when";
 import { initialsOf } from "@/application/text/initials";
 import LiveSessionDates from "@/components/LiveSessionDates";
 import { Inset } from "@/components/ui/Surface";
@@ -49,12 +49,14 @@ const cohortsCountAr = (n: number) => (n === 2 ? "شعبتان" : n >= 3 && n <=
 
 /** سطرُ موعدٍ واحد — التاريخ ثمّ بُعده ثمّ أيّامه */
 function When({ c }: { c: CohortOption }) {
-  const until = untilLabelAr(c.startsAt);
+  /* تاريخُ أوّل لقاءٍ بيومه لا تاريخُ البدء — وبلا جدولٍ معتمَدٍ يبقى البدء (`cohort-when.ts`، ٥ نوفمبر ٢٠٢٦) */
+  const when = cohortWhen(c);
+  const until = untilLabelAr(when.at);
   const days = daysLabelAr(c.daysOfWeek);
   return (
     <span className="block min-w-0 text-fine leading-5 text-muted-foreground">
       <CalendarDays className="me-1 inline h-3.5 w-3.5 align-[-2px] text-teal-light-ink" aria-hidden="true" />
-      <span className="font-bold text-foreground">{cohortDayAr(c.startsAt)}</span>
+      <span className="font-bold text-foreground">{when.labelAr}</span>
       {until && <span> · {until}</span>}
       {days && <span> · {days}{c.startTime ? ` ${c.startTime}` : ""}</span>}
     </span>
@@ -286,7 +288,7 @@ export default function CohortPicker({
                     value={c.id}
                     checked={on}
                     onChange={() => onSelect(c.id)}
-                    aria-label={`شعبة تبدأ ${cohortDayAr(c.startsAt)}${c.trainers.length > 0 ? ` مع ${c.trainers.join(" و")}` : ""}`}
+                    aria-label={`شعبة، ${cohortWhen(c).labelAr}${c.trainers.length > 0 ? ` مع ${c.trainers.join(" و")}` : ""}`}
                     className="sr-only"
                   />
                   {body}
@@ -302,7 +304,7 @@ export default function CohortPicker({
                 return alt && (
                   <button type="button" onClick={() => onSelect(alt.cohortId)}
                     className="mt-2 text-read font-bold text-teal-light-ink underline-offset-4 hover:underline">
-                    اختر موعدا لا يتعارض: {cohortDayAr(cohorts.find((o) => o.id === alt.cohortId)?.startsAt ?? null)}
+                    اختر موعدا لا يتعارض: {(() => { const o = cohorts.find((x) => x.id === alt.cohortId); return o ? cohortWhen(o).labelAr : "—"; })()}
                   </button>
                 );
               })()}
