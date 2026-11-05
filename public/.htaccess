@@ -2,28 +2,37 @@
 # يُرفع مع ملفات dist/ إلى public_html
 
 # 1) توجيه SPA: كل المسارات الداخلية تعود إلى index.html
+<IfModule mod_dir.c>
+  # لا تحويلَ `/pathways` إلى `/pathways/` لأنّ في dist/ مجلّدا باسمها — canonicalُها بلا شرطة
+  DirectorySlash Off
+</IfModule>
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  # الملفات والمجلدات الموجودة فعلا تُقدَّم كما هي
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
 
   # أصلٌ مفقود تحت assets/ يردّ 404 صريحا — لا index.html.
   # بصماتُ الأصول تتغيّر مع كل بناء؛ فمتصفّحٌ بصفحةٍ مخزّنةٍ قديمة يطلب
   # أصلا لم يعد موجودا. ولو رجع هنا index.html (200 · text/html) لرفضه
   # المتصفّح بصرامة أنواع الوحدات لسكربتات type="module" — صفحةٌ بيضاء
   # لا تحمّل بتاتا. والصوابُ فشلٌ فوريٌّ (404) يدفع المتصفّح لإعادة تحميل
-  # الصفحة فيجلب index.html الجديد بأصوله الجديدة.
+  # الصفحة فيجلب index.html الجديد بأصوله الجديدة. (والموجودُ منها يُخدَم:
+  # `-f` هنا قبل الـ404.)
+  RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_URI} ^/assets/
   RewriteRule ^ - [R=404,L]
 
   # صفحةٌ مُهيَّأةٌ لهذا المسار؟ تُقدَّم هي — بعنوانها و`canonical` الخاصَّين بها.
   # (`scripts/prerender-seo.ts` يكتب `/pathways` في `pathways.html` وهكذا.)
   # وهي موازيةُ `try_files {path} {path}.html /index.html` في `deploy/Caddyfile`.
+  # وتسبق قاعدةَ المجلّدات: `dist/pathways/` مجلّدُ صفحات المسارات، ولو خُدم أوّلا
+  # لابتلع `/pathways` نفسَها.
   RewriteCond %{DOCUMENT_ROOT}/$1.html -f
   RewriteRule ^(.+?)/?$ /$1.html [L]
+
+  # الملفات والمجلدات الموجودة فعلا تُقدَّم كما هي
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
 
   # وما عداها يعود للتطبيق
   RewriteRule ^ index.html [L]

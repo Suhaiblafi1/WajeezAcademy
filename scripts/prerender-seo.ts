@@ -40,7 +40,13 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CANONICAL_ORIGIN } from '../src/application/site/origin'
 import { PUBLIC_PAGES, pageTitle, ROBOTS_INDEXABLE, type PublicPage } from '../src/application/site/public-pages'
+import { courseSeo, pathwaySeo, type SeoMeta } from '../src/application/site/catalog-pages'
+import { llmsTxt, sitemapXml } from '../src/application/site/seo-feeds'
 import { faqs, staticPageBySlug } from '../src/data/siteContent'
+import bundledCatalog from '../src/data/catalog/core-catalog.v2.json'
+import { getCoreCatalogRaw, installCoreCatalogRaw, type CoreCatalogRaw } from '../src/data/core-catalog-source'
+import { publicPathways, type PublicPathway } from '../src/data/public-pathways'
+import { courseById, weeksLabel } from '../src/data/courses'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const dist = join(root, 'dist')
@@ -79,6 +85,27 @@ const organization = {
     'أكاديمية عربية للتعلم المهني والشخصي من مجموعة وجيز — تبدأ من تشخيص المتعلم لا من بيع دورة.',
   parentOrganization: { '@type': 'Organization', name: 'وجيز', url: 'https://wajeez.com' },
   email: 'Academy@wajeez.co',
+  /* ما تُعرف به — يقرؤه قوقل ومحرّكاتُ الإجابة في ربط الأكاديمية بأسئلةٍ عن مجالاتها */
+  knowsAbout: [
+    'ريادة الأعمال',
+    'التسويق',
+    'البحث عن عمل والمقابلات',
+    'القيادة وإدارة الفرق',
+    'الموارد البشرية',
+    'الخطابة والتواصل',
+    'العمل الحر',
+    'الإدارة المالية الشخصية',
+    'الأمن السيبراني والحوسبة السحابية',
+    'اللغة الإنجليزية',
+  ],
+  areaServed: { '@type': 'Place', name: 'العالم العربي' },
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    email: 'Academy@wajeez.co',
+    url: `${ORIGIN}/contact`,
+    availableLanguage: ['ar', 'en'],
+  },
   address: {
     '@type': 'PostalAddress',
     streetAddress: 'حي الياسمين — شارع أنس بن مالك',
@@ -93,7 +120,16 @@ const website = {
   name: 'أكاديمية وجيز',
   url: `${ORIGIN}/`,
   inLanguage: 'ar',
+  description: 'تشخيص تعليمي مجاني ومسارات تدريب عملي عبر الإنترنت بالعربية — من أكاديمية وجيز.',
   publisher: { '@id': `${ORIGIN}/#organization` },
+}
+
+/** مرجعُ المنظّمة في كلّ صفحة — كاملا بما يكفي لقوقل (يشترط `name` في مقدّم الدورة) */
+const providerRef = {
+  '@type': 'EducationalOrganization',
+  '@id': `${ORIGIN}/#organization`,
+  name: 'أكاديمية وجيز',
+  url: `${ORIGIN}/`,
 }
 
 const faqPage = {
@@ -105,40 +141,47 @@ const faqPage = {
   })),
 }
 
-function breadcrumb(page: PublicPage) {
+function breadcrumb(...trail: { title: string; path: string }[]) {
   return {
     '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'الرئيسية', item: `${ORIGIN}/` },
-      { '@type': 'ListItem', position: 2, name: page.title, item: `${ORIGIN}${page.path}` },
-    ],
+    itemListElement: [{ title: 'الرئيسية', path: '/' }, ...trail].map((t, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: t.title,
+      item: `${ORIGIN}${t.path}`,
+    })),
   }
 }
 
+function webPage(meta: SeoMeta) {
+  return {
+    '@type': 'WebPage',
+    '@id': `${ORIGIN}${meta.path}#webpage`,
+    url: `${ORIGIN}${meta.path}`,
+    name: pageTitle(meta.title),
+    description: meta.description,
+    inLanguage: 'ar',
+    isPartOf: { '@id': `${ORIGIN}/#website` },
+  }
+}
+
+const graphJson = (graph: unknown[]) =>
+  JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }, null, 2)
+    /* لا يُغلق وسمَ السكربت من داخل النصّ */
+    .replace(/</g, '\\u003c')
+
 export function graphFor(page: PublicPage): string {
   const isHome = page.path === '/'
-  const graph: unknown[] = [
-    {
-      '@type': 'WebPage',
-      '@id': `${ORIGIN}${page.path}#webpage`,
-      url: `${ORIGIN}${page.path}`,
-      name: pageTitle(page.title),
-      description: page.description,
-      inLanguage: 'ar',
-      isPartOf: { '@id': `${ORIGIN}/#website` },
-    },
-  ]
+  const graph: unknown[] = [webPage(page)]
   /* المنظّمةُ والموقعُ يُعلنان على الرئيسة — هي بيتُهما، وتكرارُهما في كلّ
      صفحةٍ يضخّم الوسمَ بلا فائدةٍ للفهرسة. */
   if (isHome) graph.push(organization, website)
-  else graph.push(breadcrumb(page))
+  else graph.push(breadcrumb({ title: page.title, path: page.path }))
   /* والأسئلةُ الشائعة حيث تُعرض فعلا — لا في كلّ صفحة.
      وكانت في `index.html` أي في **كلّ** عنوان، وذلك ادّعاءٌ يُخالف الصفحة. */
   if (isHome || page.path === '/p/faq') graph.push(faqPage)
 
-  return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }, null, 2)
-    /* لا يُغلق وسمَ السكربت من داخل النصّ */
-    .replace(/</g, '\\u003c')
+  return graphJson(graph)
 }
 
 /* ─────────── التطبيع: القالبُ يعود بِكرا قبل كلّ صفحة ─────────── */
@@ -193,9 +236,14 @@ export function contentFor(page: PublicPage): string {
     }
   }
 
+  return shell(parts, page.path)
+}
+
+/** غلافُ النصّ: العلامة، فالمحتوى، فشبكةُ روابط الموقع — واحدٌ لكلّ صفحةٍ مُهيَّأة */
+function shell(parts: string[], currentPath: string): string {
   /* شبكةُ الروابط الداخليّة — وبدونها لا يجد الزاحفُ صفحةً من صفحة.
      روابطُ التطبيق تُرسَم بجافاسكربت، فمن لا يشغّله يرى صفحةً بلا مخرج. */
-  const links = PUBLIC_PAGES.filter((p) => p.path !== page.path)
+  const links = PUBLIC_PAGES.filter((p) => p.path !== currentPath)
     .map((p) => `<li style="margin:0 0 .35rem"><a href="${p.path}" style="color:#5eead4">${esc(p.title)}</a></li>`)
     .join('')
   parts.push(
@@ -233,6 +281,12 @@ export function contentFor(page: PublicPage): string {
 /* ─────────── التهيئة ─────────── */
 
 export function render(template: string, page: PublicPage): string {
+  return renderPage(template, page, graphFor(page), contentFor(page))
+}
+
+/** يكتب في القالب وسومَ صفحةٍ وبياناتِها المنظّمةَ ونصَّها — لكلّ صفحةٍ مُهيَّأةٍ عامّةً كانت أو من الكتالوج */
+export function renderPage(template: string, meta: SeoMeta, graph: string, body: string): string {
+  const page = meta
   const url = `${ORIGIN}${page.path === '/' ? '/' : page.path}`
   const title = pageTitle(page.title)
   let html = normalizeTemplate(template)
@@ -264,10 +318,10 @@ export function render(template: string, page: PublicPage): string {
   html = replaceOnce(
     html,
     /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
-    `<script type="application/ld+json">\n${graphFor(page)}\n    </script>`,
+    `<script type="application/ld+json">\n${graph}\n    </script>`,
     'JSON-LD',
   )
-  html = replaceOnce(html, /<div id="root"><\/div>/, `<div id="root">${contentFor(page)}</div>`, 'root')
+  html = replaceOnce(html, /<div id="root"><\/div>/, `<div id="root">${body}</div>`, 'root')
 
   if (html.includes('%VITE_SITE_ORIGIN%')) {
     throw new Error(`تهيئةُ SEO: بقي %VITE_SITE_ORIGIN% حرفيّا في ${page.path}`)
@@ -275,18 +329,236 @@ export function render(template: string, page: PublicPage): string {
   return html
 }
 
-/** خريطةُ الموقع — تُولَّد من السجلّ نفسِه، فلا تفترق عمّا يُهيَّأ فعلا */
-export function sitemap(): string {
-  const urls = PUBLIC_PAGES.map(
-    (p) => `  <url><loc>${ORIGIN}${p.path}</loc><priority>${p.priority.toFixed(1)}</priority></url>`,
-  ).join('\n')
-  return (
-    '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<!-- مولَّدٌ آليّا بـscripts/prerender-seo.ts من PUBLIC_PAGES — لا يُحرَّر بيد. -->\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    `${urls}\n` +
-    '</urlset>\n'
+/* ─────────── صفحاتُ الكتالوج: المساراتُ والدورات ─────────── */
+
+/* المسارُ والدورةُ لكلٍّ ملفُّه: `/pathways/PP-LAUNCH` في `dist/pathways/PP-LAUNCH.html`
+   و`/build/C-BIZ-101` في `dist/build/C-BIZ-101.html` — و`try_files {path}.html` يخدمهما.
+
+   والمصدرُ الكتالوجُ المضمَّن: هو الاحتياطيُّ الذي تعرضه الصفحةُ الحيّة نفسُها حين لا تصل
+   اللقطةُ المنشورة، فما فيه معتمَدٌ للعرض. وعنوانُ كلٍّ ووصفُه من `catalog-pages.ts` —
+   وهو ما يكتبه `SeoHead` في الصفحة الحيّة، فلا يتذبذب العنوان. */
+
+const H2 = 'style="margin:1.75rem 0 .5rem;font-size:1.25rem"'
+const P = 'style="margin:0 0 .75rem;line-height:2"'
+const UL = 'style="margin:0 0 .75rem;padding-inline-start:1.25rem;line-height:2"'
+const A = 'style="color:#5eead4"'
+
+const h1 = (t: string) => `<h1 style="margin:0 0 .75rem;font-size:1.9rem;line-height:1.5">${esc(t)}</h1>`
+const h2 = (t: string) => `<h2 ${H2}>${esc(t)}</h2>`
+const para = (t: string) => `<p ${P}>${esc(t)}</p>`
+const bullets = (items: readonly string[], ordered = false) =>
+  `<${ordered ? 'ol' : 'ul'} ${UL}>${items.map((i) => `<li>${i}</li>`).join('')}</${ordered ? 'ol' : 'ul'}>`
+
+/** ساعاتٌ بصيغة ISO 8601 — «PT16H» و«PT2.5H» */
+const isoHours = (h: number) => `PT${Number(h.toFixed(2))}H`
+
+type RawCourse = CoreCatalogRaw['courses'][number]
+
+const rawCourse = (id: string): RawCourse | undefined => getCoreCatalogRaw().courses.find((c) => c.course_id === id)
+
+const modulesOf = (id: string) =>
+  getCoreCatalogRaw()
+    .modules.filter((m) => m.course_id === id)
+    .sort((a, b) => a.sequence - b.sequence)
+
+export interface CatalogPage {
+  meta: SeoMeta
+  graph: string
+  body: string
+}
+
+/** صفحةُ مسارٍ عامّ — برنامجٌ تعليميٌّ ودوراتُه بروابطها */
+export function pathwayPage(p: PublicPathway): CatalogPage {
+  const meta = pathwaySeo(p)
+  const url = `${ORIGIN}${meta.path}`
+  const courseList = p.courseIds.map((id) => courseById(id)).filter((c): c is NonNullable<typeof c> => Boolean(c))
+
+  const program = {
+    '@type': 'EducationalOccupationalProgram',
+    '@id': `${url}#program`,
+    name: p.name,
+    description: meta.description,
+    url,
+    provider: providerRef,
+    inLanguage: 'ar',
+    educationalProgramMode: 'online',
+    timeToComplete: `P${p.durationWeeks}W`,
+    educationalCredentialAwarded: 'شهادة إتمام موثقة من أكاديمية وجيز',
+    audience: { '@type': 'EducationalAudience', audienceType: p.audience },
+    hasCourse: courseList.map((c) => {
+      const cm = courseSeo(c)
+      return {
+        '@type': 'Course',
+        '@id': `${ORIGIN}${cm.path}#course`,
+        name: c.name,
+        description: cm.description,
+        url: `${ORIGIN}${cm.path}`,
+        provider: providerRef,
+      }
+    }),
+  }
+  const graph = graphJson([
+    webPage(meta),
+    breadcrumb({ title: 'كل المسارات', path: '/pathways' }, { title: p.name, path: meta.path }),
+    program,
+  ])
+
+  const parts = [h1(p.name), para(meta.description)]
+  parts.push(h2('لمن هذا المسار'), para(p.audience))
+  if (p.notFor) parts.push(h2('ليس لمن'), para(p.notFor))
+  parts.push(h2('ماذا تخرج به'), para(p.transformation))
+  if (p.output) parts.push(h2('مشروع التخرج'), para(p.output))
+  parts.push(
+    h2('تفاصيل المسار'),
+    bullets([
+      esc(`${p.courseCount} دورات · ${p.totalHours} ساعة · ${weeksLabel(p.durationWeeks)}`),
+      esc(`المستوى: ${p.level}`),
+      esc(`طريقة التعلم: ${p.delivery}`),
+      esc('في الختام: شهادة إتمام موثقة يتحقق منها أي أحد برقمها.'),
+    ]),
   )
+  if (courseList.length) {
+    parts.push(
+      h2('دورات المسار بترتيب دراستها'),
+      bullets(
+        courseList.map(
+          (c) => `<a href="/build/${esc(c.id)}" ${A}>${esc(c.name)}</a>${c.promise ? ` — ${esc(c.promise)}` : ''}`,
+        ),
+        true,
+      ),
+    )
+  }
+  parts.push(
+    para('لا تعرف إن كان هذا المسار يناسبك؟ التشخيص المجاني يوصي بمسار واحد ويشرح سببه.'),
+    `<p ${P}><a href="/diagnostic" ${A}>ابدأ التشخيص المجاني</a></p>`,
+  )
+  return { meta, graph, body: shell(parts, meta.path) }
+}
+
+/** صفحةُ دورة — `Course` ووحداتُها ومخرجاتُها ومشروعُها. و`null` لدورةٍ ليست في الكتالوج */
+export function coursePage(id: string): CatalogPage | null {
+  const c = courseById(id)
+  const raw = rawCourse(id)
+  if (!c || !raw) return null
+  const meta = courseSeo(c)
+  const url = `${ORIGIN}${meta.path}`
+  const modules = modulesOf(id)
+  const hours = Number(raw.total_hours) || 0
+  const inPathways = publicPathways.filter((p) => p.courseIds.includes(id))
+
+  const course: Record<string, unknown> = {
+    '@type': 'Course',
+    '@id': `${url}#course`,
+    name: c.name,
+    description: raw.description_ar ? `${meta.description} ${raw.description_ar}` : meta.description,
+    url,
+    provider: providerRef,
+    inLanguage: 'ar',
+    hasCourseInstance: [
+      {
+        '@type': 'CourseInstance',
+        courseMode: 'Online',
+        inLanguage: 'ar',
+        ...(hours > 0 ? { courseWorkload: isoHours(hours) } : {}),
+      },
+    ],
+  }
+  if (raw.title_term_en) course.alternateName = raw.title_term_en
+  if (raw.level_ar) course.educationalLevel = raw.level_ar
+  if (raw.skill_names_ar?.length) course.teaches = raw.skill_names_ar
+  if (raw.prerequisites_ar) course.coursePrerequisites = raw.prerequisites_ar
+  if (hours > 0) course.timeRequired = isoHours(hours)
+  if (raw.target_audience_ar) course.audience = { '@type': 'EducationalAudience', audienceType: raw.target_audience_ar }
+  if (modules.length) {
+    course.syllabusSections = modules.map((m) => ({
+      '@type': 'Syllabus',
+      name: m.title_ar,
+      description: m.module_outcome_ar,
+      ...(Number(m.expected_hours) > 0 ? { timeRequired: isoHours(Number(m.expected_hours)) } : {}),
+    }))
+  }
+  if (inPathways.length) {
+    course.isPartOf = inPathways.map((p) => ({ '@id': `${ORIGIN}${pathwaySeo(p).path}#program` }))
+  }
+
+  const graph = graphJson([
+    webPage(meta),
+    breadcrumb({ title: 'كل الدورات', path: '/courses' }, { title: c.name, path: meta.path }),
+    course,
+  ])
+
+  const parts = [h1(c.name)]
+  if (raw.title_term_en) parts.push(`<p ${P} lang="en" dir="ltr">${esc(raw.title_term_en)}</p>`)
+  parts.push(para(meta.description))
+  if (raw.description_ar) parts.push(para(raw.description_ar))
+  if (raw.target_audience_ar) parts.push(h2('لمن هذه الدورة'), para(raw.target_audience_ar))
+  if (raw.prerequisites_ar) parts.push(h2('المتطلبات'), para(raw.prerequisites_ar))
+  parts.push(
+    h2('تفاصيل الدورة'),
+    bullets(
+      [
+        hours > 0 ? `${hours} ساعة تعلم وتطبيق` : '',
+        raw.level_ar ? `المستوى: ${raw.level_ar}` : '',
+        'طريقة التعلم: مباشر عبر الإنترنت، لقاء أسبوعي مع المدرب وتطبيق عملي بين اللقاءات.',
+        'شهادة إتمام موثقة يتحقق منها أي أحد برقمها.',
+      ]
+        .filter(Boolean)
+        .map(esc),
+    ),
+  )
+  if (raw.learning_objectives_ar?.length) parts.push(h2('ما ستتعلمه'), bullets(raw.learning_objectives_ar.map(esc)))
+  if (raw.learning_outcomes_ar?.length) parts.push(h2('ما ستقدر عليه بعدها'), bullets(raw.learning_outcomes_ar.map(esc)))
+  if (modules.length) {
+    parts.push(
+      h2('وحدات الدورة'),
+      bullets(
+        modules.map((m) => `<strong>${esc(m.title_ar)}</strong>${m.module_outcome_ar ? ` — ${esc(m.module_outcome_ar)}` : ''}`),
+        true,
+      ),
+    )
+  }
+  if (raw.practical_project_ar) parts.push(h2('المشروع العملي'), para(raw.practical_project_ar))
+  if (raw.skill_names_ar?.length) parts.push(h2('المهارات'), para(raw.skill_names_ar.join('، ')))
+  if (inPathways.length) {
+    parts.push(
+      h2('ضمن هذه المسارات'),
+      bullets(inPathways.map((p) => `<a href="${pathwaySeo(p).path}" ${A}>${esc(p.name)}</a>`)),
+    )
+  }
+  return { meta, graph, body: shell(parts, meta.path) }
+}
+
+/** صفحاتُ الكتالوج كلُّها — المساراتُ العامّة، ثمّ كلُّ دورةٍ في الكتالوج */
+export function catalogPages(): CatalogPage[] {
+  const pages: CatalogPage[] = publicPathways.map(pathwayPage)
+  for (const c of getCoreCatalogRaw().courses) {
+    const page = coursePage(c.course_id)
+    if (page) pages.push(page)
+  }
+  return pages
+}
+
+/* ─────────── خريطةُ الموقع وllms.txt — النسخةُ الساكنة ─────────── */
+
+/** خريطةُ الموقع الساكنة — الصفحاتُ العامّةُ وحدَها.
+
+    والحيّةُ يجيبها الخادم (`server/services/seo-feeds.service.ts`) ومعها ما يُعرض الآن من
+    المسارات والدورات والمدرّبين — فذلك يحكمه الخادمُ بالشعب، لا البناء. وهذه احتياطٌ لمن
+    يخدم `dist/` وحدَه. */
+export function sitemap(): string {
+  return sitemapXml(ORIGIN, PUBLIC_PAGES)
+}
+
+/** روابطُ llms.txt من الصفحات العامّة: الأساسيّةُ أوّلا، والقانونيّةُ في «Optional» */
+export const LEGAL_SLUGS = new Set(['privacy', 'terms', 'refund'])
+
+export function staticLlmsTxt(): string {
+  const legal = (p: PublicPage) => p.path.startsWith('/p/') && LEGAL_SLUGS.has(p.path.slice(3))
+  return llmsTxt(ORIGIN, {
+    pages: PUBLIC_PAGES.filter((p) => !legal(p)).map((p) => ({ path: p.path, title: p.title, note: p.description })),
+    optional: PUBLIC_PAGES.filter(legal).map((p) => ({ path: p.path, title: p.title, note: p.description })),
+    faqs,
+  })
 }
 
 export function main() {
@@ -298,18 +570,27 @@ export function main() {
     throw new Error('تهيئةُ SEO: dist/index.html مفقود — شغّل البناءَ أوّلا')
   }
 
-  for (const page of PUBLIC_PAGES) {
-    const html = render(template, page)
+  /* الكتالوجُ في المتصفّح يصل من الشبكة؛ وهنا يُثبَّت المضمَّنُ قبل أيّ قراءة */
+  installCoreCatalogRaw(bundledCatalog as unknown as CoreCatalogRaw)
+
+  const write = (path: string, html: string) => {
     /* الرئيسةُ هي `index.html` نفسُه، وسواها ملفٌّ باسم مسارها.
        وملفٌّ `.html` لا مجلّدٌ بقصد: مجلّدٌ يجعل الخادمَ يحوّل `/pathways`
        إلى `/pathways/` — عنوانا ثانيا بشرطةٍ مائلةٍ يخالف `canonical`. */
-    const out = page.path === '/' ? indexPath : join(dist, `${page.path.replace(/^\//, '')}.html`)
+    const out = path === '/' ? indexPath : join(dist, `${path.replace(/^\//, '')}.html`)
     mkdirSync(dirname(out), { recursive: true })
     writeFileSync(out, html)
   }
 
+  for (const page of PUBLIC_PAGES) write(page.path, render(template, page))
+  const catalog = catalogPages()
+  for (const page of catalog) write(page.meta.path, renderPage(template, page.meta, page.graph, page.body))
+
   writeFileSync(join(dist, 'sitemap.xml'), sitemap())
-  console.log(`تهيئةُ SEO: ${PUBLIC_PAGES.length} صفحةً وخريطةُ الموقع — الأصل ${ORIGIN}`)
+  writeFileSync(join(dist, 'llms.txt'), staticLlmsTxt())
+  console.log(
+    `تهيئةُ SEO: ${PUBLIC_PAGES.length} صفحةً عامّة و${catalog.length} صفحةَ كتالوج وخريطةُ الموقع وllms.txt — الأصل ${ORIGIN}`,
+  )
 }
 
 /* يُشغَّل حين يُستدعى الملفُّ مباشرةً لا حين يُستورَد — فالحارسُ يستورد

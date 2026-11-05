@@ -12,6 +12,7 @@ import { ShortLinkService } from '../../services/short-link.service'
 import { deadLinkPage, previewPage, trainerPagePreview } from '../../services/link-preview'
 import { SHORT_PURPOSE } from '../../services/trainer-share-code.service'
 import { recordOpen } from '../../services/link-opens'
+import { SeoFeedsService, liveLlmsTxt, liveSitemap } from '../../services/seo-feeds.service'
 import { publicSiteUrl } from '../../services/site-url'
 import { readSeasonGate } from '../../services/registration-window'
 import { RegistrationInterestService, INTEREST_CONSENT_AR, INTEREST_SOURCES } from '../../services/registration-interest.service'
@@ -205,6 +206,23 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     const { code } = z.object({ code: z.string().min(1).max(32) }).parse(req.params)
     return shortLinks.resolve(code)
   })
+
+  /* ═══ خريطةُ الموقع وllms.txt حيّتان (٥ نوفمبر ٢٠٢٦) ═══
+     بما يُعرض الآن من مساراتٍ ودوراتٍ ومدرّبين — والعلّةُ في `seo-feeds.service.ts`.
+     ويوجّههما `deploy/Caddyfile` إلى هنا. وإن تعذّرت القاعدةُ رُدّا بالصفحات العامّة وحدَها (`liveOrEmpty`). */
+  const seoFeeds = new SeoFeedsService(prisma)
+  const live = (req: { log: { error: (o: object, m: string) => void } }) =>
+    seoFeeds.liveOrEmpty((e) => req.log.error({ err: e }, 'ما يُعرض الآن تعذّر — رُدّت الصفحاتُ العامّة وحدَها'))
+  app.get('/sitemap.xml', { schema: { hide: true } }, async (req, reply) =>
+    reply
+      .header('Content-Type', 'application/xml; charset=utf-8')
+      .header('Cache-Control', 'public, max-age=3600')
+      .send(liveSitemap(await live(req))))
+  app.get('/llms.txt', { schema: { hide: true } }, async (req, reply) =>
+    reply
+      .header('Content-Type', 'text/plain; charset=utf-8')
+      .header('Cache-Control', 'public, max-age=3600')
+      .send(liveLlmsTxt(await live(req))))
 
   /* ═══ الرابطُ القصيرُ نفسُه — يُجاب من هنا لا من الواجهة (٢٦ أكتوبر ٢٠٢٦) ═══
      ليقرأ زاحفُ واتساب وفيسبوك معاينتَه: ما له صورةٌ صفحةُ وسومٍ تحوّل فورا، وما لا صورةَ له ٣٠٢ كما كان.

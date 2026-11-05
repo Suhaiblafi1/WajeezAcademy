@@ -51,6 +51,7 @@ import { track } from "@/services/analytics";
 import { useRealSession } from "@/services/session";
 import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
+import { pathwaySeo } from "@/application/site/catalog-pages";
 import EcosystemNote from "@/components/EcosystemNote";
 import { pathwayOffer, readyPathwayPrice } from "@/application/commerce/pathway-offer";
 import { pathwayExtraOptions, PATHWAY_EXTRA_OPTIONS, NEXT_SEASON_AR } from "@/application/catalog/course-path";
@@ -436,11 +437,7 @@ export default function PathwayPage() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
-      <SeoHead
-        title={pathway.name}
-        description={`${pathway.transformation} — مسار ${pathway.level} من ${weeksLabel(pathway.durationWeeks)} في أكاديمية وجيز.`}
-        path={`/pathways/${pathway.id}`}
-      />
+      <SeoHead {...pathwaySeo(pathway)} />
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
