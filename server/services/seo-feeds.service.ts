@@ -13,8 +13,8 @@
      · المسار ← `listedWhole` بجواب `listedCourses()` نفسِه.
      · الدورة ← لها شعبةٌ معروضة (`listedCohortWhere`).
 
-   ولا صفحاتُ المدرّبين (`/t/:slug`) بعدُ: يجيبها الخادمُ لزواحف المعاينة وحدَها، ولقوقل
-   قالبُ الرئيسة بـcanonicalها — فدعوتُه إليها تُسجَّل «نسخةً بديلة». تدخل حين تُهيَّأ.
+     · المدرّب ← `publicTrainerWhere()` — البوّابةُ الواحدةُ لاسمه (CLAUDE.md)، وصفحتُه يكتبها
+       الخادمُ مُهيَّأةً (`trainer-seo-page.ts`).
 
    والصيغةُ في `src/application/site/seo-feeds.ts` — هي نفسُها التي يكتب بها البناءُ
    النسخةَ الساكنةَ الاحتياطيّة. */
@@ -27,6 +27,7 @@ import { llmsTxt, sitemapXml, type LlmsLink, type SitemapEntry } from '../../src
 import { listedWhole } from '../../src/application/catalog/listed-courses'
 import { faqs } from '../../src/data/siteContent'
 import { PublicCatalogService } from './public-catalog.service'
+import { publicTrainerWhere } from './trainer-visibility'
 
 /** الأصلُ الذي تُعلنه الصفحاتُ المُهيَّأة في `canonical` — والخريطةُ تطابقه حرفا */
 export function seoOrigin(): string {
@@ -45,21 +46,32 @@ const PATHWAYS_SEASON = (publicPathwaysJson as { season?: string }).season ?? nu
 
 const LEGAL = new Set(['/p/privacy', '/p/terms', '/p/refund'])
 
-/** ما يُعرض الآن — مساراتٌ ودورات، بالشروط التي ترشّح قوائم الموقع */
+/** ما يُعرض الآن — مساراتٌ ودوراتٌ ومدرّبون، بالشروط التي ترشّح قوائم الموقع */
 export interface LiveCatalog {
   pathways: LlmsLink[]
   courses: LlmsLink[]
+  trainers: LlmsLink[]
 }
 
 export class SeoFeedsService {
+  private readonly prisma: PrismaClient
   private readonly catalog: PublicCatalogService
 
   constructor(prisma: PrismaClient) {
+    this.prisma = prisma
     this.catalog = new PublicCatalogService(prisma)
   }
 
   async live(now = new Date()): Promise<LiveCatalog> {
-    const [listed, published] = await Promise.all([this.catalog.listedCourses(now), this.catalog.courses()])
+    const [listed, published, trainers] = await Promise.all([
+      this.catalog.listedCourses(now),
+      this.catalog.courses(),
+      this.prisma.trainerProfile.findMany({
+        where: { publicSlug: { not: null }, ...publicTrainerWhere(now), application: { status: 'active' } },
+        select: { publicSlug: true, headline: true, application: { select: { fullName: true } } },
+        orderBy: { publicSlug: 'asc' },
+      }),
+    ])
 
     const ids = new Set(listed.courseIds)
     const state = {
@@ -81,7 +93,17 @@ export class SeoFeedsService {
         note: c.totalHours > 0 ? `${c.totalHours} ساعة، مباشرة عبر الإنترنت` : undefined,
       }))
 
-    return { pathways, courses }
+    return {
+      pathways,
+      courses,
+      trainers: trainers
+        .filter((t) => t.publicSlug && t.application?.fullName)
+        .map((t) => ({
+          path: `/t/${t.publicSlug}`,
+          title: t.application!.fullName,
+          note: t.headline ?? 'مدرب في أكاديمية وجيز',
+        })),
+    }
   }
 
   /** ما يُعرض الآن، أو لا شيءَ منه إن تعذّرت القاعدة — فتبقى الصفحاتُ العامّة.
@@ -96,7 +118,7 @@ export class SeoFeedsService {
   }
 }
 
-export const EMPTY_LIVE: LiveCatalog = { pathways: [], courses: [] }
+export const EMPTY_LIVE: LiveCatalog = { pathways: [], courses: [], trainers: [] }
 
 /** خريطةُ الموقع: الصفحاتُ العامّة، فما يُعرض الآن */
 export function liveSitemap(live: LiveCatalog): string {
@@ -104,6 +126,7 @@ export function liveSitemap(live: LiveCatalog): string {
     ...PUBLIC_PAGES,
     ...live.pathways.map((l) => ({ path: l.path, priority: 0.8 })),
     ...live.courses.map((l) => ({ path: l.path, priority: 0.7 })),
+    ...live.trainers.map((l) => ({ path: l.path, priority: 0.5 })),
   ]
   return sitemapXml(seoOrigin(), entries)
 }
@@ -115,6 +138,7 @@ export function liveLlmsTxt(live: LiveCatalog): string {
     pages: PUBLIC_PAGES.filter((p) => !LEGAL.has(p.path)).map(link),
     pathways: live.pathways,
     courses: live.courses,
+    trainers: live.trainers,
     faqs,
     optional: PUBLIC_PAGES.filter((p) => LEGAL.has(p.path)).map(link),
   })

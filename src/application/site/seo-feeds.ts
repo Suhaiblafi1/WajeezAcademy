@@ -5,7 +5,7 @@
    `scripts/prerender-seo.ts` يكتبهما ساكنَين وقتَ البناء بالصفحات العامّة وحدَها —
    احتياطا لمن يخدم `dist/` بلا خادمٍ (`.htaccess`). والخادمُ يجيبهما حيّين
    (`server/services/seo-feeds.service.ts`) ومعهما ما يُعرض **الآن**: المساراتُ التي
-   لكلّ دوراتها شعبةٌ في فصلها، والدوراتُ التي لها شعبة.
+   لكلّ دوراتها شعبةٌ في فصلها، والدوراتُ التي لها شعبة، والمدرّبون الذين يجوز عرضُ أسمائهم.
    والصيغةُ هنا كي لا يفترق الاثنان في شكلٍ يرفضه قوقل في أحدهما.
 
    ═══ ولمَ llms.txt ═══
@@ -58,6 +58,8 @@ export interface LlmsInput {
   pathways?: readonly LlmsLink[]
   /** الدوراتُ المعروضة الآن */
   courses?: readonly LlmsLink[]
+  /** المدرّبون الذين يجوز عرضُ أسمائهم (`publicTrainerWhere()`) */
+  trainers?: readonly LlmsLink[]
   faqs: readonly { q: string; a: string }[]
   /** صفحاتٌ ثانويّة — الشروطُ والخصوصيّة */
   optional?: readonly LlmsLink[]
@@ -107,6 +109,9 @@ export function llmsTxt(origin: string, input: LlmsInput): string {
   }
   if (input.courses?.length) {
     out.push('', '## الدورات المتاحة الآن', '', linkList(origin, input.courses))
+  }
+  if (input.trainers?.length) {
+    out.push('', '## المدربون', '', linkList(origin, input.trainers))
   }
   if (input.faqs.length) {
     out.push('', '## الأسئلة الشائعة', '')

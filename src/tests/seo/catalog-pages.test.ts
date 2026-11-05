@@ -120,6 +120,13 @@ describe('العنوان واحد في الصفحة الحيّة والمهيّ�
     expect(src).toMatch(/<SeoHead\s+\{\.\.\.courseSeo\(anchor\)\}\s*\/>/)
   })
 
+  it('وصفحة المدرّب من trainerSeo — وهو ما يكتبه الخادم', () => {
+    const src = readFileSync(join(root, 'src/pages/TrainerPublic.tsx'), 'utf8')
+    expect(src).toMatch(/<SeoHead\s+\{\.\.\.trainerSeo\(page\)\}\s*\/>/)
+    const server = readFileSync(join(root, 'server/services/trainer-seo-page.ts'), 'utf8')
+    expect(server).toMatch(/const meta = trainerSeo\(page\)/)
+  })
+
   it('والعنوان اسم الدورة لا جملة فعل', () => {
     expect(courseSeo({ id: 'X', name: 'دورة س', promise: 'وعد' }).title).toBe('دورة س')
     expect(pathwaySeo({ id: 'P', name: 'مسار ص', transformation: 't', level: 'أساسي', durationWeeks: 4 }).path).toBe('/pathways/P')
