@@ -19,9 +19,19 @@ import { cohortLeadTrainer, leadCohortsOf } from './cohort-lead'
 import { PAYOUT_OBJECTION_DAYS } from '../../src/application/trainer/notice-periods'
 import { cohortIdsOf, payReadiness, payReadinessAr } from '../../src/application/trainer/pay-readiness'
 import { TrainerBankService } from './trainer-bank.service'
+import { idLockKey } from './commerce/coupon-ledger'
 
 /** القاعدةُ أو معاملةٌ مفتوحةٌ عليها — ما يُتوقَّع له يُقرأ في معاملة الطلب أيضا */
 type Db = PrismaClient | Prisma.TransactionClient
+
+/* ═══ والإيرادُ من طلبٍ رُدّ بعضُه يبقى إيرادا (٥ نوفمبر ٢٠٢٦) ═══
+   كان نصيبُ الإيراد يقرأ الطلبَ «المدفوع» وحدَه. فطلبٌ فيه دورتان لمدرّبَين رُدّ ثمنُ إحداهما يصير «مردودا جزئيّا» —
+   فيسقط نصيبُ المدرّب الآخر من دورته كلُّه: ٤٠ دولارا صارت صفرا عن دورةٍ لم يُردّ منها شيء. والردُّ مبلغٌ على دفعةٍ لا على
+   بند، فلا يُعرف بندُه. فيُقرأ كما يقرؤه البند 4-15 في المقاعد: «والرد الجزئي لا يخرج المقعد من الاحتساب» — والمردودُ كلُّه
+   وحدَه يُخرجه. */
+/** فضاءُ أقفال كشوف المدرّبين — غيرُ فضاء أقفال التجارة (`COMMERCE_LOCKS`) */
+const PAYOUT_LOCKS = 7102
+const REVENUE_ORDER_STATUSES = ['paid', 'partially_refunded'] as const
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/ // «2026-08»
 
@@ -732,7 +742,7 @@ export class EarningsService {
     } else {
       /* revenue_share — نسبة من إيراد الشعبة المدفوع فعلياً */
       const paidItems = await this.prisma.orderItem.findMany({
-        where: { kind: 'cohort', refId: cohortId, order: { status: 'paid' } },
+        where: { kind: 'cohort', refId: cohortId, order: { status: { in: [...REVENUE_ORDER_STATUSES] } } },
         select: { unitPrice: true, quantity: true },
       })
       const revenue = paidItems.reduce((s, i) => s + Number(i.unitPrice) * i.quantity, 0)
@@ -790,7 +800,7 @@ export class EarningsService {
     }
     if (rule.type === 'fixed_per_cohort') return Number(rule.rate)
     const paidItems = await db.orderItem.findMany({
-      where: { kind: 'cohort', refId: cohortId, order: { status: 'paid' } },
+      where: { kind: 'cohort', refId: cohortId, order: { status: { in: [...REVENUE_ORDER_STATUSES] } } },
       select: { unitPrice: true, quantity: true },
     })
     const revenue = paidItems.reduce((s, i) => s + Number(i.unitPrice) * i.quantity, 0) + extra.revenue
@@ -808,95 +818,99 @@ export class EarningsService {
     const finalPeriod = period ?? (cohort.endsAt ?? new Date()).toISOString().slice(0, 7)
     if (!PERIOD_RE.test(finalPeriod)) throw new AuthError('bad_period', 'صيغة الفترة يجب أن تكون مثل 2026-08', 400)
 
-    /* لا كشفين غير ملغيين لنفس الشعبة — البند يحمل مرجعها */
-    const duplicate = await this.prisma.trainerPayout.findFirst({
-      where: {
-        profileId: computed.profile.id, status: { not: 'cancelled' },
-        items: { some: { sourceRef: `cohort:${cohortId}` } },
-      },
-    })
-    if (duplicate) throw new AuthError('duplicate_cohort', 'ولّدت مستحقات هذه الشعبة لهذا المدرب من قبل', 409)
+    /* ═══ والكشفُ يُكتب مرّةً واحدة — بقفلٍ لكلّ مدرّب (٥ نوفمبر ٢٠٢٦) ═══
+       يولّده اكتمالُ الشعبة، وتولّده الماليّةُ بيدها أو دفعةً — وكان «أوُلّد من قبل؟» يُسأل قبل الكتابة بلا قفل: توليدان معا
+       مرّا كلاهما فصار للشعبة كشفان (٥٠٠ و٥٠٠). ومثلُه خصومُ أكواده: تُقرأ قبل الكتابة، فكشفان لشعبتين له معا يحسمان الخصمَ
+       نفسَه مرّتين. فيُقفل لكلّ مدرّبٍ في معاملةٍ واحدة، ويُسأل عن التكرار ويُقرأ الدفترُ بعد القفل — فالثاني يرى ما كتبه الأوّل. */
+    const { payout, plan, total } = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PAYOUT_LOCKS}::int, ${idLockKey(computed.profile.id)}::int)`
+      /* لا كشفين غير ملغيين لنفس الشعبة — البند يحمل مرجعها */
+      const duplicate = await tx.trainerPayout.findFirst({
+        where: {
+          profileId: computed.profile.id, status: { not: 'cancelled' },
+          items: { some: { sourceRef: `cohort:${cohortId}` } },
+        },
+      })
+      if (duplicate) throw new AuthError('duplicate_cohort', 'ولّدت مستحقات هذه الشعبة لهذا المدرب من قبل', 409)
 
-    /* ═══ وخصومُه هو تُحسم هنا — البند 4-10 ═══
+      /* ═══ وخصومُه هو تُحسم هنا — البند 4-10 ═══
 
-       «أدرج المبلغ المستعمل بندا مستقلا باسمه في أول كشف مستحقات يحرر
-       للمدرب بعد ذلك، وحسم منه، وبين في الكشف لمن صدر ومتى استعمل».
+         «أدرج المبلغ المستعمل بندا مستقلا باسمه في أول كشف مستحقات يحرر
+         للمدرب بعد ذلك، وحسم منه، وبين في الكشف لمن صدر ومتى استعمل».
 
-       وثلاثةٌ في هذا السطر لا واحد: **بندٌ مستقلٌّ** (لا رقمٌ مطروحٌ من بندِ
-       تدريبٍ فلا يُرى)، **وباسمه** (يقرأ عمّن حُسم بعد شهرين)، **وفي أوّل
-       كشفٍ يليه** (لا في كشف الشعبة التي استُعمل فيها — قد لا تكون له شعبةٌ
-       فيها أصلا).
+         وثلاثةٌ في هذا السطر لا واحد: **بندٌ مستقلٌّ** (لا رقمٌ مطروحٌ من بندِ
+         تدريبٍ فلا يُرى)، **وباسمه** (يقرأ عمّن حُسم بعد شهرين)، **وفي أوّل
+         كشفٍ يليه** (لا في كشف الشعبة التي استُعمل فيها — قد لا تكون له شعبةٌ
+         فيها أصلا).
 
-       والسقفُ من البند نفسِه: «لا يتجاوز مجموع ما يحسم… قيمة ذلك الكشف، وما
-       زاد أجل إلى الكشف الذي يليه». فيبقى الكشفُ موجبا أبدا — وكشفٌ سالبٌ
-       يصير مطالبةً بمالٍ في ذمّته، وذلك ما يمنعه الذيلُ صراحةً. */
-    /* ويُقرأ الصفُّ هنا لا عبر `TrainerDiscountService`: تلك تنادي هذه الخدمةَ
-       لتحسب رصيدَ المدرّب، فاستيرادُها هنا حلقةُ وحداتٍ في زمن التشغيل. */
-    const [pending, codeRows] = await Promise.all([
-      this.prisma.trainerIssuedDiscount.findMany({
-        where: { profileId: computed.profile.id, status: 'used', settledItemId: null },
-        include: { coupon: { select: { code: true } } },
-        orderBy: { usedAt: 'asc' },
-      }),
-      /* ═══ وكودُه بالنسبة من دفتره — ما لم يُقابَل ببندٍ بعد ═══
+         والسقفُ من البند نفسِه: «لا يتجاوز مجموع ما يحسم… قيمة ذلك الكشف، وما
+         زاد أجل إلى الكشف الذي يليه». فيبقى الكشفُ موجبا أبدا — وكشفٌ سالبٌ
+         يصير مطالبةً بمالٍ في ذمّته، وذلك ما يمنعه الذيلُ صراحةً. */
+      /* ويُقرأ الصفُّ هنا لا عبر `TrainerDiscountService`: تلك تنادي هذه الخدمةَ
+         لتحسب رصيدَ المدرّب، فاستيرادُها هنا حلقةُ وحداتٍ في زمن التشغيل. */
+      const [pending, codeRows] = await Promise.all([
+        tx.trainerIssuedDiscount.findMany({
+          where: { profileId: computed.profile.id, status: 'used', settledItemId: null },
+          include: { coupon: { select: { code: true } } },
+          orderBy: { usedAt: 'asc' },
+        }),
+        /* ═══ وكودُه بالنسبة من دفتره — ما لم يُقابَل ببندٍ بعد ═══
 
-         موجبُه حسمٌ، وسالبُه إعادةٌ عن شراءٍ رُدّ ثمنُه بعد أن حُسم. وعملةُ
-         الكشف شرط: حسمُ ريالٍ من كشفٍ بالدولار رقمٌ بلا معنى — والكتالوجُ
-         كلُّه بالدولار اليوم، فالشرطُ حارسٌ لا مُرشِّح. */
-      this.prisma.trainerCodeRedemption.findMany({
-        where: { profileId: computed.profile.id, pending: { not: 0 }, currency: computed.rule.currency },
-        include: { code: { select: { labelAr: true, percentOff: true, amountOff: true, coupon: { select: { code: true } } } } },
-        orderBy: { paidAt: 'asc' },
-      }),
-    ])
-    const legacyById = new Map(pending.map((d) => [`${LEGACY_REF}${d.id}`, d]))
-    const codeById = new Map(codeRows.map((r) => [`${CODE_REF}${r.id}`, r]))
-    const deductions: LedgerEntry[] = [
-      ...pending.map((d) => ({ ref: `${LEGACY_REF}${d.id}`, amount: Number(d.amount), at: d.usedAt ?? d.createdAt })),
-      ...codeRows.filter((r) => Number(r.pending) > 0)
-        .map((r) => ({ ref: `${CODE_REF}${r.id}`, amount: Number(r.pending), at: r.paidAt ?? r.createdAt })),
-    ]
-    const credits: LedgerEntry[] = codeRows.filter((r) => Number(r.pending) < 0)
-      .map((r) => ({ ref: `${CODE_REF}${r.id}`, amount: -Number(r.pending), at: r.refundedAt ?? r.paidAt ?? r.createdAt }))
-    const plan = planLedger(computed.total, deductions, credits)
+           موجبُه حسمٌ، وسالبُه إعادةٌ عن شراءٍ رُدّ ثمنُه بعد أن حُسم. وعملةُ
+           الكشف شرط: حسمُ ريالٍ من كشفٍ بالدولار رقمٌ بلا معنى — والكتالوجُ
+           كلُّه بالدولار اليوم، فالشرطُ حارسٌ لا مُرشِّح. */
+        tx.trainerCodeRedemption.findMany({
+          where: { profileId: computed.profile.id, pending: { not: 0 }, currency: computed.rule.currency },
+          include: { code: { select: { labelAr: true, percentOff: true, amountOff: true, coupon: { select: { code: true } } } } },
+          orderBy: { paidAt: 'asc' },
+        }),
+      ])
+      const legacyById = new Map(pending.map((d) => [`${LEGACY_REF}${d.id}`, d]))
+      const codeById = new Map(codeRows.map((r) => [`${CODE_REF}${r.id}`, r]))
+      const deductions: LedgerEntry[] = [
+        ...pending.map((d) => ({ ref: `${LEGACY_REF}${d.id}`, amount: Number(d.amount), at: d.usedAt ?? d.createdAt })),
+        ...codeRows.filter((r) => Number(r.pending) > 0)
+          .map((r) => ({ ref: `${CODE_REF}${r.id}`, amount: Number(r.pending), at: r.paidAt ?? r.createdAt })),
+      ]
+      const credits: LedgerEntry[] = codeRows.filter((r) => Number(r.pending) < 0)
+        .map((r) => ({ ref: `${CODE_REF}${r.id}`, amount: -Number(r.pending), at: r.refundedAt ?? r.paidAt ?? r.createdAt }))
+      const plan = planLedger(computed.total, deductions, credits)
 
-    const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : '')
-    const ledgerItems = [
-      ...plan.taken.map((t) => {
-        const legacy = legacyById.get(t.ref)
-        if (legacy) {
-          const usedOn = legacy.usedAt ? ` · استعمل ${day(legacy.usedAt)}` : ''
+      const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : '')
+      const ledgerItems = [
+        ...plan.taken.map((t) => {
+          const legacy = legacyById.get(t.ref)
+          if (legacy) {
+            const usedOn = legacy.usedAt ? ` · استعمل ${day(legacy.usedAt)}` : ''
+            return {
+              description: `حسم خصم أصدرته — ${legacy.forWhomAr} (${legacy.coupon.code})${usedOn}`,
+              amount: -t.amount,
+              sourceRef: t.ref,
+            }
+          }
+          const r = codeById.get(t.ref)!
+          const partly = Number(r.owed) < Number(r.amount) ? ' · بعد ردّ جزء من الثمن' : ''
           return {
-            description: `حسم خصم أصدرته — ${legacy.forWhomAr} (${legacy.coupon.code})${usedOn}`,
+            /* ووجهُ الكود كما أصدره — «٢٠٪» أو «$20» — لا نسبةٌ تُطبع «null٪» لكودٍ بمبلغ */
+            description: `حسم كودك ${r.code.coupon.code} (${codeFaceAr(
+              { percentOff: r.code.percentOff, amountOff: r.code.amountOff === null ? null : Number(r.code.amountOff) },
+              (a) => withCurrencyAr(String(a), r.currency),
+            )}) — ${r.code.labelAr} · شراء ${day(r.paidAt)}${partly}`,
             amount: -t.amount,
             sourceRef: t.ref,
           }
-        }
-        const r = codeById.get(t.ref)!
-        const partly = Number(r.owed) < Number(r.amount) ? ' · بعد ردّ جزء من الثمن' : ''
-        return {
-          /* ووجهُ الكود كما أصدره — «٢٠٪» أو «$20» — لا نسبةٌ تُطبع «null٪» لكودٍ بمبلغ */
-          description: `حسم كودك ${r.code.coupon.code} (${codeFaceAr(
-            { percentOff: r.code.percentOff, amountOff: r.code.amountOff === null ? null : Number(r.code.amountOff) },
-            (a) => withCurrencyAr(String(a), r.currency),
-          )}) — ${r.code.labelAr} · شراء ${day(r.paidAt)}${partly}`,
-          amount: -t.amount,
-          sourceRef: t.ref,
-        }
-      }),
-      ...plan.credits.map((c) => {
-        const r = codeById.get(c.ref)!
-        return {
-          description: `إعادة ما حسم من كودك ${r.code.coupon.code} — ردّ ثمن الشراء${r.status === 'refunded' ? '' : ' جزئيا'}`,
-          amount: c.amount,
-          sourceRef: c.ref,
-        }
-      }),
-    ]
-    const items = [...computed.items, ...ledgerItems]
-    const total = Math.round(items.reduce((sum, i) => sum + i.amount, 0) * 100) / 100
-
-    const payout = await this.prisma.$transaction(async (tx) => {
+        }),
+        ...plan.credits.map((c) => {
+          const r = codeById.get(c.ref)!
+          return {
+            description: `إعادة ما حسم من كودك ${r.code.coupon.code} — ردّ ثمن الشراء${r.status === 'refunded' ? '' : ' جزئيا'}`,
+            amount: c.amount,
+            sourceRef: c.ref,
+          }
+        }),
+      ]
+      const items = [...computed.items, ...ledgerItems]
+      const total = Math.round(items.reduce((sum, i) => sum + i.amount, 0) * 100) / 100
       const created = await tx.trainerPayout.create({
         data: {
           profileId: computed.profile.id, period: finalPeriod,
@@ -929,8 +943,8 @@ export class EarningsService {
           where: { id: c.ref.slice(CODE_REF.length) }, data: { pending: { increment: c.amount } },
         })
       }
-      return created
-    })
+      return { payout: created, plan, total }
+    }, { timeout: 30_000, maxWait: 30_000 })
     const taken = plan.taken
     await recordAudit(this.prisma, {
       actorId, action: 'trainer_payout.generate', entityType: 'TrainerPayout', entityId: payout.id,
