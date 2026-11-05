@@ -158,3 +158,15 @@ describe('طلبات المستشار', () => {
     expect(rows.length, 'لا أثرَ في التدقيق — فلا يُعرف بعد شهرٍ من خصم ولماذا').toBeGreaterThanOrEqual(3)
   })
 })
+
+/* بلاغُ المراجعة (٥ نوفمبر ٢٠٢٦): نقرتان على «اعتمد» تمرّان معا فيُصدر للعميل كوبونا خصمٍ عن طلبٍ واحد */
+describe('القرار مرة واحدة', () => {
+  it('⚠️ اعتمادان معا: يمر أحدهما وكوبون واحد للعميل', async () => {
+    const before = await prisma.coupon.count({ where: { restrictedToUserId: learnerId } })
+    const r = await requests.submit(advisorId, caseId, { kind: 'discount', percentOff: 20, reasonAr: 'سبب كاف لاختبار القرار مرة' })
+    const out = await Promise.allSettled([requests.decide(r.id, managerId, 'approved'), requests.decide(r.id, managerId, 'approved')])
+    expect(out.filter((x) => x.status === 'fulfilled'), 'اعتمد مرتين').toHaveLength(1)
+    expect((out.find((x) => x.status === 'rejected') as PromiseRejectedResult).reason).toMatchObject({ code: 'not_pending' })
+    expect(await prisma.coupon.count({ where: { restrictedToUserId: learnerId } }) - before, 'كوبونان عن طلب واحد').toBe(1)
+  })
+})

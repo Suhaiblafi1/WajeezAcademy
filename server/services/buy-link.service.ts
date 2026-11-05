@@ -90,6 +90,9 @@ export async function commissionExcludedOrders(prisma: PrismaClient, orderIds: r
   const out = new Set<string>()
   for (const e of evs) {
     const m = (e.meta ?? {}) as { buyLink?: { kind?: string }; touch?: unknown }
+    /* ورابطُ المستشار يغلب أثرَ حملةٍ قديم (٥ نوفمبر ٢٠٢٦): المصدرُ آخرُ زيارةٍ بإشارةٍ يحفظها المتصفّحُ بلا أجل، ورابطُ
+       المستشار لا إشارةَ فيه (`bl` وحدَه) — فمن نقر حملةَ واتساب مرّةً ثمّ اشترى من رابط مستشاره بعد أسابيع سقطت عمولتُه */
+    if (m.buyLink?.kind === 'advisor') continue
     if (m.buyLink?.kind === 'admin' || isWhatsappCampaign(m.touch)) out.add(e.entityId!)
   }
   return out

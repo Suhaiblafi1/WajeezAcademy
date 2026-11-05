@@ -183,45 +183,50 @@ export class AdvisorRequestService {
       throw new AuthError('reason_required', `اكتب سبب الرفض — ${MIN_REASON_CHARS} حرفا على الأقل`)
     }
 
-    let couponId: string | null = null
-    if (decision === 'approved' && r.kind === 'discount') {
-      /* الكوبون مقصورٌ على العميل ومرّةً واحدة — وبلا حسابٍ للعميل لا كوبون:
-         الخصمُ يُطبَّق على فاتورةٍ لصاحب حساب، ومن لم يسجّل بعدُ يُعتمد له
-         الطلبُ ويُولَّد كوبونُه حين يصير له حساب. */
-      if (!r.case.clientId) {
-        throw new AuthError('client_required', 'لا حساب للعميل بعد — لا يمكن إصدار كوبون مقصور عليه')
-      }
-      const coupon = await this.prisma.coupon.create({
-        data: {
-          code: couponCode(),
-          percentOff: r.percentOff ?? null,
-          amountOff: r.amountOff ?? null,
-          currency: r.currency ?? null,
-          maxUses: 1,
-          restrictedToUserId: r.case.clientId,
-          /* شهرٌ يكفي لإغلاق البيع، ولا يترك خصما مفتوحا إلى الأبد */
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
-      })
-      couponId = coupon.id
+    /* الكوبون مقصورٌ على العميل ومرّةً واحدة — وبلا حسابٍ للعميل لا كوبون:
+       الخصمُ يُطبَّق على فاتورةٍ لصاحب حساب، ومن لم يسجّل بعدُ يُعتمد له
+       الطلبُ ويُولَّد كوبونُه حين يصير له حساب. */
+    const clientId = r.case.clientId
+    if (decision === 'approved' && r.kind === 'discount' && !clientId) {
+      throw new AuthError('client_required', 'لا حساب للعميل بعد — لا يمكن إصدار كوبون مقصور عليه')
     }
 
-    const out = await this.prisma.advisorRequest.update({
-      where: { id: requestId },
-      data: {
-        status: decision,
-        decidedById: reviewerId,
-        decidedAt: new Date(),
-        decisionNoteAr: note || null,
-        couponId,
-      },
-    })
+    /* ═══ ويُبتّ فيه مرّةً واحدة (٥ نوفمبر ٢٠٢٦) ═══
+       كان الفحصُ «أهو معلّق؟» قبل إنشاء الكوبون بلا شرطٍ عليه: نقرتان على «اعتمد» تمرّان معا فيُصدر للعميل كوبونان. فالقرارُ
+       يُكتب بشرط أنّه ما زال معلّقا، والكوبونُ في المعاملة نفسِها — ومن جاء ثانيا يُردّ ولا يُصدر شيئا. */
+    return this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.advisorRequest.updateMany({
+        where: { id: requestId, status: 'pending' },
+        data: { status: decision, decidedById: reviewerId, decidedAt: new Date(), decisionNoteAr: note || null },
+      })
+      if (claimed.count === 0) throw new AuthError('not_pending', 'بتّ في هذا الطلب من قبل')
 
-    await recordAudit(this.prisma, {
-      actorId: reviewerId, action: `advisor.request.${decision}`,
-      entityType: 'advisor_request', entityId: requestId,
-      meta: { kind: r.kind, couponId },
+      let couponId: string | null = null
+      if (decision === 'approved' && r.kind === 'discount') {
+        const coupon = await tx.coupon.create({
+          data: {
+            code: couponCode(),
+            percentOff: r.percentOff ?? null,
+            amountOff: r.amountOff ?? null,
+            currency: r.currency ?? null,
+            maxUses: 1,
+            restrictedToUserId: clientId,
+            /* شهرٌ يكفي لإغلاق البيع، ولا يترك خصما مفتوحا إلى الأبد */
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          },
+        })
+        couponId = coupon.id
+      }
+
+      const out = couponId ? await tx.advisorRequest.update({ where: { id: requestId }, data: { couponId } })
+        : await tx.advisorRequest.findUniqueOrThrow({ where: { id: requestId } })
+
+      await recordAudit(tx, {
+        actorId: reviewerId, action: `advisor.request.${decision}`,
+        entityType: 'advisor_request', entityId: requestId,
+        meta: { kind: r.kind, couponId },
+      })
+      return out
     })
-    return out
   }
 }

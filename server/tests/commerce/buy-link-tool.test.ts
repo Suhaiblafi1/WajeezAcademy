@@ -210,6 +210,17 @@ describe('⑦ العمولة Hybrid', () => {
     await pay(c.clientId, [fromWhatsapp.id], { touch: { utmSource: 'whatsapp', utmCampaign: 'wajeez-sales', at: new Date().toISOString() } })
     expect(await attributedRevenue(prisma, adv.userId), 'حسب حملة واتساب').toBe(150)
   })
+
+  /* بلاغُ المراجعة (٥ نوفمبر ٢٠٢٦): المصدرُ آخرُ زيارةٍ بإشارةٍ يحفظها المتصفّحُ بلا أجل، ورابطُ المستشار لا إشارةَ فيه —
+     فمن نقر حملةَ واتساب مرّةً ثمّ اشترى من رابط مستشاره سقطت عمولتُه */
+  it('⚠️ ورابط المستشار يغلب أثر حملة واتساب قديما في المتصفح', async () => {
+    const adv = await advisor()
+    const c = await caseWithGrant(adv.userId)
+    const co = await cohort(80)
+    const own = await links.generate(adv, { caseId: c.caseId }, { courseId: co.courseId, cohortId: co.id })
+    await pay(c.clientId, [co.id], { token: tokenOf(own.path), touch: { utmSource: 'whatsapp', utmCampaign: 'wajeez-sales', at: new Date().toISOString() } })
+    expect(await attributedRevenue(prisma, adv.userId), 'سقطت عمولة رابط المستشار بأثر حملة قديم').toBe(80)
+  })
 })
 
 describe('المسارات', () => {

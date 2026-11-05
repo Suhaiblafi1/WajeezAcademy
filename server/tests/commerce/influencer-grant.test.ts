@@ -240,6 +240,22 @@ describe('⑦ج مؤثر أوقف لا يحسب له كود جديد', () => {
   })
 })
 
+/* بلاغُ المراجعة (٥ نوفمبر ٢٠٢٦): من أخذ كودا بمؤثّرٍ أُوقف بعدُ، ثمّ عبّأ بكود غيره، قيل له «جئت عن طريق» الثاني —
+   وكودُه نفسُه يعود إليه وعمولتُه للأوّل */
+describe('⑦د من أخذ كودا ثم أوقف مؤثره', () => {
+  it('⚠️ يعبئ بكود آخر: يقال له مؤثر كوده — وعمولته له', async () => {
+    const first = await addInfluencer('HADCODE')
+    await addInfluencer('LATERCODE')
+    const p = person({ influencerCode: 'HADCODE' })
+    const got = await landing.apply(p)
+    await influencers.update(first, { active: false }, ownerId)
+    const again = await landing.apply({ ...p, influencerCode: 'LATERCODE' })
+    expect(again.influencer?.code, 'قيل له مؤثر غير مؤثر كوده').toBe('HADCODE')
+    const issued = await prisma.grantCode.findUniqueOrThrow({ where: { leadId: got.ref }, select: { influencerId: true } })
+    expect(issued.influencerId).toBe(first)
+  })
+})
+
 describe('⑦ب من عبأ النموذجين — يطبق في حسابه ما يستعمل الآن، لا أقدمهما', () => {
   it('⚠️ أغلقت منحة وجيز بعد نموذجه — فيطبق كود مؤثره، وحين تفتح الاثنتان يطبق الأكبر خصما', async () => {
     const memberLanding = new GrantLandingService(prisma)

@@ -227,10 +227,19 @@ export class GrantLandingService {
       })
     }
     /* المؤثّرُ الذي يُحسب له: من جاء بكوده أوّلَ مرّة — وعمولتُه كما هي اليوم، تُكتب في كوده إن أُعطي الآن */
+    /* ═══ ومن أُعطي كودا يُحسب لمؤثّر كوده — ولو أُوقف (٥ نوفمبر ٢٠٢٦) ═══
+       الكودُ يحمل مؤثّرَه وعمولتَه يومَ أُعطي (`issue`)، ومن عبّأ ثانيةً يأخذ كودَه نفسَه — فعمولتُه لصاحب كوده، كما يُقال للمؤثّر
+       حين يُوقف: «عمولة من أخذ كودا قبل ذلك محسوبة لك». وكانت الصفحةُ تقول للمتابع «جئت عن طريق» المؤثّرِ الذي كتب كودَه الآن
+       — وعمولتُه لغيره. فيُقال له مؤثّرُ كوده. */
+    const coded = forInfluencer
+      ? (await this.prisma.grantCode.findUnique({
+          where: { leadId: lead.id }, select: { influencer: { select: { id: true, nameAr: true, code: true, commissionPercent: true } } },
+        }))?.influencer ?? null
+      : null
     const credited = !forInfluencer ? null
-      : !lead.influencerId || lead.influencerId === named!.id ? named
+      : coded ?? (!lead.influencerId || lead.influencerId === named!.id ? named
         /* والأوّلُ إن كان ما زال نشطا — من أُوقف لا يُكتب له كودٌ جديد ولا عمولتُه، فيُحسب لمن جاء بكوده الآن (٣١ أكتوبر ٢٠٢٦) */
-        : await this.prisma.influencer.findFirst({ where: { id: lead.influencerId, active: true }, select: { id: true, nameAr: true, code: true, commissionPercent: true } }) ?? named
+        : await this.prisma.influencer.findFirst({ where: { id: lead.influencerId, active: true }, select: { id: true, nameAr: true, code: true, commissionPercent: true } }) ?? named)
 
     let grant: { code: string | null; sentTo: string | null; percentOff: number; closesAt: Date | null } | null = null
     let reasonAr: string | null = null
