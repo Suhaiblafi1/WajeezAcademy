@@ -21,6 +21,7 @@ import { attributedRevenue } from '../../services/advisor.service'
 import { BuyLinkService, verifyBuyLinkToken } from '../../services/buy-link.service'
 import { parseBuildLink } from '../../../src/application/commerce/build-link'
 import { buildApp } from '../../http/app'
+import { MEMBER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -217,5 +218,32 @@ describe('المسارات', () => {
     expect(res.statusCode).toBe(401)
     const adv = await app.inject({ method: 'POST', url: '/api/advisor/cases/00000000-0000-4000-8000-000000000000/buy-link', payload: { courseId: 'C-X' } })
     expect(adv.statusCode).toBe(401)
+  })
+})
+
+describe('⑧ صفحة المنحة تقول من أين جاء الشراء', () => {
+  it('⚠️ حملة واتساب، ورابط الإدارة، وبلا رابط لا يسمى', async () => {
+    const { registrantsFull } = await import('../../services/grant-registrants.service')
+    const buyer = async (tag: string) => {
+      const userId = await user(tag)
+      const email = (await prisma.user.findUniqueOrThrow({ where: { id: userId } })).email
+      const lead = await prisma.lead.create({ data: { fullName: `${tag} ${STAMP}`, phone: `0794${String(700000 + ++seq)}`, email, campaign: MEMBER_GRANT_SLUG } })
+      const { code } = await members.issue({ leadId: lead.id })
+      return { userId, leadId: lead.id, code }
+    }
+    const wa = await buyer('wa')
+    await pay(wa.userId, [(await cohort(100)).id], { code: wa.code, touch: { utmSource: 'whatsapp', utmCampaign: 'wajeez-sales', at: new Date().toISOString() } })
+    const adm = await buyer('adm')
+    const c = await cohort(100)
+    const link = await links.generate(SUPER(), { leadId: adm.leadId }, { courseId: c.courseId, cohortId: c.id, code: adm.code })
+    await pay(adm.userId, [c.id], { code: adm.code, token: tokenOf(link.path) })
+    const plain = await buyer('plain')
+    await pay(plain.userId, [(await cohort(100)).id], { code: plain.code })
+
+    const { rows } = await registrantsFull(prisma)
+    const row = (id: string) => rows.find((r) => r.id === id)!
+    expect(row(wa.leadId)).toMatchObject({ state: 'bought', boughtVia: ['حملة واتساب'] })
+    expect(row(adm.leadId).boughtVia).toEqual(['رابط من الإدارة'])
+    expect(row(plain.leadId)).toMatchObject({ state: 'bought', boughtVia: [] })
   })
 })

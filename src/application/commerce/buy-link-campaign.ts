@@ -5,6 +5,17 @@
 
 export const WHATSAPP_CAMPAIGN_TRACKING = { utm_source: 'whatsapp', utm_campaign: 'wajeez-sales' } as const
 
+/** من أين جاء طلبٌ — من أثره (`order.checkout`): حملةُ واتساب، أو رابطٌ ولّده السوبر أدمن أو المستشار. وما سواها لا يُسمّى
+    هنا (مصدرُ الزيارة الأوّل في عمود «المصدر») — ٥ نوفمبر ٢٠٢٦ */
+export function orderViaAr(meta: unknown): string | null {
+  if (!meta || typeof meta !== 'object') return null
+  const m = meta as { touch?: unknown; buyLink?: { kind?: unknown } }
+  if (isWhatsappCampaign(m.touch)) return 'حملة واتساب'
+  if (m.buyLink?.kind === 'admin') return 'رابط من الإدارة'
+  if (m.buyLink?.kind === 'advisor') return 'رابط من المستشار'
+  return null
+}
+
 /** أطلبٌ من حملة واتساب؟ — من مصدر زيارته كما كُتب في أثره (`FirstTouch`) */
 export function isWhatsappCampaign(touch: unknown): boolean {
   if (!touch || typeof touch !== 'object') return false

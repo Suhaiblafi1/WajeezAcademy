@@ -273,7 +273,23 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['public-catalog'], summary: 'المراجع العلمية للمنهجية — من ملف المصدر الوحيد' },
   }, async () => catalog.methodology())
 
+  /* ═══ ونسخةٌ خفيفةٌ بلا متون الدروس (`?lite=1`، ٥ نوفمبر ٢٠٢٦) ═══
+     الكتالوجُ كلُّه ٧٫٩ ميغا (٢ ميغا مضغوطا)، ومتونُ الوحدات منه ستّةٌ ونصف — درسٌ وسيناريو وتمرينٌ ونشاطٌ وروبرك.
+     وصفحةُ «ابنِ مسارك» لا تقرأ منها حرفا، وكانت تنتظرها كلَّها: عشرُ ثوانٍ على ٤ ميغابت، وستَّ عشرةَ على ١٫٦ (قيس على
+     الإنتاج). فالخفيفةُ لها (`usePublishedContent({ lite: true })`)، وكلُّ صفحةٍ سواها تأخذ الكاملةَ كما كانت. */
   app.get('/api/public/core-catalog', {
     schema: { tags: ['public-catalog'], summary: 'الكتالوج الجوهري المنشور بصيغة core-catalog.v2 — الواجهة تبني عرضها منه بالمحولات ذاتها' },
-  }, async () => catalog.coreCatalog())
+  }, async (req) => {
+    const full = await catalog.coreCatalog()
+    if ((req.query as { lite?: string } | undefined)?.lite !== '1') return full
+    return { ...full, modules: full.modules.map((m) => withoutLessonText(m)) }
+  })
+}
+
+/** متونُ الوحدة الثقيلة — تُحذف من النسخة الخفيفة وحدَها، وما سواها (العنوانُ والمخرجُ والساعات) يبقى */
+const LESSON_TEXT_FIELDS = ['module_body_ar', 'module_scenario_ar', 'module_checks_ar', 'module_practice_ar', 'module_rubric_ar', 'module_video_ar'] as const
+function withoutLessonText<T extends object>(m: T): T {
+  const out = { ...m } as Record<string, unknown>
+  for (const k of LESSON_TEXT_FIELDS) delete out[k]
+  return out as T
 }
