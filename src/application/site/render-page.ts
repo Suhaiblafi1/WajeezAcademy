@@ -6,7 +6,13 @@
    ونقلُها إلى هنا (٥ نوفمبر ٢٠٢٦) كي لا تكون للصفحة المُهيَّأة كتابتان تفترقان. */
 
 import { PUBLIC_PAGES, pageTitle, ROBOTS_INDEXABLE } from './public-pages'
-import type { SeoMeta } from './catalog-pages'
+
+/** عنوانُ صفحةٍ ووصفُها ومسارُها — بلا اسم الموقع (`pageTitle` يذيّله) */
+export interface SeoMeta {
+  title: string
+  description: string
+  path: string
+}
 
 export const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
