@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0D0D0D" />
     <script>
+      /* طلبا «ابنِ مسارك» يبدآن مع الصفحة لا بعد وصول شيفرتها — الشعبُ والكتالوجُ الخفيف. والصفحةُ تأخذ الوعدين بدل
+         أن تطلبهما ثانية (`src/services/early-fetch.ts`، ٥ نوفمبر ٢٠٢٦). وما خاب منهما يُعاد بطلبٍ عاديّ هناك. */
+      (function () {
+        try {
+          if (!/^\/build\//.test(location.pathname) || !window.fetch) return;
+          var box = (window.__wajeezEarly = {});
+          ["/api/public/cohorts", "/api/public/core-catalog?lite=1"].forEach(function (u) {
+            box[u] = fetch(u, { credentials: "same-origin" });
+            box[u].catch(function () {});
+          });
+        } catch (e) {}
+      })();
+    </script>
+    <script>
       /* المظهر قبل أول رسم — بلا وميض. والقاعدة مشروحة في
          `src/services/theme.ts`: اختيار الزائر المحفوظ يعلو، فإن لم يختر
          فالجهاز هو الحكم (`prefers-color-scheme`) — وهو الذي يبدّل نهارا

@@ -1,16 +1,8 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { StaleChunkBoundary } from '@/components/StaleChunkBoundary'
-import { Routes, Route, Navigate, useLocation, useParams } from 'react-router'
 import Home from './pages/Home'
-import Verify from './pages/Verify'
-import StaticPage from './pages/Static'
-import Catalog from './pages/Catalog'
-import CalendarPage from './pages/Calendar'
-import StoriesPage from './pages/Stories'
-import Trainers from './pages/Trainers'
-import Contact from './pages/Contact'
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router'
 import Auth from './pages/Auth'
-import NotFound from './pages/NotFound'
 import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, INFLUENCER_ROLES, LEARNER_ROLES, TRAINER_ROLES } from './components/RequireRole'
 import ToastHost from './components/Toast'
 import { KeyedByParam } from './components/KeyedByParam'
@@ -18,6 +10,16 @@ import { KeyedByParam } from './components/KeyedByParam'
 /* مبدل أدوار الديمو — يُحمَّل كقطعة منفصلة ولا يُجلب ولا يظهر إلا في بناء الديمو */
 
 /* محرك التشخيص وصفحة المسار ثقيلان — يُحمَّلان عند الطلب */
+/* وصفحاتٌ عامّةٌ كانت في الحزمة الأولى لكلّ زائر — صارت عند الطلب (٥ نوفمبر ٢٠٢٦): من فتح «ابنِ مسارك» أو رابطَ شراءٍ
+   لا يحمل الكتالوجَ والتقويمَ والقصصَ والمدرّبين وتواصل معنا. والرئيسةُ تبقى في الحزمة الأولى: هي أوّلُ ما يُفتح */
+const Verify = lazy(() => import('./pages/Verify'))
+const StaticPage = lazy(() => import('./pages/Static'))
+const Catalog = lazy(() => import('./pages/Catalog'))
+const CalendarPage = lazy(() => import('./pages/Calendar'))
+const StoriesPage = lazy(() => import('./pages/Stories'))
+const Trainers = lazy(() => import('./pages/Trainers'))
+const Contact = lazy(() => import('./pages/Contact'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 const Methodology = lazy(() => import('./pages/Methodology'))
 const Diagnostic = lazy(() => import('./pages/Diagnostic'))
 const PlacementTest = lazy(() => import('./pages/PlacementTest'))

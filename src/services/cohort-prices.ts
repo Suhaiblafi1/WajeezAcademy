@@ -11,6 +11,7 @@
    ولا تحويل عملة: الشعبة مسعَّرة بعملتها، وتحويلُها للعرض يُخرج رقما ثالثا لا
    يُطالَب به أحد. تُعرض كما تُفوتَر. */
 
+import { takeEarly } from './early-fetch'
 import { useEffect, useMemo, useState } from 'react'
 import { withRetry } from './retry'
 import { asAudience, type CohortAudience } from '@/application/trainer/cohort-audience'
@@ -115,7 +116,8 @@ export function useCourseCohorts(): { cohorts: Map<string, CohortOption[]>; load
   useEffect(() => {
     let on = true
     withRetry(async () => {
-      const r = await fetch(`${API_BASE}/api/public/cohorts`)
+      /* وطلبٌ بدأ مع الصفحة يُؤخذ أوّلا — والإعادةُ بعده طلبٌ عاديّ (`early-fetch.ts`) */
+      const r = await ((API_BASE === '' ? takeEarly('/api/public/cohorts') : null) ?? fetch(`${API_BASE}/api/public/cohorts`))
       if (!r.ok) throw new Error(`cohorts ${r.status}`)
       return r.json() as Promise<unknown>
     }, { alive: () => on })

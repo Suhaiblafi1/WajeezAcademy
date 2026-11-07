@@ -11,6 +11,7 @@ import {
   loadBundledCoreCatalog,
   type CoreCatalogRaw,
 } from "@/data/core-catalog-source";
+import { takeEarly } from "./early-fetch";
 import {
   installMethodologyRegistry,
   type MethodologyReference,
@@ -33,7 +34,8 @@ async function fetchJson(path: string): Promise<unknown | null> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 2500);
-    const res = await fetch(`${API_BASE}${path}`, { signal: ctrl.signal });
+    /* طلبٌ بدأ مع الصفحة يُؤخذ أوّلا (`early-fetch.ts`) */
+    const res = await ((API_BASE === "" ? takeEarly(path) : null) ?? fetch(`${API_BASE}${path}`, { signal: ctrl.signal }));
     clearTimeout(timer);
     if (!res.ok) return null;
     return await res.json();
