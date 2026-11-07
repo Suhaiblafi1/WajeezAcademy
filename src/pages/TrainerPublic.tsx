@@ -16,6 +16,7 @@ import { Link, useParams } from "react-router";
 import { BadgeCheck, CalendarDays, GraduationCap, Star, Users } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
+import { trainerSeo } from "@/application/site/trainer-seo";
 import { Panel, Card } from "@/components/ui/Surface";
 import { apiGet } from "@/services/api";
 import { pathAnchorId } from "@/application/trainer/public-slug";
@@ -99,11 +100,7 @@ export default function TrainerPublic() {
 
   return (
     <SiteShell>
-      <SeoHead
-        title={page.name}
-        description={page.headline ?? `شعب ${page.name} المفتوحة للتسجيل في أكاديمية وجيز.`}
-        path={`/t/${page.slug}`}
-      />
+      <SeoHead {...trainerSeo(page)} />
       <div className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
         <Panel className="p-6 sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">

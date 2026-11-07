@@ -112,12 +112,21 @@ export class EnrollmentService {
     const existing = await this.prisma.enrollment.findUnique({ where: { cohortId_userId: { cohortId, userId } } })
     if (existing && existing.status !== 'dropped') throw new AuthError('already_enrolled', 'المتعلم مسجل في هذه الشعبة مسبقا', 409)
 
-    const enrolledCount = await this.prisma.enrollment.count({ where: { cohortId, status: 'enrolled' } })
+    /* ═══ والمقعدُ المحجوزُ لمن يدفع يُعدّ مشغولا (٥ نوفمبر ٢٠٢٦) ═══
+       الشراءُ يحجز مقعدا قبل الدفع (`seat_held`)، والسلّةُ تعدّه. وكان التسجيلُ هنا يعدّ الملتحقين وحدَهم: فمن سجّله الفريقُ
+       في شعبةٍ آخرُ مقعدٍ فيها محجوزٌ لمشترٍ أخذه، ثمّ دفع المشتري فوُضع في قائمة الانتظار — وقيل له «صارت مقاعدك تسجيلا».
+       فيُعدّ ما حجزه غيرُه، ومن حجز مقعدا لنفسه يأخذه ولو امتلأت الشعبةُ بعده: دفع عنه. */
+    const [enrolledCount, heldByOthers, ownHold] = await Promise.all([
+      this.prisma.enrollment.count({ where: { cohortId, status: 'enrolled' } }),
+      this.prisma.enrollmentRequest.count({ where: { cohortId, status: 'seat_held', userId: { not: userId } } }),
+      this.prisma.enrollmentRequest.findFirst({ where: { cohortId, userId, status: 'seat_held' }, select: { id: true } }),
+    ])
     const capacity = cohort.capacity ?? 0
     let status: 'enrolled' | 'waitlisted' = 'enrolled'
     let override = false
-    if (capacity > 0 && enrolledCount >= capacity) {
-      if (!opts.overrideCapacity) status = 'waitlisted'
+    if (capacity > 0 && enrolledCount + heldByOthers >= capacity) {
+      if (ownHold) override = enrolledCount >= capacity
+      else if (!opts.overrideCapacity) status = 'waitlisted'
       else override = true
     }
 
@@ -329,6 +338,14 @@ export class EnrollmentService {
         await tx.enrollment.delete({ where: { id: clash.id } })
       }
       const e = await tx.enrollment.update({ where: { id: enrollmentId }, data: { cohortId: to.id } })
+      /* ═══ وبندُ طلبه ينتقل معه (٥ نوفمبر ٢٠٢٦) ═══
+         نصيبُ الإيراد يُحسب من بنود الطلبات باسم الشعبة (`EarningsService.computeCohort`)، والمقعدُ انتقل وبندُه بقي: فبقي
+         للمدرّب الأوّل نصيبُه عن متعلّمٍ غادره، ولم يُحسب للثاني شيءٌ عمّن يدرّسه. والبندُ يحمل الشعبةَ لا العنوان — فعنوانُه
+         في الفاتورة يبقى كما بيع. */
+      await tx.orderItem.updateMany({
+        where: { kind: 'cohort', refId: from.id, order: { userId } },
+        data: { refId: to.id },
+      })
       /* سجلُّ حجز المقعد ينتقل معه: تركُه على الشعبة المغادَرة يُبقيها تُحسب
          ممتلئةً بمقعدٍ لا أحد فيه، ويُخرج الوجهةَ من عدّ المقاعد. */
       const req = await tx.enrollmentRequest.findUnique({
@@ -440,9 +457,13 @@ export class EnrollmentService {
       const cohort = await tx.cohort.findUnique({ where: { id: cohortId } })
       if (!cohort) return null
       const capacity = cohort.capacity ?? 0
-      const enrolled = await tx.enrollment.count({ where: { cohortId, status: 'enrolled' } })
+      /* والمحجوزُ لمن يدفع مشغولٌ — فلا يُرقّى من الانتظار إلى مقعدٍ يُدفع ثمنُه الآن (٥ نوفمبر ٢٠٢٦) */
+      const [enrolled, held] = await Promise.all([
+        tx.enrollment.count({ where: { cohortId, status: 'enrolled' } }),
+        tx.enrollmentRequest.count({ where: { cohortId, status: 'seat_held' } }),
+      ])
       /* سعةٌ بلا حدّ (0) لا طابورَ لها أصلا: كلُّ داخلٍ يُسجَّل مباشرة */
-      if (capacity > 0 && enrolled >= capacity) return null
+      if (capacity > 0 && enrolled + held >= capacity) return null
 
       const next = await tx.enrollment.findFirst({
         where: { cohortId, status: 'waitlisted' },

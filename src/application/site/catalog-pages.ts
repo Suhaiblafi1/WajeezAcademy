@@ -28,11 +28,10 @@ import { weeksLabel } from '../../data/courses'
 
 export const ACADEMY_NAME = 'أكاديمية وجيز'
 
-export interface SeoMeta {
-  title: string
-  description: string
-  path: string
-}
+/* `SeoMeta` يسكن في `render-page.ts` — ورقةٌ يستوردها الخادم. وكان هنا، فجرّ استيرادُ نوعِه
+   الكتالوجَ كلَّه إلى مسار إقلاع الخادم (`server/tests/ops/start-command.test.ts`). */
+import type { SeoMeta } from './render-page'
+export type { SeoMeta }
 
 export interface PathwaySeoInput {
   id: string

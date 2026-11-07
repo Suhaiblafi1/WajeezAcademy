@@ -92,6 +92,23 @@
 	handle @previewCrawler {
 		reverse_proxy app:7101 {
 			header_up X-Real-IP {remote_host}
+			# يعلّمه: فيُجاب بصورة رابطه المصمَّمة لا بصفحته (server/http/routes/public.routes.ts)
+			header_up X-Wajeez-Preview 1
+			lb_try_duration 30s
+			lb_try_interval 250ms
+		}
+	}
+
+	# وصفحةُ المدرّب لسواه — إنسانا كان أو محرّكَ بحث — يكتبها الخادمُ مُهيَّأةً بوسومه ونصّه
+	# (server/services/trainer-seo-page.ts): اسمُه لا يُعرض إلّا ببوّابةٍ في القاعدة، والبناءُ بلا قاعدة.
+	# والترويسةُ تُمحى أوّلا: لا يعلّم الزائرُ نفسَه زاحفَ معاينة.
+	# ⚠️ ومطابقٌ مسمّى لا `handle /t/*`: Caddy يرتّب كتلَ handle ذاتَ المسار الواحد قبل ذواتِ
+	# المطابِق المسمّى، فكانت تسبق @previewCrawler وتبتلع زاحفَ المعاينة.
+	@trainerPage path /t/*
+	handle @trainerPage {
+		reverse_proxy app:7101 {
+			header_up X-Real-IP {remote_host}
+			header_up -X-Wajeez-Preview
 			lb_try_duration 30s
 			lb_try_interval 250ms
 		}
