@@ -5,6 +5,7 @@
    مُنعت عنده سُجّل بلا مصدر، ولا ينكسر شيء. */
 
 import { hasSignal, keepTouch, touchFromLocation, type FirstTouch } from "@/application/marketing/signup-source";
+import { WHATSAPP_CAMPAIGN_TTL_MS } from "@/application/commerce/buy-link-campaign";
 import { safeGet, safeSet } from "./safe-storage";
 
 const KEY = "wajeez_first_touch";
@@ -36,12 +37,17 @@ export function captureFirstTouch(): void {
 const LAST_KEY = "wajeez_last_touch";
 
 /** آخرُ زيارةٍ جاءت بمصدر — تُرسَل مع الشراء فتُكتب في أثر طلبه (`checkout`)، ولا تمسّ السعر */
-export function lastTouch(): FirstTouch | null {
+export function lastTouch(now = Date.now()): FirstTouch | null {
   const raw = safeGet(LAST_KEY);
   if (!raw) return null;
   try {
     const v = JSON.parse(raw) as unknown;
-    return v && typeof v === "object" ? (v as FirstTouch) : null;
+    if (!v || typeof v !== "object") return null;
+    /* وزيارةٌ أقدمُ من سبعة أيّام لا تُرسَل — قرارُ صاحب المنصّة (٨ نوفمبر ٢٠٢٦). والخادمُ يقيسها بوقت الطلب كذلك
+       (`isWhatsappCampaign`)، فلا يكفي متصفّحٌ قديمٌ ليُحسب بها */
+    const at = new Date(String((v as FirstTouch).at ?? "")).getTime();
+    if (Number.isNaN(at) || now - at > WHATSAPP_CAMPAIGN_TTL_MS) return null;
+    return v as FirstTouch;
   } catch {
     return null;
   }

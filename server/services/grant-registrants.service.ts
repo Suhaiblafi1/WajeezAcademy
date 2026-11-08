@@ -128,9 +128,9 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
   })
   const viaEvents = viaOrders.length === 0 ? [] : await prisma.auditEvent.findMany({
     where: { action: 'order.checkout', entityId: { in: viaOrders.map((o) => o.id) } },
-    select: { entityId: true, meta: true },
+    select: { entityId: true, meta: true, createdAt: true },
   })
-  const viaOf = new Map(viaEvents.map((e) => [e.entityId, orderViaAr(e.meta)]))
+  const viaOf = new Map(viaEvents.map((e) => [e.entityId, orderViaAr(e.meta, e.createdAt)]))
   const viaFor = (r: { code: string | null; email: string | null }) => [...new Set(viaOrders
     .filter((o) => (r.code && o.coupon?.code === r.code) || (r.email && o.user.email.toLowerCase() === r.email.toLowerCase()))
     .map((o) => viaOf.get(o.id))
