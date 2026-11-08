@@ -21,7 +21,8 @@
 
 import { courseById, pathwayCourses, pathwaySupportCourses, courses, type Course } from '../../data/courses'
 import { pathwayDomain } from '../../data/pathways'
-import { domainsOfPathway } from '../../domain/diagnostic/v2/data'
+/* من الملفّ الخفيف — لا من `v2/data` الذي يجرّ ميتا الأسئلة وطبقاتِ المهارات (٨ نوفمبر ٢٠٢٦) */
+import { domainsOfPathway } from '../../domain/diagnostic/v2/pathway-domains'
 import { MAX_BUILT_COURSES, buildDiscountPct, bundlePayable, nextBuildStep } from '../commerce/discount-policy'
 
 /* من أين يأتي سعر الدورة؟ من الشعبة — تُمرَّر الدالة ولا تُستورَد.

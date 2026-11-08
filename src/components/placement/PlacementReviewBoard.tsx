@@ -18,7 +18,7 @@ import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
 import { MIN_APPROVED_PER_LEVEL } from "@/domain/placement/english-placement";
 import { FIELD_CHECKS } from "@/domain/placement/field-check";
-import { FIELD_LEVELS } from "@/domain/diagnostic/v2_1/focus";
+import { FIELD_LEVELS } from "@/domain/diagnostic/v2_1/field-levels";
 
 interface ReviewItem {
   id: string;
