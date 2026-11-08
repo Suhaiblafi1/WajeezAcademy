@@ -39,10 +39,14 @@ export class ProgressService {
     if (!enrollment || enrollment.cohortId !== session.cohortId || enrollment.status === 'dropped') {
       throw new AuthError('not_enrolled', 'هذا التسجيل لا ينتمي لشعبة الجلسة', 404)
     }
+    /* ═══ وتصحيحُ المدرّب حكمُ المدرّب (٨ نوفمبر ٢٠٢٦) ═══
+       كان التحديثُ يُبقي مصدرَ الصفّ كما كان: فمن صحّح «غائبا» كتبه Zoom إلى «معذور» بقي صفُّه `zoom`، والمزامنةُ
+       التالية — لقاءٌ أُعيد فتحُه ثمّ أُنهي — تدوسه، وهي لا تترك إلّا ما مصدرُه يدُ إنسان (`syncAttendance`). فالمصدرُ
+       يُكتب في الحالين. والحارس: `server/tests/learning/attendance-manual-wins.test.ts`. */
     const row = await this.prisma.attendance.upsert({
       where: { sessionId_enrollmentId: { sessionId, enrollmentId } },
-      update: { status, note, markedBy: trainerUserId },
-      create: { sessionId, enrollmentId, status, note, markedBy: trainerUserId },
+      update: { status, note, markedBy: trainerUserId, source: 'manual' },
+      create: { sessionId, enrollmentId, status, note, markedBy: trainerUserId, source: 'manual' },
     })
     await recordAudit(this.prisma, {
       actorId: trainerUserId, action: 'attendance.mark', entityType: 'cohort_session', entityId: sessionId,
