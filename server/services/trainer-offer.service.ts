@@ -58,6 +58,16 @@ export class TrainerOfferService {
     this.prisma = prisma
   }
 
+  /* ═══ وعرضُ الدورة يصل بريدا مع الجرس (٨ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة «A»: العرضُ له مهلةُ ردٍّ (خمسةُ أيّام) ثمّ يُغلق وحدَه، وكان يصل جرسا وحدَه — فمن لم يدخل في
+     أسبوعه لا يعلم أنّه عُرض عليه ولا أنّه انقضى. فالعرضُ وسحبُه وانقضاؤه تصل بريدا أيضا، وما سواها من أخبار المدرّب جرسٌ
+     كما كان. والحارس: `server/tests/trainer/offer-mail.test.ts`. */
+  private async tellTrainer(p: { userId: string; templateKey: string; title: string; body: string; data: Record<string, unknown> }) {
+    for (const channel of ['in_app', 'email'] as const) {
+      await safeNotify(this.prisma, { ...p, channel, audience: 'trainer' })
+    }
+  }
+
   /** عنوانُ الدورة بالعربية — ولا رمزَ لاتينيٌّ يُعرض لمدرّب */
   private async courseTitleAr(courseId: string): Promise<string> {
     const course = await this.prisma.course.findUnique({
@@ -152,8 +162,8 @@ export class TrainerOfferService {
 
     const titleAr = await this.courseTitleAr(input.courseId)
     if (profile.userId) {
-      await safeNotify(this.prisma, {
-        userId: profile.userId, channel: 'in_app', audience: 'trainer',
+      await this.tellTrainer({
+        userId: profile.userId,
         templateKey: 'trainer.offer.received',
         title: 'عرضت عليك دورة',
         body: `عرضت عليك «${titleAr}» — تقبلها أو تعتذر عنها قبل `
@@ -293,8 +303,8 @@ export class TrainerOfferService {
     })
     const titleAr = await this.courseTitleAr(offer.courseId)
     if (offer.profile.userId) {
-      await safeNotify(this.prisma, {
-        userId: offer.profile.userId, channel: 'in_app', audience: 'trainer',
+      await this.tellTrainer({
+        userId: offer.profile.userId,
         templateKey: 'trainer.offer.withdrawn',
         title: 'سحب عرض عرض عليك',
         body: `سحب عرض «${titleAr}» قبل قبولك إيّاه — وسببه: ${reason.slice(0, 200)}`,
@@ -351,8 +361,8 @@ export class TrainerOfferService {
       })
       const titleAr = await this.courseTitleAr(offer.courseId)
       if (offer.profile.userId) {
-        await safeNotify(this.prisma, {
-          userId: offer.profile.userId, channel: 'in_app', audience: 'trainer',
+        await this.tellTrainer({
+          userId: offer.profile.userId,
           templateKey: 'trainer.offer.lapsed',
           title: 'انقضت مهلة عرض',
           body: `انقضت مهلة الردّ على «${titleAr}» فأغلق العرض — وهو ليس مأخذا عليك، `
