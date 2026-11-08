@@ -174,6 +174,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     lockedWhyAr: 'تكليف لا يعلم به صاحبه ليس تكليفا — ولذلك لا يكتم عمل الموظّف.',
     templateKeys: [
       'staff.task.assigned', 'staff.task.done', 'admin.support.ticket', 'admin.support_ticket',
+      /* وردُّ صاحب التذكرة (٨ نوفمبر ٢٠٢٦) — سؤالٌ عاد ينتظر جوابا */
+      'admin.support_reply',
       /* ورسالةُ «تواصل معنا» من الموقع (١٩ أكتوبر ٢٠٢٦) — زائرٌ ينتظر ردّا كصاحب التذكرة */
       'admin.contact_message',
       'admin.trainer_application', 'admin.learner_request', 'trainer.qualify.request',

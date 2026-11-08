@@ -10,6 +10,12 @@ import { notifyRole, safeNotify } from './notification.service'
 const REPLY_EXCERPT = 600
 
 const TICKET_STATUSES = ['open', 'pending', 'resolved', 'closed', 'reopened'] as const
+/** من يُخبَر بتذكرةٍ لا وكيلَ لها — قرارُ صاحب المنصّة (٣ نوفمبر ٢٠٢٦) */
+const SUPPORT_TEAM_ROLES = ['super_admin', 'academic_manager', 'support']
+
+/** إلى أين يعيد ردُّ صاحب التذكرة حالتَها — وما ليس هنا (مفتوحةٌ أو أعيد فتحها) هي عند الفريق أصلا */
+const OWNER_REPLY_RETURNS: Record<string, string> = { resolved: 'reopened', pending: 'open' }
+
 const TICKET_TRANSITIONS: Record<string, string[]> = {
   open: ['pending', 'resolved', 'closed'],
   pending: ['open', 'resolved', 'closed'],
@@ -41,7 +47,7 @@ export class SupportService {
     /* تذكرة جديدة تُشعِر فريق الدعم فوراً — لا تنتظر من يفتح الشاشة صدفة */
     /* والمديرُ الأكاديميُّ معهما — قرارُ صاحب المنصّة (٣ نوفمبر ٢٠٢٦): «تأكّد أنّه يصل السوبر أدمن
        ومديرَ الأكاديميّة أيضا». وهو يفتح «الدعم» بصلاحيّته (`support.operate`). */
-    await notifyRole(this.prisma, ['super_admin', 'academic_manager', 'support'], {
+    await notifyRole(this.prisma, SUPPORT_TEAM_ROLES, {
       channel: 'in_app',
       title: 'تذكرة دعم جديدة',
       body: `فتحت تذكرة «${input.subject}» (${input.category ?? 'other'}) — بانتظار من يلتقطها في «تذاكر الدعم».`,
@@ -62,11 +68,47 @@ export class SupportService {
     })
   }
 
+  /* ═══ وردُّ صاحب التذكرة يعود إلى الفريق (٨ نوفمبر ٢٠٢٦) ═══
+     كان ردُّه يُكتب رسالةً ولا يتغيّر شيء: التذكرةُ المحلولةُ تبقى «محلولة» فلا تظهر فيما ينتظر الفريقَ ولا في عدّ
+     صندوقه، ولا يتقدّم «آخرُ تحديث» فلا تعلو القائمة، ولا يُخبَر أحد — فـ«ما زال لم يصل، وخُصم المبلغ مرّتين» لا يقرؤه
+     إلّا من فتحها صدفة. فصار ردُّه يعيدها إلى من ينتظرها: المحلولةُ «أعيد فتحها»، وقيدُ المعالجة «مفتوحة» — بسجلّ
+     حالتها — ويُخبَر وكيلُها المسنَد، أو الفريقُ كلُّه إن لم تُسنَد. والحارس: `server/tests/support/owner-reply.test.ts`. */
   async replyAsOwner(userId: string, ticketId: string, body: string) {
     const ticket = await this.prisma.supportTicket.findUnique({ where: { id: ticketId } })
     if (!ticket || ticket.userId !== userId) throw new AuthError('not_found', 'التذكرة غير موجودة', 404)
     if (ticket.status === 'closed') throw new AuthError('closed', 'التذكرة مغلقة — أعد فتحها أولا', 409)
-    return this.prisma.supportMessage.create({ data: { ticketId, authorId: userId, body } })
+    const backTo = OWNER_REPLY_RETURNS[ticket.status]
+    const message = await this.prisma.$transaction(async (tx) => {
+      const m = await tx.supportMessage.create({ data: { ticketId, authorId: userId, body } })
+      /* والحالةُ تُنقل بشرطِ ما قُرئ — فلا يُكتب سجلٌّ لانتقالٍ سبقه إليه وكيل */
+      const moved = backTo
+        ? (await tx.supportTicket.updateMany({ where: { id: ticketId, status: ticket.status }, data: { status: backTo, updatedAt: new Date() } })).count > 0
+        : false
+      if (moved) {
+        await tx.ticketStatusHistory.create({
+          data: { ticketId, fromStatus: ticket.status, toStatus: backTo!, changedBy: userId, note: 'رد صاحب التذكرة' },
+        })
+      } else {
+        await tx.supportTicket.update({ where: { id: ticketId }, data: { updatedAt: new Date() } })
+      }
+      return m
+    })
+
+    const excerpt = body.length > REPLY_EXCERPT ? `${body.slice(0, REPLY_EXCERPT).trimEnd()}…` : body
+    const notice = {
+      channel: 'in_app' as const, audience: 'staff' as const, templateKey: 'admin.support_reply',
+      title: `رد جديد على تذكرة: ${ticket.subject}`, body: excerpt, data: { ticketId },
+    }
+    const link = await this.prisma.ticketAssignment.findFirst({
+      where: { ticketId, unassignedAt: null }, orderBy: { assignedAt: 'desc' }, select: { agentId: true },
+    })
+    /* والوكيلُ الموقوفُ لا يقرأ جرسه — فيُخبَر الفريقُ بدلَه */
+    const agent = link
+      ? await this.prisma.user.findFirst({ where: { id: link.agentId, status: 'active' }, select: { id: true } })
+      : null
+    if (agent) await safeNotify(this.prisma, { ...notice, userId: agent.id })
+    else await notifyRole(this.prisma, SUPPORT_TEAM_ROLES, notice)
+    return message
   }
 
   /** إعادة فتح من المالك — المحلولة أو المغلقة فقط */

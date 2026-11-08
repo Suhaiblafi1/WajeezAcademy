@@ -165,6 +165,7 @@ const STAFF: Table = {
   'staff.task.done': { path: '/admin/tasks', ctaAr: 'افتح المهامّ' },
   'admin.support.ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
+  'admin.support_reply': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.order_paid': { path: '/admin/finance', ctaAr: 'افتح المال' },
   'admin.contact_message': { path: '/admin/support', ctaAr: 'افتح رسائل الموقع' },
   'admin.trainer_application': { path: '/admin/trainers', ctaAr: 'افتح طلب الانضمام' },
