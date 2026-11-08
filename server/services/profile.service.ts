@@ -14,9 +14,19 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 
 const str = (max: number) => z.string().trim().max(max).nullable().optional()
+/* ═══ وصورةُ الحساب رابطُ ويبٍ لا مفتاحُ تخزين (٨ نوفمبر ٢٠٢٦) ═══
+   كانت الخانةُ تقبل أيَّ نصّ، ومنه `storage:<مفتاح>` — فمن كتب مفتاحَ ملفٍّ يراه (كرّاسةُ شعبته المدفوعة، أو تسليمُ متعلّمٍ
+   يراه مدرّبُه) جعله «صورتَه»، وبابُ الصورة بلا دخول (`/api/v1/avatars/…`) يعطيه لكلّ أحد. فالمفتاحُ لا يُكتب إلّا من
+   بابِ الرفع (`startAvatarUpload`)، وما يُكتب هنا رابطٌ يبدأ بـhttp أو https، أو فراغٌ يمحو. والحارس:
+   `server/tests/account/avatar-and-deactivate.test.ts`. */
+const avatarLink = str(500).refine(
+  (v) => v === undefined || v === null || v === '' || /^https?:\/\/[^\s]+$/i.test(v),
+  'الصورة رابط يبدأ بـ https، أو ارفعها من جهازك',
+)
+
 const patchSchema = z.object({
   displayName: z.string().trim().min(2, 'الاسم حرفان على الأقل').max(80).optional(),
-  avatarUrl: str(500),
+  avatarUrl: avatarLink,
   phone: str(24),
   country: str(60),
   city: str(60),
