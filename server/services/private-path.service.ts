@@ -17,7 +17,7 @@ import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-vis
 import { PUBLIC_SESSION_WHERE } from './public-catalog.service'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
-  GO_CODE_LENGTH, GO_CODE_RE, PRIVATE_PATH_PURPOSE, goPath, type PrivatePathPayload,
+  GO_CODE_LENGTH, GO_CODE_RE, PRIVATE_PATH_PURPOSE, goPath, privatePathPrice, type PrivatePathPayload,
 } from '../../src/application/commerce/private-path'
 import { grantLastDay } from '../../src/application/commerce/grant'
 
@@ -162,15 +162,7 @@ export class PrivatePathService {
       code,
       firstName: p.firstName,
       courses,
-      price: preview && courses.length > 0
-        ? {
-            currency: preview.currency,
-            before: preview.subtotal,
-            grant: preview.couponDiscount + preview.bundleDiscount + preview.capDiscount + preview.planCredit,
-            grantNameAr: preview.grantNameAr ?? null,
-            total: preview.total,
-          }
-        : null,
+      price: preview && courses.length > 0 ? privatePathPrice(preview) : null,
       lastDay,
       couponCode,
       unavailable,

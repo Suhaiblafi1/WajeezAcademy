@@ -2,20 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { safeGet, safeRemove } from "@/services/safe-storage";
 import { Link, useParams } from "react-router";
 import {
-  ArrowRight,
   CalendarClock,
   Clock3,
-  Route as RouteIcon,
   Sparkles,
   CheckCircle2,
   CalendarDays,
   User,
   UserCheck,
-  MonitorPlay,
-  ClipboardCheck,
-  FolderKanban,
-  BadgeCheck,
-  Briefcase,
   Tag,
   Plus,
   Check,
@@ -26,7 +19,7 @@ import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import FavoriteButton from "@/components/FavoriteButton";
-import ThemeToggle from "@/components/ThemeToggle";
+import { PathwayEcosystemPanel, PathwayTopBar } from "@/components/PathwayChrome";
 import SiteFooter from "@/components/SiteFooter";
 import AdvisorContact from "@/components/AdvisorContact";
 import AdvisorBrief from "@/components/AdvisorBrief";
@@ -438,32 +431,7 @@ export default function PathwayPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SeoHead {...pathwaySeo(pathway)} />
-      {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2 text-foreground hover:text-foreground">
-            <ArrowRight className="h-5 w-5" />
-            <span className="text-sm font-medium">الرئيسية</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-            <span className="font-black">أكاديمية وجيز</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {user ? (
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <User className="h-4 w-4" /> {user}
-              </span>
-            ) : (
-              <Inset as={Link} tone="accent" interactive to="/auth" className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
-                <User className="h-3.5 w-3.5" />
-                دخول
-              </Inset>
-            )}
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <PathwayTopBar user={user} />
 
       {/* تصفح المسار مفتوح للجميع بلا تسجيل — التسجيل يُطلب لحظة الدفع فقط (pendingCheckout) */}
       {(
@@ -1077,33 +1045,8 @@ export default function PathwayPage() {
               )}
           </Panel>
 
-          {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز (نسخة مضغوطة: خانات أصغر ومتقاربة) */}
-          <Panel className="story-fade mt-8 md:p-6">
-            <h2 className="flex items-center gap-2 text-lg font-black">
-              <Sparkles className="h-5 w-5 text-[#FABC05]" />
-              مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
-            </h2>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
-                { icon: ClipboardCheck, t: "واجبات تراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك ملاحظات عملية — لا تصحيحا آليا" },
-                { icon: FolderKanban, t: "مشروع تخرج حقيقي", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
-                { icon: BadgeCheck, t: "شهادة موثقة بشروط إنجاز", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
-                { icon: RouteIcon, t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
-                { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
-              ].map((b) => (
-                <Inset key={b.t} className="flex items-start gap-2.5 p-2.5">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#38A7B4]/15">
-                    <b.icon className="h-3.5 w-3.5 text-[#6EC7D1]" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-black leading-snug">{b.t}</p>
-                    <p className="mt-0.5 text-read leading-relaxed text-muted-foreground">{b.d}</p>
-                  </div>
-                </Inset>
-              ))}
-            </div>
-          </Panel>
+          {/* ما ستحصل عليه مع المسار — `PathwayChrome.tsx` (تقرؤه صفحةُ المسار الخاصّ `/go` كذلك) */}
+          <PathwayEcosystemPanel />
 
           {/* حُذف زرّ «ابدأ الآن لنسختك القادمة».
 

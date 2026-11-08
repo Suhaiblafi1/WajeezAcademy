@@ -55,3 +55,44 @@ export function cleanReason(raw: string | null | undefined): string | null {
   const v = (raw ?? '').replace(/\s+/g, ' ').trim()
   return v ? v.slice(0, PATH_REASON_MAX) : null
 }
+
+/* ═══ وسعرُ المسار كما يُعرض — من معاينة الخادم لا من حسابٍ هنا (٨ نوفمبر ٢٠٢٦) ═══
+   كان يُكتب في `private-path.service.ts` وحدَه. ثمّ صار في الصفحة استبدالُ دورةٍ وتبديلُ شعبتها، والسعرُ بعدهما يُسأل
+   عنه الخادمُ (`/api/public/checkout/preview` ← `CommerceService.preview`) — فالقراءةُ نفسُها هنا للاثنين: السعرُ قبل
+   المنحة، وما طُرح منه كلُّه، وما يُدفع. ولا جمعَ ولا طرحَ غيرُ ما فعله الخادم. */
+
+/** ما تقرؤه الصفحةُ من معاينة الخادم */
+export interface PathPreviewNumbers {
+  currency: string
+  subtotal: number
+  couponDiscount: number
+  bundleDiscount: number
+  capDiscount: number
+  planCredit: number
+  total: number
+  grantNameAr?: string | null
+}
+
+/** السعرُ الأصليّ، وقيمةُ المنحة، وما يدفعه */
+export interface PrivatePathPrice {
+  currency: string
+  before: number
+  grant: number
+  grantNameAr: string | null
+  total: number
+}
+
+export function privatePathPrice(p: PathPreviewNumbers): PrivatePathPrice {
+  return {
+    currency: p.currency,
+    before: p.subtotal,
+    grant: p.couponDiscount + p.bundleDiscount + p.capDiscount + p.planCredit,
+    grantNameAr: p.grantNameAr ?? null,
+    total: p.total,
+  }
+}
+
+/** السطرُ تحت «مسار {الاسم الأوّل}» — نصُّ صاحب المنصّة */
+export const PATH_SUBTITLE_AR = 'دورات اخترناها لك بناءً على خبرتك'
+/** عنوانُ السبب البارز تحت كلّ دورة */
+export const REASON_LABEL_AR = 'سبب اختيارها لك'
