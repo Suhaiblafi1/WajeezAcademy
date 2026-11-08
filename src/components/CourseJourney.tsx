@@ -1,5 +1,7 @@
 import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker, { COHORT_RUNNING_AR } from "@/components/CohortPicker";
+import CourseAudience from "@/components/CourseAudience";
+import { courseAudienceView } from "@/application/catalog/course-audience";
 import type { TimedCohort } from "@/application/learning/cohort-overlap";
 import { chosenCohorts, stuckInClash } from "@/application/catalog/pathway-swap";
 import CourseInterestForm from "@/components/CourseInterestForm";
@@ -144,7 +146,7 @@ export default function CourseJourney({
   const coreCount = firstSupport === -1 ? list.length : firstSupport;
 
   return (
-    <div className="card-soft mt-8" id="learning-plan">
+    <div className="card-soft mt-8 max-sm:p-3" id="learning-plan">
       <Heading className="h-card flex items-center gap-2">
         <Target className="h-5 w-5 text-gold-ink" />
         ماذا ستحقق من خلال خطتك؟
@@ -239,12 +241,9 @@ export default function CourseJourney({
                   <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-[accordion-up_0.25s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
                     <Inset className="mt-2 space-y-5 p-4 text-read leading-7">
                       {c.description && <p className="text-muted-foreground">{c.description}</p>}
-                      {c.targetAudience && (
-                        <p className="text-muted-foreground">
-                          <span className="font-bold text-teal-light-ink">لمن صممت؟ </span>
-                          {c.targetAudience}
-                        </p>
-                      )}
+                      {/* «لمن هذه الدورة» كما في صفحة الدورة: وصفُها، و«تناسبك إن كنت» و«وتريد» من اختيار مدرّبي شعبها
+                          (صاحب المنصّة، ٨ نوفمبر ٢٠٢٦ — «Add to details»). من الموضع نفسِه (`CourseAudience`) */}
+                      <CourseAudience who={courseAudienceView(c, cohorts.get(c.id) ?? [])} />
                       {c.learningObjectives.length > 0 && (
                         <div>
                           <p className="mb-1.5 flex items-center gap-1.5 font-bold text-teal-light-ink">

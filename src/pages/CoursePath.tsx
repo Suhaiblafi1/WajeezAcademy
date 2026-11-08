@@ -16,7 +16,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { REFERRAL_KEY } from "@/application/commerce/referral";
 import {
   ArrowRight, BookOpen, CheckCircle2, Clock3, CalendarDays, ClipboardCheck, Headset, Layers, Library, ListChecks,
-  MonitorPlay, Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles, Flag,
+  MonitorPlay, Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles,
 } from "lucide-react";
 import SeoHead from "@/components/SeoHead";
 import { courseSeo } from "@/application/site/catalog-pages";
@@ -39,6 +39,7 @@ import { track } from "@/services/analytics";
 import { bundleNudge, pathPricing, suggestBuyable, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
 import { trainerLineAr, trainerNamesOf } from "@/application/catalog/course-trainers";
 import { courseAudienceView } from "@/application/catalog/course-audience";
+import CourseAudience from "@/components/CourseAudience";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { FIRST_TIME_PROMO, isFirstTimePromo, promoDiscountOn } from "@/application/commerce/first-time-promo";
 import { savePathDraft } from "@/services/path-drafts";
@@ -487,47 +488,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   (المراحلُ والأهداف). ودورةٌ بلا شعبةٍ تقف عند الكتالوج.
                   وسقط منه المستوى و«قبلها» بقرار صاحب المنصّة (٢٠ أكتوبر ٢٠٢٦): «موجودٌ داخل
                   تفاصيل الشعبة، ولكي لا يزيد النصّ هنا». */}
-              {who.lead && (
-                <div>
-                  <h3 className="flex items-center gap-1.5 text-read font-black text-foreground">
-                    <User className="h-3.5 w-3.5 text-teal-light-ink" /> لمن هذه الدورة
-                  </h3>
-                  {/* بهيئة سطور «ما ستقدر عليه بعدها» جارِه: لا صندوقَ ولا عريض (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦) */}
-                  <p className="mt-1.5 text-read leading-relaxed text-foreground">{who.lead}</p>
-                  {who.stages.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-read font-bold text-muted-foreground">تناسبك إن كنت</p>
-                      <ul className="mt-1.5 flex flex-wrap gap-1.5">
-                        {who.stages.map((st) => (
-                          <li key={st} className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">
-                            {st}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {who.goals.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-read font-bold text-muted-foreground">وتريد</p>
-                      <ul className="mt-1.5 space-y-1">
-                        {who.goals.map((g) => (
-                          <li key={g} className="flex items-start gap-1.5 text-read leading-relaxed text-foreground">
-                            <Flag className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
-                            {g}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {/* «من اختيار المدرّب» حين اختاره مدرّبٌ حقّا — ووسومُ الكتالوج بلا هذا السطر */}
-                  {who.fromCohorts > 0 && (who.stages.length > 0 || who.goals.length > 0) && (
-                    <p className="mt-2 flex items-center gap-1 text-read text-muted-foreground">
-                      <Sparkles className="h-3 w-3 text-gold-ink" />
-                      {who.fromCohorts > 1 ? "من اختيار مدرّبي شعبها" : "من اختيار مدرّب الشعبة"}
-                    </p>
-                  )}
-                </div>
-              )}
+              {who.lead && <CourseAudience who={who} />}
               {full.learningOutcomes.length > 0 && (
                 <div>
                   <h3 className="flex items-center gap-1.5 text-read font-black text-foreground">

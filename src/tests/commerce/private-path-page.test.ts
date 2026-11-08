@@ -193,3 +193,19 @@ describe('الهاتف والأسهم الصغيرة (٨ نوفمبر ٢٠٢٦)'
     expect(chrome).toMatch(/<span className="hidden sm:inline">\{user\}<\/span>/)
   })
 })
+
+describe('«لمن هذه الدورة» في تفاصيل المسار كما في صفحة الدورة (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ «تناسبك إن كنت» و«وتريد» في «كل تفاصيل الدورة» — من مكون واحد مع صفحة الدورة', () => {
+    const shared = code('src/components/CourseAudience.tsx')
+    expect(shared).toContain('تناسبك إن كنت')
+    expect(shared).toContain('وتريد')
+    expect(JOURNEY).toMatch(/<CourseAudience who=\{courseAudienceView\(c, cohorts\.get\(c\.id\) \?\? \[\]\)\} \/>/)
+    /* داخل التفاصيل لا خارجها */
+    const at = (re: RegExp) => JOURNEY.search(re)
+    expect(at(/<CourseAudience /)).toBeGreaterThan(at(/<CollapsibleContent className="overflow-hidden/))
+    expect(at(/<CourseAudience /)).toBeLessThan(at(/<\/CollapsibleContent>/))
+    const course = code('src/pages/CoursePath.tsx')
+    expect(course).toMatch(/<CourseAudience who=\{who\} \/>/)
+    expect(course, 'نسخة ثانية في صفحة الدورة').not.toContain('تناسبك إن كنت')
+  })
+})
