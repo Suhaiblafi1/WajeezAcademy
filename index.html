@@ -7,11 +7,18 @@
     <script>
       /* طلبا «ابنِ مسارك» يبدآن مع الصفحة لا بعد وصول شيفرتها — الشعبُ والكتالوجُ الخفيف. والصفحةُ تأخذ الوعدين بدل
          أن تطلبهما ثانية (`src/services/early-fetch.ts`، ٥ نوفمبر ٢٠٢٦). وما خاب منهما يُعاد بطلبٍ عاديّ هناك. */
+      /* و«المسار الخاصّ» ‎/go/<رمز> مثلُها (٨ نوفمبر ٢٠٢٦): «تفتح بطيئا» — كان طلبُ المسار يبدأ عند الثانية الثالثة بعد
+         شيفرة الصفحة كلِّها. فيبدأ هنا مع الشعب والكتالوج الخفيف (الصفحةُ تقرؤه كـ«ابنِ مسارك»). */
       (function () {
         try {
-          if (!/^\/build\//.test(location.pathname) || !window.fetch) return;
+          if (!window.fetch) return;
+          var p = location.pathname, urls;
+          var go = /^\/go\/([A-Za-z0-9]{6,12})\/?$/.exec(p);
+          if (/^\/build\//.test(p)) urls = ["/api/public/cohorts", "/api/public/core-catalog?lite=1"];
+          else if (go) urls = ["/api/public/go/" + go[1].toUpperCase(), "/api/public/cohorts", "/api/public/core-catalog?lite=1"];
+          else return;
           var box = (window.__wajeezEarly = {});
-          ["/api/public/cohorts", "/api/public/core-catalog?lite=1"].forEach(function (u) {
+          urls.forEach(function (u) {
             box[u] = fetch(u, { credentials: "same-origin" });
             box[u].catch(function () {});
           });
@@ -285,6 +292,29 @@
     />
   </head>
   <body>
+    <script>
+      /* ═══ نصُّ الرئيسة لا يُرسم في صفحةٍ أخرى (٨ نوفمبر ٢٠٢٦) ═══
+         ما لا ملفَّ له من المسارات (‎/go/<رمز> وأمثالُه) يُخدَم بهذا الملفّ نفسِه (`try_files` في `deploy/Caddyfile`)،
+         ومحتواه النصّيُّ محتوى الرئيسة لمحرّكات البحث. فكان من فتح رابطَ مساره يرى «مسارك يبدأ من فهمك» وأسئلتَها
+         ثانيةً قبل أن تُرسم صفحتُه — شكوى صاحب المنصّة: «تُظهر التصميمَ السابق ثمّ الجديد». فإن لم يطابق `canonical`
+         المسارَ المفتوح أُخفي النصُّ وظهرت علامةُ تحميل. والزاحفُ بلا سكربتٍ يقرؤه كما كان. */
+      (function () {
+        try {
+          var c = document.querySelector('link[rel="canonical"]');
+          var want = c ? new URL(c.href, location.href).pathname.replace(/\/+$/, "") : "";
+          if (want !== location.pathname.replace(/\/+$/, "")) document.documentElement.setAttribute("data-shell-other", "");
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      [data-shell-other] #root > [data-seo] { display: none; }
+      [data-shell-other] #root:not(:has(> :not([data-seo]):not(script):not(style)))::before {
+        content: ""; display: block; width: 2rem; height: 2rem; margin: 30vh auto 0;
+        border: 3px solid rgba(94, 234, 212, 0.25); border-top-color: #5eead4; border-radius: 50%;
+        animation: wajeez-shell-spin 0.8s linear infinite;
+      }
+      @keyframes wajeez-shell-spin { to { transform: rotate(360deg); } }
+    </style>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

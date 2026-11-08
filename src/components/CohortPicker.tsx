@@ -172,6 +172,15 @@ function Seats({ c }: { c: CohortOption }) {
   );
 }
 
+/** ما يُقال فوق الشعب حين تكون أكثرَ من واحدة — بعد عددها («شعبتان …») */
+const COHORT_CHOICE_LEAD_AR = "لنفس الدورة ونفس الشهادة. اختر واحدة حسب:"
+/** كيف يقرّر — الموعدُ والمدرّبُ وخطّتُه */
+const COHORT_CHOICE_HINTS_AR: readonly { label: string; text: string }[] = [
+  { label: "الموعد", text: "الأيام والساعة التي تناسب وقتك، وننبهك إن تعارضت مع دورة أخرى" },
+  { label: "المدرب", text: "اقرأ نبذته واختر من يناسبك أسلوبه وخبرته" },
+  { label: "المحاور", text: "لكل شعبة خطة مدربها، وتظهر تفاصيلها تحت الشعبة التي تختارها" },
+]
+
 export default function CohortPicker({
   cohorts,
   selectedId,
@@ -226,10 +235,23 @@ export default function CohortPicker({
 
   return (
     <div>
+      {/* ═══ وكيف يختار بين الشعب — لا «اختر» وحدَها (٨ نوفمبر ٢٠٢٦) ═══
+          قرارُ صاحب المنصّة: «اجعلها أوضح ليعلم أيّهما يختار وكيف يقرّر.. سواءً الوقت أو المدرّب المناسب لك أو المحاور».
+          فالدورةُ واحدةٌ والشهادةُ واحدة، والفرقُ ثلاثة: الموعد، والمدرّب، وخطّتُه (`COHORT_CHOICE_HINTS_AR`) */}
       {many && (
-        <p id={`${group}-label`} className="mb-2 text-read font-bold leading-6 text-muted-foreground">
-          {cohortsCountAr(cohorts.length)} — اختر الموعد والمدرب
-        </p>
+        <div className="mb-2.5">
+          <p id={`${group}-label`} className="text-read font-black leading-6 text-foreground">
+            {cohortsCountAr(cohorts.length)} {COHORT_CHOICE_LEAD_AR}
+          </p>
+          <ul className="mt-1 grid gap-0.5 text-read leading-6 text-muted-foreground">
+            {COHORT_CHOICE_HINTS_AR.map((h) => (
+              <li key={h.label} className="flex gap-1.5">
+                <span className="shrink-0 font-bold text-teal-light-ink">{h.label}:</span>
+                <span>{h.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       <ul className="grid gap-2" {...(many ? { role: "radiogroup", "aria-labelledby": `${group}-label` } : {})}>
         {shown.map((c) => {

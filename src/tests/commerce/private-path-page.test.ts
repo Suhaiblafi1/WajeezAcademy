@@ -34,7 +34,10 @@ describe('صفحة المسار الخاص', () => {
     expect(PAGE).not.toMatch(/ReadySeasonPathway|FreeNowPerks|pathwayExtraOptions|useSeasonReplacements|أضف دورة/)
     expect(PAGE).toMatch(/swapOnly: true,[\s\S]*?maxReached: true,/)
     expect(PAGE, 'بدائل دورات لا تشترى هذا الموسم').not.toMatch(/\bunavailable,\n/)
-    expect(PAGE).toMatch(/apiGet<[^>]+>\(`\/api\/public\/go\/\$\{code\}`\)/)
+    /* والمسارُ من الخادم وحدَه — من الطلب المبكر، وما خاب منه عاديّا */
+    expect(PAGE).toMatch(/const path = `\/api\/public\/go\/\$\{code\}`;/)
+    expect(PAGE).toMatch(/takeEarly\(path\)/)
+    expect(PAGE).toMatch(/apiGet<[^>]+>\(path\)/)
   })
 
   it('⚠️ لا تفهرس — ومعاينة واتساب معاينة الموقع بلا اسم ولا كود', () => {
@@ -74,7 +77,7 @@ describe('صفحة المسار الخاص بقالب صفحة المسار', ()
     expect(PAGE).toMatch(/<CourseJourney[\s\S]*?showSchedule[\s\S]*?picked=\{picked\}[\s\S]*?onPick=/)
   })
 
-  it('⚠️ العنوان والسطر تحته آليان من دوراته الآن، و«سبب اختيارها لك» بارزا تحت عنوان كل دورة', () => {
+  it('⚠️ العنوان والسطر تحته آليان من دوراته الآن، و«سبب اختيارها لك» بارزا أسفل كل دورة', () => {
     expect(PATH_SUBTITLE_AR).toBe('دورات اخترناها لك بناءً على خبرتك')
     expect(REASON_LABEL_AR).toBe('سبب اختيارها لك')
     expect(PAGE).toMatch(/<h1[^>]*>\{headline\.titleAr\}<\/h1>\s*<p[^>]*>\{headline\.subtitleAr\}<\/p>/)
@@ -82,7 +85,11 @@ describe('صفحة المسار الخاص بقالب صفحة المسار', ()
     expect(PAGE).toMatch(/privatePathHeadline\(\{[\s\S]*?courses: courseIds\.map\(/)
     expect(PAGE).toMatch(/reasonsProminentLabelAr=\{REASON_LABEL_AR\}/)
     /* وفي الرحلة: تحت زرّ العنوان مباشرةً — وسطرُ «لماذا هي في خطتك» لا يتكرّر معه، ويبقى لغيرها كما كان */
-    expect(JOURNEY).toMatch(/<\/CollapsibleTrigger>\s*\{reasonsProminentLabelAr && reasons\?\.\[c\.id\] && \(/)
+    /* أسفلَ الدورة (٨ نوفمبر ٢٠٢٦): بعد شعبها ومهاراتها، لا تحت عنوانها */
+    expect(JOURNEY).not.toMatch(/<\/CollapsibleTrigger>\s*\{reasonsProminentLabelAr && reasons\?\.\[c\.id\] && \(/)
+    const at = (re: RegExp) => JOURNEY.search(re)
+    expect(at(/data-testid="course-reason"/)).toBeGreaterThan(at(/<CohortPicker\s/))
+    expect(at(/data-testid="course-reason"/)).toBeGreaterThan(at(/c\.relatedSkills\.slice/))
     expect(JOURNEY).toMatch(/\{!reasonsProminentLabelAr && reasons\?\.\[c\.id\] && \(/)
     expect(PATHWAY, 'صفحة المسار المعتادة صار سببها بارزا').not.toMatch(/reasonsProminentLabelAr/)
   })
@@ -101,5 +108,55 @@ describe('صفحة المسار الخاص بقالب صفحة المسار', ()
       currency: 'JOD', subtotal: 400, couponDiscount: 150, bundleDiscount: 30, capDiscount: 10, planCredit: 5, total: 205, grantNameAr: 'منحة وجيز',
     })).toEqual({ currency: 'JOD', before: 400, grant: 195, grantNameAr: 'منحة وجيز', total: 205 })
     expect(privatePathPrice({ currency: 'JOD', subtotal: 100, couponDiscount: 0, bundleDiscount: 0, capDiscount: 0, planCredit: 0, total: 100 }).grantNameAr).toBeNull()
+  })
+})
+
+describe('فتح صفحة المسار الخاص بلا وميض (٨ نوفمبر ٢٠٢٦)', () => {
+  const html = readFileSync(join(root, 'index.html'), 'utf8')
+
+  it('⚠️ طلب المسار والشعب والكتالوج الخفيف يبدأ مع الصفحة على /go — والصفحة تقرأ الخفيف', () => {
+    const early = /<script>\s*\/\*[\s\S]*?\*\/\s*(\(function \(\) \{[\s\S]*?__wajeezEarly[\s\S]*?\}\)\(\);)/.exec(html)?.[1] ?? ''
+    expect(early).toMatch(/\^\\\/go\\\/\(\[A-Za-z0-9\]\{6,12\}\)/)
+    expect(early).toContain('"/api/public/go/" + go[1].toUpperCase()')
+    expect(early).toMatch(/else if \(go\) urls = \[[^\n]*?"\/api\/public\/cohorts", "\/api\/public\/core-catalog\?lite=1"\]/)
+    expect(early, 'الكتالوج الكامل (٢ ميغا) عاد إلى /go').not.toContain('"/api/public/core-catalog"')
+    expect(PAGE).toMatch(/usePublishedContent\(\{ lite: true \}\)/)
+  })
+
+  it('⚠️ نص الرئيسة يخفى حين لا يطابق canonical المسار المفتوح — وتظهر علامة تحميل', () => {
+    expect(html).toMatch(/link\[rel="canonical"\][\s\S]*?setAttribute\("data-shell-other", ""\)/)
+    expect(html).toMatch(/\[data-shell-other\] #root > \[data-seo\] \{ display: none; \}/)
+    /* قبل #root لا بعده — فلا يُرسم النصُّ ثمّ يُخفى */
+    expect(html.indexOf('data-shell-other')).toBeLessThan(html.indexOf('<div id="root">'))
+  })
+
+  it('⚠️ لا بطاقات مختصرة قبل الكتالوج والشعب — هيكل ثم القالب', () => {
+    expect(PAGE).toMatch(/const journeyReady = hasCoreCatalog\(\) && cohortsLoaded;/)
+    expect(PAGE).toMatch(/\{!journeyReady \? \([\s\S]*?animate-pulse[\s\S]*?\) : \([\s\S]*?<CourseJourney[\s\S]*?outsideCatalog\.length > 0/)
+  })
+})
+
+describe('كيف يختار بين الشعب (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ فوق الشعب: نفس الدورة والشهادة، والفرق الموعد والمدرب والمحاور — لا «اختر الموعد والمدرب» وحدها', () => {
+    const picker = code('src/components/CohortPicker.tsx')
+    expect(picker).not.toContain('— اختر الموعد والمدرب')
+    expect(picker).toMatch(/\{cohortsCountAr\(cohorts\.length\)\} \{COHORT_CHOICE_LEAD_AR\}/)
+    expect(picker).toContain('"لنفس الدورة ونفس الشهادة. اختر واحدة حسب:"')
+    for (const label of ['الموعد', 'المدرب', 'المحاور']) expect(picker).toContain(`{ label: "${label}", text: "`)
+    expect(picker).toMatch(/COHORT_CHOICE_HINTS_AR\.map\(/)
+  })
+})
+
+describe('تفاصيل الدورة زر ظاهر قبل الشعب (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ «كل تفاصيل الدورة» زر بسهم ظاهر — والتفاصيل تنفتح في مكانها قبل الشعب لا بعدها ولا في نافذة', () => {
+    const at = (re: RegExp) => JOURNEY.search(re)
+    const toggle = at(/data-testid="course-details-toggle"/)
+    expect(toggle).toBeGreaterThan(-1)
+    expect(JOURNEY).toMatch(/data-testid="course-details-toggle"[\s\S]*?كل تفاصيل الدورة[\s\S]*?إخفاء التفاصيل[\s\S]*?<ChevronDown className="h-5 w-5/)
+    const content = at(/<CollapsibleContent className="overflow-hidden/)
+    expect(content, 'التفاصيل قبل الزر').toBeGreaterThan(toggle)
+    expect(content, 'التفاصيل بعد الشعب').toBeLessThan(at(/<CohortPicker\s/))
+    /* ولا سهمٌ صغيرٌ بجانب العنوان بعدُ — زرٌّ واحدٌ يُرى */
+    expect(JOURNEY).not.toMatch(/\{c\.title\}\s*<\/span>\s*<ChevronDown/)
   })
 })

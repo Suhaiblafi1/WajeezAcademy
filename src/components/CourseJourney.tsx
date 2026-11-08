@@ -6,7 +6,7 @@ import CourseInterestForm from "@/components/CourseInterestForm";
 import { useListedCourses } from "@/services/listed-courses";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { useEffect, useState } from "react";
-import { CalendarDays, ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Plus, UserRound, LifeBuoy, Tag, Trophy } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Plus, UserRound, LifeBuoy, Tag, Trophy } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { apiGet } from "@/services/api";
@@ -59,6 +59,15 @@ export interface CourseJourneyEdit {
    ═══ ولا «هدية مجانية» (٢٦ أكتوبر ٢٠٢٦) ═══
    كانت شارةً ذهبيّةً على سادسة المسار، والدفعُ يحاسبها بسعرها — فسأل صاحبُ المنصّة «لماذا تظهر وكأنّها هديّة
    ولا تطبَّق على الدفع؟.. أرجو إلغاءها لأنّنا أعطينا خصوماتٍ عالية». فأُلغيت الهديّةُ كلُّها (`cart.service.ts`). */
+/** ما خلف «كل تفاصيل الدورة» بكلمات — «الأهداف · 4 وحدات · المخرج العملي». وما ليس في الدورة لا يُقال */
+function detailsSummaryAr(c: { learningObjectives: string[]; modules: unknown[]; practicalProject?: string | null }): string {
+  const n = c.modules.length;
+  const units = n === 0 ? null : n === 1 ? "وحدة واحدة" : n === 2 ? "وحدتان" : `${n} ${n <= 10 ? "وحدات" : "وحدة"}`;
+  return [c.learningObjectives.length > 0 ? "الأهداف" : null, units, c.practicalProject ? "المخرج العملي" : null]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export default function CourseJourney({
   courseIds,
   reasons,
@@ -197,20 +206,120 @@ export default function CourseJourney({
                       <span className="text-sm font-black leading-snug text-foreground">
                         {c.title}
                       </span>
-                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-teal-light-ink" />
                     </span>
                     {c.shortPromise && (
                       <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{c.shortPromise}</span>
                     )}
                   </CollapsibleTrigger>
-                  {reasonsProminentLabelAr && reasons?.[c.id] && (
-                    <Inset tone="warn" className="mt-2.5 px-3 py-2.5" data-testid="course-reason">
-                      <p className="text-read font-black text-gold-ink">{reasonsProminentLabelAr}</p>
-                      <p className="mt-0.5 text-sm leading-relaxed text-foreground">{reasons[c.id]}</p>
+                  {/* ═══ وتفاصيلُ الدورة زرٌّ ظاهرٌ قبل الشعب — لا سهمٌ صغيرٌ بجانب العنوان (٨ نوفمبر ٢٠٢٦) ═══
+                      قرارُ صاحب المنصّة: «هناك سهمٌ ليُظهر كافّةَ تفاصيل الدورة ولكنّه غيرُ ظاهرٍ بقوّة.. أظهِره، ولا داعي
+                      للبوب أب»، و«يجب أن تظهر التفاصيلُ قبل الشعبة بطريقةٍ جميلة». فالزرُّ تحت العنوان يقول ما خلفه، والتفاصيلُ
+                      تنفتح في مكانها فوق الشعب. والعنوانُ نفسُه يفتحها كما كان. */}
+                  <CollapsibleTrigger
+                    className="group mt-3 flex w-full items-center gap-2.5 rounded-lg bg-teal/[0.08] px-3 py-2.5 text-right ring-1 ring-teal/30 transition hover:bg-teal/[0.14] data-[state=open]:bg-teal/[0.12]"
+                    data-testid="course-details-toggle"
+                  >
+                    <BookOpen className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-black text-teal-light-ink group-data-[state=open]:hidden">كل تفاصيل الدورة</span>
+                      <span className="hidden text-sm font-black text-teal-light-ink group-data-[state=open]:block">إخفاء التفاصيل</span>
+                      {detailsSummaryAr(c) && (
+                        <span className="mt-0.5 block text-fine font-semibold text-muted-foreground group-data-[state=open]:hidden">{detailsSummaryAr(c)}</span>
+                      )}
+                    </span>
+                    <ChevronDown className="h-5 w-5 shrink-0 text-teal-light-ink transition-transform duration-300 group-data-[state=open]:rotate-180" aria-hidden="true" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-[accordion-up_0.25s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
+                    <Inset className="mt-2 space-y-5 p-4 text-read leading-7">
+                      {c.description && <p className="text-muted-foreground">{c.description}</p>}
+                      {c.targetAudience && (
+                        <p className="text-muted-foreground">
+                          <span className="font-bold text-teal-light-ink">لمن صممت؟ </span>
+                          {c.targetAudience}
+                        </p>
+                      )}
+                      {c.learningObjectives.length > 0 && (
+                        <div>
+                          <p className="mb-1.5 flex items-center gap-1.5 font-bold text-teal-light-ink">
+                            <ListChecks className="h-3.5 w-3.5" /> أهداف الدورة
+                          </p>
+                          <ul className="grid gap-1">
+                            {c.learningObjectives.map((o) => (
+                              <li key={o} className="flex items-start gap-2 text-muted-foreground">
+                                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-teal" />
+                                {o}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {c.learningOutcomes.length > 0 && (
+                        <div>
+                          <p className="mb-1.5 flex items-center gap-1.5 font-bold text-gold-ink">
+                            <Target className="h-3.5 w-3.5" /> ماذا ستتمكن من فعله بعدها؟
+                          </p>
+                          <ul className="grid gap-1">
+                            {c.learningOutcomes.map((o) => (
+                              <li key={o} className="flex items-start gap-2 text-muted-foreground">
+                                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-gold" />
+                                {o}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {c.practicalProject && (
+                        <p className="flex items-start gap-1.5 text-muted-foreground">
+                          <FolderKanban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
+                          <span>
+                            <span className="font-bold text-foreground">مخرجها العملي: </span>
+                            {c.practicalProject}
+                          </span>
+                        </p>
+                      )}
+                      {c.modules.length > 0 && (
+                        <div>
+                          <p className="mb-1.5 font-bold text-foreground">الوحدات والمحاور:</p>
+                          <ol className="space-y-1.5">
+                            {c.modules.map((m, mi) => (
+                              <li key={m.id} className="flex items-start gap-2.5 rounded-lg bg-white/[0.03] px-3 py-2">
+                                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[0.06] text-fine font-black text-muted-foreground">
+                                  {mi + 1}
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block font-bold text-foreground">{m.title}</span>
+                                  {m.outcome && <span className="mt-0.5 block text-muted-foreground">{m.outcome}</span>}
+                                </span>
+                                <span className="shrink-0 text-fine text-muted-foreground">{m.hours} س</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-x-5 gap-y-1.5 border-t border-white/[0.07] pt-3 text-fine text-muted-foreground">
+                        {c.prerequisites && (
+                          <span>
+                            <span className="font-bold text-foreground">المتطلبات السابقة: </span>
+                            {c.prerequisites}
+                          </span>
+                        )}
+                        {c.level && (
+                          <span>
+                            <span className="font-bold text-foreground">المستوى: </span>
+                            {c.level}
+                          </span>
+                        )}
+                        {delivery && (
+                          <span>
+                            <span className="font-bold text-foreground">طريقة التقديم: </span>
+                            {delivery}
+                          </span>
+                        )}
+                      </div>
                     </Inset>
-                  )}
+                  </CollapsibleContent>
                   {showSchedule && (
-                    <div className="mt-2">
+                    <div className="mt-3">
                       <CohortPicker
                         compact
                         cohorts={cohorts.get(c.id) ?? []}
@@ -254,6 +363,14 @@ export default function CourseJourney({
                         كانت تُقرأ شعبةً واحدةً بمدرّبَين (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦). فتبقى حيث لا منتقي. */}
                     {!showSchedule && <CourseTrainer courseId={c.id} />}
                   </div>
+                  {/* ═══ والسببُ البارزُ أسفلَ الدورة لا تحت عنوانها (٨ نوفمبر ٢٠٢٦) ═══
+                      قرارُ صاحب المنصّة: «ضع سبب الاختيار أسفل الدورة». فيُقرأ بعد أن يُعرف ما هي الدورةُ وشعبتُها */}
+                  {reasonsProminentLabelAr && reasons?.[c.id] && (
+                    <Inset tone="warn" className="mt-3 px-3 py-2.5" data-testid="course-reason">
+                      <p className="text-read font-black text-gold-ink">{reasonsProminentLabelAr}</p>
+                      <p className="mt-0.5 text-sm leading-relaxed text-foreground">{reasons[c.id]}</p>
+                    </Inset>
+                  )}
                   {!reasonsProminentLabelAr && reasons?.[c.id] && (
                     <p className="mt-2 text-read leading-relaxed text-muted-foreground">
                       <span className="font-bold text-gold-ink/80">لماذا هي في خطتك: </span>
@@ -354,95 +471,6 @@ export default function CourseJourney({
                 </div>
               </div>
 
-              <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-[accordion-up_0.25s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
-                <div className="space-y-5 border-t border-white/10 px-4 py-5 pr-[3.25rem] text-read leading-7">
-                  {c.description && <p className="text-muted-foreground">{c.description}</p>}
-                  {c.targetAudience && (
-                    <p className="text-muted-foreground">
-                      <span className="font-bold text-teal-light-ink">لمن صممت؟ </span>
-                      {c.targetAudience}
-                    </p>
-                  )}
-                  {c.learningObjectives.length > 0 && (
-                    <div>
-                      <p className="mb-1.5 flex items-center gap-1.5 font-bold text-teal-light-ink">
-                        <ListChecks className="h-3.5 w-3.5" /> أهداف الدورة
-                      </p>
-                      <ul className="grid gap-1">
-                        {c.learningObjectives.map((o) => (
-                          <li key={o} className="flex items-start gap-2 text-muted-foreground">
-                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-teal" />
-                            {o}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {c.learningOutcomes.length > 0 && (
-                    <div>
-                      <p className="mb-1.5 flex items-center gap-1.5 font-bold text-gold-ink">
-                        <Target className="h-3.5 w-3.5" /> ماذا ستتمكن من فعله بعدها؟
-                      </p>
-                      <ul className="grid gap-1">
-                        {c.learningOutcomes.map((o) => (
-                          <li key={o} className="flex items-start gap-2 text-muted-foreground">
-                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-gold" />
-                            {o}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {c.practicalProject && (
-                    <p className="flex items-start gap-1.5 text-muted-foreground">
-                      <FolderKanban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
-                      <span>
-                        <span className="font-bold text-foreground">مخرجها العملي: </span>
-                        {c.practicalProject}
-                      </span>
-                    </p>
-                  )}
-                  {c.modules.length > 0 && (
-                    <div>
-                      <p className="mb-1.5 font-bold text-foreground">الوحدات والمحاور:</p>
-                      <ol className="space-y-1.5">
-                        {c.modules.map((m, mi) => (
-                          <li key={m.id} className="flex items-start gap-2.5 rounded-lg bg-white/[0.03] px-3 py-2">
-                            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[0.06] text-fine font-black text-muted-foreground">
-                              {mi + 1}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block font-bold text-foreground">{m.title}</span>
-                              {m.outcome && <span className="mt-0.5 block text-muted-foreground">{m.outcome}</span>}
-                            </span>
-                            <span className="shrink-0 text-fine text-muted-foreground">{m.hours} س</span>
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-x-5 gap-y-1.5 border-t border-white/[0.07] pt-3 text-fine text-muted-foreground">
-                    {c.prerequisites && (
-                      <span>
-                        <span className="font-bold text-foreground">المتطلبات السابقة: </span>
-                        {c.prerequisites}
-                      </span>
-                    )}
-                    {c.level && (
-                      <span>
-                        <span className="font-bold text-foreground">المستوى: </span>
-                        {c.level}
-                      </span>
-                    )}
-                    {delivery && (
-                      <span>
-                        <span className="font-bold text-foreground">طريقة التقديم: </span>
-                        {delivery}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </CollapsibleContent>
             </Collapsible>
           </li>
           );
