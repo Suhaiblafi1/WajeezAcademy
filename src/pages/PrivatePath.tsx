@@ -223,6 +223,10 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
 
   const ready = current.state === "ready" && current.price !== null && !current.problemAr && courseIds.length > 0;
   const showPrice = Boolean(v.price || changed) && courseIds.length > 0;
+  /* بكم غيّر الاستبدالُ ما يدفعه — عن سعر الرابط كما وصل. وصفرٌ حين لم يتغيّر شيء أو لم يصل السعرُ بعد */
+  const priceShift = current.state === "ready" && current.price && v.price && current.price.currency === v.price.currency
+    ? Math.round((current.price.total - v.price.total) * 100) / 100
+    : 0;
   /* هل بطاقةُ السعر على الشاشة الآن — فيختفي الزرُّ الثابتُ ولا يتكرّر الدفعُ مرّتين أمامه */
   const buyRef = useRef<HTMLDivElement>(null);
   const [buyInView, setBuyInView] = useState(false);
@@ -363,7 +367,12 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
               {current.price.grant > 0 && (
                 <div className="flex justify-between"><dt>{current.price.grantNameAr ?? "الخصم"}</dt><dd>− {fmtMoney(current.price.grant, current.price.currency)}</dd></div>
               )}
-              <div className="flex justify-between text-lg font-black"><dt>ما تدفعه</dt><dd>{fmtMoney(current.price.total, current.price.currency)}</dd></div>
+              <div className="flex justify-between text-lg font-black"><dt>{current.price.grant > 0 ? "ما تدفعه بعد المنحة" : "ما تدفعه"}</dt><dd>{fmtMoney(current.price.total, current.price.currency)}</dd></div>
+              {priceShift !== 0 && v.price && (
+                <p className="text-muted-foreground" data-testid="private-path-price-was">
+                  قبل الاستبدال كان <bdi dir="ltr">{fmtMoney(v.price.total, v.price.currency)}</bdi> — {priceShift > 0 ? "زاد" : "نقص"} <bdi dir="ltr">{fmtMoney(Math.abs(priceShift), current.price.currency)}</bdi>
+                </p>
+              )}
               {v.lastDay && <p className="pt-1 text-muted-foreground">آخر يوم للمنحة: {cohortDayAr(`${v.lastDay}T12:00:00Z`, { weekday: "long", day: "numeric", month: "long" })}</p>}
             </dl>
           ) : null}
@@ -392,8 +401,21 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
             <span className="min-w-0 text-read leading-5">
               {current.state === "ready" && current.price ? (
                 <>
-                  <span className="block text-muted-foreground">ما تدفعه</span>
-                  <span className="block text-base font-black text-foreground">{fmtMoney(current.price.total, current.price.currency)}</span>
+                  {/* قبلُ وبعدُ (٨ نوفمبر ٢٠٢٦): «اجعل السعرَ يظهر قبل وبعد مع شطب السعر الأصليّ.. ليعلم ما التغيير في السعر
+                      إن غيّر شيئا، وليعلم أنّ السعرَ بعد المنحة». فالأصليُّ مشطوبٌ بجانب ما يدفعه، وفوقهما «بعد {المنحة}»،
+                      وإن غيّر الاستبدالُ السعرَ قيل بكم (`priceShift`) */}
+                  <span className="block text-muted-foreground">{current.price.grant > 0 ? `بعد ${current.price.grantNameAr ?? "الخصم"}` : "ما تدفعه"}</span>
+                  <span className="flex flex-wrap items-baseline gap-x-1.5">
+                    {current.price.grant > 0 && (
+                      <bdi dir="ltr" className="text-muted-foreground line-through">{fmtMoney(current.price.before, current.price.currency)}</bdi>
+                    )}
+                    <bdi dir="ltr" className="text-base font-black text-foreground">{fmtMoney(current.price.total, current.price.currency)}</bdi>
+                    {priceShift !== 0 && (
+                      <bdi dir="ltr" className={`font-bold ${priceShift > 0 ? "text-gold-ink" : "text-teal-light-ink"}`} data-testid="private-path-price-shift">
+                        {priceShift > 0 ? "+" : "−"}{fmtMoney(Math.abs(priceShift), current.price.currency)}
+                      </bdi>
+                    )}
+                  </span>
                 </>
               ) : (
                 <span className="flex items-center gap-1.5 text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> نحدث السعر…</span>

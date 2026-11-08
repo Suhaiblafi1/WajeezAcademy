@@ -209,3 +209,16 @@ describe('«لمن هذه الدورة» في تفاصيل المسار كما �
     expect(course, 'نسخة ثانية في صفحة الدورة').not.toContain('تناسبك إن كنت')
   })
 })
+
+describe('السعر قبل وبعد (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ الزر الثابت: الأصلي مشطوب بجانب ما يدفعه، و«بعد المنحة» فوقهما، وبكم غيره الاستبدال', () => {
+    expect(PAGE).toMatch(/`بعد \$\{current\.price\.grantNameAr \?\? "الخصم"\}`/)
+    expect(PAGE).toMatch(/line-through">\{fmtMoney\(current\.price\.before, current\.price\.currency\)\}<\/bdi>[\s\S]*?text-base font-black[^>]*>\{fmtMoney\(current\.price\.total/)
+    expect(PAGE).toMatch(/const priceShift = [\s\S]*?current\.price\.total - v\.price\.total/)
+    expect(PAGE).toMatch(/data-testid="private-path-price-shift"/)
+  })
+  it('⚠️ البطاقة: «ما تدفعه بعد المنحة»، وبعد الاستبدال ما كان وبكم تغير', () => {
+    expect(PAGE).toContain('"ما تدفعه بعد المنحة"')
+    expect(PAGE).toMatch(/data-testid="private-path-price-was">\s*قبل الاستبدال كان <bdi dir="ltr">\{fmtMoney\(v\.price\.total/)
+  })
+})
