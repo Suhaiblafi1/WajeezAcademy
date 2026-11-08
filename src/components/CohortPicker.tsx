@@ -299,7 +299,7 @@ export default function CohortPicker({
               as="li"
               key={c.id}
               tone={on && many ? "accent" : "default"}
-              className={many && !on ? "cursor-pointer" : ""}
+              className={`max-sm:p-3 ${many && !on ? "cursor-pointer" : ""}`}
               onClick={many ? (e: MouseEvent<HTMLElement>) => { if (e.target === e.currentTarget) onSelect(c.id); } : undefined}
             >
               {many ? (
@@ -345,9 +345,9 @@ export default function CohortPicker({
       </ul>
       {hidden > 0 && (
         <button type="button" onClick={() => setShowAll(true)}
-          className="mt-2 inline-flex min-h-9 items-center gap-1 text-fine font-bold text-teal-light-ink underline underline-offset-4">
+          className="mt-2 inline-flex min-h-9 items-center gap-1 text-read font-bold text-teal-light-ink underline underline-offset-4">
           كل الشعب ({cohorts.length})
-          <ChevronDown className="h-3 w-3" aria-hidden="true" />
+          <ChevronDown className="h-4 w-4" aria-hidden="true" />
         </button>
       )}
     </div>

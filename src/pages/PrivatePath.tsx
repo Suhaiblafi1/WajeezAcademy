@@ -22,7 +22,7 @@
    ومن فتح نسخةً قديمةً يُحوَّل إلى الأحدث. والاسمُ الأوّلُ وحدَه يُعرض: لا بريدَ ولا هاتف. ومعاينةُ واتساب معاينةُ الموقع
    نفسُها (`index.html`) — لا اسمَ المتعلّم ولا كودَه. والقاعدةُ في `src/application/commerce/private-path.ts`. */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router";
 import { CalendarClock, Layers, Loader2, Sparkles, UserRound } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -222,6 +222,17 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
   });
 
   const ready = current.state === "ready" && current.price !== null && !current.problemAr && courseIds.length > 0;
+  const showPrice = Boolean(v.price || changed) && courseIds.length > 0;
+  /* هل بطاقةُ السعر على الشاشة الآن — فيختفي الزرُّ الثابتُ ولا يتكرّر الدفعُ مرّتين أمامه */
+  const buyRef = useRef<HTMLDivElement>(null);
+  const [buyInView, setBuyInView] = useState(false);
+  useEffect(() => {
+    const el = buyRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setBuyInView(e.isIntersecting), { threshold: 0.25 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [showPrice, journeyReady]);
   const buy = () => {
     if (!ready || current.state !== "ready") return;
     /* يُحفظ ما يشتريه قبل أن يُطلب منه حساب — فإن خرج ليوثّق بريده عاد إلى مساره (`ResumeCheckout`) */
@@ -333,9 +344,17 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         </Inset>
       )}
 
-      {/* السعرُ كما كان: الأصليّ، والمنحة، وما يدفعه — من الخادم */}
-      {(v.price || changed) && courseIds.length > 0 && (
-        <Card id="buy" className="story-fade mt-8 scroll-mt-24 p-5" data-testid="private-path-price">
+      <PathwayEcosystemPanel />
+
+      <p className="mt-8 flex items-center justify-center gap-2 text-center text-read leading-5 text-muted-foreground">
+        <Sparkles className="h-3.5 w-3.5" />
+        منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تفتح تلقائيا بعد أول دفع ناجح.
+      </p>
+
+      {/* السعرُ كاملا: الأصليّ، والمنحة، وما يدفعه — من الخادم. وموضعُه أسفلَ الصفحة بعد «تفتح تلقائيا بعد أول دفع ناجح»
+          (صاحب المنصّة، ٨ نوفمبر ٢٠٢٦)، وزرٌّ صغيرٌ ثابتٌ أسفلَ الشاشة يقوم مقامَه حتّى يصله (`private-path-sticky-buy`) */}
+      {showPrice && (
+        <Card id="buy" ref={buyRef} className="story-fade mt-6 scroll-mt-24 p-5" data-testid="private-path-price">
           {current.state === "loading" ? (
             <p className="flex items-center gap-2 text-read text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> نحدث السعر…</p>
           ) : current.price ? (
@@ -362,12 +381,36 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         </Card>
       )}
 
-      <PathwayEcosystemPanel />
 
-      <p className="mt-8 flex items-center justify-center gap-2 text-center text-read leading-5 text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5" />
-        منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تفتح تلقائيا بعد أول دفع ناجح.
-      </p>
+      {/* ═══ زرُّ الدفع صغيرٌ ثابتٌ على الشاشة (٨ نوفمبر ٢٠٢٦) ═══
+          قرارُ صاحب المنصّة: «اجعل خانةَ الدفع كزرٍّ صغيرٍ ثابتٍ على الشاشة، ويُعاد إيجادُه بعد جملة فتح المنصّة بالأسفل».
+          فما يدفعه وزرُّ الشراء ثابتان أسفلَ الشاشة، ويختفيان حين تظهر بطاقةُ السعر نفسُها فلا يتكرّران. وما
+          لم يجهز سعرُه (يُحدَّث، أو فيه مشكلة) ينقله الزرُّ إلى البطاقة حيث يُقال السبب */}
+      {showPrice && !buyInView && !buyOpen && !authOpen && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]" data-testid="private-path-sticky-buy">
+          <div className="pointer-events-auto mx-auto flex max-w-sm items-center justify-between gap-3 rounded-full border border-white/15 bg-paper/95 py-1.5 pe-1.5 ps-5 shadow-xl backdrop-blur">
+            <span className="min-w-0 text-read leading-5">
+              {current.state === "ready" && current.price ? (
+                <>
+                  <span className="block text-muted-foreground">ما تدفعه</span>
+                  <span className="block text-base font-black text-foreground">{fmtMoney(current.price.total, current.price.currency)}</span>
+                </>
+              ) : (
+                <span className="flex items-center gap-1.5 text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> نحدث السعر…</span>
+              )}
+            </span>
+            <Button
+              tone="confirm"
+              size="sm"
+              onClick={ready ? buy : () => document.getElementById("buy")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+              disabled={current.state === "loading"}
+            >
+              أكمل التسجيل
+            </Button>
+          </div>
+        </div>
+      )}
+      {showPrice && <div aria-hidden="true" className="h-20" />}
 
       <ResumeCheckout ready={resumed !== null} onResume={() => (session ? setBuyOpen(true) : setAuthOpen(true))} />
 
@@ -400,7 +443,7 @@ function Frame({ children, title, user = null }: { children: React.ReactNode; ti
       {/* لا يُفهرس: صفحةٌ باسم إنسانٍ لا تُعرض في محرّكات البحث */}
       <SeoHead title={title} description="مسارك في أكاديمية وجيز" path="/go" noindex />
       <PathwayTopBar user={user} />
-      <div className="mx-auto max-w-5xl px-5 py-12">{children}</div>
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-5 sm:py-12">{children}</div>
       <EcosystemNote className="mx-auto max-w-5xl px-5 pb-8" />
       <SiteFooter />
     </div>

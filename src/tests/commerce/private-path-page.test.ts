@@ -21,8 +21,12 @@ const PATHWAY = code('src/pages/Pathway.tsx')
 const JOURNEY = code('src/components/CourseJourney.tsx')
 
 describe('صفحة المسار الخاص', () => {
-  it('⚠️ زر واحد «أكمل التسجيل» يفتح لوح الدفع القائم بالدورات والكود نفسيهما', () => {
-    expect(PAGE.match(/أكمل التسجيل/g)?.length, 'أكثر من زر شراء أو بلا زر').toBe(1)
+  it('⚠️ «أكمل التسجيل» يفتح لوح الدفع القائم بالدورات والكود نفسيهما — من البطاقة ومن الزر الثابت، بطريق واحد', () => {
+    /* زرّان بقرار صاحب المنصّة (٨ نوفمبر ٢٠٢٦): البطاقةُ أسفلَ الصفحة، وزرٌّ صغيرٌ ثابتٌ على الشاشة. وطريقُهما واحد (`buy`) */
+    expect(PAGE.match(/أكمل التسجيل/g)?.length, 'زر شراء ثالث أو بلا زر').toBe(2)
+    expect(PAGE).toMatch(/<Button tone="confirm" className="mt-4 w-full" onClick=\{buy\} disabled=\{!ready\}>أكمل التسجيل<\/Button>/)
+    expect(PAGE).toMatch(/onClick=\{ready \? buy : \(\) => document\.getElementById\("buy"\)/)
+    expect(PAGE.match(/<BuyPanel\b/g)?.length, 'لوح دفع ثان').toBe(1)
     /* بدوراتها كما هي الآن — بعد الاستبدال إن كان — وبشعبها المختارة */
     expect(PAGE).toMatch(/<BuyPanel[\s\S]*?initialCoupon=\{v\.couponCode \?\? ""\}[\s\S]*?lines=\{courseIds\.map\(\(id\) => \(\{ courseId: id, name: titleOf\(id\), cohortId: picked\[id\] \}\)\)\}/)
     expect(PAGE, 'لا ينسب الطلب إلى مولد الرابط').toMatch(/rememberBuyLink\(r\.buyLinkToken\)/)
@@ -158,5 +162,34 @@ describe('تفاصيل الدورة زر ظاهر قبل الشعب (٨ نوفم
     expect(content, 'التفاصيل بعد الشعب').toBeLessThan(at(/<CohortPicker\s/))
     /* ولا سهمٌ صغيرٌ بجانب العنوان بعدُ — زرٌّ واحدٌ يُرى */
     expect(JOURNEY).not.toMatch(/\{c\.title\}\s*<\/span>\s*<ChevronDown/)
+  })
+})
+
+describe('الدفع زر صغير ثابت، والبطاقة بعد «تفتح تلقائيا» (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ البطاقة أسفل الصفحة بعد جملة فتح المنصة، والزر الثابت يختفي حين تظهر', () => {
+    const at = (re: RegExp) => PAGE.search(re)
+    expect(at(/data-testid="private-path-price"/)).toBeGreaterThan(at(/تفتح تلقائيا بعد أول دفع ناجح/))
+    expect(at(/data-testid="private-path-price"/)).toBeGreaterThan(at(/<PathwayEcosystemPanel \/>/))
+    expect(PAGE).toMatch(/\{showPrice && !buyInView && !buyOpen && !authOpen && \([\s\S]*?fixed inset-x-0 bottom-0[\s\S]*?data-testid="private-path-sticky-buy"/)
+    expect(PAGE).toMatch(/new IntersectionObserver\(\(\[e\]\) => setBuyInView\(e\.isIntersecting\)/)
+  })
+})
+
+describe('الهاتف والأسهم الصغيرة (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ على الهاتف: الرقم بجانب العنوان لا عمودا، وخط الرحلة يخفى', () => {
+    expect(JOURNEY).toMatch(/z-10 hidden h-8 w-8[^"]*sm:grid/)
+    expect(JOURNEY).toMatch(/sm:hidden">\s*\{isSupport \? <LifeBuoy className="h-3 w-3" \/> : i \+ 1\}/)
+    expect(JOURNEY).toMatch(/absolute right-\[15px\] top-10 hidden [^"]*sm:block/)
+  })
+  it('⚠️ «لقاءات مباشرة» و«كل الشعب»: سهم يرى وكلمة تقول ما خلفه', () => {
+    const live = code('src/components/LiveSessionDates.tsx')
+    expect(live).toMatch(/\{open \? "إخفاء" : "كل المواعيد"\}\s*<ChevronDown className=\{`h-4 w-4/)
+    expect(code('src/components/CohortPicker.tsx')).toMatch(/كل الشعب \(\{cohorts\.length\}\)\s*<ChevronDown className="h-4 w-4"/)
+  })
+  it('⚠️ الشريط العلوي سطر واحد على الهاتف', () => {
+    const chrome = code('src/components/PathwayChrome.tsx')
+    expect(chrome).toMatch(/<span className="hidden text-sm font-medium sm:inline">الرئيسية<\/span>/)
+    expect(chrome).toMatch(/whitespace-nowrap font-black">أكاديمية وجيز/)
+    expect(chrome).toMatch(/<span className="hidden sm:inline">\{user\}<\/span>/)
   })
 })

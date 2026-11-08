@@ -190,11 +190,15 @@ export default function CourseJourney({
               </div>
             )}
             {i < list.length - 1 && !(isSupportId(list[i + 1].id) && i + 1 === firstSupport) && (
-              <span aria-hidden className="absolute right-[15px] top-10 h-[calc(100%-32px)] w-px bg-white/10" />
+              <span aria-hidden className="absolute right-[15px] top-10 hidden h-[calc(100%-32px)] w-px bg-white/10 sm:block" />
             )}
             <Collapsible className="rounded-2xl border border-white/10 bg-white/[0.03] transition-colors data-[state=open]:border-teal/40 data-[state=open]:bg-teal/[0.05]">
-              <div className="flex items-start gap-3 p-4">
-                <span className="z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#38A7B4]/50 bg-paper text-xs font-black text-[#6EC7D1]">
+              {/* ═══ وعلى الهاتف عرضُ البطاقة كلُّه للمحتوى (٨ نوفمبر ٢٠٢٦) ═══
+                  «التصميمُ على التلفون غيرُ عمليّ وغيرُ مريح». كان عمودُ الرقم وخطُّ الرحلة يأخذان ٤٤ بكسلا من ٣٩٠، فوقها
+                  حشوُ الصفحة والبطاقة وصندوقِ الشعبة — فبقي للشعبة نحوُ ٢٤٠ والنصُّ يلتفّ سطرا بعد سطر. فالرقمُ على الهاتف
+                  بجانب العنوان، والحشوُ أقلّ. وما فوق الهاتف كما كان */}
+              <div className="flex items-start gap-3 p-3 sm:p-4">
+                <span className="z-10 hidden h-8 w-8 shrink-0 place-items-center rounded-full border border-[#38A7B4]/50 bg-paper text-xs font-black text-[#6EC7D1] sm:grid">
                   {isSupport ? <LifeBuoy className="h-3.5 w-3.5" /> : i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -202,7 +206,10 @@ export default function CourseJourney({
                     className="group block w-full text-right"
                     aria-label={`تفاصيل دورة ${c.title}`}
                   >
-                    <span className="flex items-center justify-between gap-2">
+                    <span className="flex items-start gap-2">
+                      <span aria-hidden="true" className="mt-px grid h-6 w-6 shrink-0 place-items-center rounded-full border border-[#38A7B4]/50 text-fine font-black text-[#6EC7D1] sm:hidden">
+                        {isSupport ? <LifeBuoy className="h-3 w-3" /> : i + 1}
+                      </span>
                       <span className="text-sm font-black leading-snug text-foreground">
                         {c.title}
                       </span>
