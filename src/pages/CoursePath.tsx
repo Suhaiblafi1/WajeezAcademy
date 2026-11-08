@@ -38,7 +38,6 @@ import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { track } from "@/services/analytics";
 import { bundleNudge, pathPricing, suggestBuyable, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
 import { trainerLineAr, trainerNamesOf } from "@/application/catalog/course-trainers";
-import { courseAudienceView } from "@/application/catalog/course-audience";
 import CourseAudience from "@/components/CourseAudience";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { FIRST_TIME_PROMO, isFirstTimePromo, promoDiscountOn } from "@/application/commerce/first-time-promo";
@@ -126,6 +125,15 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      `?resume=1` مع شراءٍ محفوظٍ لهذه الصفحة: دوراتُه وشعبُها كما تركها، ويُفتح اللوحُ له
      (`pending-checkout.ts`). كان يعود إلى «منصّتي» ويبدأ اختيارَه من جديد. */
   const [resumed] = useState(() => (courseId ? resumedCheckoutFor(`/build/${courseId}`) : null));
+  /* ═══ و«لمن هذه الدورة» بعد الرسم لا قبله (٨ نوفمبر ٢٠٢٦) ═══
+     `course-audience.ts` يقرأ كتالوجَ التشخيص كلَّه (أسئلتُه ومهاراتُه وقوالبُه — نحو ١٠٠ ك.ب مضغوطة)، فكانت الصفحةُ لا تُرسم
+     حتّى يصل. فصار يُحمَّل بعد أن تظهر الدورة، ويظهر صندوقُه حين يصل — والوصفُ والمخرجاتُ لا تنتظره. */
+  const [audience, setAudience] = useState<typeof import("@/application/catalog/course-audience") | null>(null);
+  useEffect(() => {
+    let on = true;
+    void import("@/application/catalog/course-audience").then((m) => { if (on) setAudience(m); }).catch(() => undefined);
+    return () => { on = false; };
+  }, []);
   /* ═══ ورابطُ الشراء الجاهز يحمل دوراتِه وكودَه (٤ نوفمبر ٢٠٢٦) ═══
      `?add=دورة:شعبة,…&code=…` — يفتح المسارَ بها كلِّها والكودُ في خانته (`build-link.ts`). وما فيه يُنظَّف شكلا هنا
      ويُصدَّق في الخادم: ما لا شعبةَ متاحةً له يُترك بإشعار، والسعرُ من المعاينة. ومن عاد من التوثيق يجد ما تركه. */
@@ -307,8 +315,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   }
 
   const full = courseFullById(anchor.id);
-  /* «لمن هذه الدورة» من الكتالوج ومن مدرّبي شعبها — `course-audience.ts` */
-  const who = full ? courseAudienceView(full, cohorts.get(anchor.id) ?? []) : null;
+  /* «لمن هذه الدورة» من الكتالوج ومن مدرّبي شعبها — `course-audience.ts`، يُحمَّل بعد الرسم (`audience`) */
+  const who = full && audience ? audience.courseAudienceView(full, cohorts.get(anchor.id) ?? []) : null;
   const pickedCourses = picked.map((id) => courseById(id)).filter((c): c is Course => Boolean(c));
   const totalWeeks = pickedCourses.reduce((s, c) => s + c.weeks, 0);
 
@@ -474,7 +482,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             بعمودين، وسقط «مشروعها العملي» بقراره، ودخل مكانَه «ما يرافق
             الدورة». والبطاقاتُ الثلاثُ تُطبَّق على الدورات كلِّها: القالبُ
             واحد. */}
-        {full && who && (full.description || who.lead || full.learningOutcomes.length > 0) && (
+        {full && (full.description || who?.lead || full.learningOutcomes.length > 0) && (
           <Card as="section" className="mt-5">
             {full.description && (
               <>
@@ -488,7 +496,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   (المراحلُ والأهداف). ودورةٌ بلا شعبةٍ تقف عند الكتالوج.
                   وسقط منه المستوى و«قبلها» بقرار صاحب المنصّة (٢٠ أكتوبر ٢٠٢٦): «موجودٌ داخل
                   تفاصيل الشعبة، ولكي لا يزيد النصّ هنا». */}
-              {who.lead && <CourseAudience who={who} />}
+              {who?.lead && <CourseAudience who={who} />}
               {full.learningOutcomes.length > 0 && (
                 <div>
                   <h3 className="flex items-center gap-1.5 text-read font-black text-foreground">

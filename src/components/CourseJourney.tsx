@@ -1,7 +1,6 @@
 import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker, { COHORT_RUNNING_AR } from "@/components/CohortPicker";
-import CourseAudience from "@/components/CourseAudience";
-import { courseAudienceView } from "@/application/catalog/course-audience";
+import { LazyCourseAudience } from "@/components/CourseAudience";
 import type { TimedCohort } from "@/application/learning/cohort-overlap";
 import { chosenCohorts, stuckInClash } from "@/application/catalog/pathway-swap";
 import CourseInterestForm from "@/components/CourseInterestForm";
@@ -242,8 +241,8 @@ export default function CourseJourney({
                     <Inset className="mt-2 space-y-5 p-4 text-read leading-7">
                       {c.description && <p className="text-muted-foreground">{c.description}</p>}
                       {/* «لمن هذه الدورة» كما في صفحة الدورة: وصفُها، و«تناسبك إن كنت» و«وتريد» من اختيار مدرّبي شعبها
-                          (صاحب المنصّة، ٨ نوفمبر ٢٠٢٦ — «Add to details»). من الموضع نفسِه (`CourseAudience`) */}
-                      <CourseAudience who={courseAudienceView(c, cohorts.get(c.id) ?? [])} />
+                          (صاحب المنصّة، ٨ نوفمبر ٢٠٢٦ — «Add to details»). من الموضع نفسِه، ويُحمَّل حين تُفتح (`LazyCourseAudience`) */}
+                      <LazyCourseAudience course={c} cohorts={cohorts.get(c.id) ?? []} />
                       {c.learningObjectives.length > 0 && (
                         <div>
                           <p className="mb-1.5 flex items-center gap-1.5 font-bold text-teal-light-ink">

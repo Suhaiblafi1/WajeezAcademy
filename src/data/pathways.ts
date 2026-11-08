@@ -8,7 +8,7 @@ import {
   onCoreCatalogInstalled,
   type CoreCatalogRaw,
 } from './core-catalog-source'
-import { domainsOfPathway } from '@/domain/diagnostic/v2/data'
+import { domainsOfPathway } from '@/domain/diagnostic/v2/pathway-domains'
 import { publicBestsellers, publicPathwayById } from './public-pathways'
 import { familyCategory } from '@/application/catalog/pathway-category'
 

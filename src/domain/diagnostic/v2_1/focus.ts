@@ -124,13 +124,9 @@ export function focusCourseOf(facts: Facts): string | null {
 
 /* ═══ المستوى في المجال ═══ */
 
-/** الأوصافُ الأربعة بترتيب درجات الكتالوج — الموضعُ هو الدرجة */
-export const FIELD_LEVELS: { code: string; label_ar: string; name_ar: string }[] = [
-  { code: 'none', label_ar: 'لم أمارسه بعد', name_ar: 'مبتدئ' },
-  { code: 'basics', label_ar: 'أعرف أساسيّاته وأحتاج من يوجّهني', name_ar: 'أساسيّ' },
-  { code: 'independent', label_ar: 'أمارسه وحدي بانتظام', name_ar: 'متوسّط' },
-  { code: 'lead', label_ar: 'أقود غيري فيه أو أعلّمه', name_ar: 'متقدّم' },
-]
+/* الأوصافُ الأربعة في ملفٍّ خفيف (`field-levels.ts`، ٨ نوفمبر ٢٠٢٦) — تُعاد هنا كما هي */
+import { FIELD_LEVELS } from './field-levels'
+export { FIELD_LEVELS }
 
 /** درجةُ المتعلّم في مجاله (٠..٣) — أو null إن لم يُسأل */
 export function fieldLevelOf(facts: Facts): number | null {

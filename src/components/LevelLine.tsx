@@ -12,7 +12,7 @@ import Button from "@/components/ui/Button";
 import { Inset } from "@/components/ui/Surface";
 import { levelLineText, reviseLevelHref, type LevelSummary } from "@/application/diagnostic/level-summary";
 import { Q } from "@/domain/diagnostic/v2_1/maps";
-import { FIELD_LEVELS } from "@/domain/diagnostic/v2_1/focus";
+import { FIELD_LEVELS } from "@/domain/diagnostic/v2_1/field-levels";
 import { fieldCheckOfNeed } from "@/domain/placement/field-check";
 import { skillCheckHref } from "@/application/placement/links";
 import { usePlacementOpen } from "@/services/placement";

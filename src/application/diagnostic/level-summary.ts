@@ -11,7 +11,8 @@
 
 import { Q, needByCode } from '../../domain/diagnostic/v2_1/maps'
 import { ENGLISH_LEVELS } from '../../domain/diagnostic/v2_1/english'
-import { FIELD_LEVELS } from '../../domain/diagnostic/v2_1/focus'
+/* من الملفّ الخفيف — `focus.ts` يجرّ كتالوجَ التشخيص كلَّه (٨ نوفمبر ٢٠٢٦) */
+import { FIELD_LEVELS } from '../../domain/diagnostic/v2_1/field-levels'
 
 export interface LevelOption {
   option_id: string

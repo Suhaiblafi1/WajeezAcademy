@@ -1,8 +1,9 @@
 /* لمن هذه الدورة — وصفُها، ثمّ من اختارهم مدرّبو شعبها: «تناسبك إن كنت» و«وتريد» (`course-audience.ts`).
    كان في صفحة الدورة وحدَها (`CoursePath`). ثمّ قرّر صاحبُ المنصّة (٨ نوفمبر ٢٠٢٦) أن يكون في «كل تفاصيل الدورة» من صفحات
    المسار أيضا — فما تعرضه صفحةُ الدورة تعرضه بطاقةُ المسار، من موضعٍ واحدٍ لا نسختين. */
+import { useEffect, useState } from "react";
 import { Flag, Sparkles, User } from "lucide-react";
-import type { CourseAudienceView } from "@/application/catalog/course-audience";
+import type { CohortAudienceSource, CourseAudienceSource, CourseAudienceView } from "@/application/catalog/course-audience";
 
 export default function CourseAudience({ who }: { who: CourseAudienceView }) {
   if (!who.lead && who.stages.length === 0 && who.goals.length === 0) return null;
@@ -47,4 +48,18 @@ export default function CourseAudience({ who }: { who: CourseAudienceView }) {
       )}
     </div>
   );
+}
+
+/* ═══ وفي صفحات المسار تُحمَّل حين تُفتح التفاصيل لا مع الصفحة (٨ نوفمبر ٢٠٢٦) ═══
+   `course-audience.ts` يقرأ كتالوجَ التشخيص كلَّه (نحو ١٠٠ ك.ب مضغوطة) — ولذلك تحمّله صفحةُ الدورة بعد الرسم (#883). وقالبُ
+   المسار (`CourseJourney`) يُفتح في ‎/go وصفحات المسار ونتيجة التشخيص، وشكا صاحبُ المنصّة من بطئها. فهذا لا يُستورد إلّا داخل
+   «كل تفاصيل الدورة» المفتوحة: صندوقُها يُركَّب حين يُفتح، فيُطلب الملفُّ حينئذٍ ويظهر القسمُ متى وصل. */
+export function LazyCourseAudience({ course, cohorts }: { course: CourseAudienceSource; cohorts: readonly CohortAudienceSource[] }) {
+  const [mod, setMod] = useState<typeof import("@/application/catalog/course-audience") | null>(null);
+  useEffect(() => {
+    let on = true;
+    void import("@/application/catalog/course-audience").then((m) => { if (on) setMod(m); }).catch(() => undefined);
+    return () => { on = false; };
+  }, []);
+  return mod ? <CourseAudience who={mod.courseAudienceView(course, cohorts)} /> : null;
 }
