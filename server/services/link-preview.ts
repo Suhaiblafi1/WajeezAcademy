@@ -87,7 +87,7 @@ export function trainerPagePreview(x: {
   const photo = x.photoUrl ? (x.photoUrl.startsWith('http') ? x.photoUrl : `${x.origin}${x.photoUrl}`) : null
   return metaPage({
     title: `${x.name} — أكاديمية وجيز`, text: x.headline ?? 'دورات بث مباشر في أكاديمية وجيز', url, to: url, redirect: false,
-    image: photo ? { url: photo, type: null, w: null, h: null } : { url: `${x.origin}/og-image.png`, type: 'image/png', w: 1200, h: 630 },
+    image: photo ? { url: photo, type: null, w: null, h: null } : { url: `${x.origin}/og-image.png?v=2`, type: 'image/png', w: 1200, h: 630 },
   })
 }
 

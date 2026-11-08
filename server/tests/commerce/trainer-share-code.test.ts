@@ -351,7 +351,7 @@ describe('⑩ معاينة صفحته العامة', () => {
     const res = await page(slug)
     expect(res.statusCode).toBe(200)
     expect(res.body, 'عنوان الصفحة ليس اسمه').toMatch(/og:title" content="مدرّب A — أكاديمية وجيز"/)
-    expect(res.body).toMatch(/og:image" content="[^"]*\/og-image\.png"/)
+    expect(res.body).toMatch(/og:image" content="[^"]*\/og-image\.png\?v=2"/)
     expect(res.body, 'صفحة المدرب تحول الزاحف').not.toContain('location.replace')
   })
 

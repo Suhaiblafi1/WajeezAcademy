@@ -32,7 +32,7 @@ describe('صفحة المسار الخاص', () => {
     expect(PAGE).toMatch(/<SeoHead[^>]*noindex/)
     const html = readFileSync(join(root, 'index.html'), 'utf8')
     expect(html).toMatch(/<meta property="og:site_name" content="أكاديمية وجيز" \/>/)
-    expect(html).toMatch(/<meta property="og:image" content="%VITE_SITE_ORIGIN%\/og-image\.png" \/>/)
+    expect(html).toMatch(/<meta property="og:image" content="%VITE_SITE_ORIGIN%\/og-image\.png\?v=2" \/>/)
   })
 
   it('⚠️ طريقها في التطبيق — والأداة تعطي الرابط القصير بسبب لكل دورة', () => {
