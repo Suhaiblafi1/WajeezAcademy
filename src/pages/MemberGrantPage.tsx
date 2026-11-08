@@ -765,11 +765,13 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         {advisorHref && (
           <Card className="mt-4 flex flex-col items-center gap-4 text-center sm:flex-row sm:text-start">
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-teal/10"><MessageCircle className="h-6 w-6 text-teal-light-ink" aria-hidden="true" /></span>
+            {/* ويختار المستشارُ الدوراتِ بنفسه من سيرته وحدَها — قرارُ صاحب المنصّة (٨ نوفمبر ٢٠٢٦): «غيّر راسل مستشارك إلى: اطلب
+                من مستشارك يحدّد لك الدوراتِ بنفسه وأرفق له السيرةَ الذاتيّةَ فقط». والرسالةُ الجاهزةُ تقول ذلك (`grantAdvisorTextAr`) */}
             <span className="min-w-0 flex-1">
-              <span className="block font-black">تحتاج مساعدة في الاختيار؟</span>
-              <span className="block text-read text-muted-foreground">مستشارك الخاص يرد عليك مباشرة على واتساب.</span>
+              <span className="block font-black">دع مستشارك يختار لك الدورات</span>
+              <span className="block text-read text-muted-foreground">أرسل له سيرتك الذاتية فقط على واتساب، وهو يحدد لك الدورات المناسبة.</span>
             </span>
-            <Button as="a" href={advisorHref} target="_blank" rel="noreferrer" icon={MessageCircle} className="shrink-0">راسل مستشارك</Button>
+            <Button as="a" href={advisorHref} target="_blank" rel="noreferrer" icon={MessageCircle} className="shrink-0">اطلب من مستشارك</Button>
           </Card>
         )}
 
