@@ -10,6 +10,7 @@ import { AuthError } from './auth.service'
 import { listedCohortWhere, openRegistrationWhere } from './registration-window'
 import { publicTrainerWhere, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 import { photoPublicUrl } from './storage.service'
+import { publicVideosOf } from './trainer-public-video'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { cohortSummaryAr } from '../../src/application/learning/cohort-summary'
 import { termKey } from '../../src/application/terms/season'
@@ -272,6 +273,10 @@ export class PublicCatalogService {
       courseCount: p.courses.length,
     }))
 
+    /* «تعرّف على مدرّبك» (٨ نوفمبر ٢٠٢٦): فيديو تعريفه وحدَه — الصفحةُ صفحتُه لا صفحةُ دورة. والبوّابةُ
+       ردّت الصفحةَ كلَّها ٤٠٤ أعلاه إن لم يجز عرضُه، فلا يُقرأ فيديو من لم يمرّ بها. */
+    const video = (await publicVideosOf(this.prisma, [profile.id], null)).get(profile.id) ?? null
+
     return {
       slug,
       name: profile.application.fullName,
@@ -289,6 +294,7 @@ export class PublicCatalogService {
       referralCode: profile.referralLinks[0]?.code ?? null,
       paths,
       cohorts,
+      video,
     }
   }
 

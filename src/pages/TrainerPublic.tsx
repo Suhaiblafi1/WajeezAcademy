@@ -24,6 +24,8 @@ import { REFERRAL_KEY } from "@/application/commerce/referral";
 import { fmtMoney, fmtNum } from "@/application/text/format-ar";
 import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 import { countAr } from "@/application/text/count-ar";
+import { renderableVideo } from "@/application/trainer/marketing-video";
+import { TrainerVideoFrame } from "@/components/TrainerVideo";
 
 interface PublicCohort {
   id: string; title: string; courseId: string; courseTitle: string;
@@ -45,6 +47,8 @@ interface TrainerPage {
     courseCount: number;
   }[];
   cohorts: PublicCohort[];
+  /* «تعرّف على مدرّبك» (٨ نوفمبر ٢٠٢٦): فيديو تعريفه — يُفحص بـ`renderableVideo` قبل أن يُرسم */
+  video?: unknown;
 }
 
 export default function TrainerPublic() {
@@ -65,6 +69,7 @@ export default function TrainerPublic() {
   const current = loaded?.slug === slug ? loaded : null;
   const page = current?.page ?? null;
   const missing = current !== null && current.page === null;
+  const video = renderableVideo(page?.video);
 
   /* الرمزُ يُحفظ عند وصول الصفحة لا عند الضغط على شعبة: الزائرُ قد يتصفّح
      ثمّ يعود من طريقٍ آخر، والبابُ الذي دخل منه واحد. */
@@ -131,6 +136,8 @@ export default function TrainerPublic() {
             </div>
           </div>
           {page.bio && <p className="mt-6 whitespace-pre-line text-read leading-7">{page.bio}</p>}
+          {/* فيديو تعريفه — بالمكوّن نفسِه الذي في صفحة الدورة، ولا شيءَ حين لا فيديو */}
+          {video && <div className="mt-6 md:max-w-2xl"><TrainerVideoFrame video={video} trainerName={page.name} /></div>}
           {page.specialties.length > 0 && (
             <ul className="mt-5 flex flex-wrap gap-2">
               {page.specialties.map((s) => (
