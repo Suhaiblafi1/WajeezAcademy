@@ -226,3 +226,15 @@ describe('السعر قبل وبعد (٨ نوفمبر ٢٠٢٦)', () => {
     expect(PAGE).toMatch(/data-testid="private-path-price-was">\s*قبل الاستبدال كان <bdi dir="ltr">\{fmtMoney\(v\.price\.total/)
   })
 })
+
+describe('كيف يختار بين الشعب: سطر واحد في المسار الشخصي (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ ‎/go يطلب السطر الواحد، وغيرها الثلاثة كما كانت', () => {
+    const picker = code('src/components/CohortPicker.tsx')
+    expect(picker).toContain('const COHORT_CHOICE_ONE_LINE_AR = "— اختر حسب الموعد أو المدرب أو المحاور"')
+    expect(picker).toMatch(/\{many && hintOneLine && \([\s\S]*?\{COHORT_CHOICE_ONE_LINE_AR\}/)
+    expect(picker).toMatch(/\{many && !hintOneLine && \([\s\S]*?COHORT_CHOICE_HINTS_AR\.map/)
+    expect(JOURNEY).toMatch(/hintOneLine=\{cohortHintOneLine\}/)
+    expect(PAGE).toMatch(/reasonsProminentLabelAr=\{REASON_LABEL_AR\}\s*cohortHintOneLine/)
+    expect(code('src/pages/Pathway.tsx'), 'صفحة المسار المعتادة صارت سطرا واحدا').not.toMatch(/cohortHintOneLine/)
+  })
+})

@@ -285,6 +285,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         courseIds={courseIds}
         reasons={reasons}
         reasonsProminentLabelAr={REASON_LABEL_AR}
+        cohortHintOneLine
         delivery={delivery}
         headingLevel="h2"
         showSchedule

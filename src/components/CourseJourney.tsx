@@ -73,6 +73,7 @@ export default function CourseJourney({
   courseIds,
   reasons,
   reasonsProminentLabelAr,
+  cohortHintOneLine = false,
   delivery,
   headingLevel: Heading = "h3",
   edit,
@@ -90,6 +91,8 @@ export default function CourseJourney({
      توليد الرابط، بشكل بارز». فالسببُ هناك كتبه مستشارٌ لهذا المتعلّم بعينه — هو ما يقنعه، لا سطرٌ رماديٌّ بعد المهارات.
      وبلا هذا الخيار يبقى السطرُ كما كان في كلّ صفحة. */
   reasonsProminentLabelAr?: string;
+  /** فوق الشعب سطرٌ واحدٌ يقول كيف يختار لا ثلاثة — للمسار الشخصيّ ‎/go (`CohortPicker`) */
+  cohortHintOneLine?: boolean;
   /** طريقة تقديم المسار — تُعرض ضمن تفاصيل كل دورة */
   delivery?: string;
   /** مشروع التخرّج — سطرٌ أخيرٌ في الرحلة نفسها لا صندوقٌ منفصلٌ خارجها */
@@ -332,6 +335,7 @@ export default function CourseJourney({
                         onSelect={(cid) => pick(c.id, cid)}
                         running={runningOnly(c.id)}
                         others={othersOf(c.id)}
+                        hintOneLine={cohortHintOneLine}
                       />
                     </div>
                   )}

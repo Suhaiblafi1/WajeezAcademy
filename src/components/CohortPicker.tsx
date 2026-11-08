@@ -174,6 +174,8 @@ function Seats({ c }: { c: CohortOption }) {
 
 /** ما يُقال فوق الشعب حين تكون أكثرَ من واحدة — بعد عددها («شعبتان …») */
 const COHORT_CHOICE_LEAD_AR = "لنفس الدورة ونفس الشهادة. اختر واحدة حسب:"
+/** والثلاثةُ في سطرٍ واحد — بعد عدد الشعب («شعبتان — …»)، للمسار الشخصيّ */
+const COHORT_CHOICE_ONE_LINE_AR = "— اختر حسب الموعد أو المدرب أو المحاور"
 /** كيف يقرّر — الموعدُ والمدرّبُ وخطّتُه */
 const COHORT_CHOICE_HINTS_AR: readonly { label: string; text: string }[] = [
   { label: "الموعد", text: "الأيام والساعة التي تناسب وقتك، وننبهك إن تعارضت مع دورة أخرى" },
@@ -188,6 +190,7 @@ export default function CohortPicker({
   compact = false,
   running = false,
   others,
+  hintOneLine = false,
 }: {
   cohorts: CohortOption[];
   selectedId: string | null;
@@ -199,6 +202,8 @@ export default function CohortPicker({
   running?: boolean;
   /** شعبٌ اختارها معها في الطلب نفسِه — دوراتُ مسارٍ يشتريه — فيُقال إن وقعت هذه عليها */
   others?: readonly TimedCohort[];
+  /** كيف يختار بين الشعب في سطرٍ واحد لا ثلاثة — للمسار الشخصيّ ‎/go (`COHORT_CHOICE_ONE_LINE_AR`) */
+  hintOneLine?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
   const group = useId();
@@ -238,7 +243,13 @@ export default function CohortPicker({
       {/* ═══ وكيف يختار بين الشعب — لا «اختر» وحدَها (٨ نوفمبر ٢٠٢٦) ═══
           قرارُ صاحب المنصّة: «اجعلها أوضح ليعلم أيّهما يختار وكيف يقرّر.. سواءً الوقت أو المدرّب المناسب لك أو المحاور».
           فالدورةُ واحدةٌ والشهادةُ واحدة، والفرقُ ثلاثة: الموعد، والمدرّب، وخطّتُه (`COHORT_CHOICE_HINTS_AR`) */}
-      {many && (
+      {/* وفي المسار الشخصيّ سطرٌ واحد (صاحب المنصّة، ٨ نوفمبر ٢٠٢٦: «اختصر الآتي لسطرٍ واحدٍ فقط في المسار الشخصي») */}
+      {many && hintOneLine && (
+        <p id={`${group}-label`} className="mb-2 text-read font-bold leading-6 text-foreground">
+          {cohortsCountAr(cohorts.length)} {COHORT_CHOICE_ONE_LINE_AR}
+        </p>
+      )}
+      {many && !hintOneLine && (
         <div className="mb-2.5">
           <p id={`${group}-label`} className="text-read font-black leading-6 text-foreground">
             {cohortsCountAr(cohorts.length)} {COHORT_CHOICE_LEAD_AR}
