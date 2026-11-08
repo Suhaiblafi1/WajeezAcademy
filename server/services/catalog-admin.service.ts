@@ -1111,8 +1111,17 @@ export class CatalogAdminService {
 
     const newStatus = decision === 'approve' ? 'approved' : decision === 'reject' ? 'rejected' : 'changes_requested'
     return this.prisma.$transaction(async (tx) => {
+      /* ═══ والقرارُ الأوّلُ يغلب (٨ نوفمبر ٢٠٢٦) ═══
+         كان الطلبُ يُقرأ «قيد المراجعة» خارج المعاملة ثمّ يُكتب بلا شرط: فمراجعان معا — أحدُهما يعتمد والآخرُ يردّ —
+         يمضيان كلاهما، فيُكتب للطلب قراران متضادّان، ويُعلَّم «مردودا» والاسمُ الذي فيه قد كُتب على الدورة ونُشر. فالحالةُ
+         تُنقل بشرطِ أنّها ما زالت «قيد المراجعة»، والثاني يُردّ. والحارس: `server/tests/catalog/decide-publish-once.test.ts`. */
+      const claimed = await tx.contentChangeRequest.updateMany({
+        where: { id: changeRequestId, status: 'in_review' },
+        data: { status: newStatus, reviewedBy: actorId, reviewedAt: new Date() },
+      })
+      if (claimed.count === 0) throw new AuthError('bad_state', 'سبقك مراجع آخر إلى هذا الطلب — حدّث القائمة', 409)
       await tx.contentApprovalDecision.create({ data: { changeRequestId, actorId, decision, noteAr } })
-      const updated = await tx.contentChangeRequest.update({ where: { id: changeRequestId }, data: { status: newStatus, reviewedBy: actorId, reviewedAt: new Date() } })
+      const updated = await tx.contentChangeRequest.findUniqueOrThrow({ where: { id: changeRequestId } })
       /* والاسمُ في الحمولة يُكتب عند الاعتماد — وكان يُعتمد ولا يُكتب. وطلبُ الاسم
          وحدَه (`course_rename`) لا يمسّ حالةَ الدورة: منشورةٌ تبقى منشورة. */
       const renameTo = decision === 'approve' && cr.entityType === 'course' ? renameTitleOf(cr.payload) : null
