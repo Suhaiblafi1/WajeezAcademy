@@ -111,19 +111,22 @@ describe('٢ب) صورة المدرب كبيرة في صندوق الشعبة �
     expect(one, 'عاد الوجه الصغير').not.toMatch(/h-11 w-11/)
   })
 
-  it('⚠️ واسم الشعبة أول ما في الصندوق — أكبر من اسم المدرب وكاملا بلا قص (٢٦ أكتوبر ٢٠٢٦)', () => {
-    /* «يجب أن يكون عنوانُ الدورة ظاهرا فهو أهمُّ من المدرّب واسمه» (صاحب المنصّة) */
+  it('⚠️ واسم الشعبة أول ما في الصندوق إن خالف اسم الدورة — سطرا صغيرا كاملا بلا قص (٨ نوفمبر ٢٠٢٦)', () => {
+    /* كان (٢٦ أكتوبر ٢٠٢٦) أكبرَ ما في الصندوق: «عنوانُ الدورة أهمُّ من المدرّب». ثمّ قال صاحبُ المنصّة (٨ نوفمبر ٢٠٢٦):
+       «اسمُ الدورة مكرّرٌ عند الشعب.. لا تكرّره إن كان متشابها، وإن كان مختلفا ضعه بالنصّ في الصندوق الصغير كعنوان
+       الشعبة». فاسمٌ يخالف اسمَ الدورة (هنا «شعبة 1» ولا اسمَ دورةٍ في الكتالوج يطابقه) سطرٌ صغيرٌ أعلى الصندوق */
     const at = one.indexOf('شعبة 1')
     expect(at, `اسم الشعبة غائب: ${one.slice(0, 1200)}`).toBeGreaterThan(-1)
     /* وسمُ العنصر الذي يحمله — آخرُ «<span» قبله */
     const tag = one.slice(one.lastIndexOf('<span', at), at)
-    expect(tag).toContain('text-lg')
+    expect(tag).toContain('data-testid="cohort-label"')
+    expect(tag).toContain('text-read')
+    expect(tag, 'عاد كبيرا').not.toMatch(/text-(lg|xl)/)
     expect(tag, 'مقصوص').not.toContain('truncate')
     expect(at, 'قبل الصورة').toBeLessThan(one.indexOf('<img '))
     const nameAt = one.indexOf('احمد صالح الطيار')
     expect(nameAt).toBeGreaterThan(at)
     const nameTag = one.slice(one.lastIndexOf('<span', nameAt), nameAt)
-    expect(nameTag, 'اسم المدرب أكبر من اسم الشعبة').not.toMatch(/text-(lg|xl)/)
     expect(nameTag).toContain('text-base')
   })
 

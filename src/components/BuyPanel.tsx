@@ -66,6 +66,7 @@ import {
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { buildDiscountPct } from "@/application/commerce/discount-policy";
 import { track } from "@/services/analytics";
+import { distinctCohortTitle } from "@/application/learning/cohort-title";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -649,7 +650,7 @@ export default function BuyPanel({
                         >
                           {options.map((o) => (
                             <option key={o.id} value={o.id} className="bg-surface">
-                              {startsLabel(o)}{o.title ? ` — ${o.title}` : ""}{o.trainers.length > 0 ? ` — مع ${o.trainers.join(" و")}` : ""}
+                              {startsLabel(o)}{(() => { const t = distinctCohortTitle(o.title, line.name); return t ? ` — ${t}` : ""; })()}{o.trainers.length > 0 ? ` — مع ${o.trainers.join(" و")}` : ""}
                             </option>
                           ))}
                         </select>

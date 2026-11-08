@@ -21,8 +21,12 @@ const PATHWAY = code('src/pages/Pathway.tsx')
 const JOURNEY = code('src/components/CourseJourney.tsx')
 
 describe('صفحة المسار الخاص', () => {
-  it('⚠️ زر واحد «أكمل التسجيل» يفتح لوح الدفع القائم بالدورات والكود نفسيهما', () => {
-    expect(PAGE.match(/أكمل التسجيل/g)?.length, 'أكثر من زر شراء أو بلا زر').toBe(1)
+  it('⚠️ «أكمل التسجيل» يفتح لوح الدفع القائم بالدورات والكود نفسيهما — من البطاقة ومن الزر الثابت، بطريق واحد', () => {
+    /* زرّان بقرار صاحب المنصّة (٨ نوفمبر ٢٠٢٦): البطاقةُ أسفلَ الصفحة، وزرٌّ صغيرٌ ثابتٌ على الشاشة. وطريقُهما واحد (`buy`) */
+    expect(PAGE.match(/أكمل التسجيل/g)?.length, 'زر شراء ثالث أو بلا زر').toBe(2)
+    expect(PAGE).toMatch(/<Button tone="confirm" className="mt-4 w-full" onClick=\{buy\} disabled=\{!ready\}>أكمل التسجيل<\/Button>/)
+    expect(PAGE).toMatch(/onClick=\{ready \? buy : \(\) => document\.getElementById\("buy"\)/)
+    expect(PAGE.match(/<BuyPanel\b/g)?.length, 'لوح دفع ثان').toBe(1)
     /* بدوراتها كما هي الآن — بعد الاستبدال إن كان — وبشعبها المختارة */
     expect(PAGE).toMatch(/<BuyPanel[\s\S]*?initialCoupon=\{v\.couponCode \?\? ""\}[\s\S]*?lines=\{courseIds\.map\(\(id\) => \(\{ courseId: id, name: titleOf\(id\), cohortId: picked\[id\] \}\)\)\}/)
     expect(PAGE, 'لا ينسب الطلب إلى مولد الرابط').toMatch(/rememberBuyLink\(r\.buyLinkToken\)/)
@@ -152,11 +156,105 @@ describe('تفاصيل الدورة زر ظاهر قبل الشعب (٨ نوفم
     const at = (re: RegExp) => JOURNEY.search(re)
     const toggle = at(/data-testid="course-details-toggle"/)
     expect(toggle).toBeGreaterThan(-1)
-    expect(JOURNEY).toMatch(/data-testid="course-details-toggle"[\s\S]*?كل تفاصيل الدورة[\s\S]*?إخفاء التفاصيل[\s\S]*?<ChevronDown className="h-5 w-5/)
+    expect(JOURNEY).toMatch(/data-testid="course-details-toggle"[\s\S]*?>تفاصيل الدورة<[\s\S]*?إخفاء التفاصيل[\s\S]*?<ChevronDown className="h-5 w-5/)
+    /* «تفاصيل الدورة» بلا «كل» (٨ نوفمبر ٢٠٢٦) */
+    expect(JOURNEY, 'عادت «كل تفاصيل الدورة»').not.toMatch(/>كل تفاصيل الدورة</)
     const content = at(/<CollapsibleContent className="overflow-hidden/)
     expect(content, 'التفاصيل قبل الزر').toBeGreaterThan(toggle)
     expect(content, 'التفاصيل بعد الشعب').toBeLessThan(at(/<CohortPicker\s/))
     /* ولا سهمٌ صغيرٌ بجانب العنوان بعدُ — زرٌّ واحدٌ يُرى */
     expect(JOURNEY).not.toMatch(/\{c\.title\}\s*<\/span>\s*<ChevronDown/)
+  })
+})
+
+describe('الدفع زر صغير ثابت، والبطاقة بعد «تفتح تلقائيا» (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ البطاقة أسفل الصفحة بعد جملة فتح المنصة، والزر الثابت يختفي حين تظهر', () => {
+    const at = (re: RegExp) => PAGE.search(re)
+    expect(at(/data-testid="private-path-price"/)).toBeGreaterThan(at(/تفتح تلقائيا بعد أول دفع ناجح/))
+    expect(at(/data-testid="private-path-price"/)).toBeGreaterThan(at(/<PathwayEcosystemPanel \/>/))
+    expect(PAGE).toMatch(/\{showPrice && !buyInView && !buyOpen && !authOpen && \([\s\S]*?fixed inset-x-0 bottom-0[\s\S]*?data-testid="private-path-sticky-buy"/)
+    expect(PAGE).toMatch(/new IntersectionObserver\(\(\[e\]\) => setBuyInView\(e\.isIntersecting\)/)
+  })
+})
+
+describe('الهاتف والأسهم الصغيرة (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ على الهاتف: الرقم بجانب العنوان لا عمودا، وخط الرحلة يخفى', () => {
+    expect(JOURNEY).toMatch(/z-10 hidden h-8 w-8[^"]*sm:grid/)
+    expect(JOURNEY).toMatch(/sm:hidden">\s*\{isSupport \? <LifeBuoy className="h-3 w-3" \/> : i \+ 1\}/)
+    expect(JOURNEY).toMatch(/absolute right-\[15px\] top-10 hidden [^"]*sm:block/)
+  })
+  it('⚠️ «لقاءات مباشرة» و«كل الشعب»: سهم يرى وكلمة تقول ما خلفه', () => {
+    const live = code('src/components/LiveSessionDates.tsx')
+    expect(live).toMatch(/\{open \? "إخفاء" : "كل المواعيد"\}\s*<ChevronDown className=\{`h-4 w-4/)
+    expect(code('src/components/CohortPicker.tsx')).toMatch(/كل الشعب \(\{cohorts\.length\}\)\s*<ChevronDown className="h-4 w-4"/)
+  })
+  it('⚠️ الشريط العلوي سطر واحد على الهاتف', () => {
+    const chrome = code('src/components/PathwayChrome.tsx')
+    expect(chrome).toMatch(/<span className="hidden text-sm font-medium sm:inline">الرئيسية<\/span>/)
+    expect(chrome).toMatch(/whitespace-nowrap font-black">أكاديمية وجيز/)
+    expect(chrome).toMatch(/<span className="hidden sm:inline">\{user\}<\/span>/)
+  })
+})
+
+describe('«لمن هذه الدورة» في تفاصيل المسار كما في صفحة الدورة (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ «تناسبك إن كنت» و«وتريد» في «كل تفاصيل الدورة» — من مكون واحد مع صفحة الدورة', () => {
+    const shared = code('src/components/CourseAudience.tsx')
+    expect(shared).toContain('تناسبك إن كنت')
+    expect(shared).toContain('وتريد')
+    expect(JOURNEY).toMatch(/<LazyCourseAudience course=\{c\} cohorts=\{cohorts\.get\(c\.id\) \?\? \[\]\} \/>/)
+    /* ولا يُستورد كتالوجُ التشخيص مع القالب (١٠٠ ك.ب) — بل حين تُفتح التفاصيل (#883 لصفحة الدورة) */
+    expect(JOURNEY, 'course-audience مستورد مع القالب').not.toMatch(/from "@\/application\/catalog\/course-audience"/)
+    expect(shared, 'course-audience مستورد ثابتا في المكون').not.toMatch(/^import \{[^}]*\} from "@\/application\/catalog\/course-audience"/m)
+    expect(shared).toMatch(/void import\("@\/application\/catalog\/course-audience"\)/)
+    /* داخل التفاصيل لا خارجها */
+    const at = (re: RegExp) => JOURNEY.search(re)
+    expect(at(/<LazyCourseAudience /)).toBeGreaterThan(at(/<CollapsibleContent className="overflow-hidden/))
+    expect(at(/<LazyCourseAudience /)).toBeLessThan(at(/<\/CollapsibleContent>/))
+    const course = code('src/pages/CoursePath.tsx')
+    expect(course).toMatch(/\{who\?\.lead && <CourseAudience who=\{who\} \/>\}/)
+    expect(course, 'نسخة ثانية في صفحة الدورة').not.toContain('تناسبك إن كنت')
+  })
+})
+
+describe('السعر قبل وبعد (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ الزر الثابت: الأصلي مشطوب بجانب ما يدفعه، و«بعد المنحة» فوقهما، وبكم غيره الاستبدال', () => {
+    expect(PAGE).toMatch(/`بعد \$\{current\.price\.grantNameAr \?\? "الخصم"\}`/)
+    expect(PAGE).toMatch(/line-through">\{fmtMoney\(current\.price\.before, current\.price\.currency\)\}<\/bdi>[\s\S]*?text-base font-black[^>]*>\{fmtMoney\(current\.price\.total/)
+    expect(PAGE).toMatch(/const priceShift = [\s\S]*?current\.price\.total - v\.price\.total/)
+    expect(PAGE).toMatch(/data-testid="private-path-price-shift"/)
+  })
+  it('⚠️ البطاقة: «ما تدفعه بعد المنحة»، وبعد الاستبدال ما كان وبكم تغير', () => {
+    expect(PAGE).toContain('"ما تدفعه بعد المنحة"')
+    expect(PAGE).toMatch(/data-testid="private-path-price-was">\s*قبل الاستبدال كان <bdi dir="ltr">\{fmtMoney\(v\.price\.total/)
+  })
+})
+
+describe('كيف يختار بين الشعب: سطر واحد في المسار الشخصي (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ ‎/go يطلب السطر الواحد، وغيرها الثلاثة كما كانت', () => {
+    const picker = code('src/components/CohortPicker.tsx')
+    expect(picker).toContain('const COHORT_CHOICE_ONE_LINE_AR = "— اختر حسب الموعد أو المدرب أو المحاور"')
+    expect(picker).toMatch(/\{many && hintOneLine && \([\s\S]*?\{COHORT_CHOICE_ONE_LINE_AR\}/)
+    expect(picker).toMatch(/\{many && !hintOneLine && \([\s\S]*?COHORT_CHOICE_HINTS_AR\.map/)
+    expect(JOURNEY).toMatch(/hintOneLine=\{cohortHintOneLine\}/)
+    expect(PAGE).toMatch(/reasonsProminentLabelAr=\{REASON_LABEL_AR\}\s*cohortHintOneLine/)
+    expect(code('src/pages/Pathway.tsx'), 'صفحة المسار المعتادة صارت سطرا واحدا').not.toMatch(/cohortHintOneLine/)
+  })
+})
+
+describe('الشعب: لا يكرر اسم الدورة، وتفاصيلها مطوية (٨ نوفمبر ٢٠٢٦)', () => {
+  const picker = code('src/components/CohortPicker.tsx')
+  it('⚠️ عنوان الشعبة يعرض صغيرا إن اختلف عن الدورة، ولا يعرض إن تشابه — لا عنوان كبير', () => {
+    expect(picker).toMatch(/const label = distinctCohortTitle\(c\.title, titleOfCourse\(c\.courseId\)\);/)
+    expect(picker).toMatch(/label && <span className="block text-read font-bold[^"]*" data-testid="cohort-label">\{label\}<\/span>/)
+    expect(picker, 'عاد عنوان الشعبة الكبير').not.toMatch(/\{c\.title && <span className="block text-lg/)
+  })
+  it('⚠️ ولوح الشراء بالقاعدة نفسها', () => {
+    expect(code('src/components/BuyPanel.tsx')).toMatch(/distinctCohortTitle\(o\.title, line\.name\)/)
+    expect(code('src/components/BuyPanel.tsx')).not.toMatch(/o\.title \? ` — \$\{o\.title\}`/)
+  })
+  it('⚠️ تفاصيل كل شعبة مطوية بزرها — لا تفتح واحدة تلقائيا', () => {
+    expect(picker).toMatch(/function CohortMore[\s\S]*?useState\(false\)[\s\S]*?data-testid="cohort-details-toggle"[\s\S]*?"تفاصيل الشعبة"/)
+    expect(picker).toMatch(/\(c\.summaryAr \|\| c\.sessions\.length > 0\) && <CohortMore key=\{c\.id\} c=\{c\} compact=\{compact\} \/>/)
+    expect(picker, 'عادت تفاصيل المختارة مفتوحة').not.toMatch(/\{on && \(selected\.summaryAr/)
   })
 })

@@ -165,7 +165,8 @@ describe('④ نبذة الشعبة — قبل الدفع وبعد الالتح�
   })
 
   it('⚠️ وتعرض في اختيار الموعد قبل الدفع، وفي صفحة الشعبة بعد الالتحاق', () => {
-    expect(code('src/components/CohortPicker.tsx')).toMatch(/\{selected\.summaryAr && \(\s*<p[^>]*>\{selected\.summaryAr\}<\/p>/)
+    /* ولكلّ شعبةٍ نبذتُها في «تفاصيل الشعبة» المطويّة — لا للمختارة وحدَها مفتوحة (صاحب المنصّة، ٨ نوفمبر ٢٠٢٦) */
+    expect(code('src/components/CohortPicker.tsx')).toMatch(/function CohortMore[\s\S]*?\{c\.summaryAr && \(\s*<p[^>]*>\{c\.summaryAr\}<\/p>/)
     expect(code('src/components/journey/StageWork.tsx')).toMatch(/\{detail\.cohort\.trainerPlan\?\.summaryAr && \(\s*<p[^>]*>\{detail\.cohort\.trainerPlan\.summaryAr\}<\/p>/)
     expect(code('src/services/cohort-prices.ts')).toMatch(/summaryAr: typeof c\.summaryAr === 'string' && c\.summaryAr\.trim\(\) \? c\.summaryAr\.trim\(\) : null/)
   })
