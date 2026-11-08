@@ -24,7 +24,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router";
-import { CalendarClock, Layers, Loader2, Sparkles, UserRound } from "lucide-react";
+import { CalendarClock, Gift, Layers, Loader2, Sparkles, UserRound } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { rememberBuyLink } from "@/services/buy-link-token";
@@ -50,9 +50,11 @@ import { Card, Inset } from "@/components/ui/Surface";
 import { courseById, courseDomain, courseFullById, courses, pathwayDelivery } from "@/data/courses";
 import { fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
-import { swapCandidates } from "@/application/catalog/pathway-swap";
+import { chosenCohorts, swapCandidates } from "@/application/catalog/pathway-swap";
+import CohortPicker from "@/components/CohortPicker";
 import {
-  goPath, GO_CODE_RE, privatePathHeadline, privatePathPrice, REASON_LABEL_AR, type PathPreviewNumbers, type PrivatePathPrice,
+  giftMissingAr, giftRuleAr, goPath, GO_CODE_RE, privatePathHeadline, privatePathPrice, REASON_LABEL_AR,
+  type GiftRule, type PathPreviewNumbers, type PrivatePathPrice,
 } from "@/application/commerce/private-path";
 
 interface PathView {
@@ -66,6 +68,11 @@ interface PathView {
   couponCode: string | null;
   unavailable: { titleAr: string; reasonAr: string }[];
   buyLinkToken: string;
+  /** الدورةُ المجانيّة وشرطُها (`private-path-gift.ts`) — وسعرُها الأصليّ يُعرض مشطوبا */
+  gift?: {
+    courseId: string; cohortId: string; titleAr: string; trainerName: string | null; firstSessionAt: string | null;
+    listPrice: number; currency: string; rule: GiftRule; minCourses: number; unavailableAr: string | null;
+  } | null;
 }
 type Loaded = { state: "loading" } | { state: "ready"; view: PathView } | { state: "moved"; to: string } | { state: "failed"; messageAr: string };
 
@@ -206,6 +213,19 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
     });
   }, [swapForId, courseIds, season, cohorts, picked, catalogVersion]);
 
+  /* ═══ والدورةُ المجانيّة (٨ نوفمبر ٢٠٢٦) ═══
+     طلبُ صاحب المنصّة: بطاقةٌ مستقلّةٌ بعد دورات المسار — «مجانية»، وسعرُها الأصليّ مشطوبٌ والحاليّ صفر، وسطرٌ بشرطها. وتُضاف
+     إلى الدفع بصفرٍ إن تحقّق الشرط، وإلّا لا تُضاف ويُقال كم دورةً تنقصه. وتعارضُ المواعيد يشملها في الاتّجاهين. والحكمُ عند
+     الدفع للخادم (`private-path-gift.ts`): هذا عرضٌ لما سيحكم به، لا حساب */
+  const gift = v.gift ?? null;
+  const [giftCohortId, setGiftCohortId] = useState<string | null>(v.gift?.cohortId ?? null);
+  const giftOptions = gift ? cohorts.get(gift.courseId) ?? [] : [];
+  const giftChosen = giftOptions.find((o) => o.id === giftCohortId) ?? giftOptions[0] ?? null;
+  const giftMissing = gift ? Math.max(0, gift.minCourses - courseIds.length) : 0;
+  const giftOn = Boolean(gift && !gift.unavailableAr && giftChosen && giftMissing === 0);
+  const giftTimed = giftChosen && gift ? [{ cohortId: giftChosen.id, courseId: gift.courseId, titleAr: gift.titleAr, sessions: giftChosen.sessions }] : [];
+  const pathTimed = chosenCohorts(courseIds, (id) => cohorts.get(id) ?? [], picked, (id) => courseById(id)?.name ?? id);
+
   const changed = courseIds.join() !== originalIds.join() || key !== originalKey;
   const reset = () => { setCourseIds(originalIds); setPicked(originalPicked); setSwapForId(null); };
   const titleOf = (id: string) => courseFullById(id)?.title ?? v.courses.find((c) => c.courseId === id)?.titleAr ?? id;
@@ -286,6 +306,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         reasons={reasons}
         reasonsProminentLabelAr={REASON_LABEL_AR}
         cohortHintOneLine
+        extraBusy={giftOn ? giftTimed : undefined}
         delivery={delivery}
         headingLevel="h2"
         showSchedule
@@ -294,7 +315,8 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         edit={{
           swapOnly: true,
           swapForId,
-          pool: swapChoices.map((s) => ({ id: s.courseId, name: courseById(s.courseId)?.name ?? s.courseId, note: s.noteAr })),
+          /* والدورةُ المجانيّةُ لا تُستبدل بها دورةٌ مدفوعة — هي في بطاقتها */
+          pool: swapChoices.filter((s) => s.courseId !== gift?.courseId).map((s) => ({ id: s.courseId, name: courseById(s.courseId)?.name ?? s.courseId, note: s.noteAr })),
           introAr: "لك أن تستبدل أي دورة بأخرى، وخاصة التي تتعارض مواعيدها. العدد ثابت، والسعر يحدث من جديد بعد الاستبدال.",
           onReset: changed ? reset : undefined,
           minReached: true,
@@ -343,6 +365,42 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         </>
       )}
 
+      {gift && journeyReady && (
+        <Card className="mt-4 p-4" data-testid="private-path-gift">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <h2 className="flex min-w-0 items-start gap-2 text-base font-black leading-snug">
+              <Gift className="mt-0.5 h-5 w-5 shrink-0 text-gold-ink" aria-hidden="true" />
+              {courseFullById(gift.courseId)?.title ?? gift.titleAr}
+            </h2>
+            <Badge className="bg-gold font-black text-on-gold">مجانية</Badge>
+          </div>
+          <p className="mt-2 flex flex-wrap items-baseline gap-x-2 text-read">
+            {gift.listPrice > 0 && <bdi dir="ltr" className="text-muted-foreground line-through">{fmtMoney(gift.listPrice, gift.currency)}</bdi>}
+            <bdi dir="ltr" className="text-lg font-black text-foreground">{fmtMoney(0, gift.currency)}</bdi>
+          </p>
+          <p className="mt-1 text-read font-bold text-foreground">{giftRuleAr(gift)}</p>
+          {gift.unavailableAr ? (
+            <p className="mt-1 text-read text-gold-ink">لم تعد متاحة: {gift.unavailableAr}</p>
+          ) : giftMissing > 0 ? (
+            <p className="mt-1 text-read text-gold-ink" data-testid="private-path-gift-missing">{giftMissingAr(giftMissing)}</p>
+          ) : (
+            <p className="mt-1 text-read text-teal-light-ink">تضاف إلى طلبك مجانا عند الدفع</p>
+          )}
+          {!gift.unavailableAr && giftOptions.length > 0 && (
+            <div className="mt-3">
+              <CohortPicker
+                compact
+                hintOneLine
+                cohorts={giftOptions}
+                selectedId={giftChosen?.id ?? null}
+                onSelect={setGiftCohortId}
+                others={pathTimed}
+              />
+            </div>
+          )}
+        </Card>
+      )}
+
       {v.unavailable.length > 0 && (
         <Inset className="mt-3 text-read">
           {v.unavailable.map((u) => <p key={u.titleAr}>«{u.titleAr}» لم تعد متاحة: {u.reasonAr}</p>)}
@@ -373,6 +431,9 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
                 <p className="text-muted-foreground" data-testid="private-path-price-was">
                   قبل الاستبدال كان <bdi dir="ltr">{fmtMoney(v.price.total, v.price.currency)}</bdi> — {priceShift > 0 ? "زاد" : "نقص"} <bdi dir="ltr">{fmtMoney(Math.abs(priceShift), current.price.currency)}</bdi>
                 </p>
+              )}
+              {giftOn && gift && (
+                <div className="flex justify-between"><dt>{courseFullById(gift.courseId)?.title ?? gift.titleAr}</dt><dd className="font-bold text-teal-light-ink">مجانية</dd></div>
               )}
               {v.lastDay && <p className="pt-1 text-muted-foreground">آخر يوم للمنحة: {cohortDayAr(`${v.lastDay}T12:00:00Z`, { weekday: "long", day: "numeric", month: "long" })}</p>}
             </dl>
@@ -451,7 +512,11 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
           email={session?.email ?? ""}
           kind="courses"
           initialCoupon={v.couponCode ?? ""}
-          lines={courseIds.map((id) => ({ courseId: id, name: titleOf(id), cohortId: picked[id] }))}
+          lines={[
+            ...courseIds.map((id) => ({ courseId: id, name: titleOf(id), cohortId: picked[id] })),
+            /* والمجانيّةُ في الطلب إن تحقّق شرطُها — والخادمُ يسعّرها بصفرٍ برمز الرابط ويحكم ثانيةً (`private-path-gift.ts`) */
+            ...(giftOn && gift && giftChosen ? [{ courseId: gift.courseId, name: courseFullById(gift.courseId)?.title ?? gift.titleAr, cohortId: giftChosen.id }] : []),
+          ]}
           onClose={() => setBuyOpen(false)}
         />
       )}

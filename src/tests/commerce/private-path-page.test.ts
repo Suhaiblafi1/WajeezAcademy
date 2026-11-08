@@ -28,7 +28,9 @@ describe('صفحة المسار الخاص', () => {
     expect(PAGE).toMatch(/onClick=\{ready \? buy : \(\) => document\.getElementById\("buy"\)/)
     expect(PAGE.match(/<BuyPanel\b/g)?.length, 'لوح دفع ثان').toBe(1)
     /* بدوراتها كما هي الآن — بعد الاستبدال إن كان — وبشعبها المختارة */
-    expect(PAGE).toMatch(/<BuyPanel[\s\S]*?initialCoupon=\{v\.couponCode \?\? ""\}[\s\S]*?lines=\{courseIds\.map\(\(id\) => \(\{ courseId: id, name: titleOf\(id\), cohortId: picked\[id\] \}\)\)\}/)
+    expect(PAGE).toMatch(/<BuyPanel[\s\S]*?initialCoupon=\{v\.couponCode \?\? ""\}[\s\S]*?lines=\{\[\s*\.\.\.courseIds\.map\(\(id\) => \(\{ courseId: id, name: titleOf\(id\), cohortId: picked\[id\] \}\)\),/)
+    /* والدورةُ المجانيّةُ بندٌ إن تحقّق شرطُها وحدَه (٨ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/\.\.\.\(giftOn && gift && giftChosen \? \[\{ courseId: gift\.courseId, [^\]]*cohortId: giftChosen\.id \}\] : \[\]\)/)
     expect(PAGE, 'لا ينسب الطلب إلى مولد الرابط').toMatch(/rememberBuyLink\(r\.buyLinkToken\)/)
   })
 
@@ -256,5 +258,28 @@ describe('الشعب: لا يكرر اسم الدورة، وتفاصيلها م�
     expect(picker).toMatch(/function CohortMore[\s\S]*?useState\(false\)[\s\S]*?data-testid="cohort-details-toggle"[\s\S]*?"تفاصيل الشعبة"/)
     expect(picker).toMatch(/\(c\.summaryAr \|\| c\.sessions\.length > 0\) && <CohortMore key=\{c\.id\} c=\{c\} compact=\{compact\} \/>/)
     expect(picker, 'عادت تفاصيل المختارة مفتوحة').not.toMatch(/\{on && \(selected\.summaryAr/)
+  })
+})
+
+describe('الدورة المجانية في رابط المسار (٨ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ بطاقة مستقلة بعد دورات المسار: «مجانية»، والأصلي مشطوب والحالي صفر، وسطر شرطها وما ينقصه', () => {
+    expect(PAGE).toMatch(/data-testid="private-path-gift"[\s\S]*?>مجانية<\/Badge>[\s\S]*?line-through">\{fmtMoney\(gift\.listPrice, gift\.currency\)\}[\s\S]*?\{fmtMoney\(0, gift\.currency\)\}[\s\S]*?\{giftRuleAr\(gift\)\}[\s\S]*?\{giftMissingAr\(giftMissing\)\}/)
+    const at = (re: RegExp) => PAGE.search(re)
+    expect(at(/data-testid="private-path-gift"/), 'قبل دورات المسار').toBeGreaterThan(at(/<CourseJourney/))
+  })
+  it('⚠️ تعارض المواعيد في الاتجاهين، ولا تستبدل بها دورة مدفوعة', () => {
+    expect(PAGE).toMatch(/extraBusy=\{giftOn \? giftTimed : undefined\}/)
+    expect(PAGE).toMatch(/<CohortPicker[\s\S]*?cohorts=\{giftOptions\}[\s\S]*?others=\{pathTimed\}/)
+    expect(PAGE).toMatch(/swapChoices\.filter\(\(s\) => s\.courseId !== gift\?\.courseId\)/)
+    expect(JOURNEY).toMatch(/\.\.\.\(extraBusy \?\? \[\]\)/)
+  })
+  it('⚠️ والأداة للسوبر أدمن وحده، ولوح الدفع يرسل رمز الرابط في التسعير ويسمي البند المجاني', () => {
+    const tool = code('src/components/BuyLinkBuilder.tsx')
+    expect(tool).toMatch(/\{prep\.canGift && \(gift \?/)
+    expect(tool).toContain('شرطها: شراء المسار كاملا')
+    expect(tool).toContain('شرطها: دورتين منه على الأقل')
+    const panel = code('src/components/BuyPanel.tsx')
+    expect(panel).toMatch(/"\/api\/learner\/checkout\/quote", \{[\s\S]*?buyLink: buyLinkToken\(\)/)
+    expect(panel).toMatch(/i\.unitPrice === 0 && i\.listPrice > 0[\s\S]*?>مجانية</)
   })
 })

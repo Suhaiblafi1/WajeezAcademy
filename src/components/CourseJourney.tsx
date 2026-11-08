@@ -74,6 +74,7 @@ export default function CourseJourney({
   reasons,
   reasonsProminentLabelAr,
   cohortHintOneLine = false,
+  extraBusy,
   delivery,
   headingLevel: Heading = "h3",
   edit,
@@ -93,6 +94,8 @@ export default function CourseJourney({
   reasonsProminentLabelAr?: string;
   /** فوق الشعب سطرٌ واحدٌ يقول كيف يختار لا ثلاثة — للمسار الشخصيّ ‎/go (`CohortPicker`) */
   cohortHintOneLine?: boolean;
+  /** شعبٌ في الطلب نفسِه من خارج الرحلة — يشملها فحصُ تعارض المواعيد (`cohort-overlap.ts`) */
+  extraBusy?: readonly TimedCohort[];
   /** طريقة تقديم المسار — تُعرض ضمن تفاصيل كل دورة */
   delivery?: string;
   /** مشروع التخرّج — سطرٌ أخيرٌ في الرحلة نفسها لا صندوقٌ منفصلٌ خارجها */
@@ -142,7 +145,8 @@ export default function CourseJourney({
      والدورةُ التي لم يختر لها بعدُ تُحسب بأوّل شعبها — وهي ما يشتريه إن لم يبدّل */
   const cohortsOf = (id: string) => cohorts.get(id) ?? [];
   const chosen = chosenCohorts(list.map((o) => o.id), cohortsOf, picked, (id) => list.find((o) => o.id === id)?.title ?? id);
-  const othersOf = (courseId: string): TimedCohort[] => chosen.filter((o) => o.courseId !== courseId);
+  /* وشعبٌ أخرى في الطلب نفسِه ليست من دورات الرحلة — الدورةُ المجانيّةُ في رابط المسار (٨ نوفمبر ٢٠٢٦) — فيشملها فحصُ التعارض */
+  const othersOf = (courseId: string): TimedCohort[] => [...chosen.filter((o) => o.courseId !== courseId), ...(extraBusy ?? [])];
   const isSupportId = (id: string) => Boolean(supportReasons?.[id]);
   const firstSupport = list.findIndex((c) => isSupportId(c.id));
   const coreCount = firstSupport === -1 ? list.length : firstSupport;

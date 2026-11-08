@@ -5,7 +5,7 @@
    يولّد لمن، وأيُّ كودٍ يُقبل، والأثر. والنصوصُ بلا تشكيل (قواعدُ المستودَع). */
 
 import { useEffect, useMemo, useState } from "react";
-import { Copy, Link2, Trash2 } from "lucide-react";
+import { Copy, Gift, Link2, Trash2 } from "lucide-react";
 import Modal from "@/components/Modal";
 import Button from "@/components/ui/Button";
 import { Card, Inset } from "@/components/ui/Surface";
@@ -17,7 +17,7 @@ import { useCheckoutPreview } from "@/services/checkout-preview";
 import { courseById } from "@/data/courses";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { MAX_BUILT_COURSES } from "@/application/commerce/discount-policy";
-import { PATH_REASON_MAX } from "@/application/commerce/private-path";
+import { PATH_REASON_MAX, giftRuleAr, giftMinCourses, type GiftRule } from "@/application/commerce/private-path";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { toast } from "@/components/Toast";
 
@@ -27,6 +27,8 @@ interface Prepared {
   code: string | null;
   canChooseCode: boolean;
   canWhatsapp: boolean;
+  /** «أضف دورة هدية» — للسوبر أدمن وحدَه (٨ نوفمبر ٢٠٢٦) */
+  canGift?: boolean;
 }
 
 export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string; onClose: () => void }) {
@@ -39,6 +41,10 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
   const [code, setCode] = useState("");
   const [whatsapp, setWhatsapp] = useState(false);
   const [link, setLink] = useState<string | null>(null);
+  /* ═══ والدورةُ الهديّة (٨ نوفمبر ٢٠٢٦) ═══ — «أضف دورة هدية» بجانب «أضف دورة»: الدورةُ وشعبتُها وشرطُ تفعيلها.
+     للسوبر أدمن وحدَه (`canGift`)، والخادمُ يردّ غيرَه. وتُضاف للمتعلّم بصفرٍ عند الدفع إن تحقّق الشرط (`private-path-gift.ts`) */
+  const [gift, setGift] = useState<{ courseId: string; cohortId: string; rule: GiftRule } | null>(null);
+  const [addingGift, setAddingGift] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -69,6 +75,17 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
     setLink(null);
   };
 
+  const addGift = (courseId: string) => {
+    const first = cohorts.get(courseId)?.[0];
+    if (!first || picked.some((p) => p.courseId === courseId)) return;
+    setGift({ courseId, cohortId: first.id, rule: "all" });
+    setLink(null);
+  };
+  /* «دورتين على الأقل» لمسارٍ فيه دورتان فأكثر — وإلّا يعود الشرطُ «المسار كاملا» */
+  useEffect(() => {
+    if (gift?.rule === "two" && picked.length < 2) setGift((g) => (g ? { ...g, rule: "all" } : g));
+  }, [gift?.rule, picked.length]);
+
   const generate = async () => {
     if (picked.length === 0) return;
     setBusy(true);
@@ -80,6 +97,7 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
         courseId: first.courseId, cohortId: first.cohortId,
         adds: rest.map((p) => ({ courseId: p.courseId, cohortId: p.cohortId })),
         code: usedCode, ...(whatsapp ? { whatsapp: true } : {}),
+        ...(gift ? { gift } : {}),
         reasons: Object.fromEntries(picked.filter((p) => p.reason.trim()).map((p) => [p.courseId, p.reason.trim()])),
       });
       const full = r.goUrl ?? `${window.location.origin}${r.path}`;
@@ -133,10 +151,49 @@ export default function BuyLinkBuilder({ endpoint, onClose }: { endpoint: string
                   onChange={(e) => { add(e.target.value); setAdding(""); }}
                 >
                   <option value="">{loaded ? "أضف دورة…" : "جار تحميل الدورات…"}</option>
-                  {options.filter((o) => !picked.some((p) => p.courseId === o.id)).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  {options.filter((o) => !picked.some((p) => p.courseId === o.id) && o.id !== gift?.courseId).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                 </select>
               )}
             </div>
+            {prep.canGift && (gift ? (
+              <Card className="p-2" data-testid="buy-link-gift">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="flex items-center gap-1.5 text-read font-bold">
+                    <Gift className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
+                    دورة هدية: {courseById(gift.courseId)?.name ?? gift.courseId}
+                  </span>
+                  <button type="button" aria-label="احذف الدورة الهدية" onClick={() => { setGift(null); setLink(null); }}>
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+                <select
+                  aria-label="شعبة الهدية" className={`${staffSelectCls} mt-1 w-full`} value={gift.cohortId}
+                  onChange={(e) => { const v = e.target.value; setGift((g) => (g ? { ...g, cohortId: v } : g)); setLink(null); }}
+                >
+                  {(cohorts.get(gift.courseId) ?? []).map((o) => (
+                    <option key={o.id} value={o.id}>{o.title}{o.startsAt ? ` — ${cohortDayAr(o.startsAt)}` : ""} — {o.amount} {o.currency}</option>
+                  ))}
+                </select>
+                <select
+                  aria-label="شرط تفعيل الهدية" className={`${staffSelectCls} mt-1 w-full`} value={gift.rule}
+                  onChange={(e) => { const v = e.target.value as GiftRule; setGift((g) => (g ? { ...g, rule: v } : g)); setLink(null); }}
+                >
+                  <option value="all">شرطها: شراء المسار كاملا</option>
+                  <option value="two" disabled={picked.length < 2}>شرطها: دورتين منه على الأقل</option>
+                </select>
+                <p className="mt-1 text-read text-muted-foreground">
+                  يراها المتعلم «{giftRuleAr({ rule: gift.rule, minCourses: giftMinCourses(gift.rule, Math.max(1, picked.length)) ?? picked.length })}»، وتضاف بصفر عند الدفع إن تحقق الشرط.
+                </p>
+              </Card>
+            ) : (
+              <select
+                aria-label="أضف دورة هدية" className={`${staffSelectCls} w-full`} value={addingGift} disabled={!loaded || picked.length === 0}
+                onChange={(e) => { addGift(e.target.value); setAddingGift(""); }}
+              >
+                <option value="">{picked.length === 0 ? "أضف دورة هدية… (بعد دورات المسار)" : "أضف دورة هدية…"}</option>
+                {options.filter((o) => !picked.some((p) => p.courseId === o.id)).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
+            ))}
 
             <label className="block text-read">
               الكود
