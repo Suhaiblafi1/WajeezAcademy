@@ -28,6 +28,8 @@ import { CalendarClock, Layers, Loader2, Sparkles, UserRound } from "lucide-reac
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { rememberBuyLink } from "@/services/buy-link-token";
+import { takeEarly } from "@/services/early-fetch";
+import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
 import type { PendingCheckout } from "@/application/commerce/pending-checkout";
 import { useCourseCohorts } from "@/services/cohort-prices";
@@ -91,7 +93,15 @@ export default function PrivatePath() {
   useEffect(() => {
     if (!GO_CODE_RE.test(code)) return;
     let on = true;
-    apiGet<PathView | { movedTo: string }>(`/api/public/go/${code}`)
+    /* والطلبُ بدأ مع الصفحة قبل وصول شيفرتها (`index.html` → `early-fetch.ts`) — يُؤخذ، وما خاب منه يُعاد عاديّا */
+    const path = `/api/public/go/${code}`;
+    const early = takeEarly(path);
+    const request: Promise<PathView | { movedTo: string }> = early
+      ? early
+        .then((res) => (res.ok ? (res.json() as Promise<PathView | { movedTo: string }>) : Promise.reject(new Error("early"))))
+        .catch(() => apiGet<PathView | { movedTo: string }>(path))
+      : apiGet<PathView | { movedTo: string }>(path);
+    request
       .then((r) => {
         if (!on) return;
         if ("movedTo" in r) { setLoaded({ state: "moved", to: r.movedTo }); return; }
@@ -123,9 +133,16 @@ export default function PrivatePath() {
 
 function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingCheckout | null }) {
   const { user: session } = useRealSession();
-  const catalogVersion = usePublishedContent();
-  const { cohorts } = useCourseCohorts();
+  /* والخفيفةُ لا الكاملة (٨ نوفمبر ٢٠٢٦): الرحلةُ تقرأ عنوانَ الوحدة ومخرجَها وساعاتِها لا متونَها — كـ«ابنِ مسارك».
+     والكاملةُ ٢ ميغا مضغوطا كانت أكثرَ ما تنتظره الصفحة (`?lite=1` في `public.routes.ts`) */
+  const catalogVersion = usePublishedContent({ lite: true });
+  const { cohorts, loaded: cohortsLoaded } = useCourseCohorts();
   const listed = useListedCourses();
+  /* ═══ ولا بطاقاتٍ مختصرةً ثمّ القالب — هيكلٌ حتّى يصل الكتالوجُ والشعب (٨ نوفمبر ٢٠٢٦) ═══
+     شكا صاحبُ المنصّة: «تفتح بطيئا وتُظهر التصميمَ السابق ثمّ الجديد». وكان ما قبل الكتالوج يُعرض بالبطاقة المختصرة
+     (`outsideCatalog`) — وهي صورةُ الصفحة الأولى — ثمّ يقفز إلى قالب المسار. فالآن هيكلٌ ساكنٌ بعدد الدورات حتّى يجهزا */
+  void catalogVersion;
+  const journeyReady = hasCoreCatalog() && cohortsLoaded;
   const [authOpen, setAuthOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
 
@@ -241,6 +258,14 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         </div>
       </div>
 
+      {!journeyReady ? (
+        <ol className="mt-8 space-y-3" aria-busy="true" aria-label="نجهز دورات مسارك">
+          {v.courses.map((c) => (
+            <Card as="li" key={c.cohortId} className="h-40 animate-pulse" />
+          ))}
+        </ol>
+      ) : (
+        <>
       <CourseJourney
         courseIds={courseIds}
         reasons={reasons}
@@ -298,6 +323,8 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
             </li>
           ))}
         </ol>
+      )}
+        </>
       )}
 
       {v.unavailable.length > 0 && (
