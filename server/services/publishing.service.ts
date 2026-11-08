@@ -11,6 +11,10 @@ import { buildSnapshotFromDb } from '../catalog/snapshot-builder'
 import { CatalogAdminService } from './catalog-admin.service'
 import { recordAudit } from './audit'
 
+
+/** قفلُ النشر والرجوع — يُنشر إصدارٌ واحدٌ في كلّ لحظة */
+const CATALOG_PUBLISH_LOCK = 'catalog.publish'
+
 export class PublishingService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {
@@ -177,6 +181,14 @@ export class PublishingService {
     const admin = new CatalogAdminService(this.prisma)
 
     return this.prisma.$transaction(async (tx) => {
+      /* ═══ نشرٌ واحدٌ في كلّ لحظة (٨ نوفمبر ٢٠٢٦) ═══
+         كانت حالةُ الإصدار تُقرأ «مسودّة» خارج المعاملة: فضغطتان معا على «انشر» تمضيان كلتاهما — لقطتان وحدثا نشرٍ لإصدارٍ
+         واحد — وإصداران مختلفان معا يُنشران كلاهما. فالنشرُ والرجوعُ يقفلان قفلا واحدا، والحالةُ تُقرأ ثانيةً بعده.
+         والحارس: `server/tests/catalog/decide-publish-once.test.ts`. */
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${CATALOG_PUBLISH_LOCK}))`
+      const fresh = await tx.catalogVersion.findUnique({ where: { id: versionId }, select: { status: true } })
+      if (fresh?.status !== 'draft') throw new AuthError('bad_state', 'نشر هذا الإصدار للتو — حدّث الصفحة', 409)
+
       /* 1) رفع كل الكيانات المعتمدة إلى published */
       for (const p of approved.pathways) await admin.promoteEntity(tx, 'pathway', p.id, 'approved', 'published')
       for (const c of approved.courses) await admin.promoteEntity(tx, 'course', c.id, 'approved', 'published')
@@ -225,6 +237,7 @@ export class PublishingService {
     const snapshot = target.snapshots[0]
 
     return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${CATALOG_PUBLISH_LOCK}))`
       await tx.catalogVersion.updateMany({ where: { status: 'published' }, data: { status: 'superseded' } })
       const newVersion = await tx.catalogVersion.create({
         data: { label: `rollback-${Date.now().toString(36)}`, status: 'published', publishedAt: new Date(), publishedBy: actorId, createdBy: actorId },
