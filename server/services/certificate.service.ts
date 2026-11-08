@@ -17,23 +17,26 @@ export class CertificateService {
     this.progress = new ProgressService(prisma)
   }
 
-  /** يُنشئ الشهادةَ برقمٍ مسلسل، ويُعيد المحاولة على تصادم الترقيم وحدَه */
-  private async issueWithNumber(data: {
+  /* ═══ وتصدر مرّةً واحدة — بقفل (٨ نوفمبر ٢٠٢٦) ═══
+     كان «أصدرت له شهادةٌ فعّالة؟» يُسأل قبل الكتابة بلا قفل: ضغطتان على «أصدر» معا مرّتا كلتاهما، فصار للتسجيل الواحد
+     شهادتان فعّالتان برقمين، وبلغه «صدرت شهادتك» مرّتين. فالسؤالُ والرقمُ والكتابةُ في معاملةٍ واحدةٍ بقفلٍ للإصدار كلِّه
+     (الإصدارُ بيد الإدارة وقليلٌ، فصفُّه لا يُبطئ أحدا). والرقمُ بعد القفل: عددُ الشهادات ثمّ أوّلُ رقمٍ خالٍ — فلا تصادم. */
+  private async issueOnce(data: {
     enrollmentId: string; learnerName: string; courseId: string; courseVersion: number; issuedBy: string | null
   }) {
     const year = new Date().getFullYear()
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const count = await this.prisma.certificate.count()
-      const number = `WJ-CERT-${year}-${String(count + 1 + attempt).padStart(5, '0')}`
-      try {
-        return await this.prisma.certificate.create({ data: { ...data, number } })
-      } catch (err) {
-        const code = (err as { code?: string }).code
-        if (code !== 'P2002') throw err
-        /* الرقمُ سُبق إليه — نجرّب الذي يليه */
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('certificate.issue'))`
+      const active = await tx.certificate.count({ where: { enrollmentId: data.enrollmentId, status: 'active' } })
+      if (active > 0) throw new AuthError('already_issued', 'صدرت شهادة فعالة لهذا التسجيل مسبقا', 409)
+      let n = (await tx.certificate.count()) + 1
+      for (let skipped = 0; skipped < 1000; skipped += 1, n += 1) {
+        const number = `WJ-CERT-${year}-${String(n).padStart(5, '0')}`
+        if (await tx.certificate.findUnique({ where: { number }, select: { id: true } })) continue
+        return tx.certificate.create({ data: { ...data, number } })
       }
-    }
-    throw new AuthError('number_clash', 'تعذّر توليد رقم شهادة فريد — أعد المحاولة', 409)
+      throw new AuthError('number_clash', 'تعذّر توليد رقم شهادة فريد — أعد المحاولة', 409)
+    })
   }
 
   /* مرشَّحو الشهادة في شعبة — مَن أنهى فعلا أوّلا.
@@ -121,7 +124,7 @@ export class CertificateService {
        نفسَه فيبنيان الرقمَ نفسَه، و`@unique` يُسقط الثاني برسالةِ قاعدةِ
        بيانات لا يفهمها من ضغط الزرّ. فيُعاد المحاولةُ على التصادم وحدَه —
        وهو نادرٌ، وأثرُه حين يقع مربكٌ بلا داعٍ. */
-    const cert = await this.issueWithNumber({
+    const cert = await this.issueOnce({
       enrollmentId,
       learnerName: learner?.displayName ?? 'متعلم وجيز',
       courseId: e.cohort.courseId,
