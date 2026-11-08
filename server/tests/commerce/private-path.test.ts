@@ -123,6 +123,19 @@ describe('② الصفحة باسمه الأول وحده', () => {
     const json = JSON.stringify(v)
     for (const secret of [l.email, l.phone, 'الخطيب', 'عبد الله']) expect(json, `ظهر في الصفحة: ${secret}`).not.toContain(secret)
   })
+
+  it('⚠️ ومجال عمله ومستواه من نموذجه للعنوان — ولو ولد الرابط قبل أن يكتبهما', async () => {
+    const l = await learnerWithGrant()
+    const a = await cohort()
+    const out = await links.generate(SUPER(), { leadId: l.leadId }, { courseId: a.courseId, cohortId: a.id, code: l.code })
+    const code = codeOf(out.goPath!)
+    expect((await view(code)).profile).toEqual({ workField: null, careerLevel: null })
+    await prisma.lead.update({ where: { id: l.leadId }, data: { workField: 'الإدارة والقيادة', careerLevel: 'مدير' } })
+    expect((await view(code)).profile).toEqual({ workField: 'الإدارة والقيادة', careerLevel: 'مدير' })
+    /* ونموذجٌ محيت بياناتُه لا يُقرأ */
+    await prisma.lead.update({ where: { id: l.leadId }, data: { erasedAt: new Date() } })
+    expect((await view(code)).profile).toEqual({ workField: null, careerLevel: null })
+  })
 })
 
 describe('③ والسعر سعر الدفع', () => {

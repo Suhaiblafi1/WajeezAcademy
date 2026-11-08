@@ -51,6 +51,8 @@ export async function mintPrivatePath(db: Db, actorId: string, payload: Omit<Pri
 export interface PrivatePathView {
   code: string
   firstName: string
+  /** من نموذج المنحة — للعنوان والسطر تحته وحدَهما (`privatePathHeadline`). ولا شيءَ سواهما من ملفّه */
+  profile: { workField: string | null; careerLevel: string | null }
   courses: {
     n: number
     courseId: string
@@ -158,9 +160,20 @@ export class PrivatePathService {
       lastDay = ends ? grantLastDay(ends) : null
     }
 
+    /* ومجالُ عمله ومستواه من نموذجه — بحسابه أو بنموذجه (`learnerKey`)، وأحدثُ نموذجٍ له إن تعدّد */
+    const [kind, id] = p.learnerKey.split(':')
+    const lead = id && (kind === 'lead' || kind === 'user')
+      ? await this.prisma.lead.findFirst({
+        where: { erasedAt: null, ...(kind === 'lead' ? { id } : { userId: id }) },
+        orderBy: { createdAt: 'desc' },
+        select: { workField: true, careerLevel: true },
+      }).catch(() => null)
+      : null
+
     return {
       code,
       firstName: p.firstName,
+      profile: { workField: lead?.workField ?? null, careerLevel: lead?.careerLevel ?? null },
       courses,
       price: preview && courses.length > 0 ? privatePathPrice(preview) : null,
       lastDay,

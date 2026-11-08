@@ -74,10 +74,12 @@ describe('صفحة المسار الخاص بقالب صفحة المسار', ()
     expect(PAGE).toMatch(/<CourseJourney[\s\S]*?showSchedule[\s\S]*?picked=\{picked\}[\s\S]*?onPick=/)
   })
 
-  it('⚠️ «مسار {الاسم الأول}» وتحته السطر، و«سبب اختيارها لك» بارزا تحت عنوان كل دورة', () => {
+  it('⚠️ العنوان والسطر تحته آليان من دوراته الآن، و«سبب اختيارها لك» بارزا تحت عنوان كل دورة', () => {
     expect(PATH_SUBTITLE_AR).toBe('دورات اخترناها لك بناءً على خبرتك')
     expect(REASON_LABEL_AR).toBe('سبب اختيارها لك')
-    expect(PAGE).toMatch(/<h1[^>]*>مسار \{v\.firstName\}<\/h1>\s*<p[^>]*>\{PATH_SUBTITLE_AR\}<\/p>/)
+    expect(PAGE).toMatch(/<h1[^>]*>\{headline\.titleAr\}<\/h1>\s*<p[^>]*>\{headline\.subtitleAr\}<\/p>/)
+    /* ومن السلّة الحاليّة لا من دورات الرابط — فيتبدّلان مع «استبدالها» */
+    expect(PAGE).toMatch(/privatePathHeadline\(\{[\s\S]*?courses: courseIds\.map\(/)
     expect(PAGE).toMatch(/reasonsProminentLabelAr=\{REASON_LABEL_AR\}/)
     /* وفي الرحلة: تحت زرّ العنوان مباشرةً — وسطرُ «لماذا هي في خطتك» لا يتكرّر معه، ويبقى لغيرها كما كان */
     expect(JOURNEY).toMatch(/<\/CollapsibleTrigger>\s*\{reasonsProminentLabelAr && reasons\?\.\[c\.id\] && \(/)
