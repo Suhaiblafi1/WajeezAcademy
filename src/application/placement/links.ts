@@ -9,7 +9,7 @@
 import { Q } from '../../domain/diagnostic/v2_1/maps'
 import { ENGLISH_LEVELS, type EnglishLevel } from '../../domain/diagnostic/v2_1/english'
 import { reviseLevelHref } from '../diagnostic/level-summary'
-import { FIELD_LEVELS } from '../../domain/diagnostic/v2_1/focus'
+import { FIELD_LEVELS } from '../../domain/diagnostic/v2_1/field-levels'
 
 export const PLACEMENT_PATH = '/placement/english'
 

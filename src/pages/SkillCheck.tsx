@@ -16,7 +16,7 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import { ApiError } from "@/services/api";
 import { fetchPlacementBank, scoreFieldCheckOn, type PlacementBank } from "@/services/placement";
 import { CHECK_LEVELS, FIELD_CHECKS, type FieldCheckResult, type FieldSubject } from "@/domain/placement/field-check";
-import { FIELD_LEVELS } from "@/domain/diagnostic/v2_1/focus";
+import { FIELD_LEVELS } from "@/domain/diagnostic/v2_1/field-levels";
 import { applyFieldLevelHref, statedFieldLevelOf } from "@/application/placement/links";
 
 const levelOf = (code: string) => FIELD_LEVELS.find((l) => l.code === code);

@@ -58,18 +58,8 @@ export function installSkillLayers(map: Record<string, unknown> | null): void {
   skillLayersV2 = (map as SkillLayersFile['skills'] | null) ?? sl.skills
 }
 export const domainsV2 = pd.domains
-/* خرائط مجالات المسارات — ملف المصدر هو الافتراضي، واللقطة المنشورة تتقدم عليه (ج-١).
-   `let` مقصودة: روابط ES الحية تجعل كل مستورد يرى الخريطة المثبَّتة بلا إعادة بناء —
-   نفس نمط installCatalogSnapshot في catalog.ts. */
-export let pathwayDomainsV2: Record<string, DomainId[]> = pd.pathway_domains
-
-/** تثبيت خريطة مجالات المسارات من لقطة منشورة؛ null يرجّع الملف المضمن.
-    خريطة فارغة `{}` تُقبل كما هي — «منشور بلا مجالات» واقع يجب أن يظهر لا يُرمَّم.
-    المُدخل نصوص لأن اللقطة JSON بلا أنواع؛ معرف مجال مجهول لا يطابق شيئا
-    ويظهر في التدقيق (audit-diagnostic-v2) بدل أن يُحذف صامتا. */
-export function installPathwayDomains(map: Record<string, string[]> | null): void {
-  pathwayDomainsV2 = (map as Record<string, DomainId[]> | null) ?? pd.pathway_domains
-}
+/* وخريطةُ مجالات المسارات في ملفٍّ خفيفٍ وحدَها (٨ نوفمبر ٢٠٢٦، `pathway-domains.ts`) — تُعاد هنا كما هي، روابطَ حيّة */
+export { pathwayDomainsV2, installPathwayDomains, domainsOfPathway } from './pathway-domains'
 export const goalDomainsV2: Record<string, DomainId[]> = pd.goal_domains
 export const functionDomainsV2: Record<string, DomainId[]> = pd.function_domains
 
@@ -77,10 +67,6 @@ export function domainLabelAr(id: DomainId): string {
   return domainsV2.find((d) => d.id === id)?.name_ar ?? id
 }
 
-/** مجالات المسار — [] إن لم يُربط (يُسجل في التدقيق) */
-export function domainsOfPathway(pathwayId: string): DomainId[] {
-  return pathwayDomainsV2[pathwayId] ?? []
-}
 
 /** طبقات مهارة — undefined إن لم تُوثق (يُسجل في التدقيق) */
 export function layersOfSkill(slug: string) {
