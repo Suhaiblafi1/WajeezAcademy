@@ -93,7 +93,7 @@ export async function commissionExcludedOrders(prisma: PrismaClient, orderIds: r
   if (orderIds.length === 0) return new Set()
   const evs = await prisma.auditEvent.findMany({
     where: { action: 'order.checkout', entityId: { in: [...orderIds] } },
-    select: { entityId: true, meta: true },
+    select: { entityId: true, meta: true, createdAt: true },
   })
   const out = new Set<string>()
   for (const e of evs) {
@@ -101,7 +101,8 @@ export async function commissionExcludedOrders(prisma: PrismaClient, orderIds: r
     /* ورابطُ المستشار يغلب أثرَ حملةٍ قديم (٥ نوفمبر ٢٠٢٦): المصدرُ آخرُ زيارةٍ بإشارةٍ يحفظها المتصفّحُ بلا أجل، ورابطُ
        المستشار لا إشارةَ فيه (`bl` وحدَه) — فمن نقر حملةَ واتساب مرّةً ثمّ اشترى من رابط مستشاره بعد أسابيع سقطت عمولتُه */
     if (m.buyLink?.kind === 'advisor') continue
-    if (m.buyLink?.kind === 'admin' || isWhatsappCampaign(m.touch)) out.add(e.entityId!)
+    /* وزيارةُ الحملة في الأيّام السبعة قبل الطلب وحدَها — قرارُ صاحب المنصّة (٨ نوفمبر ٢٠٢٦، `WHATSAPP_CAMPAIGN_TTL_MS`) */
+    if (m.buyLink?.kind === 'admin' || isWhatsappCampaign(m.touch, e.createdAt)) out.add(e.entityId!)
   }
   return out
 }

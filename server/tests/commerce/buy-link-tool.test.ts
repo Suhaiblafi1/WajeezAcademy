@@ -223,6 +223,20 @@ describe('⑦ العمولة Hybrid', () => {
   })
 })
 
+describe('⑦ب زيارة الحملة سبعة أيام', () => {
+  /* قرارُ صاحب المنصّة (٨ نوفمبر ٢٠٢٦): زيارةُ حملة واتساب تُحسب في الأيّام السبعة قبل الشراء وحدَها */
+  it('⚠️ زيارة قبل عشرة أيام لا تسقط عمولة المستشار، وقبل يومين تسقطها', async () => {
+    const adv = await advisor()
+    const c = await caseWithGrant(adv.userId)
+    const old = await cohort(40)
+    await pay(c.clientId, [old.id], { touch: { utmSource: 'whatsapp', utmCampaign: 'wajeez-sales', at: new Date(Date.now() - 10 * 86_400_000).toISOString() } })
+    expect(await attributedRevenue(prisma, adv.userId), 'أسقطت زيارة قديمة عمولته').toBe(40)
+    const fresh = await cohort(60)
+    await pay(c.clientId, [fresh.id], { touch: { utmSource: 'whatsapp', utmCampaign: 'wajeez-sales', at: new Date(Date.now() - 2 * 86_400_000).toISOString() } })
+    expect(await attributedRevenue(prisma, adv.userId), 'حسبت زيارة حديثة للمستشار').toBe(40)
+  })
+})
+
 describe('المسارات', () => {
   it('⚠️ بلا جلسة ترد', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/admin/buy-links/lead/00000000-0000-4000-8000-000000000000' })
