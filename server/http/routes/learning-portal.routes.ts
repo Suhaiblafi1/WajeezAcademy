@@ -3,6 +3,7 @@
    والمدرب لا يرى شعبا ولا تسليمات خارج شعبه.
    مفاتيح التخزين لا تكشف أبدا — تُحوَّل إلى روابط قراءة موقعة قصيرة العمر. */
 
+import { CodeAttemptGuard } from '../../services/commerce/code-attempts'
 import type { FastifyInstance } from 'fastify'
 import { TrainerDepartureService } from '../../services/trainer-departure.service'
 import { LEARNER_CHOICES } from '../../../src/application/trainer/departure-rules'
@@ -1372,18 +1373,38 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   /* ══════════ التحقق العام من الشهادات — بلا دخول ══════════ */
 
+  /* ═══ ولا يُعدَّد بالتحقّق من عرف الترقيم (٨ نوفمبر ٢٠٢٦) ═══
+     أرقامُ الشهادات مسلسلة (`WJ-CERT-2026-00001` فما بعده)، والتحقّقُ يردّ الاسمَ الكاملَ والدورة — وكان بلا سقف: فمن مشى
+     على الأرقام واحدا بعد واحد جمع أسماءَ كلِّ من نال شهادة، وكتب في السجلّ صفّا لكلّ سؤال. فسقفٌ للنداءات، ومن سأل عن عشرة
+     أرقامٍ لا وجودَ لها في ساعةٍ يُوقف — كما يُوقف من يجرّب رموزَ المسار الخاصّ. ومن يتحقّق من شهادةٍ بيده لا يبلغه. */
+  const wrongNumbers = new CodeAttemptGuard()
+  const guarded = async <T>(key: string, number: string, look: () => Promise<T>, reply: { status: (n: number) => { send: (b: unknown) => unknown } }) => {
+    const n = number.trim().toUpperCase()
+    if (!wrongNumbers.allows(key, n)) {
+      return reply.status(429).send({ error: { code: 'too_many_numbers', message_ar: 'سألت عن أرقام كثيرة غير موجودة. أعد المحاولة بعد ساعة.' } })
+    }
+    try {
+      return await look()
+    } catch (e) {
+      if (e instanceof AuthError && e.code === 'not_found') wrongNumbers.reject(key, n)
+      throw e
+    }
+  }
+
   app.get('/api/v1/certificates/verify/:number', {
+    config: { rateLimit: { max: 30, timeWindow: '10 minutes' } },
     schema: { tags: ['public'], summary: 'تحقق عام من شهادة برقمها — بيانات محدودة ويسجل كل تحقق' },
-  }, async (req) => {
+  }, async (req, reply) => {
     const { number } = z.object({ number: z.string().min(6).max(40) }).parse(req.params)
-    return certificates.verify(number, req.ip)
+    return guarded(req.ip, number, () => certificates.verify(number, req.ip), reply)
   })
 
   /* وخطابُ التوصية برقمه — صفحتُه العامّة يفتحها صاحبُ العمل (`endorsement.service.ts`) */
   app.get('/api/v1/letters/:number', {
+    config: { rateLimit: { max: 30, timeWindow: '10 minutes' } },
     schema: { tags: ['public'], summary: 'خطاب توصية من الأكاديمية برقمه — ويسجل تحققا من شهادته' },
-  }, async (req) => {
+  }, async (req, reply) => {
     const { number } = z.object({ number: z.string().min(6).max(40) }).parse(req.params)
-    return endorsements.view(number, req.ip)
+    return guarded(req.ip, number, () => endorsements.view(number, req.ip), reply)
   })
 }
