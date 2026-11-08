@@ -358,7 +358,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
   app.post('/api/admin/users/bulk-invite', {
     preHandler: guard,
     schema: { tags: ['admin-users'], summary: 'دعوة عدّة حسابات بدور واحد — سطر لكلّ شخص' },
-  }, async (req) => {
+  }, async (req, reply) => {
     const body = z.object({
       roleIds: z.array(z.string()).min(1),
       rows: z.array(z.object({
@@ -366,6 +366,12 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
         displayName: z.string().trim().min(2).max(120),
       })).min(1).max(50),
     }).parse(req.body)
+
+    /* ═══ والرتبةُ نفسُها التي تحرس الدعوةَ المفردة (٨ نوفمبر ٢٠٢٦) ═══
+       كانت الدفعةُ بلا قيد: من فُوِّض «إدارة المستخدمين» دون رتبة مدير النظام أنشأ بها حسابَ «مدير نظام» — ببريدٍ
+       ثانٍ له إن شاء — والدعوةُ المفردةُ تردّه. والحارس: `server/tests/rbac/role-rank-holes.test.ts`. */
+    const refusal = refuseRoleAssignment(req.auth!.roles, body.roleIds)
+    if (refusal) return reply.status(403).send({ error: refusal })
 
     const actor = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { displayName: true } })
     const dutiesAr = [...new Set(body.roleIds.flatMap((r) => ROLE_PERMISSIONS[r] ?? []))]
@@ -411,53 +417,6 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     }
   })
 
-  app.post('/api/admin/users/:id/roles', {
-    preHandler: guard,
-    schema: {
-      tags: ['admin-users'], summary: 'تعيين أدوار مستخدم — يستبدل القائمة كاملة',
-      body: { type: 'object', required: ['roleIds'], properties: { roleIds: { type: 'array', items: { type: 'string' } } } },
-    },
-  }, async (req, reply) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const { roleIds } = z.object({ roleIds: z.array(z.string()).min(1) }).parse(req.body)
-    /* ممنوع سحب دور super_admin من نفسك — حماية من الإغلاق الذاتي */
-    if (id === req.auth!.userId && !roleIds.includes('super_admin') && req.auth!.roles.includes('super_admin')) {
-      return reply.status(409).send({ error: { code: 'self_lockout', message_ar: 'لا يمكنك سحب دور مدير النظام من حسابك بنفسك' } })
-    }
-    /* ولا يُعيَّن دورٌ أعلى من رتبة المعيِّن — وكان هذا الباب مفتوحا: من مُنح
-       `admin.users.manage` بالتفويض صار يستطيع أن يرقّي نفسه مديرَ نظام. */
-    /* وأدوارُه الحاليّة تُقرأ قبل الحكم: أدوارُ الحالة (`LIFECYCLE_ROLES`)
-       تُفحَص على ما تغيّر لا على ما في القائمة، فتُعدَّل أدوارُ متقدّمٍ
-       الأخرى بلا أن تُمسّ حالتُه. */
-    const before = await prisma.user.findUnique({ where: { id }, select: { roles: { select: { roleId: true } } } })
-    const rankRefusal = refuseRoleAssignment(req.auth!.roles, roleIds, before?.roles.map((r) => r.roleId) ?? [])
-    if (rankRefusal) return reply.status(403).send({ error: rankRefusal })
-    await auth.setRoles(id, roleIds)
-    /* وأسماؤها العربيّةُ من `Role.nameAr` لا معرّفاتُها: رسالةٌ عربيّةٌ تقول
-       «super_admin» تُحوج قارئَها إلى من يترجمها له. */
-    const named = await prisma.role.findMany({ where: { id: { in: roleIds } }, select: { nameAr: true } })
-    await notifyAccountOwner(
-      prisma, id, 'account.roles_changed', 'تغيّرت أدوارك',
-      `تغيّرت أدوارك في أكاديمية وجيز. وأدوارك الآن: ${named.map((r) => r.nameAr).join('، ')}.`,
-    )
-    /* ═══ وتعيينُ الأدوار يُسجَّل ═══
-
-       لم يكن يُسجَّل. وهو **أعلى فعلٍ سلطةً على المنصّة**: به يصير حسابٌ
-       مديرَ نظامٍ أعلى، وبه تُنزع بوّابةُ التعلّم عن متعلّمٍ له تسجيلات.
-       وكلُّ ما هو أدنى منه مسجَّل — الإيقافُ والأرشفةُ ومنحُ حبّةٍ واحدةٍ
-       باستثناء — فكان الأثرُ يحفظ الفروعَ ويترك الأصل.
-
-       و«قبل» و«بعد» هما جوهرُ الفائدة هنا: «صار مديرَ نظام» جوابٌ، و«غُيّرت
-       أدوارُه» ليس جوابا. والقائمتان مرتّبتان كي يُقرأ الفرقُ لا ترتيبُ
-       الإدخال. */
-    await recordAudit(prisma, {
-      actorId: req.auth!.userId, action: 'roles.set', entityType: 'user', entityId: id,
-      before: { roles: (before?.roles.map((r) => r.roleId) ?? []).sort() },
-      after: { roles: [...roleIds].sort() },
-    })
-    return { ok: true }
-  })
-
   /* حارسُ الرتبة على ما يمسّ حسابَ غيرِك: لا يُوقَف ولا يُحذَف من هو في
      رتبتك أو فوقها. وإلّا صار مَن مُنح «إدارة المستخدمين» استثناءً قادرا على
      إيقاف مدير النظام الأعلى. */
@@ -495,6 +454,62 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     }
     return { target }
   }
+
+  app.post('/api/admin/users/:id/roles', {
+    preHandler: guard,
+    schema: {
+      tags: ['admin-users'], summary: 'تعيين أدوار مستخدم — يستبدل القائمة كاملة',
+      body: { type: 'object', required: ['roleIds'], properties: { roleIds: { type: 'array', items: { type: 'string' } } } },
+    },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { roleIds } = z.object({ roleIds: z.array(z.string()).min(1) }).parse(req.body)
+    /* ممنوع سحب دور super_admin من نفسك — حماية من الإغلاق الذاتي */
+    if (id === req.auth!.userId && !roleIds.includes('super_admin') && req.auth!.roles.includes('super_admin')) {
+      return reply.status(409).send({ error: { code: 'self_lockout', message_ar: 'لا يمكنك سحب دور مدير النظام من حسابك بنفسك' } })
+    }
+    /* ولا يُعيَّن دورٌ أعلى من رتبة المعيِّن — وكان هذا الباب مفتوحا: من مُنح
+       `admin.users.manage` بالتفويض صار يستطيع أن يرقّي نفسه مديرَ نظام. */
+    /* وأدوارُه الحاليّة تُقرأ قبل الحكم: أدوارُ الحالة (`LIFECYCLE_ROLES`)
+       تُفحَص على ما تغيّر لا على ما في القائمة، فتُعدَّل أدوارُ متقدّمٍ
+       الأخرى بلا أن تُمسّ حالتُه. */
+    /* ═══ ومن في رتبتك أو فوقها لا تُغيَّر أدوارُه (٨ نوفمبر ٢٠٢٦) ═══
+       كان يُفحص ما يُسنَد وحدَه لا من يُسنَد إليه: فمن فُوِّض «إدارة المستخدمين» دون رتبة مدير النظام جعل مديرَ النظام
+       «متعلّما» — والإيقافُ الذي أثرُه أهونُ يردّه. فالقيدُ قيدُ الإيقاف نفسُه (`refuseRank`)، وحسابُك أنت مستثنى:
+       حارسُ «لا تسحب دورَ مدير النظام من نفسك» فوقُ، و`refuseRoleAssignment` يمنع أن ترفع نفسَك. */
+    if (id !== req.auth!.userId) {
+      const check = await refuseRank(id, req.auth!.roles, 'تغيير أدوار')
+      if ('error' in check) return reply.status(check.status).send({ error: check.error })
+    }
+    const before = await prisma.user.findUnique({ where: { id }, select: { roles: { select: { roleId: true } } } })
+    const rankRefusal = refuseRoleAssignment(req.auth!.roles, roleIds, before?.roles.map((r) => r.roleId) ?? [])
+    if (rankRefusal) return reply.status(403).send({ error: rankRefusal })
+    await auth.setRoles(id, roleIds)
+    /* وأسماؤها العربيّةُ من `Role.nameAr` لا معرّفاتُها: رسالةٌ عربيّةٌ تقول
+       «super_admin» تُحوج قارئَها إلى من يترجمها له. */
+    const named = await prisma.role.findMany({ where: { id: { in: roleIds } }, select: { nameAr: true } })
+    await notifyAccountOwner(
+      prisma, id, 'account.roles_changed', 'تغيّرت أدوارك',
+      `تغيّرت أدوارك في أكاديمية وجيز. وأدوارك الآن: ${named.map((r) => r.nameAr).join('، ')}.`,
+    )
+    /* ═══ وتعيينُ الأدوار يُسجَّل ═══
+
+       لم يكن يُسجَّل. وهو **أعلى فعلٍ سلطةً على المنصّة**: به يصير حسابٌ
+       مديرَ نظامٍ أعلى، وبه تُنزع بوّابةُ التعلّم عن متعلّمٍ له تسجيلات.
+       وكلُّ ما هو أدنى منه مسجَّل — الإيقافُ والأرشفةُ ومنحُ حبّةٍ واحدةٍ
+       باستثناء — فكان الأثرُ يحفظ الفروعَ ويترك الأصل.
+
+       و«قبل» و«بعد» هما جوهرُ الفائدة هنا: «صار مديرَ نظام» جوابٌ، و«غُيّرت
+       أدوارُه» ليس جوابا. والقائمتان مرتّبتان كي يُقرأ الفرقُ لا ترتيبُ
+       الإدخال. */
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'roles.set', entityType: 'user', entityId: id,
+      before: { roles: (before?.roles.map((r) => r.roleId) ?? []).sort() },
+      after: { roles: [...roleIds].sort() },
+    })
+    return { ok: true }
+  })
+
 
   app.post('/api/admin/users/:id/suspend', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'إيقاف حساب — يبطل جلساته فورا' } },
     async (req, reply) => {
