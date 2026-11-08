@@ -110,7 +110,7 @@ describe('① يولد من «جهز رابط شراء» بصلاحياته', ()
 })
 
 describe('② الصفحة باسمه الأول وحده', () => {
-  it('⚠️ «مسار صهيب» بدوراته مرقمة وأسبابها — ولا بريد ولا هاتف ولا اسم عائلة', async () => {
+  it('⚠️ «مسار صهيب الخطيب الشخصي» بدوراته مرقمة وأسبابها — ولا بريد ولا هاتف ولا اسم أوسط', async () => {
     const l = await learnerWithGrant()
     const [a, b] = [await cohort(), await cohort()]
     const out = await links.generate(SUPER(), { leadId: l.leadId }, {
@@ -119,9 +119,24 @@ describe('② الصفحة باسمه الأول وحده', () => {
     })
     const v = await view(codeOf(out.goPath!))
     expect(v.firstName).toBe('صهيب')
+    /* الأوّلُ والأخيرُ وحدَهما — قرارُ صاحب المنصّة (٨ نوفمبر ٢٠٢٦): «اجعلها مسار صهيب الخوالدة الشخصي» */
+    expect(v.nameAr).toBe('صهيب الخطيب')
     expect(v.courses.map((c) => [c.n, c.cohortId, c.reasonAr])).toEqual([[1, a.id, 'تبني أساس التحليل'], [2, b.id, null]])
     const json = JSON.stringify(v)
-    for (const secret of [l.email, l.phone, 'الخطيب', 'عبد الله']) expect(json, `ظهر في الصفحة: ${secret}`).not.toContain(secret)
+    for (const secret of [l.email, l.phone, 'عبد الله']) expect(json, `ظهر في الصفحة: ${secret}`).not.toContain(secret)
+  })
+
+  it('⚠️ ومجال عمله ومستواه من نموذجه للعنوان — ولو ولد الرابط قبل أن يكتبهما', async () => {
+    const l = await learnerWithGrant()
+    const a = await cohort()
+    const out = await links.generate(SUPER(), { leadId: l.leadId }, { courseId: a.courseId, cohortId: a.id, code: l.code })
+    const code = codeOf(out.goPath!)
+    expect((await view(code)).profile).toEqual({ workField: null, careerLevel: null })
+    await prisma.lead.update({ where: { id: l.leadId }, data: { workField: 'الإدارة والقيادة', careerLevel: 'مدير' } })
+    expect((await view(code)).profile).toEqual({ workField: 'الإدارة والقيادة', careerLevel: 'مدير' })
+    /* ونموذجٌ محيت بياناتُه لا يُقرأ */
+    await prisma.lead.update({ where: { id: l.leadId }, data: { erasedAt: new Date() } })
+    expect((await view(code)).profile).toEqual({ workField: null, careerLevel: null })
   })
 })
 

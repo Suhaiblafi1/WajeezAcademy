@@ -50,6 +50,15 @@ export function firstNameAr(name: string | null | undefined): string {
   return first.slice(0, 40)
 }
 
+/** الاسمُ الأوّلُ والأخير — «صهيب الخوالدة» من «صهيب عبد الله الخوالدة». قرارُ صاحب المنصّة (٨ نوفمبر ٢٠٢٦): «اجعلها
+    مسار صهيب الخوالدة الشخصي». ولا اسمَ أوسطَ ولا شيءَ بعده */
+export function firstLastNameAr(name: string | null | undefined): string {
+  const words = (name ?? '').trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return ''
+  const out = words.length === 1 ? words[0] : `${words[0]} ${words[words.length - 1]}`
+  return out.slice(0, 60)
+}
+
 /** سببُ الدورة نظيفا: سطرٌ واحدٌ بحدّه، وفارغُه لا شيء */
 export function cleanReason(raw: string | null | undefined): string | null {
   const v = (raw ?? '').replace(/\s+/g, ' ').trim()
@@ -92,7 +101,80 @@ export function privatePathPrice(p: PathPreviewNumbers): PrivatePathPrice {
   }
 }
 
-/** السطرُ تحت «مسار {الاسم الأوّل}» — نصُّ صاحب المنصّة */
+/** السطرُ تحت «مسار {الاسم الأوّل}» — نصُّ صاحب المنصّة. وصار احتياطا: لمسارٍ لا مجالَ معروفا لدوراته (`privatePathHeadline`) */
 export const PATH_SUBTITLE_AR = 'دورات اخترناها لك بناءً على خبرتك'
+
+/* ═══ العنوانُ «مسار {الاسم الأوّل والأخير} الشخصي» وسطرٌ أعمقُ تحته — آليّان (٨ نوفمبر ٢٠٢٦) ═══
+
+   طلبُ صاحب المنصّة: «اكتب نصّا أكثرَ عمقا وشرحا في السطر الثاني، وأعطني عنوانا أطولَ للمسار». واختار الآليَّ على حقولٍ
+   في أداة الرابط، ثمّ قال في العنوان: «غيّرت رأيي.. اجعلها "مسار صهيب الخوالدة الشخصي"». فالعنوانُ اسمُه الأوّلُ والأخيرُ
+   (`firstLastNameAr`) من ملفّه — لا اسمَ أوسطَ ولا بريدَ ولا هاتف.
+
+   · **السطرُ تحته**: ممّا كتبه في نموذج المنحة — مستواه الوظيفيّ (`CAREER_LEVELS`) ومجالُ عمله (`WORK_FIELDS`) — ثمّ
+     أكثرُ مجالين في دوراته (`courseDomain`، وبترتيب المسار عند التعادل)، ثمّ أوّلُ دورةٍ وآخرُها. ولا وعدَ بنتيجة.
+   · وما لا يُعرف لا يُخترع: بلا نموذجٍ يبقى «تبني على خبرتك»، وبلا مجالٍ معروفٍ يعود السطرُ `PATH_SUBTITLE_AR`.
+   · ويصل الروابطَ المرسلةَ قبله، ويتبدّل مع «استبدالها».
+   ونصوصُه بلا تشكيلٍ إعرابيّ (قرارُ ١١ أكتوبر ٢٠٢٦). والحارس: `src/tests/commerce/private-path-headline.test.ts`. */
+
+/** كيف تُقدَّم الدوراتُ لكلّ مستوى في نموذج المنحة — وما سواه «تبني على خبرتك» */
+const LEVEL_AR: Readonly<Record<string, string>> = {
+  'طالب أو حديث تخرج': 'تناسب بداية طريقك',
+  'موظف في بداية مسيرتي': 'تناسب بداية مسيرتك',
+  'موظف بخبرة': 'تبني على خبرتك',
+  'مشرف أو قائد فريق': 'تناسب دورك في قيادة فريقك',
+  'مدير': 'تناسب دورك كمدير',
+  'صاحب عمل': 'تخدم عملك الخاص',
+}
+const DEFAULT_LEVEL_AR = 'تبني على خبرتك'
+/** مجالاتُ عملٍ لا تُقال «في …»: ليست مجالا (`WORK_FIELDS`) */
+const NOT_A_FIELD = new Set(['أخرى', 'طالب جامعي', 'أبحث عن عمل'])
+
+export interface PathHeadlineInput {
+  /** الاسمُ الأوّلُ والأخير (`firstLastNameAr`) */
+  name: string
+  /** من نموذج المنحة — وقد لا يكون */
+  workField: string | null
+  careerLevel: string | null
+  /** دوراتُ المسار بترتيبه — معرّفُها وعنوانُها ومجالُها (`courseDomain`) */
+  courses: { courseId: string; titleAr: string; domainAr: string }[]
+}
+
+/** «دورة واحدة» · «دورتين» · «3 دورات» — مفعولا به بعد «اخترنا لك» */
+function countAr(n: number): string {
+  if (n === 1) return 'دورة واحدة'
+  if (n === 2) return 'دورتين'
+  return `${n} ${n <= 10 ? 'دورات' : 'دورة'}`
+}
+
+/** العنوانُ والسطرُ تحته — آليّان من اسمه ودوراته ونموذجه */
+export function privatePathHeadline(input: PathHeadlineInput): { titleAr: string; subtitleAr: string } {
+  const name = input.name.trim()
+  const titleAr = name ? `مسار ${name} الشخصي` : 'مسارك الشخصي'
+
+  /* مجالاتُه: أكثرُها دوراتٍ أوّلا، وبترتيب المسار عند التعادل — و«أخرى» لا تُعدّ */
+  const tally = new Map<string, { domainAr: string; n: number; first: number }>()
+  input.courses.forEach((c, i) => {
+    if (!c.domainAr || c.domainAr === 'أخرى') return
+    const t = tally.get(c.domainAr) ?? { domainAr: c.domainAr, n: 0, first: i }
+    t.n += 1
+    tally.set(c.domainAr, t)
+  })
+  const top = [...tally.values()].sort((a, b) => b.n - a.n || a.first - b.first).slice(0, 2)
+  if (top.length === 0 || input.courses.length === 0) return { titleAr, subtitleAr: PATH_SUBTITLE_AR }
+
+  const level = (input.careerLevel && LEVEL_AR[input.careerLevel]) || DEFAULT_LEVEL_AR
+  const field = input.workField?.trim() && !NOT_A_FIELD.has(input.workField.trim()) ? ` في ${input.workField.trim()}` : ''
+  const domains = top.length === 1 ? `«${top[0].domainAr}»` : `«${top[0].domainAr}» و«${top[1].domainAr}»`
+  const parts = [`اخترنا لك ${countAr(input.courses.length)} ${level}${field}، لتطور مهاراتك في ${domains}.`]
+  if (input.courses.length >= 2) {
+    const first = input.courses[0].titleAr
+    const last = input.courses[input.courses.length - 1].titleAr
+    parts.push(`تبدأ بـ«${first}» وتنتهي بـ«${last}»، وكل دورة لقاءات مباشرة مع مدربها.`)
+  } else {
+    parts.push(`تبدأ بـ«${input.courses[0].titleAr}»، بلقاءات مباشرة مع مدربها.`)
+  }
+  return { titleAr, subtitleAr: parts.join(' ') }
+}
+
 /** عنوانُ السبب البارز تحت كلّ دورة */
 export const REASON_LABEL_AR = 'سبب اختيارها لك'
