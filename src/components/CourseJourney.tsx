@@ -62,6 +62,7 @@ export interface CourseJourneyEdit {
 export default function CourseJourney({
   courseIds,
   reasons,
+  reasonsProminentLabelAr,
   delivery,
   headingLevel: Heading = "h3",
   edit,
@@ -74,6 +75,11 @@ export default function CourseJourney({
   courseIds: string[];
   /** سبب وجود كل دورة في الخطة (للخطط المركبة) — يظهر سطرا واحدا تحت الاسم */
   reasons?: Record<string, string>;
+  /* ═══ والسببُ بارزا تحت العنوان — «سبب اختيارها لك» (٨ نوفمبر ٢٠٢٦) ═══
+     طلبُ صاحب المنصّة لصفحة المسار الخاصّ `/go`: «تحت عنوان كل دورة يظهر "سبب اختيارها لك" من السبب الذي كُتب عند
+     توليد الرابط، بشكل بارز». فالسببُ هناك كتبه مستشارٌ لهذا المتعلّم بعينه — هو ما يقنعه، لا سطرٌ رماديٌّ بعد المهارات.
+     وبلا هذا الخيار يبقى السطرُ كما كان في كلّ صفحة. */
+  reasonsProminentLabelAr?: string;
   /** طريقة تقديم المسار — تُعرض ضمن تفاصيل كل دورة */
   delivery?: string;
   /** مشروع التخرّج — سطرٌ أخيرٌ في الرحلة نفسها لا صندوقٌ منفصلٌ خارجها */
@@ -197,6 +203,12 @@ export default function CourseJourney({
                       <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{c.shortPromise}</span>
                     )}
                   </CollapsibleTrigger>
+                  {reasonsProminentLabelAr && reasons?.[c.id] && (
+                    <Inset tone="warn" className="mt-2.5 px-3 py-2.5" data-testid="course-reason">
+                      <p className="text-read font-black text-gold-ink">{reasonsProminentLabelAr}</p>
+                      <p className="mt-0.5 text-sm leading-relaxed text-foreground">{reasons[c.id]}</p>
+                    </Inset>
+                  )}
                   {showSchedule && (
                     <div className="mt-2">
                       <CohortPicker
@@ -242,7 +254,7 @@ export default function CourseJourney({
                         كانت تُقرأ شعبةً واحدةً بمدرّبَين (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦). فتبقى حيث لا منتقي. */}
                     {!showSchedule && <CourseTrainer courseId={c.id} />}
                   </div>
-                  {reasons?.[c.id] && (
+                  {!reasonsProminentLabelAr && reasons?.[c.id] && (
                     <p className="mt-2 text-read leading-relaxed text-muted-foreground">
                       <span className="font-bold text-gold-ink/80">لماذا هي في خطتك: </span>
                       {reasons[c.id]}
