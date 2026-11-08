@@ -46,9 +46,10 @@ describe('توليدُ الجلسات من الجدول', () => {
     expect(r.created).toBe(4)
     const rows = await cohorts.sessionsFor(c.id)
     expect(rows.map((s) => s.title)).toEqual(['الجلسة 1', 'الجلسة 2', 'الجلسة 3', 'الجلسة 4'])
-    /* الثلاثاء ٦ أكتوبر ثمّ الخميس ٨ — بالساعة ١٨:٠٠ */
-    expect(rows[0].startsAt.toISOString()).toBe('2026-10-06T18:00:00.000Z')
-    expect(rows[1].startsAt.toISOString()).toBe('2026-10-08T18:00:00.000Z')
+    /* الثلاثاء ٦ أكتوبر ثمّ الخميس ٨ — بالساعة ١٨:٠٠ بتوقيت عمّان، أي ١٥:٠٠ بغرينتش. وكان الحارسُ يثبّت ١٨:٠٠ بغرينتش —
+       وهو العطبُ نفسُه: تسعٌ مساءً بعمّان (٨ نوفمبر ٢٠٢٦، `generate-sessions-zone.test.ts`) */
+    expect(rows[0].startsAt.toISOString()).toBe('2026-10-06T15:00:00.000Z')
+    expect(rows[1].startsAt.toISOString()).toBe('2026-10-08T15:00:00.000Z')
     expect(new Date(rows[0].endsAt!).getTime() - rows[0].startsAt.getTime(), 'ساعتان افتراضا').toBe(120 * 60_000)
   })
 
@@ -56,8 +57,8 @@ describe('توليدُ الجلسات من الجدول', () => {
     const c = await scheduled('شعبةُ الحدود')
     await cohorts.generateSessions(managerId, c.id, { weeks: 2, from: new Date('2026-11-01T00:00:00Z'), apply: true })
     const after = await prisma.cohort.findUnique({ where: { id: c.id }, select: { startsAt: true, endsAt: true } })
-    expect(after!.startsAt!.toISOString()).toBe('2026-11-03T18:00:00.000Z')
-    expect(after!.endsAt!.toISOString()).toBe('2026-11-12T20:00:00.000Z')
+    expect(after!.startsAt!.toISOString()).toBe('2026-11-03T15:00:00.000Z')
+    expect(after!.endsAt!.toISOString()).toBe('2026-11-12T17:00:00.000Z')
   })
 
   it('ولا يكرّر ما وُلِّد — تشغيلٌ ثانٍ بالنطاق نفسه يُرفض بلا كتابة', async () => {
@@ -94,7 +95,7 @@ describe('تكرارُ شعبةٍ لفصلٍ قادم', () => {
     const copied = await cohorts.sessionsFor(copy.id)
     expect(copied).toHaveLength(4)
     /* ثمانيةُ أسابيعَ بعد ٦ أكتوبر = ١ ديسمبر */
-    expect(copied[0].startsAt.toISOString()).toBe('2026-12-01T18:00:00.000Z')
+    expect(copied[0].startsAt.toISOString()).toBe('2026-12-01T15:00:00.000Z')
   })
 
   it('ولا ينقل ما يخصّ أشخاصا: لا تسجيلاتٍ ولا اجتماعات', async () => {
