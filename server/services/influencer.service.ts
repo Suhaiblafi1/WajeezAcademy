@@ -202,17 +202,25 @@ export class InfluencerService {
     const inf = await this.prisma.influencer.findUnique({ where: { id }, select: { id: true } })
     if (!inf) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
     const amount = round2(input.amount)
-    const before = await this.statement(id)
-    const advance = amount > before.totals.balance
-    if (advance && input.advance !== true) {
-      throw new AuthError(
-        'payout_exceeds_balance',
-        `رصيده ${fmtMoney(before.totals.balance, before.currency)} والمبلغ ${fmtMoney(amount, before.currency)}. إن سجلته فالزائد سلفة، ويصير رصيده ${fmtMoney(round2(before.totals.balance - amount), before.currency)}.`,
-        409,
-      )
-    }
-    const row = await this.prisma.influencerPayout.create({
-      data: { influencerId: id, amount, currency: LEDGER_CURRENCY, noteAr: input.noteAr?.trim().slice(0, 300) || null, recordedBy: actorId },
+    /* ═══ دفعةٌ واحدةٌ في كلّ لحظةٍ للمؤثّر الواحد (٨ نوفمبر ٢٠٢٦) ═══
+       كان الرصيدُ يُقرأ ثمّ تُكتب الدفعة بلا قفل: فضغطتان معا (أو موظّفا ماليّةٍ يسجّلان الحوالةَ نفسَها) تقرآن الرصيدَ
+       نفسَه وتمضيان — استحقّ ١٥ فسُجّل له ٣٠، ورصيدُه −١٥ بلا «سلفة» في الأثر ولا في بريده. فالقراءةُ والكتابةُ تحت قفلٍ
+       للمؤثّر، والثانيةُ ترى ما كتبته الأولى. والحارس: `server/tests/commerce/influencer-payout-once.test.ts`. */
+    const { row, before, advance } = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`influencer.payout:${id}`}))`
+      const before = await this.statement(id)
+      const advance = amount > before.totals.balance
+      if (advance && input.advance !== true) {
+        throw new AuthError(
+          'payout_exceeds_balance',
+          `رصيده ${fmtMoney(before.totals.balance, before.currency)} والمبلغ ${fmtMoney(amount, before.currency)}. إن سجلته فالزائد سلفة، ويصير رصيده ${fmtMoney(round2(before.totals.balance - amount), before.currency)}.`,
+          409,
+        )
+      }
+      const row = await tx.influencerPayout.create({
+        data: { influencerId: id, amount, currency: LEDGER_CURRENCY, noteAr: input.noteAr?.trim().slice(0, 300) || null, recordedBy: actorId },
+      })
+      return { row, before, advance }
     })
     await recordAudit(this.prisma, {
       actorId, action: 'influencer.payout', entityType: 'influencer', entityId: id,
