@@ -13,6 +13,7 @@ import { suggestCourses, trainerFamilies } from '../../src/application/trainer/p
 import { readMatchableCourses } from './course-proposal.service'
 import { AdvisorService, attributedRevenue } from './advisor.service'
 import { AdvisorPayoutService } from './advisor-payout.service'
+import { reportDay, reportMonth } from '../../src/application/admin/report-range'
 
 export interface ReportFilter {
   from?: Date
@@ -122,7 +123,7 @@ export class ReportsService {
           const rows = await p.learnerProfile.findMany({ where: hasRange(f) ? { attachedAt: dayRange(f) } : { attachedAt: { not: null } }, select: { attachedAt: true } })
           const byDay = new Map<string, number>()
           for (const r of rows) {
-            const d = r.attachedAt!.toISOString().slice(0, 10)
+            const d = reportDay(r.attachedAt!)
             byDay.set(d, (byDay.get(d) ?? 0) + 1)
           }
           return [...byDay.entries()].map(([day, count]) => ({ day, diagnostics: count }))
@@ -308,7 +309,7 @@ export class ReportsService {
           })
           const byMonth = new Map<string, number>()
           for (const r of rows) {
-            const key = `${r.paidAt!.toISOString().slice(0, 7)} ${r.currency}`
+            const key = `${reportMonth(r.paidAt!)} ${r.currency}`
             byMonth.set(key, (byMonth.get(key) ?? 0) + Number(r.amount))
           }
           return [...byMonth.entries()].map(([monthCurrency, revenue]) => ({ monthCurrency, revenue }))
@@ -393,7 +394,7 @@ export class ReportsService {
           })
           const byMonth = new Map<string, { issued: number; revoked: number }>()
           for (const r of rows) {
-            const m = r.issuedAt.toISOString().slice(0, 7)
+            const m = reportMonth(r.issuedAt)
             const cur = byMonth.get(m) ?? { issued: 0, revoked: 0 }
             cur.issued += 1
             if (r.status === 'revoked') cur.revoked += 1
@@ -500,8 +501,8 @@ export class ReportsService {
                 email: a.email,
                 state: said.state,
                 nextStepAr: said.next,
-                activeSince: since.toISOString().slice(0, 10),
-                lastContract: last ? `${last.title} — ${last.createdAt.toISOString().slice(0, 10)}` : '—',
+                activeSince: reportDay(since),
+                lastContract: last ? `${last.title} — ${reportDay(last.createdAt)}` : '—',
                 _since: since,
               }
             })

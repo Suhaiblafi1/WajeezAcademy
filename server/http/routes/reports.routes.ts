@@ -6,12 +6,23 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { ReportsService } from '../../services/reports.service'
 import { requirePermission } from '../auth-plugin'
+import { reportFrom, reportTo } from '../../../src/application/admin/report-range'
 
+/* والمدّةُ أيّامُ عمّان كاملةً (`report-range.ts`) — والدورةُ برمزها (`C-BIZ-101`) لا بمعرّفٍ عشوائيّ: كان الحقلُ يطلب UUID
+   فيُردّ كلُّ ترشيحٍ بدورة (٨ نوفمبر ٢٠٢٦) */
+const instant = (read: (v: string) => Date) => z.string().trim().min(1).transform((v, ctx) => {
+  const at = read(v)
+  if (Number.isNaN(at.getTime())) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'تاريخ غير صحيح' })
+    return z.NEVER
+  }
+  return at
+})
 const filterSchema = z.object({
-  from: z.coerce.date().optional(),
-  to: z.coerce.date().optional(),
+  from: instant(reportFrom).optional(),
+  to: instant(reportTo).optional(),
   cohortId: z.string().uuid().optional(),
-  courseId: z.string().uuid().optional(),
+  courseId: z.string().trim().min(1).max(64).optional(),
 })
 
 export function registerReportRoutes(app: FastifyInstance, prisma: PrismaClient) {
