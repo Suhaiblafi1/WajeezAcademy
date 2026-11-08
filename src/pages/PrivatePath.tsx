@@ -9,7 +9,7 @@
    كاملة» من `PathwayChrome.tsx`، والدوراتُ برحلة `CourseJourney` نفسِها كما في `pages/Pathway.tsx`: صورةُ المدرّب ونبذتُه
    وشارةُ «مباشر»، والمدّةُ والمهارات، وعددُ اللقاءات وأوّلُها بتوقيت عمّان، والتفاصيلُ تُفتح، والشعبُ إن كانت أكثرَ من
    واحدة. والفروقُ وحدَها:
-   · العنوانُ «مسار {الاسم الأوّل}: {هدف دوراته}» وتحته سطرٌ من مستواه ومجاله ودوراته — آليّان (`privatePathHeadline`).
+   · العنوانُ «مسار {الاسم الأوّل والأخير} الشخصي» وتحته سطرٌ من مستواه ومجاله ودوراته — آليّان (`privatePathHeadline`).
    · و«سبب اختيارها لك» تحت عنوان كلّ دورةٍ بارزا — السببُ الذي كتبه مولّدُ الرابط (`reasonsProminentLabelAr`).
    · والسعرُ صندوقُه كما كان: الأصليّ، والمنحة، وما يدفعه، و«أكمل التسجيل».
    · و«استبدالها» باقٍ بقاعدة المسار الجاهز (`swapCandidates`): العددُ ثابتٌ فحدُّ دورات المنحة لا يُمسّ، والبديلُ ممّا
@@ -56,6 +56,7 @@ import {
 interface PathView {
   code: string;
   firstName: string;
+  nameAr?: string;
   profile?: { workField: string | null; careerLevel: string | null };
   courses: { n: number; courseId: string; cohortId: string; titleAr: string; reasonAr: string | null; trainerName: string | null; firstSessionAt: string | null }[];
   price: PrivatePathPrice | null;
@@ -197,7 +198,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
   const delivery = pathwayDelivery(courseById(courseIds[0] ?? "")?.pathwayId ?? "");
   /* العنوانُ والسطرُ تحته — آليّان من دوراته الآن (فيتبدّلان مع «استبدالها») ومن نموذجه (`privatePathHeadline`) */
   const headline = privatePathHeadline({
-    firstName: v.firstName,
+    name: v.nameAr || v.firstName,
     workField: v.profile?.workField ?? null,
     careerLevel: v.profile?.careerLevel ?? null,
     courses: courseIds.map((id) => ({ courseId: id, titleAr: titleOf(id), domainAr: courseDomain(id) })),
@@ -209,7 +210,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
     /* يُحفظ ما يشتريه قبل أن يُطلب منه حساب — فإن خرج ليوثّق بريده عاد إلى مساره (`ResumeCheckout`) */
     savePendingCheckout({
       path: goPath(v.code),
-      intent: { title: `مسار ${v.firstName}`, amount: current.price?.total ?? 0, kind: "courses", courseIds },
+      intent: { title: headline.titleAr, amount: current.price?.total ?? 0, kind: "courses", courseIds },
       cohortByCourse: Object.fromEntries(courseIds.flatMap((id) => (picked[id] ? [[id, picked[id]]] : []))),
       ...(v.couponCode ? { couponCode: v.couponCode } : {}),
     });
@@ -218,7 +219,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
   };
 
   return (
-    <Frame title={`مسار ${v.firstName}`} user={session?.displayName ?? null}>
+    <Frame title={headline.titleAr} user={session?.displayName ?? null}>
       {/* ترويسةُ المسار — بقالب صفحة المسار */}
       <div className="story-fade">
         <div className="flex flex-wrap items-center gap-2">
@@ -353,7 +354,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
       )}
       {buyOpen && (
         <BuyPanel
-          title={`مسار ${v.firstName}`}
+          title={headline.titleAr}
           email={session?.email ?? ""}
           kind="courses"
           initialCoupon={v.couponCode ?? ""}

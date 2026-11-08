@@ -17,7 +17,7 @@ import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-vis
 import { PUBLIC_SESSION_WHERE } from './public-catalog.service'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
-  GO_CODE_LENGTH, GO_CODE_RE, PRIVATE_PATH_PURPOSE, goPath, privatePathPrice, type PrivatePathPayload,
+  GO_CODE_LENGTH, GO_CODE_RE, PRIVATE_PATH_PURPOSE, firstLastNameAr, goPath, privatePathPrice, type PrivatePathPayload,
 } from '../../src/application/commerce/private-path'
 import { grantLastDay } from '../../src/application/commerce/grant'
 
@@ -51,6 +51,8 @@ export async function mintPrivatePath(db: Db, actorId: string, payload: Omit<Pri
 export interface PrivatePathView {
   code: string
   firstName: string
+  /** الاسمُ الأوّلُ والأخير لعنوان «مسار {الاسم} الشخصي» — من ملفّه الآن، وإلّا الأوّلُ المحفوظُ مع الرابط (٨ نوفمبر ٢٠٢٦) */
+  nameAr: string
   /** من نموذج المنحة — للعنوان والسطر تحته وحدَهما (`privatePathHeadline`). ولا شيءَ سواهما من ملفّه */
   profile: { workField: string | null; careerLevel: string | null }
   courses: {
@@ -160,19 +162,25 @@ export class PrivatePathService {
       lastDay = ends ? grantLastDay(ends) : null
     }
 
-    /* ومجالُ عمله ومستواه من نموذجه — بحسابه أو بنموذجه (`learnerKey`)، وأحدثُ نموذجٍ له إن تعدّد */
+    /* واسمُه الأوّلُ والأخيرُ ومجالُ عمله ومستواه — بحسابه أو بنموذجه (`learnerKey`)، وأحدثُ نموذجٍ له إن تعدّد.
+       والاسمُ من حسابه أوّلا ثمّ نموذجِه، وإلّا الأوّلُ المحفوظُ مع الرابط. ولا شيءَ سواها من ملفّه */
     const [kind, id] = p.learnerKey.split(':')
     const lead = id && (kind === 'lead' || kind === 'user')
       ? await this.prisma.lead.findFirst({
         where: { erasedAt: null, ...(kind === 'lead' ? { id } : { userId: id }) },
         orderBy: { createdAt: 'desc' },
-        select: { workField: true, careerLevel: true },
+        select: { fullName: true, workField: true, careerLevel: true },
       }).catch(() => null)
       : null
+    const account = id && kind === 'user'
+      ? await this.prisma.user.findUnique({ where: { id }, select: { displayName: true } }).catch(() => null)
+      : null
+    const nameAr = firstLastNameAr(account?.displayName) || firstLastNameAr(lead?.fullName) || p.firstName
 
     return {
       code,
       firstName: p.firstName,
+      nameAr,
       profile: { workField: lead?.workField ?? null, careerLevel: lead?.careerLevel ?? null },
       courses,
       price: preview && courses.length > 0 ? privatePathPrice(preview) : null,

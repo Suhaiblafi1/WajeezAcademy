@@ -50,6 +50,15 @@ export function firstNameAr(name: string | null | undefined): string {
   return first.slice(0, 40)
 }
 
+/** الاسمُ الأوّلُ والأخير — «صهيب الخوالدة» من «صهيب عبد الله الخوالدة». قرارُ صاحب المنصّة (٨ نوفمبر ٢٠٢٦): «اجعلها
+    مسار صهيب الخوالدة الشخصي». ولا اسمَ أوسطَ ولا شيءَ بعده */
+export function firstLastNameAr(name: string | null | undefined): string {
+  const words = (name ?? '').trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return ''
+  const out = words.length === 1 ? words[0] : `${words[0]} ${words[words.length - 1]}`
+  return out.slice(0, 60)
+}
+
 /** سببُ الدورة نظيفا: سطرٌ واحدٌ بحدّه، وفارغُه لا شيء */
 export function cleanReason(raw: string | null | undefined): string | null {
   const v = (raw ?? '').replace(/\s+/g, ' ').trim()
@@ -95,52 +104,17 @@ export function privatePathPrice(p: PathPreviewNumbers): PrivatePathPrice {
 /** السطرُ تحت «مسار {الاسم الأوّل}» — نصُّ صاحب المنصّة. وصار احتياطا: لمسارٍ لا مجالَ معروفا لدوراته (`privatePathHeadline`) */
 export const PATH_SUBTITLE_AR = 'دورات اخترناها لك بناءً على خبرتك'
 
-/* ═══ عنوانٌ أطولُ وسطرٌ أعمقُ تحته — آليّان (٨ نوفمبر ٢٠٢٦) ═══
+/* ═══ العنوانُ «مسار {الاسم الأوّل والأخير} الشخصي» وسطرٌ أعمقُ تحته — آليّان (٨ نوفمبر ٢٠٢٦) ═══
 
-   طلبُ صاحب المنصّة: «اكتب نصّا أكثرَ عمقا وشرحا في السطر الثاني، وأعطني عنوانا أطولَ للمسار مثل مسار صهيب: جملةٌ
-   فيها ملخّصٌ عن الهدف العامّ لدوراته أو تخصّصه أو مسمّاه المهنيّ». وخُيّر بين حقلين في أداة الرابط ونصٍّ آليّ، فاختار
-   **الآليّ**: لا يكتبه أحد، ويصل الروابطَ المرسلةَ قبله، ويتبدّل مع «استبدالها».
+   طلبُ صاحب المنصّة: «اكتب نصّا أكثرَ عمقا وشرحا في السطر الثاني، وأعطني عنوانا أطولَ للمسار». واختار الآليَّ على حقولٍ
+   في أداة الرابط، ثمّ قال في العنوان: «غيّرت رأيي.. اجعلها "مسار صهيب الخوالدة الشخصي"». فالعنوانُ اسمُه الأوّلُ والأخيرُ
+   (`firstLastNameAr`) من ملفّه — لا اسمَ أوسطَ ولا بريدَ ولا هاتف.
 
-   · **العنوان**: «مسار {الاسم}: {هدف}» — والهدفُ من مجالات دوراته (عائلةُ المعرّف، `courseDomain`)، أكثرُها دوراتٍ أوّلا
-     وبترتيب المسار عند التعادل، واثنان على الأكثر بواو. ولكلّ عائلةٍ هدفٌ قصيرٌ يقوله (`GOAL_BY_FAMILY`).
    · **السطرُ تحته**: ممّا كتبه في نموذج المنحة — مستواه الوظيفيّ (`CAREER_LEVELS`) ومجالُ عمله (`WORK_FIELDS`) — ثمّ
-     مجالاتُ دوراته بأسمائها، ثمّ أوّلُ دورةٍ وآخرُها. ولا وعدَ بنتيجة: ما يُقال قائمٌ في المسار نفسِه.
-   · وما لا يُعرف لا يُخترع: بلا نموذجٍ يبقى «تبني على خبرتك»، وبلا مجالٍ معروفٍ يعود العنوانُ «مسار {الاسم}» والسطرُ
-     `PATH_SUBTITLE_AR`.
+     أكثرُ مجالين في دوراته (`courseDomain`، وبترتيب المسار عند التعادل)، ثمّ أوّلُ دورةٍ وآخرُها. ولا وعدَ بنتيجة.
+   · وما لا يُعرف لا يُخترع: بلا نموذجٍ يبقى «تبني على خبرتك»، وبلا مجالٍ معروفٍ يعود السطرُ `PATH_SUBTITLE_AR`.
+   · ويصل الروابطَ المرسلةَ قبله، ويتبدّل مع «استبدالها».
    ونصوصُه بلا تشكيلٍ إعرابيّ (قرارُ ١١ أكتوبر ٢٠٢٦). والحارس: `src/tests/commerce/private-path-headline.test.ts`. */
-
-/** هدفُ كلّ عائلة — ما يصل إليه من يدرس دوراتها، بكلماتٍ قليلة */
-export const GOAL_BY_FAMILY: Readonly<Record<string, string>> = {
-  AI: 'توظيف الذكاء الاصطناعي في عملك',
-  DAT: 'قرارات مبنية على البيانات',
-  AUT: 'أتمتة العمل وتوفير الوقت',
-  CYB: 'حماية البيانات والأنظمة',
-  PRD: 'بناء منتجات ناجحة وإطلاقها',
-  PM: 'إدارة مشاريع تنجز في وقتها',
-  MGR: 'قيادة فرق أقوى',
-  OPS: 'عمليات أكفأ وجودة أعلى',
-  SCM: 'سلاسل إمداد ومخزون أدق',
-  HR: 'إدارة الناس والأداء',
-  FINM: 'إدارة مالية أوضح',
-  MKT: 'تسويق يصل إلى عميلك',
-  SAL: 'مبيعات أكثر وصفقات تغلق',
-  SVC: 'تجربة عملاء أفضل',
-  BIZ: 'إطلاق مشروعك وتنميته',
-  NEG: 'تفاوض بثقة',
-  COMX: 'تواصل وإلقاء مؤثر',
-  LND: 'تدريب يصنع أثرا',
-  CAR: 'خطوتك المهنية القادمة',
-  JOB: 'الوصول إلى وظيفتك القادمة',
-  GRPH: 'تصميم بصري يعبر عنك',
-  INTR: 'تصميم داخلي احترافي',
-  ENGR: 'مخططات وحصر كميات بدقة',
-  PSY: 'فهم السلوك الإنساني',
-  EDU: 'تعلم وتعليم أعمق',
-  FIN: 'إدارة مالك الشخصي',
-  WEL: 'تركيز أعلى وطاقة أطول',
-  WEB: 'بناء مواقع وتطبيقات الويب',
-  FAM: 'حوار أسري وتربية واعية',
-}
 
 /** كيف تُقدَّم الدوراتُ لكلّ مستوى في نموذج المنحة — وما سواه «تبني على خبرتك» */
 const LEVEL_AR: Readonly<Record<string, string>> = {
@@ -156,7 +130,8 @@ const DEFAULT_LEVEL_AR = 'تبني على خبرتك'
 const NOT_A_FIELD = new Set(['أخرى', 'طالب جامعي', 'أبحث عن عمل'])
 
 export interface PathHeadlineInput {
-  firstName: string
+  /** الاسمُ الأوّلُ والأخير (`firstLastNameAr`) */
+  name: string
   /** من نموذج المنحة — وقد لا يكون */
   workField: string | null
   careerLevel: string | null
@@ -171,24 +146,21 @@ function countAr(n: number): string {
   return `${n} ${n <= 10 ? 'دورات' : 'دورة'}`
 }
 
-/** العنوانُ والسطرُ تحته — آليّان من دوراته ونموذجه */
+/** العنوانُ والسطرُ تحته — آليّان من اسمه ودوراته ونموذجه */
 export function privatePathHeadline(input: PathHeadlineInput): { titleAr: string; subtitleAr: string } {
-  const name = input.firstName.trim()
-  const base = name ? `مسار ${name}` : 'مسارك'
+  const name = input.name.trim()
+  const titleAr = name ? `مسار ${name} الشخصي` : 'مسارك الشخصي'
 
-  /* مجالاتُه: أكثرُها دوراتٍ أوّلا، وبترتيب المسار عند التعادل — وما لا هدفَ له لا يُعدّ */
-  const tally = new Map<string, { family: string; domainAr: string; n: number; first: number }>()
+  /* مجالاتُه: أكثرُها دوراتٍ أوّلا، وبترتيب المسار عند التعادل — و«أخرى» لا تُعدّ */
+  const tally = new Map<string, { domainAr: string; n: number; first: number }>()
   input.courses.forEach((c, i) => {
-    const family = c.courseId.split('-')[1] ?? ''
-    if (!GOAL_BY_FAMILY[family]) return
-    const t = tally.get(family) ?? { family, domainAr: c.domainAr, n: 0, first: i }
+    if (!c.domainAr || c.domainAr === 'أخرى') return
+    const t = tally.get(c.domainAr) ?? { domainAr: c.domainAr, n: 0, first: i }
     t.n += 1
-    tally.set(family, t)
+    tally.set(c.domainAr, t)
   })
   const top = [...tally.values()].sort((a, b) => b.n - a.n || a.first - b.first).slice(0, 2)
-  if (top.length === 0 || input.courses.length === 0) return { titleAr: base, subtitleAr: PATH_SUBTITLE_AR }
-
-  const titleAr = `${base}: ${top.map((t) => GOAL_BY_FAMILY[t.family]).join(' و')}`
+  if (top.length === 0 || input.courses.length === 0) return { titleAr, subtitleAr: PATH_SUBTITLE_AR }
 
   const level = (input.careerLevel && LEVEL_AR[input.careerLevel]) || DEFAULT_LEVEL_AR
   const field = input.workField?.trim() && !NOT_A_FIELD.has(input.workField.trim()) ? ` في ${input.workField.trim()}` : ''
@@ -203,5 +175,6 @@ export function privatePathHeadline(input: PathHeadlineInput): { titleAr: string
   }
   return { titleAr, subtitleAr: parts.join(' ') }
 }
+
 /** عنوانُ السبب البارز تحت كلّ دورة */
 export const REASON_LABEL_AR = 'سبب اختيارها لك'
