@@ -24,6 +24,7 @@ import { assertCouponUsable, num } from './commerce/cart-types'
 import { assertFirstPurchase } from './commerce/first-purchase'
 import { payByOf, teamHeldOrderIds } from './commerce/seat-hold'
 import type { FirstTouch } from '../../src/application/marketing/signup-source'
+import { giftForCart } from './private-path-gift'
 import { buyLinkForOrder } from './buy-link.service'
 import { CODE_ATTEMPTS_AR, type CodeAttemptGuard } from './commerce/code-attempts'
 import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse, idLockKey } from './commerce/coupon-ledger'
@@ -316,7 +317,7 @@ export class CommerceService {
      فالتطابقُ بنيةٌ لا اتّفاق: لا حسابَ في الواجهة يُقارَن بحسابٍ في الخادم.
 
      ولا يكتب هذا النداءُ شيئا: لا حجزَ مقعد، ولا عدَّ استعمالٍ للكوبون. */
-  async quote(userId: string | null, cohortIds: string[], couponCode?: string) {
+  async quote(userId: string | null, cohortIds: string[], couponCode?: string, buyLinkToken: string | null = null) {
     /* التسعيرُ لا يُسقط السلّةَ بمانعٍ في بندٍ منها.
 
        كان ينادي `validatedCart` الصارم، فيرمي عند أوّل شعبةٍ يملكها المشتري
@@ -329,9 +330,12 @@ export class CommerceService {
     const currency = this.cart.cartCurrency(buyable, cohorts)
     /* الباقةُ والهديّةُ والكوبونُ على المشتراة وحدَها — وهي بعينها ما
        سيُرسَل إلى `checkout`، فالمعروضُ هو المُصدَر */
-    const { pricing, couponCode: code, grantPct, grantNameAr } = await this.cart.priceFor(userId, buyable, couponCode, currency)
+    /* وهديّةُ رابط المسار إن كان له رمزٌ وفي رابطه هديّة — تُسعَّر بصفرٍ إن استحقّها، ويُقال لماذا إن لم يستحقّها */
+    const gift = await giftForCart(this.prisma, userId, buyLinkToken, buyable.map((c) => ({ courseId: c.courseId })))
+    const { pricing, couponCode: code, grantPct, grantNameAr } = await this.cart.priceFor(userId, buyable, couponCode, currency, gift?.applies ? gift.courseId : null)
     return {
       currency,
+      gift,
       couponCode: code,
       /* ما استُبعد يُقال باسمه وسببه — لا يُسقَط صامتا ولا يُسقِط أخواته */
       excluded,
@@ -376,6 +380,8 @@ export class CommerceService {
   async preview(
     userId: string | null, cohortIds: string[], couponCode?: string,
     guard?: { key: string; codes: CodeAttemptGuard },
+    /* رمزُ رابط المسار — لهديّته وحدَها (٨ نوفمبر ٢٠٢٦) */
+    buyLinkToken: string | null = null,
   ) {
     const unique = [...new Set(cohortIds)]
     const known = new Set((await this.prisma.cohort.findMany({ where: { id: { in: unique } }, select: { id: true } })).map((c) => c.id))
@@ -386,16 +392,16 @@ export class CommerceService {
     let q: Awaited<ReturnType<CommerceService['quote']>>
     if (code && guard && !guard.codes.allows(guard.key, code)) {
       couponError = { code: 'too_many_codes', messageAr: CODE_ATTEMPTS_AR }
-      q = await this.quote(userId, ids)
+      q = await this.quote(userId, ids, undefined, buyLinkToken)
     } else {
       try {
-        q = await this.quote(userId, ids, code)
+        q = await this.quote(userId, ids, code, buyLinkToken)
       } catch (e) {
         if (!code || !(e instanceof AuthError) || !PREVIEW_COUPON_ERRORS.has(e.code)) throw e
         /* وما يُعدّ تجربةً هو الكودُ غيرُ الصالح وحدَه — لا كودٌ صالحٌ لا يسع سلّتَه */
         if (e.code === 'bad_coupon') guard?.codes.reject(guard.key, code)
         couponError = { code: e.code, messageAr: e.messageAr }
-        q = await this.quote(userId, ids)
+        q = await this.quote(userId, ids, undefined, buyLinkToken)
       }
     }
     return { ...q, couponError, unknownCohorts: unique.length - ids.length, accountChecked: userId !== null }
@@ -430,7 +436,12 @@ export class CommerceService {
     const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds)
     /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
     const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
-    const { pricing, couponId, couponMaxUses, trainerCode, shareProfileId, trainerPurchase, grantMaxCourses } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
+    /* ═══ وهديّةُ رابط المسار (٨ نوفمبر ٢٠٢٦) ═══
+       تُضاف بصفرٍ إن استحقّها (`private-path-gift.ts`). وإن كانت في السلّة ولم يستحقّها يُردّ الطلبُ بسببه — لا تُسعَّر بثمنها
+       ويدفعه وهو يظنّها هديّة */
+    const gift = await giftForCart(this.prisma, userId, buyLinkToken, cohorts.map((c) => ({ courseId: c.courseId })))
+    if (gift?.inCart && !gift.applies) throw new AuthError('gift_condition', gift.reasonAr ?? 'الدورة الهدية لا تضاف لهذا الطلب', 409)
+    const { pricing, couponId, couponMaxUses, trainerCode, shareProfileId, trainerPurchase, grantMaxCourses } = await this.cart.priceFor(userId, cohorts, couponCode, currency, gift?.applies ? gift.courseId : null)
     const buyLink = await buyLinkForOrder(this.prisma, buyLinkToken)
     const { subtotal, discount, total } = pricing
     /* ═══ ومن اشترى بكود «شارك دوراتك» يُحسب لصاحبه بأجر الإحالة (٢٦ أكتوبر ٢٠٢٦) ═══

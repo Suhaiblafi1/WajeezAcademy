@@ -325,6 +325,8 @@ export default function BuyPanel({
       setQuote(await apiPost<Quote>("/api/learner/checkout/quote", {
         cohortIds,
         ...(code ? { couponCode: code } : {}),
+        /* ورمزُ رابط المسار — يحكم به الخادمُ في دورته المجانيّة إن كانت (٨ نوفمبر ٢٠٢٦، `private-path-gift.ts`) */
+        ...(buyLinkToken() ? { buyLink: buyLinkToken() } : {}),
       }));
       if (code) { setCouponError(null); rejectedCode.current = ""; }
     } catch (e) {
@@ -632,6 +634,9 @@ export default function BuyPanel({
                         <span className="shrink-0 text-fine font-bold text-gold-ink">
                           {REASON_AR[out.reason] ?? "غير متاحة الآن"}
                         </span>
+                      ) : quote?.items.some((i) => i.cohortId === picked.id && i.unitPrice === 0 && i.listPrice > 0) ? (
+                        /* ودورةٌ سعّرها الخادمُ بصفرٍ — الدورةُ المجانيّةُ في رابط المسار (٨ نوفمبر ٢٠٢٦) — يُقال ذلك في بندها */
+                        <span className="shrink-0 text-read font-bold text-teal-light-ink" data-testid="buy-line-free">مجانية</span>
                       ) : null}
                     </div>
                     {out && (

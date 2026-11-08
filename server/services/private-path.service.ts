@@ -17,7 +17,7 @@ import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-vis
 import { PUBLIC_SESSION_WHERE } from './public-catalog.service'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
-  GO_CODE_LENGTH, GO_CODE_RE, PRIVATE_PATH_PURPOSE, firstLastNameAr, goPath, privatePathPrice, type PrivatePathPayload,
+  GO_CODE_LENGTH, GO_CODE_RE, PRIVATE_PATH_PURPOSE, firstLastNameAr, goPath, type GiftRule, privatePathPrice, type PrivatePathPayload,
 } from '../../src/application/commerce/private-path'
 import { grantLastDay } from '../../src/application/commerce/grant'
 
@@ -78,6 +78,20 @@ export interface PrivatePathView {
   unavailable: { titleAr: string; reasonAr: string }[]
   /** يُرسَل مع الشراء فيُنسب الطلبُ إلى من ولّد الرابط (`buyLinkForOrder`) */
   buyLinkToken: string
+  /** الدورةُ الهديّة وشرطُها — وسعرُها الأصليّ ليُعرض مشطوبا (٨ نوفمبر ٢٠٢٦، `private-path-gift.ts`) */
+  gift: {
+    courseId: string
+    cohortId: string
+    titleAr: string
+    trainerName: string | null
+    firstSessionAt: Date | null
+    listPrice: number
+    currency: string
+    rule: GiftRule
+    minCourses: number
+    /** لا تُشترى الآن — بسببه، فلا تُعرض وعدا لا يُوفى */
+    unavailableAr: string | null
+  } | null
 }
 
 export class PrivatePathService {
@@ -177,8 +191,45 @@ export class PrivatePathService {
       : null
     const nameAr = firstLastNameAr(account?.displayName) || firstLastNameAr(lead?.fullName) || p.firstName
 
+    /* والهديّةُ: بطاقتُها بعنوانها ومدرّبها المنشور وأوّلِ لقائها، وسعرِها الأصليّ من المعاينة نفسِها (بلا كودٍ ولا هديّة) */
+    let gift: PrivatePathView['gift'] = null
+    if (p.gift) {
+      const g = p.gift
+      const row = await this.prisma.cohort.findUnique({
+        where: { id: g.cohortId },
+        select: {
+          id: true, courseId: true, startsAt: true,
+          course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+          trainers: { where: { role: 'lead' }, select: { profile: { select: { ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true } } } } } },
+          sessions: { where: PUBLIC_SESSION_WHERE, orderBy: { startsAt: 'asc' }, take: 1, select: { startsAt: true } },
+        },
+      })
+      let listPrice = 0
+      let currency = preview?.currency ?? 'USD'
+      let unavailableAr: string | null = row ? null : 'لم تعد متاحة'
+      try {
+        const q = await new CommerceService(this.prisma).preview(null, [g.cohortId])
+        const item = q.items.find((i) => i.cohortId === g.cohortId)
+        listPrice = item?.listPrice ?? 0
+        currency = q.currency
+        if (!item) unavailableAr = q.excluded[0]?.messageAr ?? 'لم تعد متاحة للشراء'
+      } catch (e) {
+        if (!(e instanceof AuthError)) throw e
+        unavailableAr = e.messageAr
+      }
+      const lead = row?.trainers.map((t) => t.profile).find(trainerPubliclyVisible)
+      gift = {
+        courseId: g.courseId, cohortId: g.cohortId,
+        titleAr: row?.course.versions[0]?.titleAr ?? g.courseId,
+        trainerName: lead ? lead.application.fullName : null,
+        firstSessionAt: row?.sessions[0]?.startsAt ?? row?.startsAt ?? null,
+        listPrice, currency, rule: g.rule, minCourses: g.minCourses, unavailableAr,
+      }
+    }
+
     return {
       code,
+      gift,
       firstName: p.firstName,
       nameAr,
       profile: { workField: lead?.workField ?? null, careerLevel: lead?.careerLevel ?? null },
