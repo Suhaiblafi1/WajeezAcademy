@@ -23,6 +23,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
 import { ProgressService } from './progress.service'
+import { CERTIFIABLE_STATUSES, NOT_SEATED_AR } from './certificate.service'
 
 export const LEARNER_REQUEST_KINDS = ['course_certificate', 'pathway_certificate', 'recommendation'] as const
 export type LearnerRequestKind = (typeof LEARNER_REQUEST_KINDS)[number]
@@ -81,6 +82,10 @@ export class LearnerRequestService {
     if (!e) throw new AuthError('not_found', 'التسجيل غير موجود أو ليس لك', 404)
     if (e.certificates.length > 0) {
       return { eligible: false, reasonsAr: ['صدرت شهادتك لهذه الدورة'], percent: 100 }
+    }
+    /* والتسجيلُ الساقطُ لا يُقال له «مؤهّل» — فالإصدارُ يردّه (`CertificateService.issue`) */
+    if (!CERTIFIABLE_STATUSES.includes(e.status)) {
+      return { eligible: false, reasonsAr: [NOT_SEATED_AR[e.status] ?? 'هذا التسجيل ليس قائما — لا تصدر له شهادة'], percent: 0 }
     }
 
     const reasonsAr: string[] = []

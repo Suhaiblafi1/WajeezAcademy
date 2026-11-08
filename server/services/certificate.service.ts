@@ -9,6 +9,14 @@ import { safeNotify } from './notification.service'
 import { ProgressService } from './progress.service'
 import { EndorsementService } from './endorsement.service'
 
+
+/** من تصدر له شهادة: من له مقعدٌ قائم، أو أكمل — وما سواهما (منسحبٌ أو في الانتظار) لا */
+export const CERTIFIABLE_STATUSES: readonly string[] = ['enrolled', 'completed']
+export const NOT_SEATED_AR: Record<string, string> = {
+  dropped: 'هذا التسجيل منسحب أو أخرج من الشعبة — لا تصدر له شهادة',
+  waitlisted: 'هذا التسجيل في قائمة الانتظار — لا تصدر له شهادة',
+}
+
 export class CertificateService {
   private prisma: PrismaClient
   private progress: ProgressService
@@ -51,7 +59,7 @@ export class CertificateService {
      من لا قائمة. ومن لم يستوفِ تُعرض أسبابُه لا حالتُه فقط. */
   async candidates(cohortId: string) {
     const enrollments = await this.prisma.enrollment.findMany({
-      where: { cohortId, status: { in: ['enrolled', 'completed'] } },
+      where: { cohortId, status: { in: [...CERTIFIABLE_STATUSES] } },
       include: {
         user: { select: { id: true, displayName: true, email: true, emailVerifiedAt: true } },
         certificates: { orderBy: { issuedAt: 'desc' } },
@@ -104,6 +112,13 @@ export class CertificateService {
     })
     if (!e) throw new AuthError('not_found', 'التسجيل غير موجود', 404)
     if (e.certificates.length) throw new AuthError('already_issued', 'صدرت شهادة فعالة لهذا التسجيل مسبقا', 409)
+    /* ═══ ولا شهادةَ لتسجيلٍ سقط (٨ نوفمبر ٢٠٢٦) ═══
+       كان الإصدارُ يفحص قواعدَ الإكمال وحدَها: فمن انسحب أو رُدّ ثمنُه وأُخرج من شعبته تصدر له شهادة، ويعود تسجيلُه
+       «مكتملا» — فيُعدّ خرّيجا من استردّ ماله. وقائمةُ «من أنهى» تستثنيه (`candidates`)، والبابُ نفسُه لا. والحارس:
+       `server/tests/certificates/seated-only.test.ts`. */
+    if (!CERTIFIABLE_STATUSES.includes(e.status)) {
+      throw new AuthError('not_seated', NOT_SEATED_AR[e.status] ?? 'هذا التسجيل ليس قائما — لا تصدر له شهادة', 409)
+    }
 
     const check = await this.progress.evaluateCompletion(enrollmentId)
     if (!check.complete) {
