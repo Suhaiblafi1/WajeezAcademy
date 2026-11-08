@@ -37,8 +37,9 @@ export default function Reports() {
 
   const query = () => {
     const p = new URLSearchParams();
-    if (filter.from) p.set("from", new Date(filter.from).toISOString());
-    if (filter.to) p.set("to", new Date(filter.to).toISOString());
+    /* اليومُ كما اختير (`YYYY-MM-DD`) — والخادمُ يقرؤه يومَ عمّان كاملا (`report-range.ts`) */
+    if (filter.from) p.set("from", filter.from);
+    if (filter.to) p.set("to", filter.to);
     if (filter.cohortId) p.set("cohortId", filter.cohortId);
     if (filter.courseId) p.set("courseId", filter.courseId);
     const s = p.toString();
