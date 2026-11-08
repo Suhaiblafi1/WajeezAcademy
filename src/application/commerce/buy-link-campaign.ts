@@ -10,9 +10,12 @@ export const WHATSAPP_CAMPAIGN_TRACKING = { utm_source: 'whatsapp', utm_campaign
 export function orderViaAr(meta: unknown): string | null {
   if (!meta || typeof meta !== 'object') return null
   const m = meta as { touch?: unknown; buyLink?: { kind?: unknown; whatsapp?: unknown } }
-  if (isWhatsappCampaign(m.touch) || m.buyLink?.whatsapp === true) return 'حملة واتساب'
-  if (m.buyLink?.kind === 'admin') return 'رابط من الإدارة'
+  /* ═══ والرابطُ الذي اشترى منه يغلب زيارةً قديمة (٨ نوفمبر ٢٠٢٦) ═══
+     مصدرُ الزيارة آخرُ زيارةٍ بإشارةٍ يحفظها المتصفّح، فمن نقر حملةَ واتساب مرّةً ثمّ اشترى من رابط مستشاره بعد أسابيع كان
+     يُسمّى «حملة واتساب» — والعمولةُ تحسبه للمستشار (`commissionExcludedOrders`). فالتسميةُ تتبع الرابطَ أوّلا كما تتبعه العمولة */
   if (m.buyLink?.kind === 'advisor') return 'رابط من المستشار'
+  if (m.buyLink?.kind === 'admin') return m.buyLink.whatsapp === true ? 'حملة واتساب' : 'رابط من الإدارة'
+  if (isWhatsappCampaign(m.touch)) return 'حملة واتساب'
   return null
 }
 
