@@ -137,7 +137,7 @@ const TRAINER: Table = {
   'session.reminder.trainer.1h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
   'submission.queued': { path: '/trainer/grading', ctaAr: 'افتح طابور التصحيح' },
   /* عروضُ الإسناد — والوجهةُ حيث يُجاب لا حيث يُقرأ الخبر ثانيةً */
-  'trainer.offer.received': { path: '/trainer/qualifications', ctaAr: 'اقرأ العرض وأجب' },
+  'trainer.offer.received': { path: '/trainer/qualifications', ctaAr: 'افتح العرض' },
   'trainer.offer.withdrawn': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
   'trainer.offer.lapsed': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
   'trainer.prep.reminder': { path: '/trainer/qualifications', ctaAr: 'أقرّ بجاهزيّتك' },
