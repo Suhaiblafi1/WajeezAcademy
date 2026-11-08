@@ -966,12 +966,13 @@ export class AssessmentService {
       select: {
         id: true,
         enrollment: { select: { userId: true } },
-        assessment: { select: { cohort: { select: { trainers: { select: { profile: { select: { userId: true } } } } } } } },
+        assessment: { select: { cohort: { select: { trainers: { select: { profile: { select: { userId: true, suspendedAt: true } } } } } } } },
       },
     })
     if (!row) throw new AuthError('not_found', 'الملف غير موجود', 404)
     const mine = row.enrollment.userId === auth.userId
-    const teaches = row.assessment.cohort.trainers.some((t) => t.profile.userId === auth.userId)
+    /* والمدرّبُ الموقوفُ لا يفتح عملَ متعلّميه (٨ نوفمبر ٢٠٢٦) — كما لا يصحّحه (`assertCohortTrainer`) */
+    const teaches = row.assessment.cohort.trainers.some((t) => t.profile.userId === auth.userId && !t.profile.suspendedAt)
     if (!mine && !teaches) throw new AuthError('not_found', 'الملف غير موجود', 404)
     return row
   }
