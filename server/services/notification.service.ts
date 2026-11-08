@@ -139,6 +139,26 @@ export { publicSiteUrl, hasExplicitSiteUrl } from './site-url'
 
 const MAX_ATTEMPTS = 3
 
+/* ═══ وما سقط يُعاد — بمهلة (٨ نوفمبر ٢٠٢٦) ═══
+
+   كان بريدُ المتعلّم يُرسَل ساعةَ يُكتب، فإن ردّه المزوّدُ مرّةً — وحدُّ Resend طلبان في الثانية، وإلغاءُ شعبةٍ
+   يراسل متعلّميها كلَّهم تباعا — عُلّم `failed`، والعاملُ لا يختار إلّا `queued`: فلا يصل أبدا، ونصُّ خطئه يقول
+   «أعد المحاولة لاحقا» ولا أحدَ يعيد. فصار الرفضُ يُبقيه في الطابور حتّى `MAX_ATTEMPTS`، ويُعاد بعد هذه المهلة.
+
+   والمهلةُ قفلٌ كذلك: من يرسل يكتب `claimedAt` أوّلا بشرط أن يكون فارغا أو أقدمَ منها — فلا يرسل الصفَّ اثنان
+   معا (الإرسالُ الفوريُّ ودورةُ العامل)، وما انقطع إرسالُه في منتصفه يعود بعدها. والحارس:
+   `server/tests/notifications/mail-retry.test.ts`. */
+export const NOTIFICATION_RETRY_AFTER_MS = 5 * 60_000
+
+/** شرطُ «يحلّ إرسالُه الآن» — للإرسال نفسِه ولاختيار العامل */
+export function sendableNow(now: Date = new Date()) {
+  return {
+    status: 'queued',
+    attempts: { lt: MAX_ATTEMPTS },
+    OR: [{ claimedAt: null }, { claimedAt: { lt: new Date(now.getTime() - NOTIFICATION_RETRY_AFTER_MS) } }],
+  }
+}
+
 /* ═══ القنواتُ الموصولةُ الآن — ولماذا تُسأل قبل الإرسال لا بعده ═══
 
    `attemptSend` تُعلّم الصفَّ `failed` حين لا مزوّدَ لقناته. وهذا صحيحٌ لصفٍّ
@@ -197,8 +217,9 @@ export class NotificationService {
     this.prisma = prisma
   }
 
-  /* اختيار المزود بالقناة — البريد يقرأ إعدادات التكامل ويحتاج بريد المستخدم */
-  private async providerFor(channel: string, userId: string): Promise<NotificationProvider> {
+  /* اختيار المزود بالقناة — البريد يقرأ إعدادات التكامل ويحتاج بريد المستخدم.
+     و`null`: القناةُ موصولةٌ ولا عنوانَ لصاحب الحساب — لا اليومَ ولا غدا، فلا يُعاد */
+  private async providerFor(channel: string, userId: string): Promise<NotificationProvider | null> {
     if (channel === 'in_app') return new InAppProvider()
     if (channel === 'email') {
       const config = await getEmailConfig(this.prisma)
@@ -206,7 +227,7 @@ export class NotificationService {
         const user = await this.prisma.user.findUnique({
           where: { id: userId }, select: { email: true, displayName: true },
         })
-        if (user?.email) return new ResendEmailProvider(config, user.email, user.displayName)
+        return user?.email ? new ResendEmailProvider(config, user.email, user.displayName) : null
       }
     }
     return new UnwiredExternalProvider(channel as 'email' | 'whatsapp' | 'sms')
@@ -274,25 +295,41 @@ export class NotificationService {
     return this.attemptSend(notification.id)
   }
 
-  /** محاولة إرسال — ترفع العداد وتسجل النجاح أو الفشل */
+  /** محاولة إرسال — ترفع العداد وتسجل النجاح أو الفشل.
+
+      وثلاثةُ أبوابٍ لا يُحاوَل فيها (٨ نوفمبر ٢٠٢٦): ما ليس `queued` أو بلغ حدَّه، وقناةٌ غيرُ موصولة (`liveChannels`
+      — يبقى ينتظرها بلا عدّاد)، وصفٌّ أخذه غيرُنا أو لم تمضِ مهلتُه (`sendableNow`). وما رُدّ يبقى `queued` حتّى
+      الحدّ فيعيده العامل، ولا يصير `failed` إلّا ما لا محاولةَ له بعد. */
   async attemptSend(notificationId: string) {
     const n = await this.prisma.notification.findUnique({ where: { id: notificationId } })
     if (!n) throw new AuthError('not_found', 'الإشعار غير موجود', 404)
-    if (n.status === 'sent' || n.status === 'read') return n
-    if (n.attempts >= MAX_ATTEMPTS) return n
+    if (n.status !== 'queued' || n.attempts >= MAX_ATTEMPTS) return n
+    if (n.channel !== 'in_app' && !(await liveChannels(this.prisma)).includes(n.channel)) return n
+
+    const now = new Date()
+    const claimed = await this.prisma.notification.updateMany({
+      where: { ...sendableNow(now), id: notificationId, attempts: n.attempts },
+      data: { claimedAt: now },
+    })
+    if (claimed.count === 0) return (await this.prisma.notification.findUnique({ where: { id: notificationId } })) ?? n
 
     const provider = await this.providerFor(n.channel, n.userId)
-    const result = await provider.send(n as NotificationPayload)
+    const result = provider
+      ? await provider.send(n as NotificationPayload)
+      : { ok: false, error: 'لا بريد مسجل لصاحب الحساب' }
+    const attempts = n.attempts + 1
+    const final = !provider || attempts >= MAX_ATTEMPTS
     const updated = await this.prisma.notification.update({
       where: { id: notificationId },
       data: result.ok
-        ? { status: 'sent', sentAt: new Date(), attempts: { increment: 1 }, lastError: null }
-        : { status: 'failed', attempts: { increment: 1 }, lastError: result.error },
+        ? { status: 'sent', sentAt: new Date(), attempts, lastError: null, claimedAt: null }
+        /* و`claimedAt` يبقى: هو بدءُ المهلة قبل المحاولة التالية */
+        : { status: final ? 'failed' : 'queued', attempts, lastError: result.error },
     })
     await recordAudit(this.prisma, {
       actorId: null, action: result.ok ? 'notification.sent' : 'notification.failed',
       entityType: 'notification', entityId: notificationId,
-      meta: { channel: n.channel, attempt: updated.attempts, error: result.error },
+      meta: { channel: n.channel, attempt: updated.attempts, error: result.error, ...(result.ok ? {} : { willRetry: !final }) },
     })
     return updated
   }
@@ -303,7 +340,7 @@ export class NotificationService {
     if (!n) throw new AuthError('not_found', 'الإشعار غير موجود', 404)
     if (n.status !== 'failed') throw new AuthError('bad_state', 'إعادة المحاولة للفاشل فقط', 409)
     if (n.attempts >= MAX_ATTEMPTS) throw new AuthError('max_attempts', 'استنفدت محاولات الإرسال', 409)
-    await this.prisma.notification.update({ where: { id: notificationId }, data: { status: 'queued' } })
+    await this.prisma.notification.update({ where: { id: notificationId }, data: { status: 'queued', claimedAt: null } })
     return this.attemptSend(notificationId)
   }
 

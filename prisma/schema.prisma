@@ -4612,6 +4612,11 @@ model Notification {
   attempts    Int       @default(0)
   lastError   String?
   queuedAt    DateTime  @default(now())
+  /**
+   * متى أُخذ للإرسال آخرَ مرّة — قفلُ المحاولة ومهلتُها (٨ نوفمبر ٢٠٢٦). من يرسل يكتبه أوّلا بشرطٍ فلا
+   * يرسله اثنان معا، ولا يُعاد ما سقط قبل `NOTIFICATION_RETRY_AFTER_MS` منه (`notification.service.ts`).
+   */
+  claimedAt   DateTime?
   sentAt      DateTime?
   readAt      DateTime?
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
