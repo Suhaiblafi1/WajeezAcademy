@@ -14,6 +14,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { cohortOptionsFrom, type CohortOption } from '@/services/cohort-prices'
 import CohortPicker from '@/components/CohortPicker'
+import LiveSessionDates from '@/components/LiveSessionDates'
 import { whenAr } from '@/application/learning/cohort-gate'
 
 const S1 = '2099-03-03T15:00:00.000Z'
@@ -50,23 +51,31 @@ describe('ما وصل من الخادم يحمل إلى خيار الشعبة', 
 const render = (cohorts: CohortOption[], compact = false) =>
   renderToStaticMarkup(createElement(CohortPicker, { cohorts, selectedId: null, onSelect: () => undefined, compact }))
 
-describe('منتقي الموعد يعرضها', () => {
+describe('منتقي الموعد يعرضها — في «تفاصيل الشعبة» المطويّة (٨ نوفمبر ٢٠٢٦)', () => {
+  /* كانت لقاءاتُ المختارة تظهر مفتوحة. ثمّ قال صاحبُ المنصّة (٨ نوفمبر ٢٠٢٦): «أخفِ تفاصيلَ الشعب لأنّها منسدلة، يفتحها
+     إن أراد، فلا تفتح واحدةٌ تلقائيا». فلكلّ شعبةٍ زرُّ «تفاصيل الشعبة» مطويّا، وتحته نبذتُها ولقاءاتُها هي */
   const options = cohortOptionsFrom([row()]).get('C-1') ?? []
+  const picker = readFileSync(join(process.cwd(), 'src/components/CohortPicker.tsx'), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 
-  it('⚠️ في صفحة الدورة: القائمة كلّها بساعة عمّان — وعددها وأوّلها', () => {
-    const html = render(options)
-    for (const at of [S1, S2, S3]) expect(html, `موعد ${at} غائب`).toContain(whenAr(at))
-    expect(html).toContain('اللقاء الثالث')
-    expect(html).toContain('3 لقاءات مباشرة')
-    expect(html).toContain('بتوقيت عمّان')
+  it('⚠️ لا تفتح تفاصيل شعبةٍ وحدها — في صفحة الدورة ولا في القوائم', () => {
+    for (const compact of [false, true]) {
+      const html = render(options, compact)
+      expect(html).toContain('تفاصيل الشعبة')
+      expect(html).toContain('aria-expanded="false"')
+      expect(html, 'لقاءات مفتوحة بلا طلب').not.toContain(whenAr(S3))
+    }
   })
 
-  it('⚠️ وفي القوائم مطويّة: عددها وأوّلها، لا الثمانية والأربعون سطرا', () => {
-    const html = render(options, true)
-    expect(html).toContain('3 لقاءات مباشرة')
-    expect(html).toContain(whenAr(S1))
-    expect(html, 'القائمة مفتوحة في القوائم').not.toContain(whenAr(S3))
-    expect(html).toContain('aria-expanded="false"')
+  it('⚠️ وإذا فتحها: لقاءاتها هي — عددها وأوّلها، والقائمة كلها في صفحة الدورة ومطويّة في القوائم', () => {
+    expect(picker).toMatch(/function CohortMore\(\{ c, compact \}[\s\S]*?useState\(false\)[\s\S]*?\{open && \([\s\S]*?<LiveSessionDates sessions=\{c\.sessions\} defaultOpen=\{!compact\} \/>/)
+    const live = renderToStaticMarkup(createElement(LiveSessionDates, { sessions: options[0].sessions, defaultOpen: true }))
+    for (const at of [S1, S2, S3]) expect(live, `موعد ${at} غائب`).toContain(whenAr(at))
+    expect(live).toContain('اللقاء الثالث')
+    expect(live).toContain('3 لقاءات مباشرة')
+    expect(live).toContain('بتوقيت عمّان')
+    const folded = renderToStaticMarkup(createElement(LiveSessionDates, { sessions: options[0].sessions }))
+    expect(folded).toContain(whenAr(S1))
+    expect(folded, 'القائمة مفتوحة في القوائم').not.toContain(whenAr(S3))
   })
 
   it('وشعبة لم يعتمد جدولها لا يختلق لها سطر', () => {
@@ -75,12 +84,12 @@ describe('منتقي الموعد يعرضها', () => {
     expect(html).not.toContain('بتوقيت عمّان')
   })
 
-  it('⚠️ والمعروض لقاءات الشعبة المختارة — لا أقربها', () => {
+  it('⚠️ ولكل شعبة تفاصيلها هي — لا لقاءات أقربها', () => {
+    expect(picker).toMatch(/\(c\.summaryAr \|\| c\.sessions\.length > 0\) && <CohortMore key=\{c\.id\} c=\{c\} compact=\{compact\} \/>/)
     const later = row({ id: 'c-2', startsAt: '2099-05-01T00:00:00.000Z', sessions: [{ startsAt: '2099-05-05T15:00:00.000Z', title: 'لقاء الثانية' }] })
     const both = cohortOptionsFrom([row(), later]).get('C-1') ?? []
     const html = renderToStaticMarkup(createElement(CohortPicker, { cohorts: both, selectedId: 'c-2', onSelect: () => undefined }))
-    expect(html).toContain('لقاء الثانية')
-    expect(html).not.toContain('اللقاء الأوّل')
+    expect(html.match(/تفاصيل الشعبة/g)?.length, 'زر لكل شعبة').toBe(2)
   })
 })
 

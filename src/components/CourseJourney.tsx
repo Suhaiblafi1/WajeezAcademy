@@ -60,7 +60,7 @@ export interface CourseJourneyEdit {
    ═══ ولا «هدية مجانية» (٢٦ أكتوبر ٢٠٢٦) ═══
    كانت شارةً ذهبيّةً على سادسة المسار، والدفعُ يحاسبها بسعرها — فسأل صاحبُ المنصّة «لماذا تظهر وكأنّها هديّة
    ولا تطبَّق على الدفع؟.. أرجو إلغاءها لأنّنا أعطينا خصوماتٍ عالية». فأُلغيت الهديّةُ كلُّها (`cart.service.ts`). */
-/** ما خلف «كل تفاصيل الدورة» بكلمات — «الأهداف · 4 وحدات · المخرج العملي». وما ليس في الدورة لا يُقال */
+/** ما خلف «تفاصيل الدورة» بكلمات — «الأهداف · 4 وحدات · المخرج العملي». وما ليس في الدورة لا يُقال */
 function detailsSummaryAr(c: { learningObjectives: string[]; modules: unknown[]; practicalProject?: string | null }): string {
   const n = c.modules.length;
   const units = n === 0 ? null : n === 1 ? "وحدة واحدة" : n === 2 ? "وحدتان" : `${n} ${n <= 10 ? "وحدات" : "وحدة"}`;
@@ -225,14 +225,15 @@ export default function CourseJourney({
                   {/* ═══ وتفاصيلُ الدورة زرٌّ ظاهرٌ قبل الشعب — لا سهمٌ صغيرٌ بجانب العنوان (٨ نوفمبر ٢٠٢٦) ═══
                       قرارُ صاحب المنصّة: «هناك سهمٌ ليُظهر كافّةَ تفاصيل الدورة ولكنّه غيرُ ظاهرٍ بقوّة.. أظهِره، ولا داعي
                       للبوب أب»، و«يجب أن تظهر التفاصيلُ قبل الشعبة بطريقةٍ جميلة». فالزرُّ تحت العنوان يقول ما خلفه، والتفاصيلُ
-                      تنفتح في مكانها فوق الشعب. والعنوانُ نفسُه يفتحها كما كان. */}
+                      تنفتح في مكانها فوق الشعب. والعنوانُ نفسُه يفتحها كما كان. وكانت «كل تفاصيل الدورة» فصارت «تفاصيل
+                      الدورة» بلا «كل» (قرارُه، ٨ نوفمبر ٢٠٢٦) */}
                   <CollapsibleTrigger
                     className="group mt-3 flex w-full items-center gap-2.5 rounded-lg bg-teal/[0.08] px-3 py-2.5 text-right ring-1 ring-teal/30 transition hover:bg-teal/[0.14] data-[state=open]:bg-teal/[0.12]"
                     data-testid="course-details-toggle"
                   >
                     <BookOpen className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-black text-teal-light-ink group-data-[state=open]:hidden">كل تفاصيل الدورة</span>
+                      <span className="block text-sm font-black text-teal-light-ink group-data-[state=open]:hidden">تفاصيل الدورة</span>
                       <span className="hidden text-sm font-black text-teal-light-ink group-data-[state=open]:block">إخفاء التفاصيل</span>
                       {detailsSummaryAr(c) && (
                         <span className="mt-0.5 block text-fine font-semibold text-muted-foreground group-data-[state=open]:hidden">{detailsSummaryAr(c)}</span>

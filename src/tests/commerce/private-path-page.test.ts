@@ -156,7 +156,9 @@ describe('تفاصيل الدورة زر ظاهر قبل الشعب (٨ نوفم
     const at = (re: RegExp) => JOURNEY.search(re)
     const toggle = at(/data-testid="course-details-toggle"/)
     expect(toggle).toBeGreaterThan(-1)
-    expect(JOURNEY).toMatch(/data-testid="course-details-toggle"[\s\S]*?كل تفاصيل الدورة[\s\S]*?إخفاء التفاصيل[\s\S]*?<ChevronDown className="h-5 w-5/)
+    expect(JOURNEY).toMatch(/data-testid="course-details-toggle"[\s\S]*?>تفاصيل الدورة<[\s\S]*?إخفاء التفاصيل[\s\S]*?<ChevronDown className="h-5 w-5/)
+    /* «تفاصيل الدورة» بلا «كل» (٨ نوفمبر ٢٠٢٦) */
+    expect(JOURNEY, 'عادت «كل تفاصيل الدورة»').not.toMatch(/>كل تفاصيل الدورة</)
     const content = at(/<CollapsibleContent className="overflow-hidden/)
     expect(content, 'التفاصيل قبل الزر').toBeGreaterThan(toggle)
     expect(content, 'التفاصيل بعد الشعب').toBeLessThan(at(/<CohortPicker\s/))
@@ -236,5 +238,23 @@ describe('كيف يختار بين الشعب: سطر واحد في المسار
     expect(JOURNEY).toMatch(/hintOneLine=\{cohortHintOneLine\}/)
     expect(PAGE).toMatch(/reasonsProminentLabelAr=\{REASON_LABEL_AR\}\s*cohortHintOneLine/)
     expect(code('src/pages/Pathway.tsx'), 'صفحة المسار المعتادة صارت سطرا واحدا').not.toMatch(/cohortHintOneLine/)
+  })
+})
+
+describe('الشعب: لا يكرر اسم الدورة، وتفاصيلها مطوية (٨ نوفمبر ٢٠٢٦)', () => {
+  const picker = code('src/components/CohortPicker.tsx')
+  it('⚠️ عنوان الشعبة يعرض صغيرا إن اختلف عن الدورة، ولا يعرض إن تشابه — لا عنوان كبير', () => {
+    expect(picker).toMatch(/const label = distinctCohortTitle\(c\.title, titleOfCourse\(c\.courseId\)\);/)
+    expect(picker).toMatch(/label && <span className="block text-read font-bold[^"]*" data-testid="cohort-label">\{label\}<\/span>/)
+    expect(picker, 'عاد عنوان الشعبة الكبير').not.toMatch(/\{c\.title && <span className="block text-lg/)
+  })
+  it('⚠️ ولوح الشراء بالقاعدة نفسها', () => {
+    expect(code('src/components/BuyPanel.tsx')).toMatch(/distinctCohortTitle\(o\.title, line\.name\)/)
+    expect(code('src/components/BuyPanel.tsx')).not.toMatch(/o\.title \? ` — \$\{o\.title\}`/)
+  })
+  it('⚠️ تفاصيل كل شعبة مطوية بزرها — لا تفتح واحدة تلقائيا', () => {
+    expect(picker).toMatch(/function CohortMore[\s\S]*?useState\(false\)[\s\S]*?data-testid="cohort-details-toggle"[\s\S]*?"تفاصيل الشعبة"/)
+    expect(picker).toMatch(/\(c\.summaryAr \|\| c\.sessions\.length > 0\) && <CohortMore key=\{c\.id\} c=\{c\} compact=\{compact\} \/>/)
+    expect(picker, 'عادت تفاصيل المختارة مفتوحة').not.toMatch(/\{on && \(selected\.summaryAr/)
   })
 })

@@ -31,6 +31,8 @@ import { daysLabelAr, untilLabelAr } from "@/utils/format";
 import { cohortWhen } from "@/application/catalog/cohort-when";
 import { initialsOf } from "@/application/text/initials";
 import LiveSessionDates from "@/components/LiveSessionDates";
+import { distinctCohortTitle } from "@/application/learning/cohort-title";
+import { courseById, courseFullById } from "@/data/courses";
 import { Inset } from "@/components/ui/Surface";
 import { clashLineAr, clashesOf, freeAlternative, type TimedCohort } from "@/application/learning/cohort-overlap";
 import { useMySessions } from "@/services/my-sessions";
@@ -183,6 +185,39 @@ const COHORT_CHOICE_HINTS_AR: readonly { label: string; text: string }[] = [
   { label: "المحاور", text: "لكل شعبة خطة مدربها، وتظهر تفاصيلها تحت الشعبة التي تختارها" },
 ]
 
+/** اسمُ الدورة لمقارنة عنوان الشعبة به — من الكتالوج */
+function titleOfCourse(courseId: string): string | null {
+  return courseFullById(courseId)?.title ?? courseById(courseId)?.name ?? null;
+}
+
+/** «تفاصيل الشعبة»: نبذةُ خطّتها ولقاءاتُها — مطويّةٌ حتّى يفتحها */
+function CohortMore({ c, compact }: { c: CohortOption; compact: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-3 border-t border-white/10 pt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 text-right text-read font-bold text-teal-light-ink"
+        data-testid="cohort-details-toggle"
+      >
+        {open ? "إخفاء تفاصيل الشعبة" : "تفاصيل الشعبة"}
+        <ChevronDown className={`h-4 w-4 shrink-0 transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+      </button>
+      {open && (
+        <>
+          {/* «سطران يقرؤهما المتعلّم قبل أن يدفع» (١٠ أكتوبر ٢٠٢٦) */}
+          {c.summaryAr && (
+            <p className="mt-2 whitespace-pre-line text-read leading-6 text-foreground">{c.summaryAr}</p>
+          )}
+          <LiveSessionDates sessions={c.sessions} defaultOpen={!compact} />
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function CohortPicker({
   cohorts,
   selectedId,
@@ -282,7 +317,14 @@ export default function CohortPicker({
                     و«لا تصغّر الصورةَ كثيرا ولكن أريد أن يتّضح اسمُ الشعبة فهو الأكثرُ أهمّيّة». وكان سطرا رماديّا
                     صغيرا مقصوصا تحت الموعد. فصار أعلى الصندوق بخطٍّ أكبرَ من اسم المدرّب، كاملا بلا قصّ، والصورةُ
                     من ٩٦–١١٢ إلى ٨٠–٩٦. ويبقى يفرّق شعبتين تبدآن في اليوم نفسِه (صباحيّةً ومسائيّة) */}
-                {c.title && <span className="block text-lg font-black leading-7 text-foreground sm:text-xl">{c.title}</span>}
+                {/* ═══ ثمّ (٨ نوفمبر ٢٠٢٦): لا يُكرَّر اسمُ الدورة ═══
+                    «اسمُ الدورة مكرّرٌ عند الشعب.. لا تكرّره إن كان متشابها، وإن كان مختلفا ضعه بالنصّ في الصندوق الصغير
+                    كعنوان الشعبة — وهذا يخفّف الخربطة بأنّها دوراتٌ داخل دورة». فأكثرُ الشعب عنوانُها اسمُ الدورة فلا يُعرض،
+                    وما زاد عليه («مسائية») سطرٌ صغيرٌ أعلى الصندوق (`distinctCohortTitle`) */}
+                {(() => {
+                  const label = distinctCohortTitle(c.title, titleOfCourse(c.courseId));
+                  return label && <span className="block text-read font-bold leading-6 text-teal-light-ink" data-testid="cohort-label">{label}</span>;
+                })()}
                 {/* ومن لم يُعتمد نشرُ اسمه لا يُقال عنه شيء — لا اسمَ ولا وعدٌ بموعد إعلانه. ومدرّبٌ واحدٌ صورتُه
                     كبيرةٌ واسمُه بجانبها (`Portrait`)، وأكثرُ من واحدٍ وجوهٌ أصغرُ جنبا إلى جنب */}
                 {c.trainerProfiles.length === 1 ? (
@@ -341,15 +383,10 @@ export default function CohortPicker({
                   </button>
                 );
               })()}
-              {on && (selected.summaryAr || selected.sessions.length > 0) && (
-                <div className="mt-3 border-t border-white/10 pt-1">
-                  {/* «سطران يقرؤهما المتعلّم قبل أن يدفع» (١٠ أكتوبر ٢٠٢٦) */}
-                  {selected.summaryAr && (
-                    <p className="mt-2 whitespace-pre-line text-read leading-6 text-foreground">{selected.summaryAr}</p>
-                  )}
-                  <LiveSessionDates key={selected.id} sessions={selected.sessions} defaultOpen={!compact} />
-                </div>
-              )}
+              {/* ═══ وتفاصيلُ كلِّ شعبةٍ مطويّةٌ يفتحها إن أراد (٨ نوفمبر ٢٠٢٦) ═══
+                  «أخفِ تفاصيلَ الشعب لأنّها منسدلة، يفتحها إن أراد، فلا تفتح واحدةٌ تلقائيا». وكانت نبذةُ المختارة ولقاءاتُها
+                  تظهر وحدَها مفتوحة. فلكلّ شعبةٍ زرُّها — والزرُّ خارجَ لصيقة الاختيار، فيفتح ولا يختار */}
+              {(c.summaryAr || c.sessions.length > 0) && <CohortMore key={c.id} c={c} compact={compact} />}
             </Inset>
           );
         })}
