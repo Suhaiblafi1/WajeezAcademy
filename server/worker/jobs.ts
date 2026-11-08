@@ -23,10 +23,10 @@
       صفحةُ صحّةِ النظام والسجلُّ يقرآن هذه الجملة. */
 
 import type { Prisma, PrismaClient } from '@prisma/client'
-import { NotificationService, liveChannels } from '../services/notification.service'
+import { NotificationService, liveChannels, sendableNow } from '../services/notification.service'
 import { AuthService } from '../services/auth.service'
 import { sendVerifyReminderEmail } from '../services/account-mail'
-import { drainOutbox, OUTBOX_MAX_ATTEMPTS } from '../services/outbox.service'
+import { drainOutbox, OUTBOX_GAP_MS, OUTBOX_MAX_ATTEMPTS } from '../services/outbox.service'
 import { CohortService } from '../services/cohort.service'
 import { TermService } from '../services/term.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
@@ -106,16 +106,23 @@ const REMINDERS = [
    يُحاوَل أصلا: محاولتُه تُعلّمه `failed` فيخرج من هذا الاستعلام إلى الأبد
    ويقترب من حدّ المحاولات — بلا أن يكون أحدٌ حاول إرساله. فيبقى `queued`
    ينتظر وصلَ قناته، ويُقال عددُه في الخبر فلا ينتظر صامتا
-   (`liveChannels` · `docs/DEPLOYMENT.md` §١٠). */
-export async function dispatchQueuedNotifications(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+   (`liveChannels` · `docs/DEPLOYMENT.md` §١٠).
+
+   **وما رُدّ يعود هنا** (٨ نوفمبر ٢٠٢٦): رفضُ المزوّد يُبقي الصفَّ `queued` حتّى حدّه، فيُختار بعد مهلته
+   (`sendableNow`). وبين بريدٍ وبريدٍ مهلةُ طابور البريد نفسُها (`OUTBOX_GAP_MS`) — فدورةٌ تعيد ما ردّه حدُّ
+   الثانية لا تقع عليه ثانيةً. */
+export async function dispatchQueuedNotifications(
+  prisma: PrismaClient, now = new Date(), opts: { gapMs?: number } = {},
+): Promise<JobResult> {
   const started = Date.now()
+  const gap = opts.gapMs ?? OUTBOX_GAP_MS
   const notifications = new NotificationService(prisma)
   const live = await liveChannels(prisma)
   const queued = await prisma.notification.findMany({
-    where: { status: 'queued', channel: { in: live } },
+    where: { ...sendableNow(now), channel: { in: live } },
     orderBy: { queuedAt: 'asc' },
     take: LIMITS.notifications,
-    select: { id: true, queuedAt: true },
+    select: { id: true, queuedAt: true, channel: true },
   })
   /* المنتظرُ لقناةٍ لم تُوصَل — يُعدّ ولا يُمَسّ */
   const waiting = await prisma.notification.count({
@@ -126,7 +133,12 @@ export async function dispatchQueuedNotifications(prisma: PrismaClient, now = ne
   const oldest = queued[0]?.queuedAt
   let done = 0
   let failed = 0
+  let mailed = false
   for (const n of queued) {
+    if (n.channel !== 'in_app') {
+      if (mailed && gap > 0) await new Promise<void>((r) => { setTimeout(r, gap) })
+      mailed = true
+    }
     try {
       const out = await notifications.attemptSend(n.id)
       if (out.status === 'sent') done += 1

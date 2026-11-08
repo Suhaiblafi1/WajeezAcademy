@@ -1,7 +1,7 @@
 /* اختبار E2E للإشعارات:
-   in_app يصل فورا ويُقرأ ويُعلَّم؛ القنوات الخارجية تفشل بأمان بلا مزود؛
-   إعادة المحاولة حتى الحد الأقصى ثم الرفض؛ القوالب بمتغيرات {{key}}.
-   لا إرسال حقيقي في التطوير — المزود الخارجي غير الموصول يفشل مسجلا. */
+   in_app يصل فورا ويُقرأ ويُعلَّم؛ القنوات الخارجية غير الموصولة تنتظر بلا محاولة؛
+   وما رده المزود يُعاد حتى الحد ثم يفشل؛ القوالب بمتغيرات {{key}}.
+   لا إرسال حقيقي في التطوير — بوابة البريد ترد كل إرسال (`mail-gate`). */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -56,20 +56,35 @@ describe('الإشعارات', () => {
     expect((await notifications.myNotifications(userId)).length).toBe(1)
   })
 
-  it('3) قناة خارجية بلا مزود تفشل بأمان وتُسجل', async () => {
-    const n = sent(await notifications.notify({ userId, channel: 'email', title: 'تجربة', body: 'بلا مزود' }))
-    expect(n.status).toBe('failed')
-    expect(n.attempts).toBe(1)
-    expect(n.lastError).toBeTruthy()
+  /* وتغيّر الثالثُ والرابع (٨ نوفمبر ٢٠٢٦): القناةُ غيرُ الموصولة لا تُعلَّم «فشلت» — لم يحاول أحد — بل تنتظر بلا
+     عدّاد. وما ردّه المزوّدُ يبقى في الطابور حتّى الحدّ، ثمّ «فشل». والحارسُ الكامل `mail-retry.test.ts`. */
+  it('3) قناة خارجية غير موصولة لا تُحاوَل — تنتظر بلا عداد', async () => {
+    const n = sent(await notifications.notify({ userId, channel: 'sms', title: 'تجربة', body: 'بلا مزود' }))
+    expect(n.status).toBe('queued')
+    expect(n.attempts).toBe(0)
   })
 
-  it('4) إعادة المحاولة حتى الحد الأقصى ثم الرفض', async () => {
-    const n = sent(await notifications.notify({ userId, channel: 'sms', title: 'تجربة', body: 'بلا مزود' }))
-    const r1 = await notifications.retry(n.id)
-    expect(r1.attempts).toBe(2)
-    const r2 = await notifications.retry(n.id)
-    expect(r2.attempts).toBe(3)
-    await expect(notifications.retry(n.id)).rejects.toMatchObject({ code: 'max_attempts' })
+  it('4) ما رده المزود يبقى في الطابور حتى الحد ثم يفشل — ثم ترفض إعادة المحاولة', async () => {
+    /* القناةُ موصولةٌ بمفتاح، وبوّابةُ البريد ترفض في الاختبار (`mail-gate`) — فهو رفضٌ حقيقيٌّ من `sendEmail` */
+    const had = process.env.RESEND_API_KEY
+    process.env.RESEND_API_KEY = 're_test_key'
+    try {
+      const n = sent(await notifications.notify({ userId, channel: 'email', title: 'تجربة', body: 'مرفوض' }))
+      expect(n.status).toBe('queued')
+      expect(n.attempts).toBe(1)
+      expect(n.lastError).toBeTruthy()
+      const due = () => prisma.notification.update({ where: { id: n.id }, data: { claimedAt: new Date(Date.now() - 6 * 60_000) } })
+      await due()
+      expect((await notifications.attemptSend(n.id)).attempts).toBe(2)
+      await due()
+      const last = await notifications.attemptSend(n.id)
+      expect(last.attempts).toBe(3)
+      expect(last.status).toBe('failed')
+      await expect(notifications.retry(n.id)).rejects.toMatchObject({ code: 'max_attempts' })
+    } finally {
+      if (had === undefined) delete process.env.RESEND_API_KEY
+      else process.env.RESEND_API_KEY = had
+    }
   })
 
   it('5) إعادة محاولة إشعار ناجح مرفوضة', async () => {
@@ -80,6 +95,6 @@ describe('الإشعارات', () => {
   it('6) السجل يُرشَّح بالحالة', async () => {
     const failed = await notifications.listLog('failed')
     expect(failed.every((n) => n.status === 'failed')).toBe(true)
-    expect(failed.length).toBeGreaterThanOrEqual(2)
+    expect(failed.length).toBeGreaterThanOrEqual(1)
   })
 })
