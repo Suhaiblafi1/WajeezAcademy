@@ -28,7 +28,11 @@
 		# ثمّ عاد حيّا هنا: `.htaccess` ملفُّ Apache و**Caddy لا يقرؤه**، فلمّا
 		# صار الخادمُ على Hetzner خلف Caddy بقي العلاجُ في ملفٍّ لا يخدم شيئا.
 		# والحارس: `src/tests/deploy/serving-headers.test.ts`
-		Content-Security-Policy "default-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-src 'self' https://calendly.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+		#
+		# و`frame-src` تسمح بأصول فيديو المدرّب الثلاثة وحدَها (٨ نوفمبر ٢٠٢٦، «تعرّف على مدرّبك»):
+		# يوتيوب بلا كوكيز وفيميو ودرايف — ما يبني منه `src/application/trainer/marketing-video.ts`
+		# إطارا، لا أوسع. وحارسُها `src/tests/deploy/csp-trainer-video.test.ts`.
+		Content-Security-Policy "default-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-src 'self' https://calendly.com https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		-Server
 	}

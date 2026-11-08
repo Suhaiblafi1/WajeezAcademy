@@ -39,6 +39,7 @@ import { track } from "@/services/analytics";
 import { bundleNudge, pathPricing, suggestBuyable, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
 import { trainerLineAr, trainerNamesOf } from "@/application/catalog/course-trainers";
 import CourseAudience from "@/components/CourseAudience";
+import CourseTrainerVideos from "@/components/TrainerVideo";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { FIRST_TIME_PROMO, isFirstTimePromo, promoDiscountOn } from "@/application/commerce/first-time-promo";
 import { savePathDraft } from "@/services/path-drafts";
@@ -515,6 +516,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             </div>
           </Card>
         )}
+
+        {/* ══ تعرّف على مدرّبك (٨ نوفمبر ٢٠٢٦) ══
+            فيديو المدرّب الذي صنعه «ليقنع الناس بالانضمام» — لهذه الدورة أوّلا ثمّ تعريفُه، ولمن أُعلن اسمُه
+            على الدورة وحدَه. ولا قسمَ حين لا فيديو (`TrainerVideo.tsx`). */}
+        <CourseTrainerVideos courseId={anchor.id} className="mt-3" />
 
         {full && full.modules.length > 0 && (
           <Card as="section" className="mt-3">

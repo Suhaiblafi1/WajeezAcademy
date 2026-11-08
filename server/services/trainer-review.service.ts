@@ -70,6 +70,7 @@ import { OPERATING_TRAINER_WHERE } from './trainer-operating'
 import { feeTypeChangeAr, sameFeeAsRule } from '../../src/application/trainer/contract-fee'
 import { TrainerDraftsService } from './trainer-drafts.service'
 import { cohortLeadTrainers } from './cohort-lead'
+import { publicVideosOf } from './trainer-public-video'
 import { PUBLISH_APPROVED_NOTICE } from './trainer-auto-publish'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
@@ -6874,9 +6875,14 @@ export class TrainerReviewService {
        النشر، فبطاقةُ الدورة تُظهر ما تخفيه الصفحةُ العامّة عند أوّل افتراق. */
     const visible = profiles.filter((p) => trainerPubliclyVisible(p))
     if (!visible.length) return { announced: false, messageAr: 'سيتم تعيين المدرب قريبا', trainers: [] }
+    /* «تعرّف على مدرّبك» (٨ نوفمبر ٢٠٢٦): فيديو من أُعلن وحدَه — يُسأل عنه بمعرّفات `visible` لا `ids`،
+       فمن حجبته البوّابةُ لا يُقرأ فيديوه أصلا (`trainer-public-video.ts`). */
+    const videos = await publicVideosOf(this.prisma, visible.map((p) => p.id), courseId)
     return {
       announced: true,
-      trainers: visible.map((p) => ({ id: p.id, name: p.application.fullName, headline: p.headline })),
+      trainers: visible.map((p) => ({
+        id: p.id, name: p.application.fullName, headline: p.headline, video: videos.get(p.id) ?? null,
+      })),
     }
   }
 
