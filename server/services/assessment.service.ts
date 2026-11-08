@@ -43,6 +43,21 @@ function submissionUploadUrl(storageKey: string): string {
 }
 
 /* حكمُ المدرّب يحرّك التقدّمَ في ساعته — انظر `refreshProgress` أدناه */
+
+/* ═══ تسليمٌ واحدٌ ينتظر — والثاني بطلب المدرّب (٨ نوفمبر ٢٠٢٦) ═══
+   كان بابُ «سلّم» يقبل أيَّ عددٍ من التسليمات على المهمّة نفسِها، ولو بعد قبول المدرّب: يمتلئ طابورُه بالمكرّر، ويعلو
+   تسليمٌ جديدٌ «مُسلَّم» على القبول. والمكتوبُ أنّ الثانيَ لا يكون إلّا بطلبٍ منه (`resubmit_requested`). فهنا يُقال ذلك. */
+const SUBMIT_AGAIN_AR: Record<string, string> = {
+  submitted: 'سلّمت هذه المهمة وهي تنتظر مدرّبك',
+  under_review: 'مدرّبك يراجع تسليمك الآن',
+  accepted: 'قبل مدرّبك تسليمك لهذه المهمة',
+  rejected: 'راجع ملاحظة مدرّبك — يفتح لك تسليما جديدا إن طلبه',
+}
+function assertCanSubmitAgain(lastStatus: string | undefined): void {
+  if (!lastStatus || lastStatus === 'resubmit_requested') return
+  throw new AuthError('already_submitted', SUBMIT_AGAIN_AR[lastStatus] ?? 'سلّمت هذه المهمة من قبل', 409)
+}
+
 export class AssessmentService {
   private prisma: PrismaClient
   private enrollments: EnrollmentService
@@ -530,6 +545,7 @@ export class AssessmentService {
     const last = await this.prisma.assignmentSubmission.findFirst({
       where: { assessmentId, enrollmentId: enrollment.id }, orderBy: { submittedAt: 'desc' }, select: { status: true },
     })
+    assertCanSubmitAgain(last?.status)
     const { late } = await this.submitGate(assessment, last?.status === 'resubmit_requested')
 
     const file = input.file ? checkSubmissionFile(input.file) : null
@@ -539,11 +555,19 @@ export class AssessmentService {
     const pendingBefore = await this.prisma.assignmentSubmission.count({
       where: { assessmentId, status: { in: ['submitted', 'under_review'] } },
     })
-    const submission = await this.prisma.assignmentSubmission.create({
-      data: {
-        assessmentId, enrollmentId: enrollment.id, textAnswer, storageKey, late,
-        ...(file && { fileName: file.name, fileMime: file.mime, fileSize: file.sizeBytes }),
-      },
+    /* ويُعاد السؤالُ تحت قفلٍ للمتعلّم على المهمّة — فضغطتان معا لا تُسلّمان مرّتين */
+    const submission = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`submission:${assessmentId}:${enrollment.id}`}))`
+      const latest = await tx.assignmentSubmission.findFirst({
+        where: { assessmentId, enrollmentId: enrollment.id }, orderBy: { submittedAt: 'desc' }, select: { status: true },
+      })
+      assertCanSubmitAgain(latest?.status)
+      return tx.assignmentSubmission.create({
+        data: {
+          assessmentId, enrollmentId: enrollment.id, textAnswer, storageKey, late,
+          ...(file && { fileName: file.name, fileMime: file.mime, fileSize: file.sizeBytes }),
+        },
+      })
     })
     await recordAudit(this.prisma, { actorId: userId, action: 'submission.create', entityType: 'assignment_submission', entityId: submission.id, meta: { assessmentId, late } })
     if (pendingBefore === 0) await this.notifyTrainersOfQueue(assessment)
@@ -749,11 +773,13 @@ export class AssessmentService {
     let cohortId: string
     let enrollmentId: string
     let rubricId: string | null = null
+    let taskMax: number
     if (input.submissionId) {
       const s = await this.assertTrainerOfSubmission(trainerUserId, input.submissionId)
       cohortId = s.assessment.cohortId
       enrollmentId = s.enrollmentId
       rubricId = s.assessment.rubricId ?? null
+      taskMax = s.assessment.maxScore
       /* الدرجة تتطلب قبولا أو مراجعة قائمة */
       if (!['under_review', 'accepted'].includes(s.status)) {
         throw new AuthError('bad_state', 'راجع التسليم أولا قبل الدرجة', 409)
@@ -765,6 +791,18 @@ export class AssessmentService {
       cohortId = attempt.assessment.cohortId
       enrollmentId = attempt.enrollmentId
       rubricId = attempt.assessment.rubricId ?? null
+      taskMax = attempt.assessment.maxScore
+    }
+    /* ═══ والدرجةُ من مجموع المهمّة (٨ نوفمبر ٢٠٢٦) ═══
+       كان المجموعُ يؤخذ ممّا يُرسَل: مهمّةٌ من ١٠ تُكتب درجتُها «٥٠ من ٥٠»، والنسبُ والمتوسّطاتُ تُحسب منه. فالمجموعُ
+       مجموعُ المهمّة — أو مجموعُ مسطرتها إن كانت لها مسطرة، وهو ما تحسبه شاشةُ التصحيح. والحارس:
+       `server/tests/learning/submit-once-grade-max.test.ts`. */
+    const rubricMax = rubricId
+      ? (await this.prisma.rubricCriterion.aggregate({ where: { rubricId }, _sum: { maxScore: true } }))._sum.maxScore ?? 0
+      : 0
+    const expectedMax = rubricMax > 0 ? rubricMax : taskMax
+    if (input.maxScore !== expectedMax) {
+      throw new AuthError('bad_max', `مجموع هذه المهمة ${expectedMax} — الدرجة من ${expectedMax}`, 422)
     }
     /* ═══ ودرجةُ كلّ معيارٍ في حدّه (٢٠ أكتوبر ٢٠٢٦) ═══
        كان المجموعُ وحدَه يُفحص، فمعيارٌ من ١٠ يُكتب ١٥ وآخرُ ٠ — والمجموعُ في حدّه. والمتعلّمُ يقرأ المعاييرَ
