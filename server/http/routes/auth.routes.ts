@@ -8,6 +8,7 @@ import { SESSION_COOKIE, requireAuth } from '../auth-plugin'
 import { sendPasswordResetEmail, sendVerifyEmail } from '../../services/account-mail'
 import { assertNotBot } from '../honeypot'
 import { getEmailConfig } from '../../services/integrations.service'
+import { recordAudit } from '../../services/audit'
 
 const email = z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة')
 const password = z.string().min(8, 'كلمة المرور 8 أحرف على الأقل')
@@ -203,7 +204,22 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService, pris
   })
 
   app.post('/api/auth/deactivate', { preHandler: requireAuth, schema: { tags: ['auth'], summary: 'إيقاف الحساب ذاتيا — يبطل الجلسات فورا' } }, async (req, reply) => {
+    /* ═══ ولا يُغلق آخرُ مدير نظامٍ البابَ على الجميع (٨ نوفمبر ٢٠٢٦) ═══
+       لا يرفع الإيقافَ إلّا مديرُ نظام — فلو عطّل آخرُهم النشطُ حسابَه لم يبقَ من يعيده، والسبيلُ يدٌ في قاعدة الإنتاج.
+       ويُكتب في الأثر: كان يقع صامتا، فيرى المديرُ حسابا موقوفا ولا يعرف من أوقفه. والحارس:
+       `server/tests/account/avatar-and-deactivate.test.ts`. */
+    if (req.auth!.roles.includes('super_admin')) {
+      const others = await prisma.user.count({
+        where: { id: { not: req.auth!.userId }, status: 'active', roles: { some: { roleId: 'super_admin' } } },
+      })
+      if (others === 0) {
+        return reply.status(409).send({
+          error: { code: 'last_super_admin', message_ar: 'أنت آخر مدير نظام نشط — عيّن مديرا آخر قبل تعطيل حسابك' },
+        })
+      }
+    }
     await auth.suspend(req.auth!.userId)
+    await recordAudit(prisma, { actorId: req.auth!.userId, action: 'account.self_deactivate', entityType: 'user', entityId: req.auth!.userId })
     reply.clearCookie(SESSION_COOKIE, { path: '/' })
     return { ok: true }
   })
