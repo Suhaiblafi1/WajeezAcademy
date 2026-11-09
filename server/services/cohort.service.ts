@@ -721,10 +721,24 @@ export class CohortService {
       try {
         await new EarningsService(this.prisma).generateForCohort(actorId, cohortId)
       } catch (e) {
+        const reason = e instanceof AuthError ? e.message : 'خطأ غير متوقع'
         await recordAudit(this.prisma, {
           actorId, action: 'trainer_payout.generate_skipped', entityType: 'cohort', entityId: cohortId,
-          meta: { reason: e instanceof AuthError ? e.message : 'خطأ غير متوقع' },
+          meta: { reason },
         })
+        /* ═══ ويُخبَر من يصرف — لا السجلُّ وحدَه (٩ نوفمبر ٢٠٢٦) ═══
+           كان التخطّي يُكتب في الأثر ولا يقرؤه أحد: شعبةٌ اكتملت ومدرّبُها بلا قاعدة أتعاب لا كشفَ لها، ولا عاملَ يعيد
+           التوليد، فلا يُدفع له ما لم يضغط أحدٌ «ولّد» صدفة. وجُرّب فمرّ: صفرُ كشوفٍ وصفرُ أجراس. فجرسٌ لمن يضبط الأجرَ
+           ويصرفه — الماليّةُ والمديرُ الأكاديميّ (قرارُ «C»، ٢٦ أكتوبر ٢٠٢٦) والسوبر أدمن. وكشفٌ وُلّد من قبل ليس عطبا. */
+        if (!(e instanceof AuthError && e.code === 'duplicate_cohort')) {
+          await notifyRole(this.prisma, ['super_admin', 'finance', 'academic_manager'], {
+            channel: 'in_app',
+            title: 'شعبة اكتملت بلا كشف مستحقات',
+            body: `اكتملت شعبة «${cohort.title}» ولم يولد كشف مدربها: ${reason}. اضبط ما ينقص ثم ولد الكشف من «الأتعاب».`,
+            templateKey: 'admin.payout_skipped',
+            data: { cohortId },
+          })
+        }
       }
     }
   }

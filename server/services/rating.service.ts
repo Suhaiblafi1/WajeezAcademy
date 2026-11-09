@@ -183,12 +183,15 @@ export class RatingService {
         noticeAr: `لا تعرض التقييمات حتى تبلغ ${MIN_RATINGS_TO_REVEAL} — في العدد القليل يستدلّ على أصحابها.`,
       }
     }
-    const rows = await this.prisma.rating.findMany({
-      where: { subjectType, subjectId, commentAr: { not: null } },
-      orderBy: { createdAt: 'desc' },
+    /* ═══ والمعتمَدُ وحدَه — وبترتيبٍ لا يدلّ على زمن (٩ نوفمبر ٢٠٢٦) ═══
+       كان يصل المدرّبَ كلُّ تعليق: المرفوضُ لإساءته أو لبياناتٍ شخصيّةٍ تدلّ على كاتبه، وما لم يُراجَع بعد — فالمراجعةُ
+       تحجب عن العامّة وحدَهم. وخُيّر صاحبُ المنصّة فاختار «a»: لا يرى إلّا ما اعتُمد. وكان الأحدثُ أوّلا والشاشةُ تقول
+       «بلا ترتيب زمنيّ»: في العدد القليل يُعرف صاحبُ أعلى تعليقٍ بمن أنهى للتوّ. فيُرتَّب بالدرجة ثمّ بالنصّ */
+    const rows = (await this.prisma.rating.findMany({
+      where: { subjectType, subjectId, publishStatus: 'approved', commentAr: { not: null } },
       /* لا raterId ولا enrollmentId ولا createdAt دقيقا: كلها تدلّ على الشخص */
       select: { score: true, commentAr: true },
-    })
+    })).sort((a, b) => b.score - a.score || (a.commentAr ?? '').localeCompare(b.commentAr ?? '', 'ar'))
     const dist = [1, 2, 3, 4, 5].map((n) => ({ score: n, count: 0 }))
     const all = await this.prisma.rating.findMany({ where: { subjectType, subjectId }, select: { score: true } })
     for (const r of all) dist[r.score - 1].count += 1

@@ -155,6 +155,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'admin.order_paid',
       /* ودفعةٌ زائدة — صفحةٌ ثانيةٌ دُفعت لطلبٍ مدفوع، تنتظر الردّ (٩ نوفمبر ٢٠٢٦) */
       'admin.payment_extra',
+      /* وشعبةٌ اكتملت ولم يولد كشفُ مدرّبها — مالُ إنسانٍ ينتظر يدا (٩ نوفمبر ٢٠٢٦) */
+      'admin.payout_skipped',
     ],
   },
   {

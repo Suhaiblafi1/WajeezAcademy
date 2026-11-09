@@ -56,7 +56,7 @@ export function RatingsPanel({ titleAr, view }: { titleAr: string; view: Ratings
       {view.comments.length > 0 && (
         <div className="mt-6 space-y-2.5">
           <p className="flex items-center gap-1.5 text-read font-bold text-muted-foreground">
-            <MessageSquareQuote className="h-3.5 w-3.5" /> التعليقات — بلا ترتيب زمنيّ ولا صاحب
+            <MessageSquareQuote className="h-3.5 w-3.5" /> التعليقات بعد مراجعتها — بلا ترتيب زمنيّ ولا صاحب
           </p>
           {view.comments.map((c, i) => (
             <blockquote key={i} className="rounded-xl border border-white/[0.07] bg-paper/20 px-4 py-3">
