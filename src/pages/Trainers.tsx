@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
-  ArrowLeft, BadgeCheck, Check, Sparkles, GraduationCap, Search, Star, Clock, ChevronDown, BookOpen, MapPin,
+  ArrowLeft, BadgeCheck, Check, Play, Sparkles, GraduationCap, Search, Star, Clock, ChevronDown, BookOpen, MapPin,
   Loader2, RefreshCw,
 } from 'lucide-react'
 import { TRAINER_POOLS, courseById } from '@/data/courses'
@@ -11,7 +11,7 @@ import { useAutoRefresh } from '@/services/useAutoRefresh'
 import { usePublishedContent } from '@/services/public-content'
 import SiteShell from '@/components/SiteShell'
 import TrainerQuickView from '@/components/trainer/TrainerQuickView'
-import type { TrainerSeed } from '@/application/trainer/quick-view'
+import { hasVideoRing, type TrainerSeed } from '@/application/trainer/quick-view'
 import SeoHead from '@/components/SeoHead'
 import { seoFor } from '@/application/site/public-pages'
 import { Panel, Card, Inset } from '@/components/ui/Surface'
@@ -24,6 +24,8 @@ interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
   /* مسارُ صفحته — تقرأ منه بطاقتُه المنبثقة فيديو تعريفه وتدلّ عليه (٩ نوفمبر ٢٠٢٦) */
   slug?: string | null;
+  /* فيديو تعريفه — حلقةٌ وشارةٌ على صورته (٩ نوفمبر ٢٠٢٦). يُفحص بـ`renderableVideo` قبل أيّ رسم */
+  video?: unknown;
   country: string | null; specialties: string[]; assignedCourseIds: string[];
   /* ما يقدّمه للموسم القادم بمواسمه — والعلّةُ في `src/application/trainer/next-season.ts` */
   offer?: SeasonGroup[];
@@ -50,6 +52,8 @@ function seedFromList(t: PublicTrainer): TrainerSeed {
   return {
     name: t.name, slug: t.slug ?? null, headline: t.headline, photoUrl: t.photoUrl,
     bio: t.bio, country: t.country, specialties: t.specialties,
+    /* فيديو تعريفه كما في صفحته — فيعمل في البطاقة فورا حين تُفتح من الصورة */
+    ...(t.video ? { video: t.video } : {}),
   }
 }
 
@@ -163,8 +167,17 @@ const MONOGRAM_FIELD = {
 
 /* ── والصورةُ زرٌّ يفتح بطاقتَه المنبثقة (٩ نوفمبر ٢٠٢٦، `trainer/TrainerQuickView.tsx`) ──
    الزرُّ يأخذ مقاسَ الصورة وموضعَها في الشبكة، والصورةُ تملؤه — فلا يتغيّر شكلُ البطاقة. */
-function TrainerPhoto({ t, onAbout }: { t: PublicTrainer; onAbout: () => void }) {
+/* ── وحلقةُ الفيديو على الصورة نفسِها (٩ نوفمبر ٢٠٢٦) ──
+   «ضع على صورتها الخارجية ما يوحي أن هناك فيديو، كما فعلت في البطاقة المنبثقة» (صاحب المنصّة). فلمن له فيديو يُضمَّن
+   وحدَه: حلقةٌ فيروزيّةٌ تدور ببطء حول الصورة (ساكنةٌ مع تقليل الحركة) وشارةُ تشغيلٍ في ركنها — كحلقة صفحته وبطاقته
+   (`trainer/TrainerAvatarRing.tsx`). والضغطُ يفتح بطاقتَه والفيديو يعمل. ومن لا فيديو له: الصورةُ كما كانت حرفا. */
+const VIDEO_RING =
+  'conic-gradient(from 0deg, rgb(var(--teal-light)), rgb(var(--teal)), rgb(var(--teal-deep)), rgb(var(--teal)), '
+  + '#d9f5f8, rgb(var(--teal-light)))'
+
+function TrainerPhoto({ t, onAbout, onPlay }: { t: PublicTrainer; onAbout: () => void; onPlay: () => void }) {
   const [failed, setFailed] = useState(false)
+  const ring = hasVideoRing(t)
   const box = 'h-full w-full rounded-2xl'
   let face: ReactNode
   if (t.photoUrl && !failed) {
@@ -188,14 +201,34 @@ function TrainerPhoto({ t, onAbout }: { t: PublicTrainer; onAbout: () => void })
       </span>
     )
   }
+  const size = 'h-24 w-24 shrink-0 rounded-2xl sm:row-span-2 sm:h-full sm:min-h-44 sm:w-44 lg:w-48'
+  const focus = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 focus-visible:ring-offset-paper'
+  if (!ring) {
+    return (
+      <button type="button" onClick={onAbout} aria-label={`عن المدرب: ${t.name}`} className={`group ${size} overflow-hidden transition ${focus}`}>
+        {face}
+      </button>
+    )
+  }
   return (
     <button
       type="button"
-      onClick={onAbout}
-      aria-label={`عن المدرب: ${t.name}`}
-      className="group h-24 w-24 shrink-0 overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 focus-visible:ring-offset-paper sm:row-span-2 sm:h-full sm:min-h-44 sm:w-44 lg:w-48"
+      onClick={onPlay}
+      aria-label={`شغل الفيديو التعريفي: ${t.name}`}
+      data-video-ring=""
+      className={`group relative ${size} p-[3px] transition ${focus}`}
     >
-      {face}
+      <span aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-2xl">
+        <span className="absolute -inset-1/2 motion-safe:animate-story-ring" style={{ backgroundImage: VIDEO_RING }} />
+      </span>
+      <span className="relative block h-full w-full overflow-hidden rounded-[0.9rem] bg-paper p-[2px]">{face}</span>
+      <span
+        aria-hidden="true"
+        data-play-badge=""
+        className="absolute -bottom-1.5 -left-1.5 grid h-9 w-9 place-items-center rounded-full bg-[#fff] text-[#08272B] shadow-lg ring-[3px] ring-paper transition motion-safe:group-hover:scale-110"
+      >
+        <Play className="h-4 w-4 translate-x-px fill-current" />
+      </span>
     </button>
   )
 }
@@ -234,7 +267,7 @@ function PitchBlock({ t }: { t: PublicTrainer }) {
     </Inset>
   )
 }
-function TrainerCard({ t, open, onToggle, onAbout }: { t: PublicTrainer; open: boolean; onToggle: () => void; onAbout: () => void }) {
+function TrainerCard({ t, open, onToggle, onAbout, onPlay }: { t: PublicTrainer; open: boolean; onToggle: () => void; onAbout: () => void; onPlay: () => void }) {
   const panelId = `trainer-bio-${t.id}`
   const courses = new Set(t.assignedCourseIds).size
   const pitched = (t.pitch?.length ?? 0) > 0
@@ -242,7 +275,7 @@ function TrainerCard({ t, open, onToggle, onAbout }: { t: PublicTrainer; open: b
     /* والمعرّفُ مرساةُ «شاهد بطاقتك» في بوّابة المدرّب (`ProfileSuggestions`) */
     <Card as="article" id={`trainer-${t.id}`} className="flex scroll-mt-24 flex-col transition hover:border-teal/40">
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 sm:gap-x-5">
-        <TrainerPhoto t={t} onAbout={onAbout} />
+        <TrainerPhoto t={t} onAbout={onAbout} onPlay={onPlay} />
         <div className="min-w-0">
           <h3 className="flex items-center gap-1.5 text-lg font-black leading-snug md:text-xl">
             <button
@@ -381,6 +414,8 @@ export default function Trainers() {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   /* بطاقةُ المدرّب المنبثقة — من صورته أو اسمه (٩ نوفمبر ٢٠٢٦) */
   const [about, setAbout] = useState<PublicTrainer | null>(null)
+  /* فُتحت من حلقة الصورة: الفيديو يعمل فورا */
+  const [aboutPlays, setAboutPlays] = useState(false)
   const toggle = (id: string) =>
     setExpanded((prev) => {
       const next = new Set(prev)
@@ -499,11 +534,12 @@ export default function Trainers() {
             {filteredApproved.map((t) => (
               <TrainerCard
                 key={t.id} t={t} open={expanded.has(t.id) !== (t.id === anchoredId)} onToggle={() => toggle(t.id)}
-                onAbout={() => setAbout(t)}
+                onAbout={() => { setAboutPlays(false); setAbout(t) }}
+                onPlay={() => { setAboutPlays(true); setAbout(t) }}
               />
             ))}
           </div>
-          {about && <TrainerQuickView seed={seedFromList(about)} onClose={() => setAbout(null)} />}
+          {about && <TrainerQuickView seed={seedFromList(about)} autoPlay={aboutPlays} onClose={() => setAbout(null)} />}
         </section>
       )}
 

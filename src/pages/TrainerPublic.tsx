@@ -144,7 +144,7 @@ export default function TrainerPublic() {
             </div>
           </div>
           {page.bio && <p className="mt-6 whitespace-pre-line text-read leading-7">{page.bio}</p>}
-          {embed && <TrainerVideoZoom video={embed} name={page.name} photoUrl={page.photoUrl} from={from} onClose={() => setFrom(null)} />}
+          {embed && <TrainerVideoZoom video={embed} name={page.name} headline={page.headline} photoUrl={page.photoUrl} from={from} onClose={() => setFrom(null)} />}
           {page.specialties.length > 0 && (
             <ul className="mt-5 flex flex-wrap gap-2">
               {page.specialties.map((s) => (

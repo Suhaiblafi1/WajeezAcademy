@@ -65,7 +65,7 @@ export function TrainerQuickViewCard({
         <X className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      {isPlaying && embed && <QuickViewPlayer video={embed} name={data.name} photoUrl={data.photoUrl} />}
+      {isPlaying && embed && <QuickViewPlayer video={embed} name={data.name} headline={data.headline} photoUrl={data.photoUrl} />}
 
       <div className={`flex items-center gap-4 ${isPlaying ? "mt-4" : "pe-10"}`}>
         {!isPlaying && (
@@ -157,7 +157,7 @@ export function TrainerQuickViewCard({
 }
 
 /** المشغّلُ مكانَ الصورة: ‎9:16‎ لـ«شورتس» بارتفاعٍ لا يتجاوز الشاشة، و‎16:9‎ بعرض البطاقة. والإطارُ بالتشغيل التلقائيّ */
-function QuickViewPlayer({ video, name, photoUrl }: { video: EmbedVideo; name: string; photoUrl: string | null }) {
+function QuickViewPlayer({ video, name, photoUrl, headline }: { video: EmbedVideo; name: string; photoUrl: string | null; headline?: string | null }) {
   const ref = useRef<HTMLDivElement>(null);
   /* زرُّ الصورة الذي ضُغط زال — فالتركيزُ إلى المشغّل لا إلى أوّل الصفحة */
   useEffect(() => { ref.current?.focus(); }, []);
@@ -174,7 +174,7 @@ function QuickViewPlayer({ video, name, photoUrl }: { video: EmbedVideo; name: s
       style={size}
       className="relative mx-auto mt-10 overflow-hidden rounded-xl bg-[#000] shadow-lg focus:outline-none"
     >
-      <TrainerVideoFrame video={video} name={name} photoUrl={photoUrl} />
+      <TrainerVideoFrame video={video} name={name} headline={headline} photoUrl={photoUrl} />
     </div>
   );
 }
@@ -212,11 +212,12 @@ function QuickViewBio({ bio }: { bio: string }) {
 /* ─────────── النافذةُ والقراءة ─────────── */
 
 /** بطاقةُ المدرّب في نافذة المنصّة: تُقرأ صفحتُه حين تُفتح، ويُزال كلُّ شيءٍ بإغلاقها فيعود التركيزُ إلى ما فتحها */
-export default function TrainerQuickView({ seed, onClose }: { seed: TrainerSeed; onClose: () => void }) {
+export default function TrainerQuickView({ seed, onClose, autoPlay = false }: { seed: TrainerSeed; onClose: () => void; autoPlay?: boolean }) {
   const slug = seed.slug;
   const [reply, setReply] = useState<{ slug: string; attempt: number; page: QuickViewPage | null; failed: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  /* من حلقة الصورة في القائمة: الفيديو يعمل حين تُفتح — ولا يعمل إلّا إن كان يُضمَّن (`isPlaying` في البطاقة) */
+  const [playing, setPlaying] = useState(autoPlay);
 
   useEffect(() => {
     if (!slug) return;

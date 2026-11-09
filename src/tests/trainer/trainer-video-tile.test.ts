@@ -91,3 +91,33 @@ describe('③ والرابطُ الذي لا يُضمَّن زرٌّ يفتحه'
     expect(dom.of('a').map((a) => a.attrs.href)).toEqual(['https://www.instagram.com/reel/Cabc123/'])
   })
 })
+
+describe('⑤ شارةُ الاسم فوق المشغّل — «النمط ٢» على يوتيوب (٩ نوفمبر ٢٠٢٦)', () => {
+  const html = renderToStaticMarkup(createElement(TrainerVideoPlayerWindow, {
+    video: SHORTS, name: NAME, headline: 'مدربة كوتشنج', photoUrl: PHOTO, from: { x: 0, y: 0 }, onClose: () => {},
+  }))
+  const { tags } = parse(html)
+  const tag = tags.find((t) => 'data-video-name-tag' in t.attrs)
+
+  it('⚠️ الشارةُ تُرسم مع المشغّل بالشعار والاسم القصير والوصف', () => {
+    expect(tag).toBeDefined()
+    expect(tags.some((t) => t.tag === 'img' && t.attrs.src === '/logo-mark.png')).toBe(true)
+    expect(html).toContain('انوار الجراح')
+    expect(html).toContain('مدربة كوتشنج')
+  })
+  it('⚠️ وفي منتصف المشغّل أفقيّا — لا على أحد جانبيه', () => {
+    const cls = tag!.attrs.class!.split(/\s+/)
+    expect(cls).toEqual(expect.arrayContaining(['left-1/2', '-translate-x-1/2']))
+    expect(cls.some((c) => /^(right|left)-\d/.test(c) && c !== 'left-1/2')).toBe(false)
+  })
+  it('⚠️ ولا تحجب أزرارَ يوتيوب تحتها — لا تلتقط لمسا', () => {
+    expect(tag!.attrs.class!.split(/\s+/)).toContain('pointer-events-none')
+  })
+  it('⚠️ وتعلو الإطارَ لا تُرسم تحته — بعده في الشجرة وبطبقةٍ أعلى', () => {
+    const iframe = tags.findIndex((t) => t.tag === 'iframe')
+    const at = tags.indexOf(tag!)
+    expect(iframe).toBeGreaterThanOrEqual(0)
+    expect(at).toBeGreaterThan(iframe)
+    expect(tag!.attrs.class!.split(/\s+/)).toContain('z-10')
+  })
+})

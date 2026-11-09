@@ -6834,10 +6834,15 @@ export class TrainerReviewService {
       ...p.paths.flatMap((path) => path.courses.map((c) => ({ courseId: c.courseId, term: path.term }))),
     ]))
 
+    /* فيديو تعريفه على صورته في القائمة (٩ نوفمبر ٢٠٢٦، «ضع على صورتها الخارجية ما يوحي أن هناك فيديو»).
+       يُسأل عنه بمعرّفات `profiles` — وهي ما عبر `publicTrainerWhere` أعلاه — فلا يُقرأ فيديو مخفيّ */
+    const videos = await publicVideosOf(this.prisma, profiles.map((p) => p.id), null)
+
     return profiles.map((p) => {
       const offer = offerOf(p)
       return {
         id: p.id, name: p.application.fullName, headline: p.headline, bio: p.bioPublic,
+        video: videos.get(p.id) ?? null,
         /* مسارُ صفحته — بطاقتُه المنبثقة تقرأ منه فيديو تعريفه وتدلّ عليه (٩ نوفمبر ٢٠٢٦). والبوّابةُ أعلاه نفسُها */
         slug: p.publicSlug,
         country: p.application.country,
