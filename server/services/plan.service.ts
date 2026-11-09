@@ -61,6 +61,7 @@ export class PlanService {
     /* اعتمادُ خطّةٍ جديدة يؤرشف القديمة — وهو الطريقُ الثاني إلى تبديل المسار
        بعد الدفع، فيُحرَس بالحارس نفسِه. */
     await this.assertKeepsCommitted(userId, ids)
+    await this.assertCoursesOffered(userId, ids)
 
     const plan = await this.prisma.$transaction(async (tx) => {
       await tx.learnerPlan.updateMany({ where: { userId, status: 'active' }, data: { status: 'archived' } })
@@ -87,12 +88,37 @@ export class PlanService {
     if (ids.length === 0) throw new AuthError('empty_plan', 'الخطّة بلا دورات')
     if (ids.length > MAX_ITEMS) throw new AuthError('too_many', `الخطّة أكثر من ${MAX_ITEMS} دورة`)
     await this.assertKeepsCommitted(userId, ids)
+    await this.assertCoursesOffered(userId, ids)
 
     await this.prisma.$transaction(async (tx) => {
       await tx.learnerPlanItem.deleteMany({ where: { planId: plan.id } })
       await tx.learnerPlanItem.createMany({ data: ids.map((courseId, i) => ({ planId: plan.id, courseId, sequence: i + 1 })) })
     })
     return this.viewOf(userId, plan.id)
+  }
+
+  /* ═══ والخطّةُ من دوراتٍ تُعرض (٩ نوفمبر ٢٠٢٦) ═══
+     كان «اعتمادُ خطّة» و«تبديلُ دوراتها» يقبلان أيَّ رمز — دورةً لا وجودَ لها، أو مسودّةً لم تُنشر — فتُكتب «تنتظر شعبةً»
+     بإشعارٍ لا يأتي، وتُعدّ في «من ينتظر دورةً بلا شعبة» عند الإدارة طلبا على ما لا يُباع. واستبدالُ البند يسأل عن النشر
+     (`replaceItem`)، فيسأل هذان مثلَه. وما في خطّته الآن أو ما سُجّل فيه يبقى ولو سُحب نشرُه: لا يُحرَم ما أخذه.
+     والحارس: `server/tests/plan/plan-offered-courses.test.ts`. */
+  private async assertCoursesOffered(userId: string, ids: string[]) {
+    const [published, current, enrolled] = await Promise.all([
+      this.prisma.course.findMany({ where: { id: { in: ids }, status: 'published' }, select: { id: true } }),
+      this.prisma.learnerPlanItem.findMany({
+        where: { courseId: { in: ids }, plan: { userId, status: 'active' } }, select: { courseId: true },
+      }),
+      this.prisma.enrollment.findMany({
+        where: { userId, status: { not: 'dropped' }, cohort: { courseId: { in: ids } } }, select: { cohort: { select: { courseId: true } } },
+      }),
+    ])
+    const ok = new Set([
+      ...published.map((c) => c.id), ...current.map((i) => i.courseId), ...enrolled.map((e) => e.cohort.courseId),
+    ])
+    const missing = ids.filter((id) => !ok.has(id))
+    if (missing.length > 0) {
+      throw new AuthError('course_not_offered', `دورات غير متاحة الآن: ${missing.join('، ')}`, 422)
+    }
   }
 
   /** الخطّة الفعّالة — أو null لمن لا خطّة له */

@@ -35,8 +35,9 @@ export function registerPathDraftRoutes(app: FastifyInstance, prisma: PrismaClie
 
     /* المعرّفات تُصفّى على الدورات المنشورة: مسودة تشير إلى دورة لا وجود لها
        تُقرأ لاحقا كأنها طلب حقيقي وهي خطأ إدخال أو عبث. */
+    /* والمنشورةُ وحدَها كما يقول السطرُ أعلاه — وكان يُكتفى بوجود الصفّ فتمرّ المسودّة (٩ نوفمبر ٢٠٢٦) */
     const known = await prisma.course.findMany({
-      where: { id: { in: body.courseIds } },
+      where: { id: { in: body.courseIds }, status: 'published' },
       select: { id: true },
     })
     const knownIds = new Set(known.map((c) => c.id))
