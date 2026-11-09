@@ -217,6 +217,8 @@ export async function signUp(
   pass: string,
   /* حقلُ الفخّ — يبقى فارغا عند الإنسان، ويردُّه الخادمُ إن جاء مملوءا */
   honeypot?: string,
+  /** رقمُ واتساب — اختياريّ، ويُتحقَّق منه في الخادم بالقاعدة نفسِها (`normalizePhone`) */
+  phone?: string,
 ): Promise<AuthResult> {
   let verificationSent = false;
   try {
@@ -224,6 +226,7 @@ export async function signUp(
       email: email.trim().toLowerCase(),
       password: pass,
       displayName: name.trim(),
+      ...(phone?.trim() ? { phone: phone.trim() } : {}),
       /* من أين جاء — يُحفظ مع حسابه (`signup-source.ts`) */
       ...(firstTouch() ? { source: firstTouch() } : {}),
       ...(honeypot ? { [HONEYPOT_FIELD]: honeypot } : {}),
