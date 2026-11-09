@@ -25,12 +25,19 @@ describe('① كلُّ صيغةٍ معروفةٍ تصير رابطَ تضمين�
     `https://m.youtube.com/watch?v=${YT}`,
     `https://youtu.be/${YT}`,
     `https://youtu.be/${YT}?si=abc`,
-    `https://www.youtube.com/shorts/${YT}`,
     `https://www.youtube.com/embed/${YT}`,
     `https://www.youtube.com/live/${YT}`,
     YT_EMBED,
   ])('يوتيوب: %s', (url) => {
     expect(videoEmbedOf(url)).toEqual({ kind: 'embed', provider: 'youtube', src: YT_EMBED })
+  })
+
+  /* «شورتس» عموديّ — يُعلَّم فيُرسم ‎9:16‎، والرابطُ هو نفسُه (٩ نوفمبر ٢٠٢٦) */
+  it.each([
+    `https://www.youtube.com/shorts/${YT}`,
+    `https://youtube.com/shorts/${YT}?feature=share`,
+  ])('يوتيوب شورتس عموديّ: %s', (url) => {
+    expect(videoEmbedOf(url)).toEqual({ kind: 'embed', provider: 'youtube', src: YT_EMBED, vertical: true })
   })
 
   it.each([
@@ -151,5 +158,19 @@ describe('④ ما يصل من الشبكة يُفحص قبل أن يُرسم', 
     'https://youtu.be/dQw4w9WgXcQ',
   ])('ويُردّ ما لم نبنه: %j', (v) => {
     expect(renderableVideo(v)).toBeNull()
+  })
+})
+
+describe('⑤ «شورتس» يبقى عموديّا حتى يُرسم', () => {
+  it('ما وصل من الخادم بعلامة العموديّة يصل الرسمَ بها', () => {
+    expect(renderableVideo({ kind: 'embed', provider: 'youtube', src: YT_EMBED, vertical: true }))
+      .toEqual({ kind: 'embed', provider: 'youtube', src: YT_EMBED, vertical: true })
+  })
+  it.each(['yes', 1, 'true', {}])('وغيرُ ‎true‎ لا يُنقل: %s', (vertical) => {
+    expect(renderableVideo({ kind: 'embed', provider: 'youtube', src: YT_EMBED, vertical }))
+      .toEqual({ kind: 'embed', provider: 'youtube', src: YT_EMBED })
+  })
+  it('والأفقيُّ لا يُعلَّم', () => {
+    expect(videoEmbedOf(`https://youtu.be/${YT}`)).not.toHaveProperty('vertical')
   })
 })
