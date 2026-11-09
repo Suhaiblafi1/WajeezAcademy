@@ -370,6 +370,8 @@ const LOW: readonly string[] = [
   'enrollment_request.create',
   'order.cancel_stale',
   'payment.webhook', 'refund.request', 'refund.provider_failed',
+  /* دفعةٌ زائدة تنتظر الردّ — جرسٌ للماليّة، والمشتري يصله الردُّ نفسُه (`refund.process`) لا هذا القيد (٩ نوفمبر ٢٠٢٦) */
+  'payment.extra',
   'trainer_payout.generate_skipped',
   /* خصمٌ استُعمل ولم يُقيَّد — عطبٌ يُقرأ في السجلّ ويُسوَّى بيد، ولا يُبلَّغ
      به المدرّبُ: خبرٌ لا يفعل به شيئا، ومالُه محفوظٌ في الطلب المدفوع. */
