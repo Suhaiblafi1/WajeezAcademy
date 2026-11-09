@@ -12,6 +12,7 @@ import { GrantCoursesService } from '../../services/grant-courses.service'
 import { eraseRegistrant, messageRegistrants, registrantsFull, registrantsXlsx } from '../../services/grant-registrants.service'
 import { GRANT_MESSAGE_BODY_MAX, GRANT_MESSAGE_MAX_TO, GRANT_MESSAGE_SUBJECT_MAX } from '../../../src/application/commerce/grant-registrants'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
+import { signedUpXlsx } from '../../services/signed-up-export'
 import { OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
 
 const settingsBody = z.object({
@@ -63,6 +64,20 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     return reply
       .header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       .header('content-disposition', `attachment; filename="grant-registrants.xlsx"; filename*=UTF-8''${encodeURIComponent(name)}`)
+      .send(buf)
+  })
+
+  /* ═══ ومن أنشأ حسابَه ولم يسجّل في شعبةٍ بعد — ملفُّه هنا بجوار ملفّ المنحة (٩ نوفمبر ٢٠٢٦) ═══
+     طلبُ صاحب المنصّة: «so for me i get leads all from one place». فالحارسُ حارسُ ملفّ المنحة نفسُه (`signed-up-export.ts`) */
+  app.get('/api/admin/member-grant/signed-up.xlsx', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'من أنشأ حسابه ولم يسجل في شعبة بعد في ملف Excel' },
+  }, async (_req, reply) => {
+    const buf = await signedUpXlsx(prisma)
+    const name = `لم يسجلوا في شعبة ${zonedDay(new Date())}.xlsx`
+    return reply
+      .header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .header('content-disposition', `attachment; filename="signed-up-not-enrolled.xlsx"; filename*=UTF-8''${encodeURIComponent(name)}`)
       .send(buf)
   })
 
