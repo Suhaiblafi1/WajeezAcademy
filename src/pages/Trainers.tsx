@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowLeft, BadgeCheck, Check, Sparkles, GraduationCap, Search, Star, Clock, ChevronDown, BookOpen, MapPin,
   Loader2, RefreshCw,
@@ -10,6 +10,8 @@ import { withRetry } from '@/services/retry'
 import { useAutoRefresh } from '@/services/useAutoRefresh'
 import { usePublishedContent } from '@/services/public-content'
 import SiteShell from '@/components/SiteShell'
+import TrainerQuickView from '@/components/trainer/TrainerQuickView'
+import type { TrainerSeed } from '@/application/trainer/quick-view'
 import SeoHead from '@/components/SeoHead'
 import { seoFor } from '@/application/site/public-pages'
 import { Panel, Card, Inset } from '@/components/ui/Surface'
@@ -20,6 +22,8 @@ import { NO_NEXT_SEASON_AR, seasonHeadingAr, type SeasonGroup } from '@/applicat
 
 interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
+  /* مسارُ صفحته — تقرأ منه بطاقتُه المنبثقة فيديو تعريفه وتدلّ عليه (٩ نوفمبر ٢٠٢٦) */
+  slug?: string | null;
   country: string | null; specialties: string[]; assignedCourseIds: string[];
   /* ما يقدّمه للموسم القادم بمواسمه — والعلّةُ في `src/application/trainer/next-season.ts` */
   offer?: SeasonGroup[];
@@ -40,6 +44,14 @@ const FAMILY_LABEL: Record<string, string> = {
 }
 
 const SPECIALTIES_PREVIEW = 6
+
+/** ما تعرفه القائمةُ عن المدرّب ← ما تبدأ به بطاقتُه: يُرسم فورا، والفيديو يُقرأ من صفحته حين تُفتح */
+function seedFromList(t: PublicTrainer): TrainerSeed {
+  return {
+    name: t.name, slug: t.slug ?? null, headline: t.headline, photoUrl: t.photoUrl,
+    bio: t.bio, country: t.country, specialties: t.specialties,
+  }
+}
 
 /* ───────────────── ما يقدّمه المدرّب — دوراتُه ومسارُه ─────────────────
 
@@ -149,11 +161,14 @@ const MONOGRAM_FIELD = {
     + 'repeating-radial-gradient(circle at 15% 115%, rgb(255 255 255 / 0.08) 0 1.5px, transparent 1.5px 16px)',
 }
 
-function TrainerPhoto({ t }: { t: PublicTrainer }) {
+/* ── والصورةُ زرٌّ يفتح بطاقتَه المنبثقة (٩ نوفمبر ٢٠٢٦، `trainer/TrainerQuickView.tsx`) ──
+   الزرُّ يأخذ مقاسَ الصورة وموضعَها في الشبكة، والصورةُ تملؤه — فلا يتغيّر شكلُ البطاقة. */
+function TrainerPhoto({ t, onAbout }: { t: PublicTrainer; onAbout: () => void }) {
   const [failed, setFailed] = useState(false)
-  const box = 'h-24 w-24 shrink-0 rounded-2xl sm:row-span-2 sm:h-full sm:min-h-44 sm:w-44 lg:w-48'
+  const box = 'h-full w-full rounded-2xl'
+  let face: ReactNode
   if (t.photoUrl && !failed) {
-    return (
+    face = (
       <img
         src={t.photoUrl}
         alt={`صورة ${t.name}`}
@@ -162,15 +177,26 @@ function TrainerPhoto({ t }: { t: PublicTrainer }) {
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
-        className={`${box} object-cover object-[50%_30%]`}
+        className={`${box} object-cover object-[50%_30%] transition duration-500 motion-safe:group-hover:scale-[1.03]`}
       />
     )
+  } else {
+    /* `bg-teal-deep` مع `text-white` يبقى أبيضَ في المظهر النهاريّ (`styles/light.css`) */
+    face = (
+      <span aria-hidden="true" style={MONOGRAM_FIELD} className={`${box} grid place-items-center bg-teal-deep text-4xl font-black text-white sm:text-5xl`}>
+        {initialsOf(t.name)}
+      </span>
+    )
   }
-  /* `bg-teal-deep` مع `text-white` يبقى أبيضَ في المظهر النهاريّ (`styles/light.css`) */
   return (
-    <span aria-hidden="true" style={MONOGRAM_FIELD} className={`${box} grid place-items-center bg-teal-deep text-4xl font-black text-white sm:text-5xl`}>
-      {initialsOf(t.name)}
-    </span>
+    <button
+      type="button"
+      onClick={onAbout}
+      aria-label={`عن المدرب: ${t.name}`}
+      className="group h-24 w-24 shrink-0 overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 focus-visible:ring-offset-paper sm:row-span-2 sm:h-full sm:min-h-44 sm:w-44 lg:w-48"
+    >
+      {face}
+    </button>
   )
 }
 
@@ -208,7 +234,7 @@ function PitchBlock({ t }: { t: PublicTrainer }) {
     </Inset>
   )
 }
-function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; onToggle: () => void }) {
+function TrainerCard({ t, open, onToggle, onAbout }: { t: PublicTrainer; open: boolean; onToggle: () => void; onAbout: () => void }) {
   const panelId = `trainer-bio-${t.id}`
   const courses = new Set(t.assignedCourseIds).size
   const pitched = (t.pitch?.length ?? 0) > 0
@@ -216,10 +242,16 @@ function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; o
     /* والمعرّفُ مرساةُ «شاهد بطاقتك» في بوّابة المدرّب (`ProfileSuggestions`) */
     <Card as="article" id={`trainer-${t.id}`} className="flex scroll-mt-24 flex-col transition hover:border-teal/40">
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 sm:gap-x-5">
-        <TrainerPhoto t={t} />
+        <TrainerPhoto t={t} onAbout={onAbout} />
         <div className="min-w-0">
           <h3 className="flex items-center gap-1.5 text-lg font-black leading-snug md:text-xl">
-            {t.name}
+            <button
+              type="button"
+              onClick={onAbout}
+              className="-my-2 min-h-11 text-start decoration-teal/60 decoration-dotted underline-offset-4 transition hover:text-teal-light-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
+            >
+              {t.name}
+            </button>
             <BadgeCheck className="h-5 w-5 shrink-0 text-teal-ink" aria-label="مدرب موثق" />
           </h3>
           {t.headline && <p className="mt-1 line-clamp-2 text-read leading-6 text-foreground/80">{t.headline}</p>}
@@ -347,6 +379,8 @@ export default function Trainers() {
   const [showAllSpecialties, setShowAllSpecialties] = useState(false)
   /* المفتوحُ من النبذات — أكثرُ من واحدةٍ معا: من يقارن مدرّبَين يفتحهما جنبا إلى جنب */
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
+  /* بطاقةُ المدرّب المنبثقة — من صورته أو اسمه (٩ نوفمبر ٢٠٢٦) */
+  const [about, setAbout] = useState<PublicTrainer | null>(null)
   const toggle = (id: string) =>
     setExpanded((prev) => {
       const next = new Set(prev)
@@ -463,9 +497,13 @@ export default function Trainers() {
           </div>
           <div className="mt-6 grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
             {filteredApproved.map((t) => (
-              <TrainerCard key={t.id} t={t} open={expanded.has(t.id) !== (t.id === anchoredId)} onToggle={() => toggle(t.id)} />
+              <TrainerCard
+                key={t.id} t={t} open={expanded.has(t.id) !== (t.id === anchoredId)} onToggle={() => toggle(t.id)}
+                onAbout={() => setAbout(t)}
+              />
             ))}
           </div>
+          {about && <TrainerQuickView seed={seedFromList(about)} onClose={() => setAbout(null)} />}
         </section>
       )}
 
