@@ -25,7 +25,7 @@ import { fmtMoney, fmtNum } from "@/application/text/format-ar";
 import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 import { countAr } from "@/application/text/count-ar";
 import { renderableVideo } from "@/application/trainer/marketing-video";
-import { TrainerVideoFrame } from "@/components/TrainerVideo";
+import { TrainerVideoCard } from "@/components/TrainerVideo";
 
 interface PublicCohort {
   id: string; title: string; courseId: string; courseTitle: string;
@@ -136,8 +136,13 @@ export default function TrainerPublic() {
             </div>
           </div>
           {page.bio && <p className="mt-6 whitespace-pre-line text-read leading-7">{page.bio}</p>}
-          {/* فيديو تعريفه — بالمكوّن نفسِه الذي في صفحة الدورة، ولا شيءَ حين لا فيديو */}
-          {video && <div className="mt-6 md:max-w-2xl"><TrainerVideoFrame video={video} trainerName={page.name} /></div>}
+          {/* فيديو تعريفه — النافذةُ الصغيرةُ نفسُها التي في صفحة الدورة بصورته، ولا شيءَ حين لا فيديو.
+              واسمُه في رأس الصفحة، فيُكتب بجانبها عنوانُ القسم مكانَه */}
+          {video && (
+            <div className="mt-6">
+              <TrainerVideoCard video={video} name={page.name} photoUrl={page.photoUrl} title="تعرّف على مدرّبك" />
+            </div>
+          )}
           {page.specialties.length > 0 && (
             <ul className="mt-5 flex flex-wrap gap-2">
               {page.specialties.map((s) => (
