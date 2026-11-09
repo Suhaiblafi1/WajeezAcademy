@@ -251,3 +251,53 @@ describe('⑥ بصلاحية الكوبونات', () => {
     expect((await prisma.lead.findUniqueOrThrow({ where: { id: p.ref } })).erasedAt).toBeNull()
   })
 })
+
+/* ═══ ومن أنشأ حسابَه ولم يسجّل في شعبة — ملفُّه بجوار ملفّ المنحة (٩ نوفمبر ٢٠٢٦) ═══
+   طلبُ صاحب المنصّة: «so for me i get leads all from one place». فالملفُّ يحمل من لا شعبةَ له بهاتفه وموافقته على
+   التسويق، ولا يحمل من له شعبة ولا الموظّف، ولا يناله إلّا من ينال ملفَّ المنحة */
+describe('ملفُّ من أنشأ حسابَه ولم يسجّل', () => {
+  const sheetOf = async (raw: Buffer) => {
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(raw as unknown as ArrayBuffer)
+    const ws = wb.getWorksheet('لم يسجلوا في شعبة')!
+    const header = (ws.getRow(1).values as unknown[]).slice(1)
+    const rows: Record<string, unknown>[] = []
+    ws.eachRow((r, n) => { if (n > 1) rows.push(Object.fromEntries(header.map((h, i) => [String(h), r.getCell(i + 1).value]))) })
+    return rows
+  }
+
+  it('يحمل من لا شعبة له بهاتفه وموافقته — لا من له شعبة ولا الموظف', async () => {
+    const auth = new AuthService(prisma)
+    const lead = await auth.register(`gr-signed-${STAMP}@test.local`, 'Learner#123456', 'لم يسجل بعد')
+    await prisma.learnerProfile.upsert({
+      where: { userId: lead.userId }, create: { userId: lead.userId, phone: '+962790000000' }, update: { phone: '+962790000000' },
+    })
+    await prisma.consentRecord.create({ data: { userId: lead.userId, kind: 'marketing', textVersion: 'v1' } })
+    const buyer = await auth.register(`gr-enrolled-${STAMP}@test.local`, 'Learner#123456', 'له شعبة')
+    const cohort = await prisma.cohort.create({
+      data: { courseId: 'C-BIZ-101', title: 'شعبة الملف', status: 'open', price: 100, currency: 'USD', capacity: 30 },
+    })
+    await prisma.enrollment.create({ data: { userId: buyer.userId, cohortId: cohort.id, status: 'enrolled' } })
+    const staff = await auth.register(`gr-staff-${STAMP}@test.local`, 'Learner#123456', 'موظف متعلم')
+    await auth.setRoles(staff.userId, ['learner', 'advisor'])
+
+    const res = await app.inject({ method: 'GET', url: '/api/admin/member-grant/signed-up.xlsx', headers: { cookie: boss } })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.headers['content-type']).toContain('spreadsheetml')
+    expect(String(res.headers['content-disposition'])).toContain("filename*=UTF-8''")
+    const rows = await sheetOf(res.rawPayload)
+    const row = rows.find((r) => r['البريد'] === `gr-signed-${STAMP}@test.local`)
+    expect(row, 'غاب من لم يسجل').toBeDefined()
+    expect(row!['الهاتف']).toBe('+962790000000')
+    expect(row!['يقبل رسائل التسويق']).toBe('نعم')
+    expect(String(row!['أنشأ حسابه'])).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/)
+    const emails = rows.map((r) => r['البريد'])
+    expect(emails, 'حمل الملفُّ من له شعبة').not.toContain(`gr-enrolled-${STAMP}@test.local`)
+    expect(emails, 'حمل الملفُّ الموظف').not.toContain(`gr-staff-${STAMP}@test.local`)
+  })
+
+  it('والمتعلم لا ينزله', async () => {
+    const r = await app.inject({ method: 'GET', url: '/api/admin/member-grant/signed-up.xlsx', headers: { cookie: learner } })
+    expect(r.statusCode).toBe(403)
+  })
+})

@@ -95,6 +95,7 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
   const [linkFor, setLinkFor] = useState<Registrant | null>(null);
   const [removing, setRemoving] = useState<Registrant | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingSignedUp, setDownloadingSignedUp] = useState(false);
   const load = useCallback(() => apiGet<List>("/api/admin/member-grant/registrants").then(setData).catch(() => setData(null)), []);
   useEffect(() => { void load(); }, [load]);
   const rows = data?.rows ?? null;
@@ -127,6 +128,13 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
     catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر التنزيل"); }
     finally { setDownloading(false); }
   };
+  /* ومن أنشأ حسابَه ولم يسجّل في شعبة — هنا لتُنزَّل العملاءُ كلُّهم من مكانٍ واحد (٩ نوفمبر ٢٠٢٦، `signed-up-export.ts`) */
+  const downloadSignedUp = async () => {
+    setDownloadingSignedUp(true);
+    try { await apiDownload("/api/admin/member-grant/signed-up.xlsx", "signed-up-not-enrolled.xlsx"); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر التنزيل"); }
+    finally { setDownloadingSignedUp(false); }
+  };
 
   return (
     <>
@@ -139,6 +147,7 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         <Button icon={FileDown} loading={downloading} onClick={() => void download()}>تنزيل Excel</Button>
+        <Button icon={FileDown} loading={downloadingSignedUp} onClick={() => void downloadSignedUp()}>تنزيل من أنشأ حسابا ولم يسجل</Button>
         <Button icon={Send} disabled={matched.length === 0} onClick={() => setWriteTo(matched)}>
           بريد {filtered ? "لمن في التصفية" : "للكل"} ({matched.filter((r) => r.email).length})
         </Button>
