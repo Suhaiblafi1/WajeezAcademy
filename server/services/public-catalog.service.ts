@@ -148,7 +148,7 @@ export class PublicCatalogService {
       include: {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
         trainers: {
-          include: { profile: { select: { id: true, photoUrl: true, ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true } } } } },
+          include: { profile: { select: { id: true, photoUrl: true, publicSlug: true, ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true, status: true } } } } },
         },
         /* ═══ ومواعيدُ لقاءاتها كلُّها — حيث يقع قرارُ الشراء (٢٩ سبتمبر ٢٠٢٦) ═══
 
@@ -193,8 +193,17 @@ export class PublicCatalogService {
       },
       orderBy: { startsAt: 'asc' },
     })
+    /* ═══ وفيديو مدرّب الشعبة لحلقة صورته في صندوقها (٩ نوفمبر ٢٠٢٦) ═══
+       «احذف قسم الفيديو، واجعلها بطاقةً منبثقةً كما في ملفّ المدرّب عند صورتها» (صاحب المنصّة). فيخرج مع
+       الشعبة فيديو مدرّبها — لهذه الدورة أوّلا ثمّ تعريفُه — بمعرّفات من عبر البوّابة وحدَهم، دورةً دورة */
+    const shownOf = (c: (typeof rows)[number]) => c.trainers.filter((t) => trainerPubliclyVisible(t.profile))
+    const videoByCourse = new Map<string, Awaited<ReturnType<typeof publicVideosOf>>>()
+    for (const courseId of new Set(rows.map((c) => c.courseId))) {
+      const ids = [...new Set(rows.filter((c) => c.courseId === courseId).flatMap((c) => shownOf(c).map((t) => t.profile.id)))]
+      videoByCourse.set(courseId, await publicVideosOf(this.prisma, ids, courseId))
+    }
     return rows.map((c) => {
-      const shown = c.trainers.filter((t) => trainerPubliclyVisible(t.profile))
+      const shown = shownOf(c)
       return {
         id: c.id, title: c.title, status: c.status,
         courseId: c.courseId, courseTitle: c.course.versions[0]?.titleAr ?? '',
@@ -214,6 +223,9 @@ export class PublicCatalogService {
           id: t.profile.id,
           name: t.profile.application.fullName,
           photoUrl: photoPublicUrl(t.profile.photoUrl),
+          /* مسارُ صفحته لبطاقته المنبثقة — ولا مسارَ لمن طلبُه غيرُ نشط: صفحتُه ٤٠٤ */
+          slug: t.profile.application.status === 'active' ? t.profile.publicSlug : null,
+          video: videoByCourse.get(c.courseId)?.get(t.profile.id) ?? null,
         })),
         sessions: c.sessions,
         summaryAr: cohortSummaryAr(c.plans[0]?.content),

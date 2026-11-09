@@ -24,6 +24,9 @@
    من ثلاثٍ تظهر أقربُ ثلاثٍ منها والباقي بطلب. */
 
 import { useId, useState, type MouseEvent } from "react";
+import { Play } from "lucide-react";
+import TrainerQuickView from "@/components/trainer/TrainerQuickView";
+import { hasVideoRing, type TrainerSeed } from "@/application/trainer/quick-view";
 import { Link } from "react-router";
 import { CalendarDays, Check, ChevronDown, ChevronLeft, TriangleAlert, Users } from "lucide-react";
 import type { CohortOption, CohortTrainer } from "@/services/cohort-prices";
@@ -90,36 +93,77 @@ function Face({ t }: { t: CohortTrainer }) {
    الوجهُ يقول من يعلّمه، والشارةُ تقول كيف. وبجانبها «مدربك» واسمُه بخطٍّ كبير وبابُ نبذته. والصورةُ نفسُها ليست
    رابطا: في صندوق الاختيار يختار الضغطُ عليها الشعبةَ ولا ينقله عن صفحة الشراء — والنبذةُ بابُها اسمُه.
    ولشعبةٍ بمدرّبَين الوجهان الأصغران جنبا إلى جنب (`Trainers`)، فصورتان كبيرتان في صندوقٍ واحدٍ زحام. */
-function Portrait({ t }: { t: CohortTrainer }) {
+/* ═══ وصورتُه تفتح بطاقتَه المنبثقة والفيديو يعمل (٩ نوفمبر ٢٠٢٦) ═══
+   «احذف قسم «تعرّف على مدرّبك»، واجعلها بطاقةً منبثقةً كما في ملفّ المدرّب عند صورتها» (صاحب المنصّة).
+   فلمن له فيديو يُضمَّن: صورتُه زرٌّ بإطارٍ يدور ببطء وشارةِ تشغيل، والضغطُ يفتح بطاقتَه والفيديو يعمل.
+   و«نبذة المدرب» تفتح البطاقةَ نفسَها بلا تشغيل. والزرُّ داخل صندوق الاختيار لا يختار الشعبة (`preventDefault`). */
+const seedOfCohortTrainer = (t: CohortTrainer): TrainerSeed => ({
+  name: t.name, slug: t.slug ?? null, photoUrl: t.photoUrl, video: t.video ?? null,
+});
+
+function Portrait({ t, onPlay }: { t: CohortTrainer; onPlay: () => void }) {
   const [failed, setFailed] = useState(false);
   const box = "grid h-20 w-20 place-items-center overflow-hidden rounded-2xl sm:h-24 sm:w-24";
-  return (
-    <span className="relative shrink-0 pb-2">
-      <span className="block rounded-[1.2rem] bg-gradient-to-br from-gold via-teal-light to-teal-deep p-[3px] shadow-lg">
+  const ring = hasVideoRing(t);
+  const frame = (
+      <span className={`relative block overflow-hidden rounded-[1.2rem] ${ring ? "" : "bg-gradient-to-br from-gold via-teal-light to-teal-deep "}p-[3px] shadow-lg`}>
+        {ring && (
+          <span aria-hidden="true" className="absolute -inset-1/2 motion-safe:animate-story-ring"
+            style={{ backgroundImage: "conic-gradient(from 0deg, rgb(var(--gold)), rgb(var(--teal-light)), rgb(var(--teal-deep)), rgb(var(--teal)), rgb(var(--gold)))" }} />
+        )}
+        <span className="relative block">
         {t.photoUrl && !failed ? (
           <img src={t.photoUrl} alt="" width={96} height={96} loading="lazy" decoding="async"
             onError={() => setFailed(true)} className={`${box} bg-paper object-cover object-[50%_25%]`} />
         ) : (
           <span aria-hidden="true" className={`${box} bg-teal-deep text-2xl font-black text-white`}>{initialsOf(t.name)}</span>
         )}
+        </span>
       </span>
+  );
+  const live = (
       <span className="absolute bottom-0 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-paper px-2 py-0.5 text-fine font-black leading-4 text-foreground shadow-md">
         <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-red-400 motion-safe:animate-pulse" />
         مباشر
       </span>
-    </span>
+  );
+  if (!ring) return <span className="relative shrink-0 pb-2">{frame}{live}</span>;
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPlay(); }}
+      aria-label={`شغل الفيديو التعريفي: ${t.name}`}
+      data-video-ring=""
+      className="group relative shrink-0 rounded-[1.2rem] pb-2 transition motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
+    >
+      {frame}
+      <span
+        aria-hidden="true"
+        data-play-badge=""
+        className="absolute -left-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-[#fff] text-[#08272B] shadow-lg ring-[3px] ring-paper transition motion-safe:group-hover:scale-110"
+      >
+        <Play className="h-4 w-4 translate-x-px fill-current" />
+      </span>
+      {live}
+    </button>
   );
 }
 
-/** «مدربك» واسمُه كبيرا وبابُ نبذته — بجانب صورته */
-function Lead({ t }: { t: CohortTrainer }) {
+/** «مدربك» واسمُه كبيرا وبابُ نبذته — بجانب صورته. والنبذةُ بطاقتُه المنبثقة لمن له صفحة، وإلّا بطاقتُه في صفحة الفريق */
+function Lead({ t, onAbout }: { t: CohortTrainer; onAbout: () => void }) {
+  const look = "inline-flex w-fit items-center gap-0.5 text-read font-bold leading-6 text-teal-light-ink underline-offset-4 hover:underline";
   return (
     <span className="grid min-w-0 content-center gap-0.5">
       <span className="text-fine font-bold leading-4 text-muted-foreground">مدربك</span>
       <span className="text-base font-black leading-6 text-foreground">{t.name}</span>
-      {t.id && (
-        <Link to={bioHref(t)} aria-label={`نبذة المدرب ${t.name}`}
-          className="inline-flex w-fit items-center gap-0.5 text-read font-bold leading-6 text-teal-light-ink underline-offset-4 hover:underline">
+      {t.slug ? (
+        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAbout(); }}
+          aria-label={`نبذة المدرب ${t.name}`} className={look}>
+          نبذة المدرب
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      ) : t.id && (
+        <Link to={bioHref(t)} aria-label={`نبذة المدرب ${t.name}`} className={look}>
           نبذة المدرب
           <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
@@ -241,6 +285,8 @@ export default function CohortPicker({
   hintOneLine?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
+  /* بطاقةُ مدرّب الشعبة المنبثقة — من صورته (والفيديو يعمل) أو من «نبذة المدرب» */
+  const [quick, setQuick] = useState<{ t: CohortTrainer; play: boolean } | null>(null);
   const group = useId();
   /* ═══ وشعبةٌ تقع لقاءاتُها على لقاءاتٍ أخرى له — يُقال قبل أن يدفع (٢٤ أكتوبر ٢٠٢٦) ═══
      ممّا سجّل فيه من قبل، وممّا اختاره معها. والتنبيهُ لا يمنع، ويدلّ على موعدٍ لا يتعارض إن وُجد
@@ -329,8 +375,8 @@ export default function CohortPicker({
                     كبيرةٌ واسمُه بجانبها (`Portrait`)، وأكثرُ من واحدٍ وجوهٌ أصغرُ جنبا إلى جنب */}
                 {c.trainerProfiles.length === 1 ? (
                   <span className="mb-1 flex min-w-0 items-center gap-3 sm:gap-4">
-                    <Portrait t={c.trainerProfiles[0]} />
-                    <Lead t={c.trainerProfiles[0]} />
+                    <Portrait t={c.trainerProfiles[0]} onPlay={() => setQuick({ t: c.trainerProfiles[0]!, play: true })} />
+                    <Lead t={c.trainerProfiles[0]} onAbout={() => setQuick({ t: c.trainerProfiles[0]!, play: false })} />
                   </span>
                 ) : <Trainers c={c} />}
                 <When c={c} />
@@ -398,6 +444,7 @@ export default function CohortPicker({
           <ChevronDown className="h-4 w-4" aria-hidden="true" />
         </button>
       )}
+      {quick && <TrainerQuickView seed={seedOfCohortTrainer(quick.t)} autoPlay={quick.play} onClose={() => setQuick(null)} />}
     </div>
   );
 }

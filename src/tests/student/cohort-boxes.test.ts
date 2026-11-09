@@ -54,7 +54,8 @@ describe('١) الوجوه تصل خيار الشعبة', () => {
       { id: 'p-ahmad', name: ' احمد صالح الطيار ', photoUrl: '/api/v1/trainer-photos/ahmad.webp' },
       { id: 'p-x', name: '', photoUrl: null },
     ] })]).get('C-1') ?? []
-    expect(opt?.trainerProfiles).toEqual([{ id: 'p-ahmad', name: 'احمد صالح الطيار', photoUrl: '/api/v1/trainer-photos/ahmad.webp' }])
+    /* ومسارُ صفحته وفيديوه لبطاقته المنبثقة (٩ نوفمبر ٢٠٢٦) — وبلا الحقلين: لا شيء */
+    expect(opt?.trainerProfiles).toEqual([{ id: 'p-ahmad', name: 'احمد صالح الطيار', photoUrl: '/api/v1/trainer-photos/ahmad.webp', slug: null, video: null }])
   })
 
   it('ومن خادم أقدم بلا الحقل: من الأسماء بلا صورة ولا باب', () => {
@@ -172,5 +173,37 @@ describe('٤) صفحة الفريق: «لم يصل» غير «لا أحد»', ()
     expect(page).toMatch(/useAutoRefresh\(load/)
     /* والطلبُ المبكرُ يُؤخذ في المحاولة الأولى وحدَها، والإعادةُ طلبٌ عاديّ (`early-fetch.ts`، ٥ نوفمبر ٢٠٢٦) */
     expect(code('src/services/cohort-prices.ts')).toMatch(/withRetry\(async \(\) => \{\s*const r = await \(\(API_BASE === '' \? takeEarly\('\/api\/public\/cohorts'\) : null\) \?\? fetch\(`\$\{API_BASE\}\/api\/public\/cohorts`\)\)\s*if \(!r\.ok\) throw/)
+  })
+})
+
+describe('٥) صورةُ مدرّب الشعبة تفتح بطاقتَه والفيديو يعمل — لا قسمَ «تعرّف على مدرّبك» (٩ نوفمبر ٢٠٢٦)', () => {
+  /* «احذف قسم الفيديو، واجعلها بطاقةً منبثقةً كما في ملفّ المدرّب عند صورتها» (صاحب المنصّة) */
+  const SHORTS = { kind: 'embed', provider: 'youtube', src: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', vertical: true }
+  const withVideo = render(cohortOptionsFrom([row({ trainerProfiles: [
+    { id: 'p-ahmad', name: 'احمد صالح الطيار', photoUrl: '/api/v1/trainer-photos/ahmad.webp', slug: 'ahmad', video: SHORTS },
+  ] })]).get('C-1') ?? [])
+  const plain = render(cohortOptionsFrom([row()]).get('C-1') ?? [])
+
+  it('⚠️ لمن له فيديو: صورتُه زرُّ تشغيلٍ بحلقةٍ وشارة — ولا إطارَ فيديو قبل الضغط', () => {
+    expect(withVideo).toMatch(/<button [^>]*aria-label="شغل الفيديو التعريفي: احمد صالح الطيار"[^>]*data-video-ring=""/)
+    expect(withVideo).toContain('data-play-badge')
+    expect(withVideo).not.toContain('<iframe')
+  })
+  it('⚠️ ومن لا فيديو له: الصورةُ كما كانت — لا زرَّ ولا حلقة', () => {
+    expect(plain).not.toContain('data-video-ring')
+    expect(plain).toMatch(/bg-gradient-to-br from-gold via-teal-light to-teal-deep p-\[3px\]/)
+  })
+  it('⚠️ ورابطٌ لا يُضمَّن لا حلقةَ له', () => {
+    const link = render(cohortOptionsFrom([row({ trainerProfiles: [
+      { id: 'p-ahmad', name: 'احمد صالح الطيار', photoUrl: null, slug: 'ahmad', video: { kind: 'link', href: 'https://example.com/v' } },
+    ] })]).get('C-1') ?? [])
+    expect(link).not.toContain('data-video-ring')
+  })
+  it('⚠️ و«نبذة المدرب» لمن له صفحةٌ تفتح بطاقتَه هنا — لا تنقله عن صفحة الشراء', () => {
+    expect(withVideo).toMatch(/<button [^>]*aria-label="نبذة المدرب احمد صالح الطيار"/)
+    expect(withVideo).not.toContain('href="/trainers#trainer-p-ahmad"')
+  })
+  it('⚠️ وصفحةُ الدورة لا ترسم قسمَ «تعرّف على مدرّبك»', () => {
+    expect(code('src/pages/CoursePath.tsx')).not.toMatch(/CourseTrainerVideos|TrainerVideo"/)
   })
 })

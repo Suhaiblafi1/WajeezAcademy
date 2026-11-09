@@ -14,6 +14,7 @@ let prisma: PrismaClient
 let publicCatalog: PublicCatalogService
 let cohortId = ''
 let shownId = ''
+let hiddenId = ''
 
 const at = (days: number) => new Date(Date.now() + days * 86_400_000)
 
@@ -37,7 +38,14 @@ beforeAll(async () => {
   prisma = await testPrisma()
   publicCatalog = new PublicCatalogService(prisma)
   shownId = await trainer('ريم المعلنة', true, 'storage:trainer-photos/reem.webp')
-  const hiddenId = await trainer('سامر المخفي', false, 'storage:trainer-photos/samer.webp')
+  hiddenId = await trainer('سامر المخفي', false, 'storage:trainer-photos/samer.webp')
+  /* مسارُ صفحته وفيديوه لبطاقته المنبثقة (٩ نوفمبر ٢٠٢٦): للمعلنة فيديو هذه الدورة وتعريفُها، وللمخفيّ فيديو لا يخرج */
+  await prisma.trainerProfile.update({ where: { id: shownId }, data: { publicSlug: `reem-${Date.now()}` } })
+  await prisma.trainerMarketingVideo.createMany({ data: [
+    { profileId: shownId, targetKind: 'bio', targetId: '', url: 'https://youtu.be/reemBioVid1' },
+    { profileId: shownId, targetKind: 'course', targetId: 'C-BIZ-101', url: 'https://youtube.com/shorts/reemCourse1' },
+    { profileId: hiddenId, targetKind: 'bio', targetId: '', url: 'https://youtu.be/samerHidVd1' },
+  ] })
   cohortId = (await prisma.cohort.create({
     data: {
       courseId: 'C-BIZ-101', title: `شعبة الوجه ${Date.now()}`,
@@ -55,9 +63,14 @@ describe('وجه مدرّب الشعبة قبل الدفع', () => {
   it('⚠️ المعلن يخرج باسمه وصورته ومعرّف بطاقته — والمخفي لا اسم له ولا صورة', async () => {
     const row = (await publicCatalog.cohorts()).find((c) => c.id === cohortId)
     expect(row, 'الشعبة لا تظهر في القائمة العامّة').toBeTruthy()
-    expect(row!.trainerProfiles).toEqual([
-      { id: shownId, name: 'ريم المعلنة', photoUrl: '/api/v1/trainer-photos/trainer-photos/reem.webp' },
-    ])
+    const shown = await prisma.trainerProfile.findUniqueOrThrow({ where: { id: shownId }, select: { publicSlug: true } })
+    expect(row!.trainerProfiles).toEqual([{
+      id: shownId, name: 'ريم المعلنة', photoUrl: '/api/v1/trainer-photos/trainer-photos/reem.webp',
+      slug: shown.publicSlug,
+      /* فيديو هذه الدورة يغلب تعريفَها — مبنيّا لا الرابطَ الخام */
+      video: { kind: 'embed', provider: 'youtube', src: 'https://www.youtube-nocookie.com/embed/reemCourse1', vertical: true },
+    }])
+    expect(JSON.stringify(row)).not.toContain('samerHidVd1')
     expect(row!.trainers).toEqual(['ريم المعلنة'])
     expect(JSON.stringify(row)).not.toContain('سامر')
     expect(JSON.stringify(row)).not.toContain('samer')
