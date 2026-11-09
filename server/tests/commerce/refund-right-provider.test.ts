@@ -16,7 +16,11 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
-import { isExtraPayment } from '../../../src/application/commerce/finance-status'
+import { GrantService } from '../../services/grant.service'
+import { GrantLandingService } from '../../services/grant-landing.service'
+import { InfluencerService } from '../../services/influencer.service'
+import { CohortEconomicsService } from '../../services/cohort-economics.service'
+import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -100,10 +104,9 @@ describe('① صفحتا دفع دفعتا لطلب واحد', () => {
     expect((await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).status).toBe('paid')
     expect(await prisma.enrollment.count({ where: { userId } }), 'سجل مرتين').toBe(1)
 
-    /* والشاشةُ تقرأ القاعدةَ نفسَها: الأولى ليست زائدة، والثانية زائدة */
-    const rows = (await prisma.payment.findMany({ where: { invoiceId: invoice.id } }))
-      .map((p) => ({ id: p.id, status: p.status, succeededAt: p.succeededAt?.toISOString() ?? null }))
-    expect(rows.filter((p) => isExtraPayment(p, rows)).map((p) => p.id)).toEqual([b.id])
+    /* والزائدةُ معلَّمةٌ وحدَها — بها تعرضها الشاشة ويتخطّاها كلُّ حسابٍ للمال */
+    const marked = await prisma.payment.findMany({ where: { invoiceId: invoice.id, extra: true }, select: { id: true } })
+    expect(marked.map((p) => p.id)).toEqual([b.id])
   })
 
   it('⚠️ وردها لا يمس الطلب ولا مقعده', async () => {
@@ -130,6 +133,44 @@ describe('① صفحتا دفع دفعتا لطلب واحد', () => {
     expect(pays.filter((p) => p.status === 'pending'), 'بقيت صفحة مدفوعة معلقة').toHaveLength(0)
     expect(await prisma.auditEvent.count({ where: { action: 'payment.extra', entityId: { in: [a.id, b.id] } } })).toBe(1)
     expect((await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).status).toBe('paid')
+  })
+})
+
+describe('⑤ ورد الزائدة لا ينقص أجر المدرب ولا عمولة المؤثر', () => {
+  it('⚠️ ما حصلته الشعبة وعمولة المؤثر قبل الرد وبعده سواء', async () => {
+    await new GrantService(prisma, INFLUENCER_GRANT_SLUG).update({ active: true }, finance)
+    const influencers = new InfluencerService(prisma)
+    const inf = (await influencers.create({ nameAr: 'مؤثر الزائدة', code: `XTRA${STAMP % 100000}`, commissionPercent: 15 }, finance)).id
+    const applied = await new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG).apply({
+      fullName: 'متابع الزائدة', phone: `0793${String(STAMP).slice(-6)}`, email: `extra-follower-${STAMP}@test.local`,
+      workField: 'الموارد البشرية', influencerCode: `XTRA${STAMP % 100000}`,
+    })
+    const code = applied.grant!.code!
+    const userId = (await auth.register(`extra-buyer-${STAMP}@test.local`, 'Buyer#12345', 'مشتري الزائدة')).userId
+    const cohortId = (await prisma.cohort.create({
+      data: {
+        plans: { create: await approvedTrainerPlan(prisma) }, courseId: 'C-BIZ-101', title: 'شعبة رد الزائدة',
+        status: 'open', registrationOpen: true, financialReady: true, price: 200, currency: 'USD', capacity: 20,
+        startsAt: new Date(Date.now() + 30 * 86_400_000),
+      } as never,
+    })).id
+    const { orderId } = await commerce.checkout(userId, [cohortId], code)
+    const invoice = await prisma.invoice.findFirstOrThrow({ where: { orderId } })
+    const a = await commerce.payOrder(orderId, userId, `xg-a-${STAMP}`)
+    const b = await commerce.payOrder(orderId, userId, `xg-b-${STAMP}`)
+    await paidEvent(`evt_xg_a_${STAMP}`, a.providerRef!, invoice.number)
+    await paidEvent(`evt_xg_b_${STAMP}`, b.providerRef!, invoice.number)
+
+    const economics = new CohortEconomicsService(prisma)
+    const before = { collected: (await economics.collected([cohortId])).get(cohortId), st: await influencers.statement(inf) }
+    expect(before.st.totals.earned).toBeGreaterThan(0)
+
+    const r = await commerce.requestRefund(b.id, finance, { amount: Number(b.amount), reason: REASON })
+    await commerce.processRefund(r.id, finance, true)
+
+    expect((await economics.collected([cohortId])).get(cohortId), 'رد الزائدة نقص ما حصلته الشعبة — أجر المدرب').toBe(before.collected)
+    const after = await influencers.statement(inf)
+    expect(after.totals.earned, 'رد الزائدة نقص عمولة المؤثر').toBe(before.st.totals.earned)
   })
 })
 

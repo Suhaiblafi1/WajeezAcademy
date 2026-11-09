@@ -266,7 +266,7 @@ export class InfluencerService {
                   id: true, status: true, subtotal: true, currency: true, paidAt: true, createdAt: true, userId: true,
                   user: { select: { displayName: true } },
                   items: { select: { id: true } },
-                  invoice: { select: { payments: { select: { amount: true, status: true, refunds: { where: { status: 'processed' }, select: { amount: true } } } } } },
+                  invoice: { select: { payments: { where: { extra: false }, select: { amount: true, status: true, refunds: { where: { status: 'processed' }, select: { amount: true } } } } } },
                 },
               },
             },

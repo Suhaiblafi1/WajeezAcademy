@@ -31,7 +31,7 @@ import ConfirmAction from "@/components/ConfirmAction";
 
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls } from "@/components/FormKit";
-import { ARCHIVED_INV, ARCHIVED_REQ, isExtraPayment, PAY_STATUS, REFUND_AWAITING, RF_STATUS } from "@/application/commerce/finance-status";
+import { ARCHIVED_INV, ARCHIVED_REQ, PAY_STATUS, REFUND_AWAITING, RF_STATUS } from "@/application/commerce/finance-status";
 
 interface EnrollReq {
   id: string; status: string; note: string | null; createdAt: string;
@@ -41,7 +41,7 @@ interface EnrollReq {
 interface Invoice {
   id: string; number: string; status: string; amount: string; currency: string; issuedAt: string;
   order: { user: { displayName: string; email: string }; items: { title?: string; titleAr?: string }[] };
-  payments: { id: string; amount: string; currency: string; status: string; succeededAt?: string | null; method?: string | null; refunds: { id: string }[] }[];
+  payments: { id: string; amount: string; currency: string; status: string; extra?: boolean; method?: string | null; refunds: { id: string }[] }[];
 }
 interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; currency: string; invoice: { id: string; number: string } } }
 type Coupon = AdminCoupon
@@ -410,8 +410,8 @@ export default function Finance() {
                 <Inset key={p.id} tone="positive" className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   {/* بعملة ما اقتُطع لا بعملة الفاتورة — دفعةٌ بالدرهم كانت تُعرض دولارا */}
                   <span className="font-bold text-emerald-300">{PAY_STATUS[p.status]} {p.amount} {p.currency ?? inv.currency}</span>
-                  {/* ودفعةٌ نجحت بعد أخرى على الفاتورة نفسِها زائدة — تنتظر الردّ (`alertExtraPayment`) */}
-                  {isExtraPayment(p, inv.payments) && <span className="font-bold text-gold-ink">زائدة — ترد</span>}
+                  {/* وصفحةُ دفعٍ ثانيةٌ دُفعت لطلبٍ مدفوع — مالٌ ينتظر الردّ (`alertExtraPayment`) */}
+                  {p.extra && <span className="font-bold text-gold-ink">زائدة — ترد</span>}
                   <span className="text-muted-foreground">{p.refunds.length} استرداد</span>
                   {canRefund && p.status !== "refunded" && (<>
                   <input value={refundForm[p.id]?.amount ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], amount: e.target.value, reason: refundForm[p.id]?.reason ?? "" } })}

@@ -23,6 +23,7 @@ import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
 import { SYNC_STALE_MS } from '../../src/application/trainer/interview-sync-trust'
 import { getCalendlyConfig, getCalendlySync } from './integrations.service'
 import { attestationState, MAX_AGE_DAYS } from './backup-attestation'
+import { REFUND_AWAITING } from '../../src/application/commerce/finance-status'
 
 export type HealthLevel = 'ok' | 'attention' | 'broken' | 'unknown'
 
@@ -247,7 +248,8 @@ export class SystemHealthService {
       this.prisma.integrationSetting.findUnique({ where: { provider: 'email' } }),
       this.prisma.paymentWebhookEvent.count({ where: { processedAt: null } }),
       this.prisma.paymentWebhookEvent.findFirst({ where: { processedAt: null }, orderBy: { createdAt: 'asc' }, select: { createdAt: true, provider: true } }),
-      this.prisma.refund.count({ where: { status: 'requested' } }),
+      /* بالحالة التي يكتبها `requestRefund` — كانت «requested» فلا يُعدّ ردٌّ ينتظر أبدا (٩ نوفمبر ٢٠٢٦) */
+      this.prisma.refund.count({ where: { status: REFUND_AWAITING } }),
       this.prisma.invoice.count({ where: { status: 'issued' } }),
       /* نشِطون بلا بريدٍ موثَّق — شهاداتُهم تنتظره، والشراءُ لا ينتظره (٢٦ أكتوبر ٢٠٢٦) */
       this.prisma.user.count({ where: { status: 'active', emailVerifiedAt: null } }),

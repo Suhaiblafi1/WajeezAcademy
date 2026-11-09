@@ -983,12 +983,12 @@ export class CommerceService {
       const taken = pays.some((p) => MONEY_IN.includes(p.status))
       const pendings = pays.filter((p) => p.provider === provider && p.status === 'pending')
       const mine = providerRef ? pendings.find((p) => p.providerRef === providerRef) : undefined
-      const succeed = (id: string, ref: string | null) => tx.payment.updateMany({
-        where: { id, status: 'pending' }, data: { status: 'succeeded', providerRef: confirmedRef || providerRef || ref, succeededAt: new Date() },
+      const succeed = (id: string, ref: string | null, extra = false) => tx.payment.updateMany({
+        where: { id, status: 'pending' }, data: { status: 'succeeded', providerRef: confirmedRef || providerRef || ref, succeededAt: new Date(), extra },
       })
       if (taken) {
         if (!mine) return { kind: 'none' as const }
-        await succeed(mine.id, mine.providerRef)
+        await succeed(mine.id, mine.providerRef, true)
         return { kind: 'extra' as const, paymentId: mine.id }
       }
       const target = mine ?? (fallback ? pendings[0] : undefined)
@@ -1024,18 +1024,6 @@ export class CommerceService {
       templateKey: 'admin.payment_extra',
       data: { orderId, paymentId },
     })
-  }
-
-  /** أدفعةٌ زائدة؟ ما نجح بعد دفعةٍ أخرى على الفاتورة نفسِها — والأولى هي التي سوّت الطلب */
-  private async isExtraPayment(p: { id: string; invoiceId: string; succeededAt: Date | null }) {
-    if (!p.succeededAt) return false
-    const earlier = await this.prisma.payment.count({
-      where: {
-        invoiceId: p.invoiceId, id: { not: p.id }, status: { in: [...MONEY_IN] },
-        OR: [{ succeededAt: { lt: p.succeededAt } }, { succeededAt: p.succeededAt, id: { lt: p.id } }],
-      },
-    })
-    return earlier > 0
   }
 
   /* ─────────── «التجريبيُّ» يعني مدفوعا فورا — في كلّ مسار ───────────
@@ -1267,7 +1255,7 @@ export class CommerceService {
     const provider = refundProviderFor(refund.payment.provider, getPaymentProvider(await getPaymentConfig(this.prisma)))
     /* ودفعةٌ زائدة (صفحةٌ ثانيةٌ دُفعت لطلبٍ مدفوع) يُردّ مالُها ولا يمسّ الطلب: لا حالتَه ولا كودَ مدرّبه ولا مقعدَه —
        فما سوّى الطلبَ دفعةٌ أخرى ما زالت قائمة */
-    const extra = await this.isExtraPayment(refund.payment)
+    const extra = refund.payment.extra
     let providerRefundRef: string | null = null
     let providerError: string | null = null
 
