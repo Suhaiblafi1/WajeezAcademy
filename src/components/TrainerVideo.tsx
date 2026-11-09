@@ -1,7 +1,7 @@
 /* «تعرّف على مدرّبك» — فيديو المدرّب للزائر (٨ نوفمبر ٢٠٢٦).
 
    القرارُ وقواعدُ الاختيار والتضمين في `src/application/trainer/marketing-video.ts`. وهنا الرسمُ وحدَه:
-   إطارٌ ١٦:٩ يُحمَّل حين يقترب من الشاشة، أو زرٌّ يفتح الرابطَ في لسانٍ جديد. وما وصل من الخادم يُفحص
+   إطارٌ ١٦:٩ (أو ٩:١٦ لـ«شورتس») يُحمَّل حين يقترب من الشاشة، أو زرٌّ يفتح الرابطَ في لسانٍ جديد. وما وصل من الخادم يُفحص
    بـ`renderableVideo` قبل أن يُرسم — فلا يدخل `src` إطارٍ إلّا رابطٌ بنيناه نحن من أصلٍ مسموح.
 
    ومن لا فيديو له لا يُرسم له شيء: لا صندوقٌ فارغٌ ولا «لا فيديو بعد». */
@@ -23,7 +23,13 @@ export function TrainerVideoFrame({ video, trainerName }: { video: PublicTrainer
     );
   }
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black/40">
+    <div
+      className={
+        video.vertical
+          ? "relative mx-auto aspect-[9/16] w-full max-w-[300px] overflow-hidden rounded-xl bg-black/40"
+          : "relative aspect-video w-full overflow-hidden rounded-xl bg-black/40"
+      }
+    >
       <iframe
         src={video.src}
         title={`فيديو تعريفي: ${trainerName}`}

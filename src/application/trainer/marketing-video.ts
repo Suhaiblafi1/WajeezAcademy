@@ -19,6 +19,7 @@
    يُبنى رابطُ التضمين من أصلٍ ثابتٍ معروف:
 
      يوتيوب  (watch?v= · youtu.be/ · /shorts/ · /embed/ · /live/) ← www.youtube-nocookie.com/embed/<id>
+             و«شورتس» يُعلَّم ‎`vertical`‎ فيُرسم إطارُه عموديّا ‎9:16‎
      فيميو   (vimeo.com/<id>[/<hash>] · player.vimeo.com/video/<id>) ← player.vimeo.com/video/<id>
      درايف   (/file/d/<id>/… · open?id=<id>)                       ← drive.google.com/file/d/<id>/preview
 
@@ -37,7 +38,7 @@ export type VideoProvider = 'youtube' | 'vimeo' | 'drive'
 
 /** ما يُعرض للزائر: إطارٌ بُني رابطُه عندنا، أو زرٌّ يفتح الرابطَ كما هو */
 export type PublicTrainerVideo =
-  | { kind: 'embed'; provider: VideoProvider; src: string }
+  | { kind: 'embed'; provider: VideoProvider; src: string; vertical?: true }
   | { kind: 'link'; href: string }
 
 /** أصولُ الإطارات التي نبنيها — وهي وحدَها ما يُضاف لأجلها إلى `frame-src` */
@@ -115,7 +116,12 @@ export function videoEmbedOf(raw: unknown): PublicTrainerVideo | null {
   if (u.port || u.username || u.password) return { kind: 'link', href: clean }
 
   const yt = youtubeId(u)
-  if (yt !== null) return YOUTUBE_ID.test(yt) ? embed('youtube', `/embed/${yt}`) : { kind: 'link', href: clean }
+  if (yt !== null) {
+    if (!YOUTUBE_ID.test(yt)) return { kind: 'link', href: clean }
+    const v = embed('youtube', `/embed/${yt}`)
+    /* «شورتس» عموديٌّ ‎9:16‎ — في إطارٍ أفقيٍّ يصغر بين شريطين أسودين (٩ نوفمبر ٢٠٢٦، أوّلُ فيديو رُفع كان شورتس) */
+    return segments(u)[0] === 'shorts' && v.kind === 'embed' ? { ...v, vertical: true } : v
+  }
 
   const vimeo = vimeoEmbed(u)
   if (vimeo) return vimeo
@@ -150,7 +156,9 @@ export function renderableVideo(v: unknown): PublicTrainerVideo | null {
   const o = v as Record<string, unknown>
   if (o.kind === 'embed') {
     const again = videoEmbedOf(o.src)
-    return again?.kind === 'embed' && again.src === o.src ? again : null
+    if (again?.kind !== 'embed' || again.src !== o.src) return null
+    /* العموديّةُ لا تُقرأ من رابط التضمين (‎/embed/‎ للصيغتين) — فتُنقل كما هي، ‎true‎ وحدَها */
+    return o.vertical === true ? { ...again, vertical: true } : again
   }
   if (o.kind === 'link') {
     const href = cleanMarketingUrl(o.href)
