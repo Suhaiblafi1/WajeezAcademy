@@ -52,6 +52,9 @@ export const PREVIEW_COUPON_ERRORS: ReadonlySet<string> = new Set([
   'bad_coupon', 'code_used', 'code_not_applicable', 'code_unavailable', 'code_currency', ...GRANT_ERROR_CODES,
 ])
 
+/** أقلُّ ما يُقتطع ببطاقة — حدُّ Stripe نصفُ دولار، وما دونه لا يُدفع (`checkout`) */
+const MIN_CHARGE_USD = 0.5
+
 export class CommerceService {
   private referrals: ReferralService
   private prisma: PrismaClient
@@ -444,6 +447,14 @@ export class CommerceService {
     const { pricing, couponId, couponMaxUses, trainerCode, shareProfileId, trainerPurchase, grantMaxCourses } = await this.cart.priceFor(userId, cohorts, couponCode, currency, gift?.applies ? gift.courseId : null)
     const buyLink = await buyLinkForOrder(this.prisma, buyLinkToken)
     const { subtotal, discount, total } = pricing
+    /* ═══ ولا يُشترى شيءٌ مجانا وحدَه (٩ نوفمبر ٢٠٢٦) ═══
+       قرارُ صاحب المنصّة: «free session can't be bought solo, but as an extra with path that has payments anyway».
+       وكان كوبونٌ بمئة بالمئة — أو سلّةٌ من المجانيّ وحدَه — يُنشئ طلبا بصفرٍ «ينتظر الدفع»: الدفعُ كلُّه بـStripe، وStripe
+       لا يقبل أقلَّ من نصف دولار، فيبقى الطلبُ معلّقا ومقعدُه محجوزا حتى يُلغى. فما لا يبقى منه ما يُدفع يُردّ هنا بسببه.
+       والحارس: `server/tests/commerce/nothing-free-solo.test.ts`. */
+    if (total < MIN_CHARGE_USD) {
+      throw new AuthError('nothing_to_pay', 'لا يبقى بعد الخصم مبلغ يدفع، ولا تشترى دورة مجانا وحدها. أضفها إلى مسار مدفوع، أو راسل الدعم.', 409)
+    }
     /* ═══ ومن اشترى بكود «شارك دوراتك» يُحسب لصاحبه بأجر الإحالة (٢٦ أكتوبر ٢٠٢٦) ═══
        قرارُ صاحب المنصّة: «نعم، احسبه بأجر الإحالة» — من كتب الكودَ ولم يدخل من رابطه جاء بالمدرّب كمن دخل.
        فكلُّ شعبةٍ له خصمها الكودُ تُختم برمزه الواسع، وما ختمه رابطٌ صريحٌ يبقى كما هو. والختمُ يُفحص ثانيةً عند
@@ -1292,13 +1303,23 @@ export class CommerceService {
 
   async createCoupon(actorId: string, input: { code: string; percentOff?: number; amountOff?: number; currency?: string; maxUses?: number; expiresAt?: Date }) {
     if (!input.percentOff && !input.amountOff) throw new AuthError('bad_coupon', 'حدد نسبة أو مبلغ خصم')
+    /* نسبةٌ أو مبلغ لا الاثنان — كما يردّه التعديل (`updateCoupon`)؛ وكان الإنشاءُ يقبلهما فتغلب النسبةُ صامتة (٩ نوفمبر ٢٠٢٦) */
+    if (input.percentOff && input.amountOff) throw new AuthError('bad_coupon', 'نسبة أو مبلغ — لا الاثنان')
     if (input.percentOff && (input.percentOff < 1 || input.percentOff > 100)) throw new AuthError('bad_coupon', 'نسبة الخصم خارج النطاق')
-    const coupon = await this.prisma.coupon.create({
-      data: {
-        code: input.code.trim().toUpperCase(), percentOff: input.percentOff, amountOff: input.amountOff,
-        currency: input.currency, maxUses: input.maxUses, expiresAt: input.expiresAt,
-      },
-    })
+    const code = input.code.trim().toUpperCase()
+    let coupon
+    try {
+      coupon = await this.prisma.coupon.create({
+        data: {
+          code, percentOff: input.percentOff, amountOff: input.amountOff,
+          currency: input.currency, maxUses: input.maxUses, expiresAt: input.expiresAt,
+        },
+      })
+    } catch (e) {
+      /* والكودُ المكرّر — ومنه كودُ منحةٍ أو مدرّب — يُقال بجملته لا «خطأ في الخادم» (٩ نوفمبر ٢٠٢٦) */
+      if ((e as { code?: string }).code === 'P2002') throw new AuthError('code_taken', `الكود ${code} مستعمل — اختر غيره`, 409)
+      throw e
+    }
     await recordAudit(this.prisma, { actorId, action: 'coupon.create', entityType: 'coupon', entityId: coupon.id, meta: { code: coupon.code } })
     return coupon
   }
