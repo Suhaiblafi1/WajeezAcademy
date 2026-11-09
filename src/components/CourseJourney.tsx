@@ -11,6 +11,8 @@ import { BookOpen, CalendarDays, ChevronDown, Clock3, Target, ListChecks, Folder
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { apiGet } from "@/services/api";
+import TrainerQuickView from "@/components/trainer/TrainerQuickView";
+import { seedOf } from "@/application/trainer/quick-view";
 
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -607,23 +609,29 @@ export default function CourseJourney({
   );
 }
 
-/* شارة مدرب الدورة المعلن — من الخادم؛ تختفي بهدوء عند غياب الشبكة أو الخادم */
+/* شارة مدرب الدورة المعلن — من الخادم؛ تختفي بهدوء عند غياب الشبكة أو الخادم.
+
+   ═══ واسمُه زرٌّ يفتح بطاقتَه المنبثقة (٩ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: حيث يرى الزائرُ اسمَ مدرّبٍ يفتح الضغطُ عليه بطاقتَه (`trainer/TrainerQuickView.tsx`). والشارةُ
+   تبقى شارةً بحجمها: لمدرّبٍ واحدٍ هي الزرّ، ولأكثرَ كلُّ اسمٍ زرُّه. ومساحةُ الضغط ٤٤ بكسلا بحافّةٍ لا تُرى. */
+type AnnouncedTrainer = { id: string; name: string; headline: string | null; photoUrl?: unknown; video?: unknown; slug?: unknown };
+
+const BADGE_HIT = "relative min-h-0 before:absolute before:-inset-x-1 before:-inset-y-3 before:content-['']";
+
 function CourseTrainer({ courseId }: { courseId: string }) {
-  const [label, setLabel] = useState<string | null>(null);
+  const [trainers, setTrainers] = useState<AnnouncedTrainer[]>([]);
+  const [about, setAbout] = useState<AnnouncedTrainer | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    apiGet<{ announced: boolean; messageAr?: string; trainers: { id: string; name: string; headline: string | null }[] }>(
+    apiGet<{ announced: boolean; messageAr?: string; trainers: AnnouncedTrainer[] }>(
       `/api/courses/${encodeURIComponent(courseId)}/trainer`,
     )
       .then((res) => {
         if (cancelled) return;
         /* المُعلَن وحده يستحق شارة على بطاقته. أما «لم يُعلن بعد» فسياسة عامة
            تُقال مرة فوق القائمة (انظر أعلى المكوّن)، لا خمس مرات داخلها. */
-        if (res.announced && res.trainers.length > 0) {
-          const names = res.trainers.map((t) => t.name).join("، ");
-          setLabel(`المدرب: ${names}`);
-        }
+        if (res.announced && res.trainers.length > 0) setTrainers(res.trainers);
       })
       .catch(() => {
         /* بلا خادم — لا شارة */
@@ -633,11 +641,40 @@ function CourseTrainer({ courseId }: { courseId: string }) {
     };
   }, [courseId]);
 
-  if (!label) return null;
+  if (trainers.length === 0) return null;
+  const quick = about && <TrainerQuickView seed={seedOf(about)} onClose={() => setAbout(null)} />;
+  /* شارةٌ واحدة: لمدرّبٍ واحدٍ هي الزرّ، ولأكثرَ حاويةٌ فيها زرُّ كلِّ اسم */
+  const single = trainers.length === 1 ? trainers[0]! : null;
+  const Badge = single ? "button" : "span";
+  const asButton = single
+    ? { type: "button" as const, onClick: () => setAbout(single), "aria-label": `عن المدرب: ${single.name}` }
+    : {};
   return (
-    <span className="flex items-center gap-1 rounded-full border border-gold/30 bg-gold/[0.07] px-2.5 py-0.5 text-fine font-semibold text-gold-ink/90">
-      <UserRound className="h-3 w-3" />
-      {label}
-    </span>
+    <>
+      <Badge
+        {...asButton}
+        className={`flex items-center gap-1 rounded-full border border-gold/30 bg-gold/[0.07] px-2.5 py-0.5 text-fine font-semibold text-gold-ink/90 ${single ? `${BADGE_HIT} transition hover:border-gold/60 hover:bg-gold/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal` : ""}`}
+      >
+        <UserRound className="h-3 w-3" aria-hidden="true" />
+        المدرب:{" "}
+        {single ? (
+          <span className="underline decoration-gold/40 decoration-dotted underline-offset-2">{single.name}</span>
+        ) : (
+          trainers.map((t, i) => (
+            <span key={t.id}>
+              {i > 0 && "، "}
+              <button
+                type="button"
+                onClick={() => setAbout(t)}
+                className={`${BADGE_HIT} underline decoration-gold/40 decoration-dotted underline-offset-2 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal`}
+              >
+                {t.name}
+              </button>
+            </span>
+          ))
+        )}
+      </Badge>
+      {quick}
+    </>
   );
 }

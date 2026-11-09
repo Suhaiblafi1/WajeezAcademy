@@ -6838,6 +6838,8 @@ export class TrainerReviewService {
       const offer = offerOf(p)
       return {
         id: p.id, name: p.application.fullName, headline: p.headline, bio: p.bioPublic,
+        /* مسارُ صفحته — بطاقتُه المنبثقة تقرأ منه فيديو تعريفه وتدلّ عليه (٩ نوفمبر ٢٠٢٦). والبوّابةُ أعلاه نفسُها */
+        slug: p.publicSlug,
         country: p.application.country,
         specialties: p.application.specialties.map((s) => s.specialty),
         photoUrl: photoPublicUrl(p.photoUrl),
@@ -6869,7 +6871,7 @@ export class TrainerReviewService {
     const ids = [...new Set((await cohortLeadTrainers(this.prisma, cohorts.map((c) => c.id))).values())]
     const profiles = await this.prisma.trainerProfile.findMany({
       where: { id: { in: ids } },
-      include: { application: { select: { fullName: true } } },
+      include: { application: { select: { fullName: true, status: true } } },
     })
     /* البوّابةُ نفسُها التي تحكم الصفحةَ العامّة — كانت هنا بلا شرط اعتمادِ
        النشر، فبطاقةُ الدورة تُظهر ما تخفيه الصفحةُ العامّة عند أوّل افتراق. */
@@ -6885,6 +6887,9 @@ export class TrainerReviewService {
       trainers: visible.map((p) => ({
         id: p.id, name: p.application.fullName, headline: p.headline, photoUrl: photoPublicUrl(p.photoUrl),
         video: videos.get(p.id) ?? null,
+        /* ومسارُ صفحته — تفتح منه بطاقتُه المنبثقة نبذتَه وصفحتَه (٩ نوفمبر ٢٠٢٦، `TrainerQuickView.tsx`). من `visible`
+           نفسِها، ولمن طلبُه نشطٌ وحدَه: صفحتُه لا توجد لغيره (`trainerPublicPage`)، فلا يُعطى مسارا يردّ ٤٠٤ */
+        slug: p.application.status === 'active' ? p.publicSlug : null,
       })),
     }
   }

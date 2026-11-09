@@ -9,7 +9,12 @@
    ③ ومن لم يجز عرضُه لا يخرج فيديوه ولو حُفظ — لا وحدَه ولا بجانب مدرّبٍ معلَن.
    ④ وصفحتُه باسمه تعرض تعريفَه وحدَه.
    ⑤ وصورتُه المعتمدة تخرج معه خلفيّةً لنافذة الفيديو الصغيرة (٩ نوفمبر ٢٠٢٦) — ومن لم يجز عرضُه لا تخرج صورتُه.
-      رُئي ساقطا: حُذف `photoUrl` من الردّ فسقط الأوّل، وقُرئت الصورُ من `profiles` لا `visible` بحقلٍ جانبيّ فسقط الثاني. */
+      رُئي ساقطا: حُذف `photoUrl` من الردّ فسقط الأوّل، وقُرئت الصورُ من `profiles` لا `visible` بحقلٍ جانبيّ فسقط الثاني.
+   ⑥ ومسارُ صفحته يخرج معه لبطاقته المنبثقة (٩ نوفمبر ٢٠٢٦، `TrainerQuickView.tsx`) — من مدرّبي الدورة ومن قائمة
+      المدرّبين — لمن أُعلن وحدَه. ونبذتُه لا تُقرأ من صفحةِ من لم يجز عرضُه: ٤٠٤ بلا شيءٍ منها.
+      رُئي ساقطا: حُذف `slug` من ردّ الدورة فسقط الأوّل، وأُعطي مسارُ من طلبُه غيرُ نشطٍ فسقط الثاني، وقُرئت المساراتُ من
+      `profiles` لا `visible` بحقلٍ جانبيّ فسقط الثالث، وحُذف `slug` من القائمة فسقط الرابع، وأُسقط `suspendedAt` من
+      `PUBLIC_TRAINER_WHERE` فسقط الخامس. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -57,7 +62,7 @@ beforeAll(async () => {
   prisma = await testPrisma()
   app = await buildApp(prisma)
   courses = (await prisma.course.findMany({ where: { status: 'published' }, select: { id: true }, orderBy: { id: 'desc' } }))
-    .map((c) => c.id).slice(12, 23)
+    .map((c) => c.id).slice(12, 26)
 }, 240_000)
 
 describe('① فيديو الدورة يخرج مع مدرّبها المعلَن', () => {
@@ -199,5 +204,66 @@ describe('⑤ وصورتُه خلفيّةُ نافذة الفيديو — لمن
     await leads(alone, h2.id)
     const r2 = await courseTrainers(alone)
     expect(JSON.stringify(r2)).not.toContain('ptv-photo-alone')
+  })
+})
+
+describe('⑥ ومسارُ صفحته لبطاقته المنبثقة — لمن أُعلن وحدَه', () => {
+  type WithSlug = { announced: boolean; trainers: { id: string; slug?: unknown }[] }
+
+  it('⚠️ المعلَنُ يخرج مسارُ صفحته مع مدرّبي الدورة', async () => {
+    const c = courses[11]!
+    const t = await trainer('مدرّبة بمسار')
+    await leads(c, t.id)
+    const r = await courseTrainers(c) as unknown as WithSlug
+    expect(r.trainers).toEqual([expect.objectContaining({ id: t.id, slug: t.publicSlug })])
+    /* والمسارُ نفسُه يفتح صفحتَه — لا مسارٌ يردّ ٤٠٤ */
+    expect((await app.inject({ method: 'GET', url: `/api/public/trainers/${t.publicSlug}` })).statusCode).toBe(200)
+  })
+
+  it('⚠️ ومن طلبُه غيرُ نشطٍ لا مسارَ له — صفحتُه لا توجد', async () => {
+    const c = courses[12]!
+    const t = await trainer('مدرّب طلبه موقوف')
+    await prisma.trainerApplication.update({ where: { id: t.applicationId }, data: { status: 'suspended' } })
+    await leads(c, t.id)
+    const r = await courseTrainers(c) as unknown as WithSlug
+    expect(r.trainers.find((x) => x.id === t.id)?.slug ?? null).toBeNull()
+    expect(JSON.stringify(r)).not.toContain(t.publicSlug!)
+  })
+
+  it('⚠️ ومن لم يجز عرضُه لا يخرج مسارُه — لا وحدَه ولا بجانب معلَن', async () => {
+    const c = courses[13]!
+    const shown = await trainer('مدرّبة معلَنة بمسار')
+    const hidden = await trainer('مدرّب مخفيّ بمسار', false)
+    const suspended = await trainer('مدرّب موقوف بمسار')
+    await prisma.trainerProfile.update({ where: { id: suspended.id }, data: { suspendedAt: new Date() } })
+    for (const t of [shown, hidden, suspended]) await leads(c, t.id)
+    const body = JSON.stringify(await courseTrainers(c))
+    expect(body).toContain(shown.publicSlug!)
+    expect(body).not.toContain(hidden.publicSlug!)
+    expect(body).not.toContain(suspended.publicSlug!)
+  })
+
+  it('⚠️ وقائمةُ المدرّبين العامّة تحمل مسارَ المعلَن وحدَه', async () => {
+    const shown = await trainer('مدرّبة في القائمة')
+    const hidden = await trainer('مدرّب مخفيّ عن القائمة', false)
+    for (const t of [shown, hidden]) await leads(courses[11]!, t.id)
+    const list = (await app.inject({ method: 'GET', url: '/api/trainers/public' })).json() as { id: string; slug?: unknown }[]
+    expect(list.find((t) => t.id === shown.id)?.slug).toBe(shown.publicSlug)
+    expect(JSON.stringify(list)).not.toContain(hidden.publicSlug!)
+  })
+
+  it('⚠️ ونبذةُ من لم يجز عرضُه لا تُقرأ من صفحته — ٤٠٤ بلا شيءٍ منها', async () => {
+    const hidden = await trainer('مدرّب مخفيّ بنبذة', false)
+    const suspended = await trainer('مدرّب موقوف بنبذة')
+    for (const t of [hidden, suspended]) {
+      await prisma.trainerProfile.update({ where: { id: t.id }, data: { bioPublic: `نبذة-سرية-${t.id}` } })
+      await leads(courses[13]!, t.id)
+    }
+    await prisma.trainerProfile.update({ where: { id: suspended.id }, data: { suspendedAt: new Date() } })
+    for (const t of [hidden, suspended]) {
+      const res = await app.inject({ method: 'GET', url: `/api/public/trainers/${t.publicSlug}` })
+      expect(res.statusCode).toBe(404)
+      expect(res.body).not.toContain(`نبذة-سرية-${t.id}`)
+    }
   })
 })
