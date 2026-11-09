@@ -38,9 +38,12 @@
          ومفتاح الزيارة القديم في sessionStorage لم يعد مستخدما — يُزال مرة. */
       try {
         var saved = localStorage.getItem("wajeez_theme");
+        /* وصفحاتُ المنح نهاريّةٌ ما لم يختر الزائرُ الليليّ (٨ نوفمبر ٢٠٢٦، `isDayPage` في `theme.ts`) */
         var t = saved === "light" || saved === "dark"
           ? saved
-          : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          : /^\/grant(\/|$)/.test(location.pathname)
+            ? "light"
+            : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
         document.documentElement.dataset.theme = t;
         /* علامةُ «جافاسكربت تعمل» — تُقرؤها قاعدةُ الإخفاء أسفلُ. وهي هنا
            لا في الحزمة: الحزمةُ تصل بعد الرسمة الأولى، وبعدها لا ينفع
