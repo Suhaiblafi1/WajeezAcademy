@@ -6880,8 +6880,11 @@ export class TrainerReviewService {
     const videos = await publicVideosOf(this.prisma, visible.map((p) => p.id), courseId)
     return {
       announced: true,
+      /* وصورتُه المعتمدة خلفيّةً لنافذة الفيديو الصغيرة (٩ نوفمبر ٢٠٢٦، `TrainerVideo.tsx`) — من `visible` نفسِها،
+         وهي ما تعرضه قائمةُ المدرّبين العامّة (`photoPublicUrl`)، فلا صورةَ لمن لا يُعلن اسمُه */
       trainers: visible.map((p) => ({
-        id: p.id, name: p.application.fullName, headline: p.headline, video: videos.get(p.id) ?? null,
+        id: p.id, name: p.application.fullName, headline: p.headline, photoUrl: photoPublicUrl(p.photoUrl),
+        video: videos.get(p.id) ?? null,
       })),
     }
   }

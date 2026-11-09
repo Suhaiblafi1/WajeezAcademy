@@ -6,12 +6,15 @@
    ② ولا يدخل الإطارَ رابطٌ كتبه إنسان: معرّفٌ لا يطابق تعبيرَه يبقى زرّا، وما ليس https لا يُعرض.
    ③ وفيديو الدورة يغلب التعريف، والتعريفُ بديلُه، ولا شيءَ حين لا فيديو.
    ④ وما يصل الواجهةَ من الشبكة يُفحص بالدالّة نفسِها: إطارٌ لم نبنه لا يُرسم.
+   ⑥ والمشغّلُ المفتوحُ بضغطةٍ (٩ نوفمبر ٢٠٢٦): رابطُه رابطُ التضمين ومعه معاملاتُ مزوّده وحدَها — من الأصل نفسِه،
+      ولا شيءَ من الرابط الذي كتبه إنسانٌ غيرُ المعرّف والبصمة. وصورةُ النافذة الصغيرة من أصلنا أو https وحدَها.
 
    والفحصُ على ناتج الدوالّ — لا على نصٍّ في ملفّ. */
 
 import { describe, expect, it } from 'vitest'
 import {
-  pickPublicVideo, renderableVideo, videoEmbedOf, VIDEO_EMBED_ORIGINS, type MarketingVideoRow,
+  pickPublicVideo, PLAYER_PARAMS, playerSrcOf, renderableVideo, safePhotoUrl, videoEmbedOf, VIDEO_EMBED_ORIGINS,
+  type MarketingVideoRow, type PublicTrainerVideo,
 } from '@/application/trainer/marketing-video'
 
 const YT = 'dQw4w9WgXcQ'
@@ -173,4 +176,68 @@ describe('⑤ «شورتس» يبقى عموديّا حتى يُرسم', () => {
   it('والأفقيُّ لا يُعلَّم', () => {
     expect(videoEmbedOf(`https://youtu.be/${YT}`)).not.toHaveProperty('vertical')
   })
+})
+
+/* ═══ ⑥ المشغّلُ المفتوح — نافذةٌ صغيرةٌ تكبر بضغطة (٩ نوفمبر ٢٠٢٦) ═══
+   رُئي ساقطا: أُسقط `rel=0` من معاملات يوتيوب فسقط الأوّل، وأُلحق استعلامُ الرابط الخام برابط تضمين يوتيوب فسقط «لا
+   يحمل من الخام شيئا»، وأُزيل شرطُ إعادة البناء من `playerSrcOf` فسقط «ما لم نبنه» بأربعته، وقُبل `//` في الصورة فسقط. */
+describe('⑥ رابطُ المشغّل حين يُفتح: التضمينُ ومعاملاتُ مزوّده وحدَها', () => {
+  const embedOf = (raw: string) => {
+    const v = videoEmbedOf(raw)
+    if (v?.kind !== 'embed') throw new Error(`ليس تضمينا: ${raw}`)
+    return v
+  }
+
+  it.each([
+    [`https://youtu.be/${YT}`, `${YT_EMBED}?autoplay=1&rel=0&playsinline=1&modestbranding=1`],
+    [`https://www.youtube.com/shorts/${YT}`, `${YT_EMBED}?autoplay=1&rel=0&playsinline=1&modestbranding=1`],
+    ['https://vimeo.com/76979871', 'https://player.vimeo.com/video/76979871?autoplay=1'],
+    ['https://vimeo.com/76979871/a1b2c3d4e5', 'https://player.vimeo.com/video/76979871?h=a1b2c3d4e5&autoplay=1'],
+    /* درايف بلا معامل تشغيل — رابطُه كما هو */
+    [`https://drive.google.com/open?id=${DRIVE}`, `https://drive.google.com/file/d/${DRIVE}/preview`],
+  ])('⚠️ %s', (raw, src) => {
+    expect(playerSrcOf(embedOf(raw))).toBe(src)
+  })
+
+  it('⚠️ من الأصل المسموح نفسِه، ومعاملاتُه ما في `PLAYER_PARAMS` وحدَها (وبصمةُ فيميو)', () => {
+    for (const raw of [`https://youtu.be/${YT}`, 'https://vimeo.com/76979871/a1b2c3d4e5', `https://drive.google.com/open?id=${DRIVE}`]) {
+      const v = embedOf(raw)
+      const u = new URL(playerSrcOf(v)!)
+      expect(u.origin).toBe(VIDEO_EMBED_ORIGINS[v.provider])
+      const expected = [...(v.provider === 'vimeo' ? [['h', 'a1b2c3d4e5']] : []), ...PLAYER_PARAMS[v.provider]]
+      expect([...u.searchParams.entries()]).toEqual(expected)
+    }
+  })
+
+  it.each([
+    `https://www.youtube.com/watch?v=${YT}&t=42s&list=PL123&autoplay=0`,
+    `https://youtu.be/${YT}?si=abcXYZ&mute=1`,
+    'https://www.vimeo.com/76979871?share=copy&autoplay=0',
+    `https://drive.google.com/file/d/${DRIVE}/view?usp=sharing&autoplay=1`,
+  ])('⚠️ ولا يحمل من الرابط الخام شيئا غيرَ المعرّف: %s', (raw) => {
+    const src = playerSrcOf(embedOf(raw))!
+    for (const junk of ['42s', 'PL123', 'abcXYZ', 'mute', 'share', 'usp', 'autoplay=0']) expect(src).not.toContain(junk)
+  })
+
+  it.each<PublicTrainerVideo & { kind: 'embed' }>([
+    { kind: 'embed', provider: 'youtube', src: 'https://evil.example/embed/dQw4w9WgXcQ' },
+    { kind: 'embed', provider: 'youtube', src: `https://www.youtube.com/watch?v=${YT}` },
+    { kind: 'embed', provider: 'youtube', src: `${YT_EMBED}?onload=x` },
+    /* مزوّدٌ لا يطابق رابطَه: معاملاتُ مزوّدٍ على أصل غيره */
+    { kind: 'embed', provider: 'vimeo', src: YT_EMBED },
+  ])('⚠️ وما لم نبنه لا مشغّلَ له: %j', (v) => {
+    expect(playerSrcOf(v)).toBeNull()
+  })
+})
+
+describe('⑥ صورةُ النافذة الصغيرة', () => {
+  it('مسارٌ من أصلنا أو https يمرّ', () => {
+    expect(safePhotoUrl('/api/v1/trainer-photos/abc')).toBe('/api/v1/trainer-photos/abc')
+    expect(safePhotoUrl('https://cdn.example.com/a.png')).toBe('https://cdn.example.com/a.png')
+  })
+  it.each(['//evil.example/a.png', 'http://example.com/a.png', 'javascript:alert(1)', 'data:image/png;base64,AA', '', null, 42])(
+    '⚠️ وما سواه لا يُرسم: %s', (raw) => {
+      expect(safePhotoUrl(raw)).toBeNull()
+    },
+  )
 })

@@ -7,7 +7,9 @@
    ① فيديو المدرّب لهذه الدورة يخرج معه، جاهزا للتضمين لا رابطا خاما.
    ② والتعريفُ بديلُه حين لا فيديو للدورة — وفيديو الدورة يغلبه حين يوجدان.
    ③ ومن لم يجز عرضُه لا يخرج فيديوه ولو حُفظ — لا وحدَه ولا بجانب مدرّبٍ معلَن.
-   ④ وصفحتُه باسمه تعرض تعريفَه وحدَه. */
+   ④ وصفحتُه باسمه تعرض تعريفَه وحدَه.
+   ⑤ وصورتُه المعتمدة تخرج معه خلفيّةً لنافذة الفيديو الصغيرة (٩ نوفمبر ٢٠٢٦) — ومن لم يجز عرضُه لا تخرج صورتُه.
+      رُئي ساقطا: حُذف `photoUrl` من الردّ فسقط الأوّل، وقُرئت الصورُ من `profiles` لا `visible` بحقلٍ جانبيّ فسقط الثاني. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -24,14 +26,14 @@ const YT = 'dQw4w9WgXcQ'
 const YT_EMBED = `https://www.youtube-nocookie.com/embed/${YT}`
 const VIMEO_EMBED = 'https://player.vimeo.com/video/76979871'
 
-async function trainer(name: string, visible = true) {
+async function trainer(name: string, visible = true, photoUrl?: string) {
   seq += 1
   const application = await prisma.trainerApplication.create({
     data: { reference: `WJ-TR-PTV-${Date.now()}-${seq}`, fullName: name, email: `ptv-${seq}-${Date.now()}@test.local`, status: 'active' },
   })
   return (await prisma.trainerProfile.create({
     data: {
-      applicationId: application.id, headline: 'مدرّب تفاوض', publicSlug: `ptv-${seq}-${Date.now()}`,
+      applicationId: application.id, headline: 'مدرّب تفاوض', publicSlug: `ptv-${seq}-${Date.now()}`, photoUrl,
       ...(visible ? { publicVisibility: true, isVerified: true, publishApprovedAt: new Date() } : {}),
     },
   }))
@@ -46,7 +48,7 @@ async function video(profileId: string, targetKind: 'bio' | 'course' | 'path', t
   await prisma.trainerMarketingVideo.create({ data: { profileId, targetKind, targetId, url } })
 }
 
-type Reply = { announced: boolean; trainers: { id: string; name: string; video: unknown }[] }
+type Reply = { announced: boolean; trainers: { id: string; name: string; photoUrl?: unknown; video: unknown }[] }
 const courseTrainers = async (courseId: string) =>
   (await app.inject({ method: 'GET', url: `/api/courses/${encodeURIComponent(courseId)}/trainer` })).json() as Reply
 
@@ -55,7 +57,7 @@ beforeAll(async () => {
   prisma = await testPrisma()
   app = await buildApp(prisma)
   courses = (await prisma.course.findMany({ where: { status: 'published' }, select: { id: true }, orderBy: { id: 'desc' } }))
-    .map((c) => c.id).slice(12, 20)
+    .map((c) => c.id).slice(12, 23)
 }, 240_000)
 
 describe('① فيديو الدورة يخرج مع مدرّبها المعلَن', () => {
@@ -165,5 +167,37 @@ describe('④ وصفحتُه باسمه تعرض تعريفَه وحدَه', () 
     const res = await app.inject({ method: 'GET', url: `/api/public/trainers/${t.publicSlug}` })
     expect(res.statusCode).toBe(404)
     expect(res.body).not.toContain('76979871')
+  })
+})
+
+describe('⑤ وصورتُه خلفيّةُ نافذة الفيديو — لمن أُعلن وحدَه', () => {
+  it('⚠️ المعلَنُ تخرج صورتُه من مسار الصور العامّة — لا مفتاحُ التخزين', async () => {
+    const c = courses[8]!
+    const t = await trainer('مدرّبة بصورة', true, 'storage:ptv-photo-shown')
+    await leads(c, t.id)
+    await video(t.id, 'bio', '', `https://www.youtube.com/shorts/${YT}`)
+    const r = await courseTrainers(c)
+    expect(r.trainers).toEqual([expect.objectContaining({ id: t.id, photoUrl: '/api/v1/trainer-photos/ptv-photo-shown' })])
+    /* ومن لا صورةَ له: لا صورة — والواجهةُ ترسم حرفَه */
+    const c2 = courses[9]!
+    const bare = await trainer('مدرّب بلا صورة')
+    await leads(c2, bare.id)
+    expect((await courseTrainers(c2)).trainers).toEqual([expect.objectContaining({ id: bare.id, photoUrl: null })])
+  })
+
+  it('⚠️ ومن لم يجز عرضُه لا تخرج صورتُه — لا وحدَه ولا بجانب معلَن', async () => {
+    const c = courses[9]!
+    const hidden = await trainer('مدرّب مخفيّ بصورة', false, 'storage:ptv-photo-hidden')
+    await leads(c, hidden.id)
+    await video(hidden.id, 'bio', '', `https://youtu.be/${YT}`)
+    const r = await courseTrainers(c)
+    expect(r.trainers.map((t) => t.id)).not.toContain(hidden.id)
+    expect(JSON.stringify(r)).not.toContain('ptv-photo-hidden')
+    /* وحدَه في دورته: لا إعلانَ ولا صورة */
+    const alone = courses[10]!
+    const h2 = await trainer('مدرّب مخفيّ وحده', false, 'storage:ptv-photo-alone')
+    await leads(alone, h2.id)
+    const r2 = await courseTrainers(alone)
+    expect(JSON.stringify(r2)).not.toContain('ptv-photo-alone')
   })
 })

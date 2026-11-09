@@ -30,7 +30,14 @@
    `VIDEO_EMBED_ORIGINS` هنا، فلا يفترق ما نبنيه عمّا تسمح به السياسة.
 
    والدالّةُ ثابتةٌ على ناتجها: رابطُ التضمين يُقرأ ثانيةً فيعطي نفسَه. وبذلك تفحص الواجهةُ ما وصلها
-   من الخادم بالدالّة نفسِها (`renderableVideo`) قبل أن تضعه في إطار. */
+   من الخادم بالدالّة نفسِها (`renderableVideo`) قبل أن تضعه في إطار.
+
+   ═══ والإطارُ لا يُحمَّل حتى يُطلب (`playerSrcOf`، ٩ نوفمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة عن الإطار الكبير في الصفحة: «غير احترافي.. اجعله بشاشة أصغر وكأنك تقوم بعمل زوم». فصار
+   الفيديو نافذةً صغيرةً كنافذة مشاركٍ في مكالمة (`TrainerVideo.tsx`) بصورة المدرّب من أصلنا، ولا طلبَ إلى المزوّد
+   قبل الضغط. والضغطُ يفتح المشغّلَ ويبدأ التشغيلَ فورا — فرابطُه رابطُ التضمين نفسُه ومعه معاملاتُ تشغيلٍ ثابتة
+   (`PLAYER_PARAMS`)، لا شيءَ آخرُ من الرابط الذي كتبه إنسان. والأصلُ لا يتغيّر، فـ`frame-src` كما هو. */
 
 import { cleanMarketingUrl } from './marketing'
 
@@ -148,6 +155,29 @@ export function pickPublicVideo(rows: readonly MarketingVideoRow[], courseId: st
     if (v) return v
   }
   return null
+}
+
+/** معاملاتُ المشغّل حين يُفتح بضغطة — ثابتةٌ لكلّ مزوّد. ودرايف لا معاملَ تشغيلٍ له، فيبقى رابطُه كما هو */
+export const PLAYER_PARAMS: Readonly<Record<VideoProvider, readonly (readonly [string, string])[]>> = {
+  youtube: [['autoplay', '1'], ['rel', '0'], ['playsinline', '1'], ['modestbranding', '1']],
+  vimeo: [['autoplay', '1']],
+  drive: [],
+}
+
+/** رابطُ المشغّل المفتوح: رابطُ التضمين بعد أن يُعاد بناؤه فيعطي نفسَه، ومعه معاملاتُ مزوّده وحدَها. و`null` لما لم نبنه */
+export function playerSrcOf(v: { provider: VideoProvider; src: string }): string | null {
+  const again = videoEmbedOf(v.src)
+  if (again?.kind !== 'embed' || again.src !== v.src || again.provider !== v.provider) return null
+  const u = new URL(again.src)
+  for (const [k, val] of PLAYER_PARAMS[again.provider]) u.searchParams.set(k, val)
+  return u.toString()
+}
+
+/** صورةُ المدرّب خلفيّةً لنافذة الفيديو كما أرسلها الخادم (`photoPublicUrl`): مسارٌ من أصلنا أو https — وما سواه لا يُرسم */
+export function safePhotoUrl(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  if (raw.startsWith('/') && !raw.startsWith('//')) return raw
+  return raw.startsWith('https://') ? raw : null
 }
 
 /** ما وصل من الشبكة يُفحص قبل أن يُرسم: الإطارُ يُعاد بناؤه من رابطه فيلزم أن يعطي نفسَه، والزرُّ https وحدَه */

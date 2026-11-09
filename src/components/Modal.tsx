@@ -12,11 +12,14 @@ export default function Modal({
   label,
   children,
   panelClassName = "",
+  backdropClassName = "bg-paper/70 backdrop-blur-sm",
 }: {
   onClose: () => void;
   label: string;
   children: React.ReactNode;
   panelClassName?: string;
+  /** أرضيّةُ ما خلف النافذة — ورقةٌ شفّافةٌ للنماذج، وداكنةٌ لمشغّل الفيديو (`TrainerVideo.tsx`) */
+  backdropClassName?: string;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<Element | null>(null);
@@ -84,7 +87,7 @@ export default function Modal({
   }, []);
 
   return createPortal(
-    <div className="fixed inset-0 z-[70] overflow-y-auto bg-paper/70 backdrop-blur-sm" onClick={onClose}>
+    <div className={`fixed inset-0 z-[70] overflow-y-auto ${backdropClassName}`} onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-5">
         <div
           ref={panelRef}
