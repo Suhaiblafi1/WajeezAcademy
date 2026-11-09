@@ -57,7 +57,8 @@ export class CohortEconomicsService {
         order: {
           select: {
             subtotal: true, total: true,
-            invoice: { select: { payments: { select: { refunds: { where: { status: 'processed' }, select: { amount: true } } } } } },
+            /* والدفعةُ الزائدة لا يُعدّ ردُّها ردّا من ثمن الطلب (`Payment.extra`) */
+            invoice: { select: { payments: { where: { extra: false }, select: { refunds: { where: { status: 'processed' }, select: { amount: true } } } } } },
           },
         },
       },

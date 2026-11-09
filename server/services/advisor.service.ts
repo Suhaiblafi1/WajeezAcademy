@@ -230,7 +230,8 @@ export async function attributedOrders(prisma: PrismaClient, advisorId: string):
   if (counted.length === 0) return []
 
   const refunds = await prisma.refund.findMany({
-    where: { status: 'processed', payment: { invoice: { orderId: { in: counted.map((o) => o.id) } } } },
+    /* والدفعةُ الزائدة مالٌ يُردّ لا ثمنُ الطلب — فردُّها لا يحسم من عمولته (`Payment.extra`) */
+    where: { status: 'processed', payment: { extra: false, invoice: { orderId: { in: counted.map((o) => o.id) } } } },
     select: {
       id: true, amount: true, processedAt: true, createdAt: true,
       payment: { select: { amount: true, currency: true, invoice: { select: { orderId: true } } } },

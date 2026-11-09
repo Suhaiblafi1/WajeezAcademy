@@ -46,6 +46,7 @@ const PHRASES: Record<string, string> = {
   'payment.charge': 'استيفاء دفعة',
   'payment.webhook': 'إشعار دفع من المزوّد',
   'payment.provider_confirm': 'تأكيد دفع من المزوّد',
+  'payment.extra': 'دفعة زائدة تنتظر الردّ',
   'refund.request': 'طلب استرداد',
   'refund.process': 'تنفيذ استرداد',
   'refund.reject': 'رفض استرداد',

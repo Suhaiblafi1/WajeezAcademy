@@ -167,6 +167,7 @@ const STAFF: Table = {
   'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.support_reply': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.order_paid': { path: '/admin/finance', ctaAr: 'افتح المال' },
+  'admin.payment_extra': { path: '/admin/finance', ctaAr: 'افتح المال' },
   'admin.contact_message': { path: '/admin/support', ctaAr: 'افتح رسائل الموقع' },
   'admin.trainer_application': { path: '/admin/trainers', ctaAr: 'افتح طلب الانضمام' },
   /* وطلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦) — طابورُه حيث يُقبل بنسبته أو يُعتذر له */

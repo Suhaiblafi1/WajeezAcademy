@@ -4447,6 +4447,8 @@ model Payment {
   status         String    @default("pending") // pending | succeeded | failed | partially_refunded | refunded
   providerRef    String? // مرجع المزود — لا بيانات بطاقات أبدا
   idempotencyKey String    @unique // يمنع تسجيل الدفعة مرتين
+  /// صفحةُ دفعٍ ثانيةٌ دُفعت لطلبٍ مدفوع — مالٌ يُردّ لا ثمنٌ للطلب (`takePaidSession`)
+  extra          Boolean   @default(false)
   methodNote     String? // «تحويل بنكي»، «كاش»... للدفع اليدوي
   recordedBy     String?   @db.Uuid // من سجل الدفعة اليدوية
   createdAt      DateTime  @default(now())

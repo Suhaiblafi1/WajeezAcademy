@@ -41,7 +41,7 @@ interface EnrollReq {
 interface Invoice {
   id: string; number: string; status: string; amount: string; currency: string; issuedAt: string;
   order: { user: { displayName: string; email: string }; items: { title?: string; titleAr?: string }[] };
-  payments: { id: string; amount: string; status: string; method?: string | null; refunds: { id: string }[] }[];
+  payments: { id: string; amount: string; currency: string; status: string; extra?: boolean; method?: string | null; refunds: { id: string }[] }[];
 }
 interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; currency: string; invoice: { id: string; number: string } } }
 type Coupon = AdminCoupon
@@ -408,7 +408,10 @@ export default function Finance() {
               )}
               {inv.payments.filter((p) => p.status in PAY_STATUS).map((p) => (
                 <Inset key={p.id} tone="positive" className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="font-bold text-emerald-300">{PAY_STATUS[p.status]} {p.amount} {inv.currency}</span>
+                  {/* بعملة ما اقتُطع لا بعملة الفاتورة — دفعةٌ بالدرهم كانت تُعرض دولارا */}
+                  <span className="font-bold text-emerald-300">{PAY_STATUS[p.status]} {p.amount} {p.currency ?? inv.currency}</span>
+                  {/* وصفحةُ دفعٍ ثانيةٌ دُفعت لطلبٍ مدفوع — مالٌ ينتظر الردّ (`alertExtraPayment`) */}
+                  {p.extra && <span className="font-bold text-gold-ink">زائدة — ترد</span>}
                   <span className="text-muted-foreground">{p.refunds.length} استرداد</span>
                   {canRefund && p.status !== "refunded" && (<>
                   <input value={refundForm[p.id]?.amount ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], amount: e.target.value, reason: refundForm[p.id]?.reason ?? "" } })}

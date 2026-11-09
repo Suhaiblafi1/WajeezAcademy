@@ -17,3 +17,4 @@ export const PAY_STATUS: Record<string, string> = { succeeded: 'دفعة ناج�
    ما ينتظر عملا، فيضيع المعلَّقُ بين عشرين «ملغى». تُخفى ولا تُحذف: زرٌّ يُظهرها. */
 export const ARCHIVED_REQ: ReadonlySet<string> = new Set(['cancelled', 'rejected', 'expired'])
 export const ARCHIVED_INV: ReadonlySet<string> = new Set(['void'])
+

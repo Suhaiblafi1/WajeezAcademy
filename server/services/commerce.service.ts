@@ -15,7 +15,7 @@ import {
   convertFromUsd, isPresentmentCurrency, type PresentmentCurrency,
 } from '../../src/application/commerce/presentment'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
-import { getPaymentProvider, isTestProviderActive, verifyPaymentWebhook } from './payments/provider'
+import { getPaymentProvider, isTestProviderActive, ManualPaymentProvider, TestPaymentProvider, verifyPaymentWebhook, type PaymentProvider } from './payments/provider'
 import { getPaymentConfig } from './integrations.service'
 import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
@@ -53,6 +53,9 @@ export const PREVIEW_COUPON_ERRORS: ReadonlySet<string> = new Set([
 ])
 
 /** أقلُّ ما يُقتطع ببطاقة — حدُّ Stripe نصفُ دولار، وما دونه لا يُدفع (`checkout`) */
+/** حالاتُ دفعةٍ قُبض مالُها — ولو رُدّ بعضُه أو كلُّه */
+const MONEY_IN: readonly string[] = ['succeeded', 'partially_refunded', 'refunded']
+
 const MIN_CHARGE_USD = 0.5
 
 export class CommerceService {
@@ -823,12 +826,20 @@ export class CommerceService {
     const amount = input.amount ?? num(invoice.amount)
     if (amount !== num(invoice.amount)) throw new AuthError('amount_mismatch', 'الدفعة اليدوية يجب أن تطابق قيمة الفاتورة')
 
-    const payment = await this.prisma.payment.create({
-      data: {
-        invoiceId, provider: 'manual', amount, currency: invoice.currency,
-        status: 'succeeded', methodNote: input.methodNote, recordedBy: actorId,
-        idempotencyKey: `manual-${invoiceId}-${randomUUID()}`, succeededAt: new Date(),
-      },
+    /* ═══ وتُسجَّل مرّةً واحدة (٩ نوفمبر ٢٠٢٦) ═══
+       كان الفحصُ «أمدفوعة؟» قبل الكتابة بلا قفل: نقرتان من الماليّة تقرآن «غير مدفوعة» كلتاهما، فتُكتب دفعتان ناجحتان
+       لفاتورةٍ واحدة — والتسويةُ مرّة. وجُرّب فمرّ. فيُقفل للفاتورة، ويُسأل بعد القفل: أفيها دفعةٌ ناجحة؟ */
+    const payment = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${COMMERCE_LOCKS}::int, ${idLockKey(invoiceId)}::int)`
+      const settled = await tx.payment.count({ where: { invoiceId, status: { in: ['succeeded', 'partially_refunded', 'refunded'] } } })
+      if (settled > 0) throw new AuthError('already_paid', 'الفاتورة مدفوعة مسبقا', 409)
+      return tx.payment.create({
+        data: {
+          invoiceId, provider: 'manual', amount, currency: invoice.currency,
+          status: 'succeeded', methodNote: input.methodNote, recordedBy: actorId,
+          idempotencyKey: `manual-${invoiceId}-${randomUUID()}`, succeededAt: new Date(),
+        },
+      })
     })
     await this.settleOrder(invoice.orderId, actorId)
     await recordAudit(this.prisma, {
@@ -872,36 +883,18 @@ export class CommerceService {
         : (await this.prisma.payment.findFirst({
             where: { provider, providerRef: payload.providerRef ?? '', status: 'pending' }, include: { invoice: true },
           }))?.invoice ?? null
-      if (invoice && invoice.status !== 'paid') {
+      if (invoice) {
         /* ═══ الدفعةُ بما اقتُطع — لا بما في الدفتر (٣١ أكتوبر ٢٠٢٦) ═══
            كان الحدثُ يُنشئ دفعةً ثانيةً بمبلغ الفاتورة وعملتها (الدولار)، ودفعةُ `payOrder` المعلَّقةُ — وفيها ما
-           اقتُطع فعلا بالدرهم أو الريال — تبقى «معلَّقة» أبدا. فإيصالُه بغير ما في كشف بطاقته، وردُّ تلك الدفعة يطلب من
-           المزوّد ١٠٠ بعملة البطاقة (١٠٠ درهم عن ٣٦٧). فالمعلَّقةُ نفسُها تصير ناجحة — وبشرط حالتها، كتأكيد المزوّد
-           (`confirmWithProvider`)، فلا يُسوّي الحدثُ والتأكيدُ في اللحظة نفسِها مرّتين. */
-        const pendings = await this.prisma.payment.findMany({
-          where: { invoiceId: invoice.id, provider, status: 'pending' }, orderBy: { createdAt: 'desc' },
+           اقتُطع فعلا بالدرهم أو الريال — تبقى «معلَّقة» أبدا. فالمعلَّقةُ نفسُها تصير ناجحة، ولا تُنشأ دفعةٌ إلّا لحدثٍ
+           لا معلَّقةَ له (`takePaidSession`). */
+        const took = await this.takePaidSession(invoice.id, provider, payload.providerRef || undefined, {
+          amount: num(invoice.amount), currency: invoice.currency, idempotencyKey: `wh-${provider}-${payload.eventId}`,
         })
-        const pending = pendings.find((p) => !!payload.providerRef && p.providerRef === payload.providerRef) ?? pendings[0]
-        let settle = false
-        if (pending) {
-          const moved = await this.prisma.payment.updateMany({
-            where: { id: pending.id, status: 'pending' },
-            data: { status: 'succeeded', providerRef: payload.providerRef || pending.providerRef, succeededAt: new Date() },
-          })
-          settle = moved.count > 0
-        } else if (await this.prisma.payment.count({ where: { invoiceId: invoice.id, status: 'succeeded' } }) === 0) {
-          await this.prisma.payment.create({
-            data: {
-              invoiceId: invoice.id, provider, amount: num(invoice.amount), currency: invoice.currency,
-              status: 'succeeded', providerRef: payload.providerRef, idempotencyKey: `wh-${provider}-${payload.eventId}`,
-              succeededAt: new Date(),
-            },
-          })
-          settle = true
-        }
-        /* ودفعةٌ نجحت ولم تُسوَّ فاتورتُها (تعثّرٌ بعد نقلها) تُسوّى الآن — والتسويةُ لا تقع مرّتين */
-        if (!settle) settle = await this.prisma.payment.count({ where: { invoiceId: invoice.id, status: 'succeeded' } }) > 0
-        if (settle) await this.settleOrder(invoice.orderId, null)
+        if (took.kind === 'extra') await this.alertExtraPayment(took.paymentId, invoice.orderId)
+        /* والتسويةُ لا تقع مرّتين (`settleOrder`) — فتُنادى لكلّ حدثٍ ناجح: دفعةٌ نجحت ولم تُسوَّ فاتورتُها (تعثّرٌ بعد
+           نقلها) تُسوّى الآن، والمسوّاةُ لا يمسّها شيء */
+        else await this.settleOrder(invoice.orderId, null)
       }
     }
     await this.prisma.paymentWebhookEvent.update({
@@ -944,19 +937,24 @@ export class CommerceService {
     if (!provider.lookupCharge) return 'none'
 
     let asked = false
+    let paid = false
+    /* ═══ وتُسأل الصفحاتُ كلُّها — لا أوّلُ مدفوعةٍ وحدَها (٩ نوفمبر ٢٠٢٦) ═══
+       كان يقف عند أوّل صفحةٍ مدفوعة. فمن دفع في صفحتين بقيت الثانيةُ «معلّقة» ومالُها مقتطَع. فما دُفع بعد الأولى
+       يُقيَّد زائدا ويُخبَر به (`takePaidSession`). */
     for (const p of pending) {
       if (p.provider !== provider.name) continue
       asked = true
       const found = await provider.lookupCharge(p.providerRef!)
       if (!found.paid) continue
-      /* بشرطِ الحالة: الحدثُ وهذا السؤالُ في اللحظة نفسِها يُسوّي أحدُهما وحدَه */
-      const moved = await this.prisma.payment.updateMany({
-        where: { id: p.id, status: 'pending' },
-        data: { status: 'succeeded', providerRef: found.providerRef, succeededAt: new Date() },
-      })
-      if (moved.count === 0) return 'paid'
-      const invoice = await this.prisma.invoice.findUnique({ where: { id: order.invoice.id } })
-      if (invoice?.status !== 'paid') await this.settleOrder(orderId, actorId)
+      paid = true
+      /* بشرطِ الحالة وبقفل الفاتورة: الحدثُ وهذا السؤالُ في اللحظة نفسِها يُسوّي أحدُهما وحدَه */
+      const took = await this.takePaidSession(order.invoice.id, provider.name, p.providerRef!, undefined, found.providerRef)
+      if (took.kind === 'extra') {
+        await this.alertExtraPayment(took.paymentId, orderId)
+        continue
+      }
+      if (took.kind !== 'primary') continue
+      await this.settleOrder(orderId, actorId)
       await recordAudit(this.prisma, {
         actorId, action: 'payment.provider_confirm', entityType: 'payment', entityId: p.id,
         meta: { orderId, provider: provider.name, providerRef: found.providerRef, orderWas: order.status },
@@ -964,9 +962,68 @@ export class CommerceService {
           ? 'أكّد المزوّد الدفع ولم يصل حدثه — سوّي الطلب'
           : 'أكّد المزوّد الدفع بعد إلغاء الطلب — سوّي لأنّ المال وصل',
       })
-      return 'paid'
     }
-    return asked ? 'unpaid' : 'none'
+    return paid ? 'paid' : asked ? 'unpaid' : 'none'
+  }
+
+  /* ─────────── أيُّ دفعةٍ تُسوّي الطلب، وأيُّها زائدة (٩ نوفمبر ٢٠٢٦) ───────────
+     يقرّره الحدثُ وسؤالُ المزوّد معا، فبقفلٍ للفاتورة: صفحتان دُفعتا وحدثاهما في اللحظة نفسِها كانا يُنجحان دفعتين
+     ولا يُخبَر بالثانية أحد. فأوّلُ ما ينجح يُسوّي، وما نجح بعد مالٍ مقبوضٍ زائدٌ يُردّ.
+
+     `fallback` للحدث وحدَه: حدثٌ لا تطابق مرجعَه معلّقةٌ تنجح عنه آخرُ معلّقةٍ، وإلّا كُتبت دفعةٌ بمبلغ الفاتورة.
+     والسؤالُ يسمّي صفحتَه فلا يأخذ غيرَها. */
+  private async takePaidSession(
+    invoiceId: string, provider: string, providerRef: string | undefined,
+    fallback?: { amount: number; currency: string; idempotencyKey: string },
+    confirmedRef?: string,
+  ): Promise<{ kind: 'primary' | 'none' } | { kind: 'extra'; paymentId: string }> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${COMMERCE_LOCKS}::int, ${idLockKey(invoiceId)}::int)`
+      const pays = await tx.payment.findMany({ where: { invoiceId }, orderBy: { createdAt: 'desc' } })
+      const taken = pays.some((p) => MONEY_IN.includes(p.status))
+      const pendings = pays.filter((p) => p.provider === provider && p.status === 'pending')
+      const mine = providerRef ? pendings.find((p) => p.providerRef === providerRef) : undefined
+      const succeed = (id: string, ref: string | null, extra = false) => tx.payment.updateMany({
+        where: { id, status: 'pending' }, data: { status: 'succeeded', providerRef: confirmedRef || providerRef || ref, succeededAt: new Date(), extra },
+      })
+      if (taken) {
+        if (!mine) return { kind: 'none' as const }
+        await succeed(mine.id, mine.providerRef, true)
+        return { kind: 'extra' as const, paymentId: mine.id }
+      }
+      const target = mine ?? (fallback ? pendings[0] : undefined)
+      if (target) {
+        await succeed(target.id, target.providerRef)
+        return { kind: 'primary' as const }
+      }
+      if (!fallback) return { kind: 'none' as const }
+      await tx.payment.create({
+        data: {
+          invoiceId, provider, amount: fallback.amount, currency: fallback.currency,
+          status: 'succeeded', providerRef, idempotencyKey: fallback.idempotencyKey, succeededAt: new Date(),
+        },
+      })
+      return { kind: 'primary' as const }
+    })
+  }
+
+  /** دفعةٌ زائدة: يُقيَّد أثرُها وتُخبَر الماليّةُ لتردّها — قرارُ صاحب المنصّة «a»: لا يخرج مالٌ بلا إنسان */
+  private async alertExtraPayment(paymentId: string, orderId: string) {
+    const p = await this.prisma.payment.findUniqueOrThrow({
+      where: { id: paymentId }, include: { invoice: { include: { order: { select: { user: { select: { displayName: true } } } } } } },
+    })
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'payment.extra', entityType: 'payment', entityId: paymentId,
+      meta: { orderId, invoiceNumber: p.invoice.number, amount: num(p.amount), currency: p.currency, providerRef: p.providerRef },
+      reason: 'دفعت صفحة دفع ثانية لطلب مدفوع — تنتظر الرد',
+    })
+    await notifyRole(this.prisma, ['super_admin', 'finance'], {
+      channel: 'in_app',
+      title: 'دفعة زائدة تنتظر الرد',
+      body: `${p.invoice.order.user.displayName ?? 'متعلم'} دفع ${num(p.amount)} ${p.currency} مرة ثانية عن الفاتورة ${p.invoice.number}. رد المبلغ من «المال».`,
+      templateKey: 'admin.payment_extra',
+      data: { orderId, paymentId },
+    })
   }
 
   /* ─────────── «التجريبيُّ» يعني مدفوعا فورا — في كلّ مسار ───────────
@@ -1195,8 +1252,10 @@ export class CommerceService {
     /* ردّ المال عند المزود قبل القيد. كان القيد وحده: يُعلَّم الاسترداد
        «مُنفَّذا» وتُحدَّث الدفعة والطلب، ولا يُنادى المزود أبدا — فالمتعلم يرى
        «استُرد» وبطاقته لا تُرصَّد. والرمي هنا مقصود: استردادٌ لم يقع لا يُقيَّد. */
-    const config = await getPaymentConfig(this.prisma)
-    const provider = getPaymentProvider(config)
+    const provider = refundProviderFor(refund.payment.provider, getPaymentProvider(await getPaymentConfig(this.prisma)))
+    /* ودفعةٌ زائدة (صفحةٌ ثانيةٌ دُفعت لطلبٍ مدفوع) يُردّ مالُها ولا يمسّ الطلب: لا حالتَه ولا كودَ مدرّبه ولا مقعدَه —
+       فما سوّى الطلبَ دفعةٌ أخرى ما زالت قائمة */
+    const extra = refund.payment.extra
     let providerRefundRef: string | null = null
     let providerError: string | null = null
 
@@ -1234,7 +1293,7 @@ export class CommerceService {
       refundedTotal = totalRefunded
       const fully = totalRefunded >= num(refund.payment.amount)
       await tx.payment.update({ where: { id: refund.paymentId }, data: { status: fully ? 'refunded' : 'partially_refunded' } })
-      await tx.order.update({ where: { id: refund.payment.invoice.orderId }, data: { status: fully ? 'refunded' : 'partially_refunded' } })
+      if (!extra) await tx.order.update({ where: { id: refund.payment.invoice.orderId }, data: { status: fully ? 'refunded' : 'partially_refunded' } })
       return r
     }, { timeout: 60_000, maxWait: 30_000 }).catch(async (e) => {
       if (providerError !== null) {
@@ -1250,12 +1309,12 @@ export class CommerceService {
        المدرّب، فيُحسم منه خصمٌ عن مالٍ أُعيد إلى صاحبه. فصار كودُه بالنسبة ينقص
        بقدر ما رُدّ (ويُعاد إليه ما حُسم زيادةً)، والخصمُ القديمُ بالمبلغ يسقط
        إن رُدّ الثمنُ كلُّه. وكلاهما لا يرمي: الردُّ وقع عند المزوّد. */
-    const share = refundedShare(refundedTotal, num(refund.payment.amount))
-    await applyCodeRefund(this.prisma, refund.payment.invoice.orderId, share)
+    const share = extra ? 0 : refundedShare(refundedTotal, num(refund.payment.amount))
+    if (!extra) await applyCodeRefund(this.prisma, refund.payment.invoice.orderId, share)
     if (share >= 1) await this.trainerDiscounts.markRefundedForOrder(refund.payment.invoice.orderId)
     await recordAudit(this.prisma, {
       actorId, action: 'refund.process', entityType: 'refund', entityId: refundId,
-      meta: { amount: num(refund.amount), provider: provider.name, providerRefundRef },
+      meta: { amount: num(refund.amount), provider: provider.name, providerRefundRef, ...(extra ? { extra: true } : {}) },
     })
     /* ═══ والقبضُ يُخبَر به فلمَ لا يُخبَر الردّ؟ (ي-٤) ═══
 
@@ -1278,7 +1337,7 @@ export class CommerceService {
        (`EnrollmentService.drop`) — يُخبَر، وتُرفع لقاءاتُها من تقويمه، ويُلغى رابطُه، ويدخل من ينتظر. والردُّ وقع
        عند المزوّد قبله، فإخفاقُه لا يُسقط الردّ: يُقال في السجلّ ويُسقَط باليد. */
     const dropped: string[] = []
-    if (opts.dropSeat) {
+    if (opts.dropSeat && !extra) {
       const order = await this.prisma.order.findUnique({
         where: { id: refund.payment.invoice.orderId },
         select: { userId: true, items: { where: { kind: 'cohort' }, select: { refId: true } } },
@@ -1565,4 +1624,20 @@ function normalizeWebhookPayload(provider: string, raw: unknown): { eventId?: st
     status: p.status as string | undefined,
     providerRef: p.providerRef as string | undefined,
   }
+}
+
+/* ═══ والردُّ عند من أخذ المال — لا عند المزوّد المضبوط اليوم (٩ نوفمبر ٢٠٢٦) ═══
+   كان الردُّ يُرسَل إلى المزوّد المضبوط ساعةَ الردّ أيّا كان آخذُ الدفعة. فدفعةٌ بتحويلٍ بنكيّ وStripe مفعّل يُطلب ردُّها
+   من Stripe بلا مرجع — فيسقط الردّ. ودفعةٌ ببطاقة والقناةُ موقوفة يردّها المزوّدُ الاختباريّ «بنجاح» — فيُقال للمتعلّم
+   «ردّ إليك» وبطاقتُه لم يصلها شيء. وجُرّب الاثنان فمرّا. فاليدويّةُ تُردّ يدويّا، والاختباريّةُ اختباريّا، وما أخذه
+   مزوّدٌ حقيقيٌّ لا يردّه إلّا هو — فإن لم يكن عاملا قيل ذلك ولم يُقيَّد شيء. */
+function refundProviderFor(paidWith: string, active: PaymentProvider): PaymentProvider {
+  if (paidWith === 'manual') return new ManualPaymentProvider()
+  if (paidWith === 'test') return new TestPaymentProvider()
+  if (active.name === paidWith) return active
+  throw new AuthError(
+    'refund_provider_off',
+    `هذه الدفعة أخذت عبر ${paidWith === 'stripe' ? 'Stripe' : paidWith}، وهو غير مفعل الآن، فلا يصل المبلغ إلى البطاقة. لم يقيد شيء — يمكن الرد بعد تفعيله من «التكاملات».`,
+    409,
+  )
 }

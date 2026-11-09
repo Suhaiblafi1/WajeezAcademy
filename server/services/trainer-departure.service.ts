@@ -601,7 +601,7 @@ export class TrainerDepartureService {
           select: {
             number: true,
             payments: {
-              where: { status: { in: ['succeeded', 'partially_refunded'] } },
+              where: { status: { in: ['succeeded', 'partially_refunded'] }, extra: false },
               select: { id: true, amount: true, currency: true, succeededAt: true,
                 refunds: { select: { amount: true, status: true } } },
             },
