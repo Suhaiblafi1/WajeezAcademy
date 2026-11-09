@@ -48,7 +48,7 @@ interface PublicCohort {
   /** أسماءُ المدرّبين المعتمَدِ نشرُهم — الخادمُ يرشّحهم ببوّابة الظهور */
   trainers?: string[] | null
   /** وجوهُهم: الاسمُ والصورةُ ومعرّفُ بطاقته في صفحة الفريق — بالبوّابة نفسِها */
-  trainerProfiles?: { id?: unknown; name?: unknown; photoUrl?: unknown }[] | null
+  trainerProfiles?: { id?: unknown; name?: unknown; photoUrl?: unknown; slug?: unknown; video?: unknown }[] | null
   /** لقاءاتُها المعتمَدةُ غيرُ المبدئيّة — الخادمُ يرشّحها ويرتّبها */
   sessions?: { startsAt?: unknown; endsAt?: unknown; title?: unknown }[] | null
   /** نبذةُ مدرّبها من خطّتها المعتمَدة — `cohort-summary.ts` */
@@ -64,6 +64,10 @@ export interface CohortTrainer {
   name: string
   /** صورتُه المعتمَدة، و`null` حين لا صورة — فتُرسم حروفُه */
   photoUrl: string | null
+  /** مسارُ صفحته — تقرأ منه بطاقتُه المنبثقة نبذتَه (٩ نوفمبر ٢٠٢٦) */
+  slug?: string | null
+  /** فيديو مدرّب الشعبة لهذه الدورة ثمّ تعريفُه — حلقةٌ على صورته. يُفحص قبل أيّ رسم */
+  video?: unknown
 }
 
 /** شعبةٌ يستطيع المتعلّم أن يختارها — بموعدها وسعرها ومقاعدها */
@@ -144,6 +148,8 @@ function trainerProfilesOf(raw: PublicCohort['trainerProfiles'], names: PublicCo
       id: typeof t.id === 'string' ? t.id : '',
       name: t.name.trim(),
       photoUrl: typeof t.photoUrl === 'string' && t.photoUrl ? t.photoUrl : null,
+      slug: typeof t.slug === 'string' && t.slug ? t.slug : null,
+      video: t.video ?? null,
     })
   }
   return out
