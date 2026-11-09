@@ -345,6 +345,9 @@ export class CartService {
     /* عملةُ السلّة — يلزم الحسابَ لأنّ سقفَ مبلغ الباقة مبلغٌ لا نسبة.
        ويُشتقّ هنا حين لا يُمرَّر، فلا يسقط السقفُ صامتا بنسيان وسيط. */
     currency?: string,
+    /* دورةُ هديّةٍ تُسعَّر بصفر — من رابط المسار الخاصّ وحدَه، بعد أن حكم الخادمُ باستحقاقها (`private-path-gift.ts`،
+       ٨ نوفمبر ٢٠٢٦). وبلاها لا هديّة، كما كانت كلُّ سلّةٍ منذ إلغاء هديّة الخطّة (٢٦ أكتوبر ٢٠٢٦) */
+    giftCourseId: string | null = null,
   ) {
     const coupon = await this.couponFor(userId, couponCode)
     const trainerCode = coupon?.trainerCode ?? null
@@ -374,7 +377,7 @@ export class CartService {
       cohorts.map((c) => ({
         cohortId: c.id, courseId: c.courseId, titleAr: cartTitleOf(c), listPrice: num(c.price),
       })),
-      null,
+      giftCourseId,
       coupon
         ? trainerCode
           /* والوجهُ من صفّ الكود لا من الكوبون، والسقفُ على الوجهين (البند 4-10) */

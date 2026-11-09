@@ -20,6 +20,7 @@ import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
 import { BuyLinkService } from '../../services/buy-link.service'
 import { PrivatePathService, type PrivatePathView } from '../../services/private-path.service'
+import { giftForCart } from '../../services/private-path-gift'
 import { buildApp } from '../../http/app'
 import { orderViaAr } from '../../../src/application/commerce/buy-link-campaign'
 import { grantClosesAt } from '../../../src/application/commerce/grant'
@@ -46,10 +47,10 @@ const nextCourse = () => {
 async function user(tag: string, name = `${tag} ${seq}`) {
   return (await auth.register(`pp-${tag}-${++seq}-${STAMP}@test.local`, 'Learner#12345', name)).userId
 }
-async function cohort(price = 100) {
+async function cohort(price = 100, courseId?: string) {
   return prisma.cohort.create({
     data: {
-      plans: { create: await approvedTrainerPlan(prisma) }, courseId: nextCourse(), title: `شعبة المسار ${++seq}`,
+      plans: { create: await approvedTrainerPlan(prisma) }, courseId: courseId ?? nextCourse(), title: `شعبة المسار ${++seq}`,
       status: 'open', registrationOpen: true, financialReady: true, price, currency: 'USD', capacity: 20,
       startsAt: new Date(Date.now() + 30 * 86_400_000),
     } as never,
@@ -219,5 +220,93 @@ describe('⑧ والنسبة باقية', () => {
     const ev = await prisma.auditEvent.findFirstOrThrow({ where: { action: 'order.checkout', entityId: order.orderId } })
     expect((ev.meta as { buyLink?: { kind: string; by: string } }).buyLink).toMatchObject({ kind: 'admin', by: superId })
     expect(orderViaAr(ev.meta), 'ضاع أنه من حملة واتساب').toBe('حملة واتساب')
+  })
+})
+
+describe('⑨ الدورة الهدية في رابط المسار (٨ نوفمبر ٢٠٢٦)', () => {
+  /* للسوبر أدمن وحدَه، وتضاف بصفر إن تحقق شرطها لصاحب المسار مرة واحدة — والحكم من الخادم (`private-path-gift.ts`) */
+  async function pathWithGift(rule: 'all' | 'two' = 'all', n = 2) {
+    const l = await learnerWithGrant()
+    const path = []
+    for (let i = 0; i < n; i += 1) path.push(await cohort())
+    const g = await cohort(150)
+    const out = await links.generate(SUPER(), { leadId: l.leadId }, {
+      courseId: path[0].courseId, cohortId: path[0].id,
+      adds: path.slice(1).map((c) => ({ courseId: c.courseId, cohortId: c.id })),
+      /* وكودُ المنحة لدورتين — فمسارٌ أطولُ بلا كود (④) */
+      code: n <= 2 ? l.code : null, gift: { courseId: g.courseId, cohortId: g.id, rule },
+    })
+    const v = await view(codeOf(out.goPath!))
+    return { l, path, g, v }
+  }
+
+  it('⚠️ تولد بشرطها وتعرض في صفحته بسعرها الأصلي — والمستشار لا يهدي', async () => {
+    const { g, v } = await pathWithGift('all', 2)
+    expect(v.gift).toMatchObject({ courseId: g.courseId, cohortId: g.id, rule: 'all', minCourses: 2, listPrice: 150, unavailableAr: null })
+    const adv = await user('adv-gift')
+    await makeAdvisor(prisma, auth, adv)
+    const l = await learnerWithGrant()
+    const c2 = await prisma.advisorCase.create({ data: { clientId: l.clientId, leadId: l.leadId, status: 'contacted' } })
+    await prisma.advisorAssignment.create({ data: { caseId: c2.id, advisorId: adv } })
+    const a = await cohort()
+    const b = await cohort()
+    await expect(links.generate({ userId: adv, roles: ['advisor'] }, { caseId: c2.id }, {
+      courseId: a.courseId, cohortId: a.id, gift: { courseId: b.courseId, cohortId: b.id, rule: 'all' },
+    })).rejects.toMatchObject({ code: 'forbidden' })
+  })
+
+  it('⚠️ «دورتين على الأقل» لمسار بدورة واحدة يرد — والهدية ليست من دوراته', async () => {
+    const l = await learnerWithGrant()
+    const a = await cohort()
+    const b = await cohort()
+    await expect(links.generate(SUPER(), { leadId: l.leadId }, { courseId: a.courseId, cohortId: a.id, gift: { courseId: b.courseId, cohortId: b.id, rule: 'two' } }))
+      .rejects.toMatchObject({ code: 'gift_rule' })
+    await expect(links.generate(SUPER(), { leadId: l.leadId }, { courseId: a.courseId, cohortId: a.id, gift: { courseId: a.courseId, cohortId: a.id, rule: 'all' } }))
+      .rejects.toMatchObject({ code: 'gift_in_path' })
+  })
+
+  it('⚠️ تحقق الشرط: تضاف بصفر، والمجموع كما كان بلاها، ولا تعد من دورات المنحة', async () => {
+    const { l, path, g, v } = await pathWithGift('all', 2)
+    const without = await commerce.quote(l.clientId, path.map((c) => c.id), v.couponCode ?? undefined)
+    const q = await commerce.quote(l.clientId, [...path.map((c) => c.id), g.id], v.couponCode ?? undefined, v.buyLinkToken)
+    expect(q.gift).toMatchObject({ applies: true, missing: 0 })
+    expect(q.items.find((i) => i.cohortId === g.id)).toMatchObject({ unitPrice: 0, isGift: true, listPrice: 150 })
+    expect(q.total).toBe(without.total)
+    const order = await commerce.checkout(l.clientId, [...path.map((c) => c.id), g.id], v.couponCode ?? undefined, undefined, null, v.buyLinkToken)
+    const items = await prisma.orderItem.findMany({ where: { orderId: order.orderId } })
+    expect(items.find((i) => i.refId === g.id)?.unitPrice.toNumber()).toBe(0)
+    expect(items.filter((i) => i.unitPrice.toNumber() > 0)).toHaveLength(2)
+  })
+
+  it('⚠️ ولم يتحقق: لا تضاف، ويقال كم دورة تنقصه — ولا تسعر بثمنها', async () => {
+    const { l, path, g, v } = await pathWithGift('all', 2)
+    const q = await commerce.quote(l.clientId, [path[0].id, g.id], v.couponCode ?? undefined, v.buyLinkToken)
+    expect(q.gift).toMatchObject({ applies: false, missing: 1, reasonAr: 'ينقصك دورة واحدة لتحصل على الدورة الهدية' })
+    await expect(commerce.checkout(l.clientId, [path[0].id, g.id], v.couponCode ?? undefined, undefined, null, v.buyLinkToken))
+      .rejects.toMatchObject({ code: 'gift_condition' })
+  })
+
+  it('⚠️ لصاحب المسار وحده، ومرة واحدة', async () => {
+    const { l, path, g, v } = await pathWithGift('two', 3)
+    const other = await user('other-buyer')
+    const cart = [{ courseId: path[0].courseId }, { courseId: path[1].courseId }, { courseId: g.courseId }]
+    expect(await giftForCart(prisma, other, v.buyLinkToken, cart)).toMatchObject({ applies: false, reasonAr: 'الدورة الهدية لصاحب هذا المسار وحده' })
+    await expect(commerce.checkout(other, [path[0].id, path[1].id, g.id], undefined, undefined, null, v.buyLinkToken))
+      .rejects.toMatchObject({ code: 'gift_condition' })
+    expect(await giftForCart(prisma, l.clientId, v.buyLinkToken, cart)).toMatchObject({ applies: true })
+    await commerce.checkout(l.clientId, [path[0].id, path[1].id, g.id], v.couponCode ?? undefined, undefined, null, v.buyLinkToken)
+    /* وبعدها — ولو بشعبةٍ أخرى من دورتها — لا تعطى ثانية */
+    const g2 = await cohort(150, g.courseId)
+    const again = await giftForCart(prisma, l.clientId, v.buyLinkToken, [{ courseId: path[2].courseId }, { courseId: path[0].courseId }, { courseId: g2.courseId }])
+    expect(again, 'أعطيت الهدية مرتين').toMatchObject({ applies: false, reasonAr: 'أخذت هذه الدورة الهدية من قبل' })
+  })
+
+  it('⚠️ وبلا رمز الرابط لا هدية — تسعر كأي دورة', async () => {
+    const { l, path, g, v } = await pathWithGift('all', 1)
+    expect(await giftForCart(prisma, l.clientId, null, [{ courseId: path[0].courseId }, { courseId: g.courseId }])).toBeNull()
+    const q = await commerce.quote(l.clientId, [path[0].id, g.id], v.couponCode ?? undefined)
+    expect(q.gift).toBeNull()
+    expect(q.items.every((i) => !i.isGift)).toBe(true)
+    expect(q.items.find((i) => i.cohortId === g.id)?.unitPrice).toBeGreaterThan(0)
   })
 })

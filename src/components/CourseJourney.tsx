@@ -1,5 +1,6 @@
 import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker, { COHORT_RUNNING_AR } from "@/components/CohortPicker";
+import { LazyCourseAudience } from "@/components/CourseAudience";
 import type { TimedCohort } from "@/application/learning/cohort-overlap";
 import { chosenCohorts, stuckInClash } from "@/application/catalog/pathway-swap";
 import CourseInterestForm from "@/components/CourseInterestForm";
@@ -59,7 +60,7 @@ export interface CourseJourneyEdit {
    ═══ ولا «هدية مجانية» (٢٦ أكتوبر ٢٠٢٦) ═══
    كانت شارةً ذهبيّةً على سادسة المسار، والدفعُ يحاسبها بسعرها — فسأل صاحبُ المنصّة «لماذا تظهر وكأنّها هديّة
    ولا تطبَّق على الدفع؟.. أرجو إلغاءها لأنّنا أعطينا خصوماتٍ عالية». فأُلغيت الهديّةُ كلُّها (`cart.service.ts`). */
-/** ما خلف «كل تفاصيل الدورة» بكلمات — «الأهداف · 4 وحدات · المخرج العملي». وما ليس في الدورة لا يُقال */
+/** ما خلف «تفاصيل الدورة» بكلمات — «الأهداف · 4 وحدات · المخرج العملي». وما ليس في الدورة لا يُقال */
 function detailsSummaryAr(c: { learningObjectives: string[]; modules: unknown[]; practicalProject?: string | null }): string {
   const n = c.modules.length;
   const units = n === 0 ? null : n === 1 ? "وحدة واحدة" : n === 2 ? "وحدتان" : `${n} ${n <= 10 ? "وحدات" : "وحدة"}`;
@@ -72,6 +73,8 @@ export default function CourseJourney({
   courseIds,
   reasons,
   reasonsProminentLabelAr,
+  cohortHintOneLine = false,
+  extraBusy,
   delivery,
   headingLevel: Heading = "h3",
   edit,
@@ -89,6 +92,10 @@ export default function CourseJourney({
      توليد الرابط، بشكل بارز». فالسببُ هناك كتبه مستشارٌ لهذا المتعلّم بعينه — هو ما يقنعه، لا سطرٌ رماديٌّ بعد المهارات.
      وبلا هذا الخيار يبقى السطرُ كما كان في كلّ صفحة. */
   reasonsProminentLabelAr?: string;
+  /** فوق الشعب سطرٌ واحدٌ يقول كيف يختار لا ثلاثة — للمسار الشخصيّ ‎/go (`CohortPicker`) */
+  cohortHintOneLine?: boolean;
+  /** شعبٌ في الطلب نفسِه من خارج الرحلة — يشملها فحصُ تعارض المواعيد (`cohort-overlap.ts`) */
+  extraBusy?: readonly TimedCohort[];
   /** طريقة تقديم المسار — تُعرض ضمن تفاصيل كل دورة */
   delivery?: string;
   /** مشروع التخرّج — سطرٌ أخيرٌ في الرحلة نفسها لا صندوقٌ منفصلٌ خارجها */
@@ -138,13 +145,14 @@ export default function CourseJourney({
      والدورةُ التي لم يختر لها بعدُ تُحسب بأوّل شعبها — وهي ما يشتريه إن لم يبدّل */
   const cohortsOf = (id: string) => cohorts.get(id) ?? [];
   const chosen = chosenCohorts(list.map((o) => o.id), cohortsOf, picked, (id) => list.find((o) => o.id === id)?.title ?? id);
-  const othersOf = (courseId: string): TimedCohort[] => chosen.filter((o) => o.courseId !== courseId);
+  /* وشعبٌ أخرى في الطلب نفسِه ليست من دورات الرحلة — الدورةُ المجانيّةُ في رابط المسار (٨ نوفمبر ٢٠٢٦) — فيشملها فحصُ التعارض */
+  const othersOf = (courseId: string): TimedCohort[] => [...chosen.filter((o) => o.courseId !== courseId), ...(extraBusy ?? [])];
   const isSupportId = (id: string) => Boolean(supportReasons?.[id]);
   const firstSupport = list.findIndex((c) => isSupportId(c.id));
   const coreCount = firstSupport === -1 ? list.length : firstSupport;
 
   return (
-    <div className="card-soft mt-8" id="learning-plan">
+    <div className="card-soft mt-8 max-sm:p-3" id="learning-plan">
       <Heading className="h-card flex items-center gap-2">
         <Target className="h-5 w-5 text-gold-ink" />
         ماذا ستحقق من خلال خطتك؟
@@ -190,11 +198,15 @@ export default function CourseJourney({
               </div>
             )}
             {i < list.length - 1 && !(isSupportId(list[i + 1].id) && i + 1 === firstSupport) && (
-              <span aria-hidden className="absolute right-[15px] top-10 h-[calc(100%-32px)] w-px bg-white/10" />
+              <span aria-hidden className="absolute right-[15px] top-10 hidden h-[calc(100%-32px)] w-px bg-white/10 sm:block" />
             )}
             <Collapsible className="rounded-2xl border border-white/10 bg-white/[0.03] transition-colors data-[state=open]:border-teal/40 data-[state=open]:bg-teal/[0.05]">
-              <div className="flex items-start gap-3 p-4">
-                <span className="z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#38A7B4]/50 bg-paper text-xs font-black text-[#6EC7D1]">
+              {/* ═══ وعلى الهاتف عرضُ البطاقة كلُّه للمحتوى (٨ نوفمبر ٢٠٢٦) ═══
+                  «التصميمُ على التلفون غيرُ عمليّ وغيرُ مريح». كان عمودُ الرقم وخطُّ الرحلة يأخذان ٤٤ بكسلا من ٣٩٠، فوقها
+                  حشوُ الصفحة والبطاقة وصندوقِ الشعبة — فبقي للشعبة نحوُ ٢٤٠ والنصُّ يلتفّ سطرا بعد سطر. فالرقمُ على الهاتف
+                  بجانب العنوان، والحشوُ أقلّ. وما فوق الهاتف كما كان */}
+              <div className="flex items-start gap-3 p-3 sm:p-4">
+                <span className="z-10 hidden h-8 w-8 shrink-0 place-items-center rounded-full border border-[#38A7B4]/50 bg-paper text-xs font-black text-[#6EC7D1] sm:grid">
                   {isSupport ? <LifeBuoy className="h-3.5 w-3.5" /> : i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -202,7 +214,10 @@ export default function CourseJourney({
                     className="group block w-full text-right"
                     aria-label={`تفاصيل دورة ${c.title}`}
                   >
-                    <span className="flex items-center justify-between gap-2">
+                    <span className="flex items-start gap-2">
+                      <span aria-hidden="true" className="mt-px grid h-6 w-6 shrink-0 place-items-center rounded-full border border-[#38A7B4]/50 text-fine font-black text-[#6EC7D1] sm:hidden">
+                        {isSupport ? <LifeBuoy className="h-3 w-3" /> : i + 1}
+                      </span>
                       <span className="text-sm font-black leading-snug text-foreground">
                         {c.title}
                       </span>
@@ -214,14 +229,15 @@ export default function CourseJourney({
                   {/* ═══ وتفاصيلُ الدورة زرٌّ ظاهرٌ قبل الشعب — لا سهمٌ صغيرٌ بجانب العنوان (٨ نوفمبر ٢٠٢٦) ═══
                       قرارُ صاحب المنصّة: «هناك سهمٌ ليُظهر كافّةَ تفاصيل الدورة ولكنّه غيرُ ظاهرٍ بقوّة.. أظهِره، ولا داعي
                       للبوب أب»، و«يجب أن تظهر التفاصيلُ قبل الشعبة بطريقةٍ جميلة». فالزرُّ تحت العنوان يقول ما خلفه، والتفاصيلُ
-                      تنفتح في مكانها فوق الشعب. والعنوانُ نفسُه يفتحها كما كان. */}
+                      تنفتح في مكانها فوق الشعب. والعنوانُ نفسُه يفتحها كما كان. وكانت «كل تفاصيل الدورة» فصارت «تفاصيل
+                      الدورة» بلا «كل» (قرارُه، ٨ نوفمبر ٢٠٢٦) */}
                   <CollapsibleTrigger
                     className="group mt-3 flex w-full items-center gap-2.5 rounded-lg bg-teal/[0.08] px-3 py-2.5 text-right ring-1 ring-teal/30 transition hover:bg-teal/[0.14] data-[state=open]:bg-teal/[0.12]"
                     data-testid="course-details-toggle"
                   >
                     <BookOpen className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-black text-teal-light-ink group-data-[state=open]:hidden">كل تفاصيل الدورة</span>
+                      <span className="block text-sm font-black text-teal-light-ink group-data-[state=open]:hidden">تفاصيل الدورة</span>
                       <span className="hidden text-sm font-black text-teal-light-ink group-data-[state=open]:block">إخفاء التفاصيل</span>
                       {detailsSummaryAr(c) && (
                         <span className="mt-0.5 block text-fine font-semibold text-muted-foreground group-data-[state=open]:hidden">{detailsSummaryAr(c)}</span>
@@ -232,12 +248,9 @@ export default function CourseJourney({
                   <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-[accordion-up_0.25s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
                     <Inset className="mt-2 space-y-5 p-4 text-read leading-7">
                       {c.description && <p className="text-muted-foreground">{c.description}</p>}
-                      {c.targetAudience && (
-                        <p className="text-muted-foreground">
-                          <span className="font-bold text-teal-light-ink">لمن صممت؟ </span>
-                          {c.targetAudience}
-                        </p>
-                      )}
+                      {/* «لمن هذه الدورة» كما في صفحة الدورة: وصفُها، و«تناسبك إن كنت» و«وتريد» من اختيار مدرّبي شعبها
+                          (صاحب المنصّة، ٨ نوفمبر ٢٠٢٦ — «Add to details»). من الموضع نفسِه، ويُحمَّل حين تُفتح (`LazyCourseAudience`) */}
+                      <LazyCourseAudience course={c} cohorts={cohorts.get(c.id) ?? []} />
                       {c.learningObjectives.length > 0 && (
                         <div>
                           <p className="mb-1.5 flex items-center gap-1.5 font-bold text-teal-light-ink">
@@ -327,6 +340,7 @@ export default function CourseJourney({
                         onSelect={(cid) => pick(c.id, cid)}
                         running={runningOnly(c.id)}
                         others={othersOf(c.id)}
+                        hintOneLine={cohortHintOneLine}
                       />
                     </div>
                   )}

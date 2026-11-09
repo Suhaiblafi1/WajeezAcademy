@@ -13,19 +13,21 @@ import { Inset, Panel } from "@/components/ui/Surface";
 export function PathwayTopBar({ user }: { user: string | null }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
-        <Link to="/" className="flex items-center gap-2 text-foreground hover:text-foreground">
+      {/* وعلى الهاتف سطرٌ واحد (٨ نوفمبر ٢٠٢٦): «التصميمُ على التلفون غيرُ عمليّ» — كان اسمُ الأكاديميّة واسمُ الحساب
+          يلتفّان سطرين. فـ«الرئيسية» سهمٌ وحدَه، واسمُ الحساب أيقونتُه، والاسمُ لا يلتفّ */}
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-2 px-4 sm:px-5">
+        <Link to="/" aria-label="الرئيسية" className="flex items-center gap-2 text-foreground hover:text-foreground">
           <ArrowRight className="h-5 w-5" />
-          <span className="text-sm font-medium">الرئيسية</span>
+          <span className="hidden text-sm font-medium sm:inline">الرئيسية</span>
         </Link>
-        <div className="flex items-center gap-2">
-          <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-          <span className="font-black">أكاديمية وجيز</span>
+        <div className="flex min-w-0 items-center gap-2">
+          <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
+          <span className="whitespace-nowrap font-black">أكاديمية وجيز</span>
         </div>
         <div className="flex items-center gap-3">
           {user ? (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <User className="h-4 w-4" /> {user}
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground" title={user}>
+              <User className="h-4 w-4" aria-label={user} /> <span className="hidden sm:inline">{user}</span>
             </span>
           ) : (
             <Inset as={Link} tone="accent" interactive to="/auth" className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink">

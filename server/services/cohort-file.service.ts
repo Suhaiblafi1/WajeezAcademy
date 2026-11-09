@@ -287,10 +287,12 @@ export class CohortFileService {
     if (auth.permissions.includes('cohort.plan.approve') || auth.permissions.includes('cohort.manage')) {
       return row
     }
+    /* والمدرّبُ الموقوفُ لا يقرأ (٨ نوفمبر ٢٠٢٦) — كما لا يصحّح ولا يسجّل حضورا (`assertCohortTrainer`). كان الحارسُ يسأل
+       عن الإسناد وحدَه، فيبقى بابُ الملفّات مفتوحا له ما دام مسنَدا. والحارس: `server/tests/storage/suspended-trainer-files.test.ts` */
     const profile = await this.prisma.trainerProfile.findUnique({
-      where: { userId: auth.userId }, select: { id: true },
+      where: { userId: auth.userId }, select: { id: true, suspendedAt: true },
     })
-    if (profile) {
+    if (profile && !profile.suspendedAt) {
       const isTrainer = await this.prisma.cohortTrainer.findFirst({
         where: { cohortId: row.cohortId, profileId: profile.id }, select: { id: true },
       })

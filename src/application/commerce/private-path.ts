@@ -38,10 +38,54 @@ export interface PrivatePathPayload {
   learnerKey: string
   firstName: string
   courses: { courseId: string; cohortId: string; reasonAr: string | null }[]
+  /** دورةٌ هديّة — يختارها السوبر أدمن وحدَه، وتُضاف بصفرٍ إن تحقّق شرطُها (`private-path-gift.ts`) */
+  gift?: PrivatePathGift
   code: string | null
   whatsapp: boolean
   /** نسخةٌ أحدثُ منه — فيُحوَّل إليها من فتحه */
   supersededBy?: string
+}
+
+/* ═══ «دورةٌ هديّة» في رابط المسار (٨ نوفمبر ٢٠٢٦) ═══
+
+   طلبُ صاحب المنصّة: في «جهز رابط شراء» خيارُ «أضف دورة هدية» — الدورةُ وشعبتُها وشرطُ تفعيلها (المسارُ كاملا، أو دورتان
+   منه على الأقلّ). وفي ‎/go بطاقتُها بعد دورات المسار: «مجانية»، وسعرُها الأصليّ مشطوبٌ والحاليّ صفر، وسطرٌ بشرطها. وعند الدفع
+   تُضاف بصفرٍ إن تحقّق الشرط، وإلّا لا تُضاف ويُقال كم دورةً تنقصه. وتعارضُ المواعيد يشملها.
+   وقرارا صاحب المنصّة: **للسوبر أدمن وحدَه** («Super admin only»)، و**مقعدُها يُحتسب في أجر المدرّب** كأيّ مقعد
+   («Pay trainer»). ولا تمسّ «الهديّةَ في الخطّة» التي أُلغيت (٢٦ أكتوبر ٢٠٢٦): تلك شارةٌ لكلّ زائرٍ على كلّ مسار، وهذه
+   هديّةُ رابطٍ لمتعلّمٍ بعينه يفي بها الخادم. */
+
+/** شرطُ تفعيل الهديّة: المسارُ كاملا، أو دورتان منه على الأقلّ */
+export type GiftRule = 'all' | 'two'
+export const GIFT_RULES: readonly GiftRule[] = ['all', 'two']
+
+export interface PrivatePathGift {
+  courseId: string
+  /** الشعبةُ التي اختارها المولّد — وللمتعلّم أن يختار غيرَها من الدورة نفسِها (تعارضُ المواعيد) */
+  cohortId: string
+  rule: GiftRule
+  /** كم دورةً مدفوعةً تلزم — يُحسب عند التوليد: عددُ دورات المسار، أو ٢ */
+  minCourses: number
+}
+
+/** كم دورةً تلزم لشرطٍ في مسارٍ بعدد دوراته — أو `null` لشرطٍ لا يسعه المسار */
+export function giftMinCourses(rule: GiftRule, pathCourses: number): number | null {
+  if (rule === 'all') return pathCourses >= 1 ? pathCourses : null
+  return pathCourses >= 2 ? 2 : null
+}
+
+/** سطرُ الشرط تحت بطاقة الهديّة — «مجانية إن اشتريت المسار كاملا (3 دورات)» */
+export function giftRuleAr(gift: Pick<PrivatePathGift, 'rule' | 'minCourses'>): string {
+  return gift.rule === 'all'
+    ? `مجانية إن اشتريت المسار كاملا (${gift.minCourses === 2 ? 'دورتان' : gift.minCourses === 1 ? 'دورة واحدة' : `${gift.minCourses} دورات`})`
+    : 'مجانية إن اشتريت دورتين من المسار على الأقل'
+}
+
+/** «ينقصك دورة واحدة لتحصل على الهدية» — وصفرٌ لا شيء */
+export function giftMissingAr(missing: number): string | null {
+  if (missing <= 0) return null
+  const n = missing === 1 ? 'دورة واحدة' : missing === 2 ? 'دورتان' : `${missing} دورات`
+  return `ينقصك ${n} لتحصل على الدورة الهدية`
 }
 
 /** الاسمُ الأوّلُ كما في ملفّ المتعلّم — «مسار صهيب»، ولا شيءَ بعده */

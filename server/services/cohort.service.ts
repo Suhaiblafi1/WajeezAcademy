@@ -21,7 +21,7 @@ import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomPartic
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
 import { sessionPattern } from '../../src/application/schedule/session-pattern'
-import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
+import { ACADEMY_ZONE, zonedDay, zonedInstant } from '../../src/application/trainer/cohort-period'
 import { windowOpen } from '../../src/application/trainer/schedule-window'
 import { cohortDayAr, learnerPeriod, meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
 import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
@@ -1835,8 +1835,16 @@ export class CohortService {
     const [hh, mm] = time.split(':').map(Number)
     const duration = input.durationMinutes && input.durationMinutes > 0 ? input.durationMinutes : 120
     const from = input.from ?? cohort.startsAt ?? new Date()
-    /* أوّلُ أحدٍ في أسبوع البداية — كي تكون الأيّامُ منسوبةً إلى أسبوعٍ لا إلى اليوم */
-    const weekStart = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate() - from.getUTCDay()))
+    /* ═══ والساعةُ واليومُ بتوقيت الشعبة لا بغرينتش (٨ نوفمبر ٢٠٢٦) ═══
+       «الثلاثاء · 18:00» تُحفظ بتوقيت الشعبة (عمّان افتراضا) — وهكذا يكتبها اعتمادُ الخطّة من لقاءاتها
+       (`applySessionPattern`). وكان المولِّدُ يقرؤها بغرينتش: فتُولد اللقاءاتُ في التاسعة مساءً بعمّان، و«22:30» تقع فجرَ
+       الأربعاء. فالأسبوعُ وأيّامُه تقويمُ المنطقة، والساعةُ لحظتُها فيها (`zonedInstant`). والحارس:
+       `server/tests/learning/generate-sessions-zone.test.ts`. */
+    const zone = cohort.timezone || ACADEMY_ZONE
+    const [fy, fm, fd] = zonedDay(from, zone).split('-').map(Number)
+    /* أوّلُ أحدٍ في أسبوع البداية — كي تكون الأيّامُ منسوبةً إلى أسبوعٍ لا إلى اليوم. والتاريخُ هنا تقويمٌ لا لحظة */
+    const fromCal = new Date(Date.UTC(fy!, fm! - 1, fd!))
+    const weekStart = new Date(Date.UTC(fy!, fm! - 1, fd! - fromCal.getUTCDay()))
 
     const taken = new Set(cohort.sessions.map((s) => s.startsAt.getTime()))
     const planned: { title: string; startsAt: Date; endsAt: Date; duplicate: boolean }[] = []
@@ -1844,9 +1852,9 @@ export class CohortService {
     let n = cohort.sessions.length
     for (let w = 0; w < input.weeks; w += 1) {
       for (const day of [...days].sort((a, b) => DAY_INDEX[a] - DAY_INDEX[b])) {
-        const startsAt = new Date(weekStart)
-        startsAt.setUTCDate(weekStart.getUTCDate() + w * 7 * gap + DAY_INDEX[day])
-        startsAt.setUTCHours(hh, mm, 0, 0)
+        const cal = new Date(weekStart)
+        cal.setUTCDate(weekStart.getUTCDate() + w * 7 * gap + DAY_INDEX[day])
+        const startsAt = zonedInstant(cal.toISOString().slice(0, 10), [hh!, mm!, 0, 0], zone)
         /* ما مضى لا يُجدَّل: الأسبوعُ الأوّلُ قد يبدأ بعد يومٍ فات */
         if (startsAt < from) continue
         const duplicate = taken.has(startsAt.getTime())

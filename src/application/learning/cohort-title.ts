@@ -111,3 +111,54 @@ export function sharedCohortTitleAr(cohortTitle: string | null | undefined, cour
   const own = publicCohortTitleAr(cohortTitle ?? '')
   return !own || BARE_LABEL.test(own) ? courseTitleAr.trim() : own
 }
+
+/* ═══ وعنوانُ الشعبة تحت دورتها لا يكرّر اسمَها (٨ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «اسمُ الدورة مكرّرٌ عند الشعب.. لا تكرّره إن كان متشابها، وإن كان مختلفا ضعه بالنصّ في الصندوق
+   الصغير كعنوان الشعبة، وهذا يخفّف الخربطة بأنّها دوراتٌ داخل دورة.. عدّل كلَّ الصفحات المشابهة لذلك». وكان قرارُه
+   (٢٦ أكتوبر ٢٠٢٦) أن يكون عنوانُ الشعبة أوّلَ ما يُقرأ في صندوقها بخطٍّ كبير — وأكثرُ الشعب عنوانُها اسمُ الدورة نفسُه
+   (الافتراضيُّ أعلاه بلا رقمه، `publicCohortTitleAr`)، فصار كلُّ صندوقٍ يبدأ باسم الدورة ثانيةً فيُقرأ دورةً داخل دورة.
+
+   فالقاعدة هنا، يقرؤها منتقي الشعب (`CohortPicker`) ولوحُ الشراء (`BuyPanel`):
+   · عنوانٌ يطابق اسمَ الدورة — بعد حذف «دورة» من أوّله والتشكيلِ وعلامات الترقيم واختلافِ الهمزات — لا يُعرض.
+   · وعنوانٌ هو اسمُ الدورة وزيادة («… — مسائية») تُعرض زيادتُه وحدَها.
+   · وعنوانٌ هو بعضُ اسم الدورة لا يزيد شيئا — لا يُعرض.
+   · وما سوى ذلك يُعرض كما هو. */
+
+/** حرفٌ كما يُقارَن: بلا تشكيلٍ ولا تطويلٍ ولا ترقيم، والهمزاتُ والياءُ والتاءُ المربوطةُ بصورةٍ واحدة */
+function cmpChar(ch: string): string {
+  if (/[ً-ٰٟـ]/.test(ch)) return ''
+  if (!/[\p{L}\p{N}]/u.test(ch)) return ''
+  if (/[أإآٱ]/.test(ch)) return 'ا'
+  if (ch === 'ى') return 'ي'
+  if (ch === 'ة') return 'ه'
+  return ch.toLowerCase()
+}
+const cmp = (s: string): string => [...s].map(cmpChar).join('')
+
+/** «دورة» أو «دوره» في أوّل العنوان — ليست من الاسم */
+const COURSE_WORD = /^\s*دور[ةه]\s+/
+
+/** ما يُعرض من عنوان الشعبة تحت دورتها — أو `null` إن لم يزد على اسمها شيئا */
+export function distinctCohortTitle(cohortTitle: string | null | undefined, courseTitle: string | null | undefined): string | null {
+  const raw = (cohortTitle ?? '').trim()
+  if (!raw) return null
+  const course = cmp((courseTitle ?? '').replace(COURSE_WORD, ''))
+  if (!course) return raw
+  const own = raw.replace(COURSE_WORD, '')
+  const mine = cmp(own)
+  if (!mine || mine === course || course.includes(mine)) return null
+  if (mine.startsWith(course)) {
+    /* اسمُ الدورة وزيادة: تُقطع الزيادةُ من العنوان نفسِه بحروفه — عند الحرف الذي يكتمل به اسمُ الدورة */
+    let seen = 0
+    let cut = own.length
+    const chars = [...own]
+    for (let i = 0, at = 0; i < chars.length; at += chars[i].length, i += 1) {
+      seen += cmpChar(chars[i]).length
+      if (seen >= course.length) { cut = at + chars[i].length; break }
+    }
+    const rest = own.slice(cut).replace(/^[\s\-–—:،,.()|«»]+|[\s\-–—:،,.()|«»]+$/g, '')
+    return rest || null
+  }
+  return raw
+}

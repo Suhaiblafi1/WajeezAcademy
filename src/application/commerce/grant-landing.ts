@@ -472,7 +472,10 @@ export const GRANT_GIFT_AR = { title: 'يحق لك أن تهدي هذه المن
     فقرارُ صاحب المنصّة: «٢ — make the link shorter»: رابطٌ قصيرٌ يفتح صفَّه في قائمة المنحة (`grantRecordLink`).
 
     وقال (٢٧ أكتوبر ٢٠٢٦): «الرسالةُ الحاليّة تقول مرحبا أنا صهيب عندي سؤال عن منحة وجيز.. على الأقلّ مرحبا أنا اسمي كذا
-    وإيميلي كذا — المعلوماتُ التي تستطيع أخذها من الموقع أضفها». فصارت: من هو وبريدُه، وما يريد، ودوراتُه، وكودُه وملفُّه. */
+    وإيميلي كذا — المعلوماتُ التي تستطيع أخذها من الموقع أضفها». فصارت: من هو وبريدُه، وما يريد، ودوراتُه، وكودُه وملفُّه.
+
+    وما يريد (٨ نوفمبر ٢٠٢٦): أن يحدّد له المستشارُ الدوراتِ بنفسه، وسيرتُه الذاتيّةُ وحدَها مرفقةٌ — قرارُ صاحب المنصّة:
+    «اطلب من مستشارك يحدّد لك الدوراتِ بنفسه وأرفق له السيرةَ الذاتيّةَ فقط». وكانت «وأحتاج مساعدةً في اختيار دوراتي». */
 export function grantAdvisorTextAr(m: {
   name: string; email?: string | null; code?: string | null; courses?: readonly string[]
   recordLink?: string | null; grantNameAr?: string
@@ -482,7 +485,7 @@ export function grantAdvisorTextAr(m: {
   const courses = m.courses ?? []
   const refs = [m.code ? `كود منحتي: ${m.code}` : null, m.recordLink ? `ملفي: ${m.recordLink}` : null].filter(Boolean)
   return [
-    `${who}\nسجلت في ${m.grantNameAr ?? MEMBER_GRANT_NAME_AR}، وأحتاج مساعدة في اختيار دوراتي.`,
+    `${who}\nسجلت في ${m.grantNameAr ?? MEMBER_GRANT_NAME_AR}، وأريد أن تحدد لي الدورات المناسبة. أرفقت لك سيرتي الذاتية.`,
     ...(courses.length > 0 ? [`الدورات التي اخترتها:\n${courseLinesAr([...courses])}`] : []),
     ...(refs.length > 0 ? [refs.join('\n')] : []),
   ].join('\n\n')

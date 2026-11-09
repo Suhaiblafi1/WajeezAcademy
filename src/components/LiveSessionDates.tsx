@@ -52,7 +52,12 @@ export default function LiveSessionDates({
           <span className="font-bold text-foreground">{countAr(sessions.length, LIVE_SESSION_FORMS)}</span>
           {" · "}أوّلها {whenAr(first.startsAt)}
         </span>
-        <ChevronDown className={`h-3 w-3 shrink-0 transition ${open ? "rotate-180" : ""}`} />
+        {/* سهمٌ يُرى وكلمةٌ تقول ما خلفه — كان سهما من ١٢ بكسلا لا يُنتبه له (صاحب المنصّة، ٨ نوفمبر ٢٠٢٦: «اجعله
+            واضحا.. وطبّق هذا لكلّ الصفحات المشابهة») */}
+        <span className="flex shrink-0 items-center gap-0.5 font-bold text-teal-light-ink">
+          {open ? "إخفاء" : "كل المواعيد"}
+          <ChevronDown className={`h-4 w-4 shrink-0 transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+        </span>
       </button>
       {open && (
         <>

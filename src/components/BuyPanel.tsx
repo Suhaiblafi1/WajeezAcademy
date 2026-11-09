@@ -66,6 +66,7 @@ import {
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { buildDiscountPct } from "@/application/commerce/discount-policy";
 import { track } from "@/services/analytics";
+import { distinctCohortTitle } from "@/application/learning/cohort-title";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -324,6 +325,8 @@ export default function BuyPanel({
       setQuote(await apiPost<Quote>("/api/learner/checkout/quote", {
         cohortIds,
         ...(code ? { couponCode: code } : {}),
+        /* ورمزُ رابط المسار — يحكم به الخادمُ في دورته المجانيّة إن كانت (٨ نوفمبر ٢٠٢٦، `private-path-gift.ts`) */
+        ...(buyLinkToken() ? { buyLink: buyLinkToken() } : {}),
       }));
       if (code) { setCouponError(null); rejectedCode.current = ""; }
     } catch (e) {
@@ -631,6 +634,9 @@ export default function BuyPanel({
                         <span className="shrink-0 text-fine font-bold text-gold-ink">
                           {REASON_AR[out.reason] ?? "غير متاحة الآن"}
                         </span>
+                      ) : quote?.items.some((i) => i.cohortId === picked.id && i.unitPrice === 0 && i.listPrice > 0) ? (
+                        /* ودورةٌ سعّرها الخادمُ بصفرٍ — الدورةُ المجانيّةُ في رابط المسار (٨ نوفمبر ٢٠٢٦) — يُقال ذلك في بندها */
+                        <span className="shrink-0 text-read font-bold text-teal-light-ink" data-testid="buy-line-free">مجانية</span>
                       ) : null}
                     </div>
                     {out && (
@@ -649,7 +655,7 @@ export default function BuyPanel({
                         >
                           {options.map((o) => (
                             <option key={o.id} value={o.id} className="bg-surface">
-                              {startsLabel(o)}{o.title ? ` — ${o.title}` : ""}{o.trainers.length > 0 ? ` — مع ${o.trainers.join(" و")}` : ""}
+                              {startsLabel(o)}{(() => { const t = distinctCohortTitle(o.title, line.name); return t ? ` — ${t}` : ""; })()}{o.trainers.length > 0 ? ` — مع ${o.trainers.join(" و")}` : ""}
                             </option>
                           ))}
                         </select>

@@ -29,7 +29,7 @@ import { derivedSecret } from './storage.service'
 import { buildLinkPath, type BuildLinkAdd } from '../../src/application/commerce/build-link'
 import { MAX_BUILT_COURSES } from '../../src/application/commerce/discount-policy'
 import { isWhatsappCampaign, WHATSAPP_CAMPAIGN_TRACKING } from '../../src/application/commerce/buy-link-campaign'
-import { cleanReason, firstNameAr, goPath } from '../../src/application/commerce/private-path'
+import { cleanReason, firstNameAr, giftMinCourses, goPath, type GiftRule, type PrivatePathGift } from '../../src/application/commerce/private-path'
 import { mintPrivatePath } from './private-path.service'
 import { publicSiteUrl } from './site-url'
 
@@ -52,6 +52,8 @@ export interface BuyLinkInput {
   whatsapp?: boolean
   /** سببُ كلّ دورةٍ في «المسار الخاصّ» — بمعرّفها، قصيرا (`PATH_REASON_MAX`) */
   reasons?: Record<string, string>
+  /** دورةٌ هديّةٌ وشرطُها — للسوبر أدمن وحدَه، وفي المسار الخاصّ وحدَه (٨ نوفمبر ٢٠٢٦، `private-path-gift.ts`) */
+  gift?: { courseId: string; cohortId: string; rule: GiftRule } | null
 }
 
 const sign = (payload: string) => createHmac('sha256', derivedSecret('buy-link')).update(payload).digest('base64url').slice(0, 22)
@@ -154,7 +156,11 @@ export class BuyLinkService {
   /** ما تفتح به الأداة: اسمُ المتعلّم وكودُه إن كان — ونوعُ المولّد */
   async prepare(actor: BuyLinkActor, target: BuyLinkTarget) {
     const r = await this.resolve(actor, target)
-    return { kind: r.kind, learnerName: r.name, code: r.ownCode, canChooseCode: r.kind === 'admin', canWhatsapp: r.kind === 'admin' }
+    return {
+      kind: r.kind, learnerName: r.name, code: r.ownCode, canChooseCode: r.kind === 'admin', canWhatsapp: r.kind === 'admin',
+      /* «أضف دورة هدية» للسوبر أدمن وحدَه — قرارُ صاحب المنصّة (٨ نوفمبر ٢٠٢٦: «Super admin only») */
+      canGift: r.kind === 'admin',
+    }
   }
 
   /** يولّد الرابطَ ويكتب أثرَه — ولا يمسّ سعرا ولا كودا */
@@ -200,6 +206,25 @@ export class BuyLinkService {
       if (check.excluded.length > 0) throw new AuthError('path_unavailable', check.excluded[0].messageAr, 409)
     }
 
+    /* ═══ والدورةُ الهديّة (٨ نوفمبر ٢٠٢٦) ═══
+       للسوبر أدمن وحدَه، وفي المسار الخاصّ وحدَه (كلُّ دورةٍ بشعبتها). ودورتُها منشورةٌ ليست من دورات المسار، وشعبتُها منها
+       وتُشترى الآن. وشرطُها يسعه المسار: «دورتان» لمسارٍ فيه دورتان فأكثر */
+    let gift: PrivatePathGift | undefined
+    if (input.gift) {
+      if (r.kind !== 'admin') throw new AuthError('forbidden', 'الدورة الهدية للمدير الأعلى وحده', 403)
+      if (!asPath) throw new AuthError('gift_needs_path', 'اختر شعبة لكل دورة لتضيف دورة هدية', 400)
+      const g = input.gift
+      if (wanted.some((w) => w.courseId === g.courseId)) throw new AuthError('gift_in_path', 'الدورة الهدية من دورات المسار نفسه', 400)
+      const min = giftMinCourses(g.rule, wanted.length)
+      if (min === null) throw new AuthError('gift_rule', 'شرط «دورتين على الأقل» يحتاج مسارا فيه دورتان فأكثر', 400)
+      const gc = await this.prisma.cohort.findUnique({ where: { id: g.cohortId }, select: { courseId: true, course: { select: { status: true } } } })
+      if (!gc || gc.courseId !== g.courseId || gc.course.status !== 'published') throw new AuthError('bad_cohort', 'شعبة الهدية لا تتبع دورتها', 400)
+      const { CommerceService } = await import('./commerce.service')
+      const check = await new CommerceService(this.prisma).preview(r.userId ?? null, [g.cohortId])
+      if (check.excluded.length > 0) throw new AuthError('gift_unavailable', check.excluded[0].messageAr, 409)
+      gift = { courseId: g.courseId, cohortId: g.cohortId, rule: g.rule, minCourses: min }
+    }
+
     const linkId = randomUUID()
     const token = buyLinkToken(linkId, r.kind)
     const tracking: Record<string, string> = { ...(input.whatsapp ? WHATSAPP_CAMPAIGN_TRACKING : {}), bl: token }
@@ -209,6 +234,7 @@ export class BuyLinkService {
       learnerKey: r.userId ? `user:${r.userId}` : `lead:${r.leadId}`,
       firstName: firstNameAr(r.name),
       courses: wanted.map((w) => ({ courseId: w.courseId, cohortId: w.cohortId!, reasonAr: cleanReason(input.reasons?.[w.courseId]) })),
+      ...(gift ? { gift } : {}),
       code, whatsapp: Boolean(input.whatsapp),
     })
     await recordAudit(this.prisma, {
@@ -216,6 +242,8 @@ export class BuyLinkService {
       meta: {
         linkId, kind: r.kind, learner: { name: r.name, leadId: r.leadId, userId: r.userId },
         courses: wanted, code, whatsapp: Boolean(input.whatsapp), goCode,
+        /* والهديّةُ وشرطُها في الأثر — من أهداها ولمن */
+        ...(gift ? { gift } : {}),
       },
     })
     return {

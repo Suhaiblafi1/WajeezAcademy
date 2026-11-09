@@ -20,6 +20,8 @@ const INPUT = z.object({
   whatsapp: z.boolean().optional(),
   /* سببُ كلّ دورةٍ في المسار الخاصّ — بمعرّفها، ويُقصّ إلى حدّه في الخدمة (`cleanReason`) */
   reasons: z.record(COURSE, z.string().max(400)).optional(),
+  /* دورةٌ هديّةٌ وشرطُها — للسوبر أدمن وحدَه (`BuyLinkService.generate`، ٨ نوفمبر ٢٠٢٦) */
+  gift: z.object({ courseId: COURSE, cohortId: z.string().uuid(), rule: z.enum(['all', 'two']) }).nullish(),
 })
 
 export function registerBuyLinkRoutes(app: FastifyInstance, prisma: PrismaClient) {

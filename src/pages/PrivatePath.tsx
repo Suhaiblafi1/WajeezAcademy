@@ -22,9 +22,9 @@
    ومن فتح نسخةً قديمةً يُحوَّل إلى الأحدث. والاسمُ الأوّلُ وحدَه يُعرض: لا بريدَ ولا هاتف. ومعاينةُ واتساب معاينةُ الموقع
    نفسُها (`index.html`) — لا اسمَ المتعلّم ولا كودَه. والقاعدةُ في `src/application/commerce/private-path.ts`. */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router";
-import { CalendarClock, Layers, Loader2, Sparkles, UserRound } from "lucide-react";
+import { CalendarClock, Gift, Layers, Loader2, Sparkles, UserRound } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { rememberBuyLink } from "@/services/buy-link-token";
@@ -50,9 +50,11 @@ import { Card, Inset } from "@/components/ui/Surface";
 import { courseById, courseDomain, courseFullById, courses, pathwayDelivery } from "@/data/courses";
 import { fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
-import { swapCandidates } from "@/application/catalog/pathway-swap";
+import { chosenCohorts, swapCandidates } from "@/application/catalog/pathway-swap";
+import CohortPicker from "@/components/CohortPicker";
 import {
-  goPath, GO_CODE_RE, privatePathHeadline, privatePathPrice, REASON_LABEL_AR, type PathPreviewNumbers, type PrivatePathPrice,
+  giftMissingAr, giftRuleAr, goPath, GO_CODE_RE, privatePathHeadline, privatePathPrice, REASON_LABEL_AR,
+  type GiftRule, type PathPreviewNumbers, type PrivatePathPrice,
 } from "@/application/commerce/private-path";
 
 interface PathView {
@@ -66,6 +68,11 @@ interface PathView {
   couponCode: string | null;
   unavailable: { titleAr: string; reasonAr: string }[];
   buyLinkToken: string;
+  /** الدورةُ المجانيّة وشرطُها (`private-path-gift.ts`) — وسعرُها الأصليّ يُعرض مشطوبا */
+  gift?: {
+    courseId: string; cohortId: string; titleAr: string; trainerName: string | null; firstSessionAt: string | null;
+    listPrice: number; currency: string; rule: GiftRule; minCourses: number; unavailableAr: string | null;
+  } | null;
 }
 type Loaded = { state: "loading" } | { state: "ready"; view: PathView } | { state: "moved"; to: string } | { state: "failed"; messageAr: string };
 
@@ -206,6 +213,19 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
     });
   }, [swapForId, courseIds, season, cohorts, picked, catalogVersion]);
 
+  /* ═══ والدورةُ المجانيّة (٨ نوفمبر ٢٠٢٦) ═══
+     طلبُ صاحب المنصّة: بطاقةٌ مستقلّةٌ بعد دورات المسار — «مجانية»، وسعرُها الأصليّ مشطوبٌ والحاليّ صفر، وسطرٌ بشرطها. وتُضاف
+     إلى الدفع بصفرٍ إن تحقّق الشرط، وإلّا لا تُضاف ويُقال كم دورةً تنقصه. وتعارضُ المواعيد يشملها في الاتّجاهين. والحكمُ عند
+     الدفع للخادم (`private-path-gift.ts`): هذا عرضٌ لما سيحكم به، لا حساب */
+  const gift = v.gift ?? null;
+  const [giftCohortId, setGiftCohortId] = useState<string | null>(v.gift?.cohortId ?? null);
+  const giftOptions = gift ? cohorts.get(gift.courseId) ?? [] : [];
+  const giftChosen = giftOptions.find((o) => o.id === giftCohortId) ?? giftOptions[0] ?? null;
+  const giftMissing = gift ? Math.max(0, gift.minCourses - courseIds.length) : 0;
+  const giftOn = Boolean(gift && !gift.unavailableAr && giftChosen && giftMissing === 0);
+  const giftTimed = giftChosen && gift ? [{ cohortId: giftChosen.id, courseId: gift.courseId, titleAr: gift.titleAr, sessions: giftChosen.sessions }] : [];
+  const pathTimed = chosenCohorts(courseIds, (id) => cohorts.get(id) ?? [], picked, (id) => courseById(id)?.name ?? id);
+
   const changed = courseIds.join() !== originalIds.join() || key !== originalKey;
   const reset = () => { setCourseIds(originalIds); setPicked(originalPicked); setSwapForId(null); };
   const titleOf = (id: string) => courseFullById(id)?.title ?? v.courses.find((c) => c.courseId === id)?.titleAr ?? id;
@@ -222,6 +242,21 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
   });
 
   const ready = current.state === "ready" && current.price !== null && !current.problemAr && courseIds.length > 0;
+  const showPrice = Boolean(v.price || changed) && courseIds.length > 0;
+  /* بكم غيّر الاستبدالُ ما يدفعه — عن سعر الرابط كما وصل. وصفرٌ حين لم يتغيّر شيء أو لم يصل السعرُ بعد */
+  const priceShift = current.state === "ready" && current.price && v.price && current.price.currency === v.price.currency
+    ? Math.round((current.price.total - v.price.total) * 100) / 100
+    : 0;
+  /* هل بطاقةُ السعر على الشاشة الآن — فيختفي الزرُّ الثابتُ ولا يتكرّر الدفعُ مرّتين أمامه */
+  const buyRef = useRef<HTMLDivElement>(null);
+  const [buyInView, setBuyInView] = useState(false);
+  useEffect(() => {
+    const el = buyRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setBuyInView(e.isIntersecting), { threshold: 0.25 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [showPrice, journeyReady]);
   const buy = () => {
     if (!ready || current.state !== "ready") return;
     /* يُحفظ ما يشتريه قبل أن يُطلب منه حساب — فإن خرج ليوثّق بريده عاد إلى مساره (`ResumeCheckout`) */
@@ -270,6 +305,8 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         courseIds={courseIds}
         reasons={reasons}
         reasonsProminentLabelAr={REASON_LABEL_AR}
+        cohortHintOneLine
+        extraBusy={giftOn ? giftTimed : undefined}
         delivery={delivery}
         headingLevel="h2"
         showSchedule
@@ -278,7 +315,8 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         edit={{
           swapOnly: true,
           swapForId,
-          pool: swapChoices.map((s) => ({ id: s.courseId, name: courseById(s.courseId)?.name ?? s.courseId, note: s.noteAr })),
+          /* والدورةُ المجانيّةُ لا تُستبدل بها دورةٌ مدفوعة — هي في بطاقتها */
+          pool: swapChoices.filter((s) => s.courseId !== gift?.courseId).map((s) => ({ id: s.courseId, name: courseById(s.courseId)?.name ?? s.courseId, note: s.noteAr })),
           introAr: "لك أن تستبدل أي دورة بأخرى، وخاصة التي تتعارض مواعيدها. العدد ثابت، والسعر يحدث من جديد بعد الاستبدال.",
           onReset: changed ? reset : undefined,
           minReached: true,
@@ -327,15 +365,59 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         </>
       )}
 
+      {gift && journeyReady && (
+        <Card className="mt-4 p-4" data-testid="private-path-gift">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <h2 className="flex min-w-0 items-start gap-2 text-base font-black leading-snug">
+              <Gift className="mt-0.5 h-5 w-5 shrink-0 text-gold-ink" aria-hidden="true" />
+              {courseFullById(gift.courseId)?.title ?? gift.titleAr}
+            </h2>
+            <Badge className="bg-gold font-black text-on-gold">مجانية</Badge>
+          </div>
+          <p className="mt-2 flex flex-wrap items-baseline gap-x-2 text-read">
+            {gift.listPrice > 0 && <bdi dir="ltr" className="text-muted-foreground line-through">{fmtMoney(gift.listPrice, gift.currency)}</bdi>}
+            <bdi dir="ltr" className="text-lg font-black text-foreground">{fmtMoney(0, gift.currency)}</bdi>
+          </p>
+          <p className="mt-1 text-read font-bold text-foreground">{giftRuleAr(gift)}</p>
+          {gift.unavailableAr ? (
+            <p className="mt-1 text-read text-gold-ink">لم تعد متاحة: {gift.unavailableAr}</p>
+          ) : giftMissing > 0 ? (
+            <p className="mt-1 text-read text-gold-ink" data-testid="private-path-gift-missing">{giftMissingAr(giftMissing)}</p>
+          ) : (
+            <p className="mt-1 text-read text-teal-light-ink">تضاف إلى طلبك مجانا عند الدفع</p>
+          )}
+          {!gift.unavailableAr && giftOptions.length > 0 && (
+            <div className="mt-3">
+              <CohortPicker
+                compact
+                hintOneLine
+                cohorts={giftOptions}
+                selectedId={giftChosen?.id ?? null}
+                onSelect={setGiftCohortId}
+                others={pathTimed}
+              />
+            </div>
+          )}
+        </Card>
+      )}
+
       {v.unavailable.length > 0 && (
         <Inset className="mt-3 text-read">
           {v.unavailable.map((u) => <p key={u.titleAr}>«{u.titleAr}» لم تعد متاحة: {u.reasonAr}</p>)}
         </Inset>
       )}
 
-      {/* السعرُ كما كان: الأصليّ، والمنحة، وما يدفعه — من الخادم */}
-      {(v.price || changed) && courseIds.length > 0 && (
-        <Card id="buy" className="story-fade mt-8 scroll-mt-24 p-5" data-testid="private-path-price">
+      <PathwayEcosystemPanel />
+
+      <p className="mt-8 flex items-center justify-center gap-2 text-center text-read leading-5 text-muted-foreground">
+        <Sparkles className="h-3.5 w-3.5" />
+        منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تفتح تلقائيا بعد أول دفع ناجح.
+      </p>
+
+      {/* السعرُ كاملا: الأصليّ، والمنحة، وما يدفعه — من الخادم. وموضعُه أسفلَ الصفحة بعد «تفتح تلقائيا بعد أول دفع ناجح»
+          (صاحب المنصّة، ٨ نوفمبر ٢٠٢٦)، وزرٌّ صغيرٌ ثابتٌ أسفلَ الشاشة يقوم مقامَه حتّى يصله (`private-path-sticky-buy`) */}
+      {showPrice && (
+        <Card id="buy" ref={buyRef} className="story-fade mt-6 scroll-mt-24 p-5" data-testid="private-path-price">
           {current.state === "loading" ? (
             <p className="flex items-center gap-2 text-read text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> نحدث السعر…</p>
           ) : current.price ? (
@@ -344,7 +426,15 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
               {current.price.grant > 0 && (
                 <div className="flex justify-between"><dt>{current.price.grantNameAr ?? "الخصم"}</dt><dd>− {fmtMoney(current.price.grant, current.price.currency)}</dd></div>
               )}
-              <div className="flex justify-between text-lg font-black"><dt>ما تدفعه</dt><dd>{fmtMoney(current.price.total, current.price.currency)}</dd></div>
+              <div className="flex justify-between text-lg font-black"><dt>{current.price.grant > 0 ? "ما تدفعه بعد المنحة" : "ما تدفعه"}</dt><dd>{fmtMoney(current.price.total, current.price.currency)}</dd></div>
+              {priceShift !== 0 && v.price && (
+                <p className="text-muted-foreground" data-testid="private-path-price-was">
+                  قبل الاستبدال كان <bdi dir="ltr">{fmtMoney(v.price.total, v.price.currency)}</bdi> — {priceShift > 0 ? "زاد" : "نقص"} <bdi dir="ltr">{fmtMoney(Math.abs(priceShift), current.price.currency)}</bdi>
+                </p>
+              )}
+              {giftOn && gift && (
+                <div className="flex justify-between"><dt>{courseFullById(gift.courseId)?.title ?? gift.titleAr}</dt><dd className="font-bold text-teal-light-ink">مجانية</dd></div>
+              )}
               {v.lastDay && <p className="pt-1 text-muted-foreground">آخر يوم للمنحة: {cohortDayAr(`${v.lastDay}T12:00:00Z`, { weekday: "long", day: "numeric", month: "long" })}</p>}
             </dl>
           ) : null}
@@ -362,12 +452,49 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         </Card>
       )}
 
-      <PathwayEcosystemPanel />
 
-      <p className="mt-8 flex items-center justify-center gap-2 text-center text-read leading-5 text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5" />
-        منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تفتح تلقائيا بعد أول دفع ناجح.
-      </p>
+      {/* ═══ زرُّ الدفع صغيرٌ ثابتٌ على الشاشة (٨ نوفمبر ٢٠٢٦) ═══
+          قرارُ صاحب المنصّة: «اجعل خانةَ الدفع كزرٍّ صغيرٍ ثابتٍ على الشاشة، ويُعاد إيجادُه بعد جملة فتح المنصّة بالأسفل».
+          فما يدفعه وزرُّ الشراء ثابتان أسفلَ الشاشة، ويختفيان حين تظهر بطاقةُ السعر نفسُها فلا يتكرّران. وما
+          لم يجهز سعرُه (يُحدَّث، أو فيه مشكلة) ينقله الزرُّ إلى البطاقة حيث يُقال السبب */}
+      {showPrice && !buyInView && !buyOpen && !authOpen && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]" data-testid="private-path-sticky-buy">
+          <div className="pointer-events-auto mx-auto flex max-w-sm items-center justify-between gap-3 rounded-full border border-white/15 bg-paper/95 py-1.5 pe-1.5 ps-5 shadow-xl backdrop-blur">
+            <span className="min-w-0 text-read leading-5">
+              {current.state === "ready" && current.price ? (
+                <>
+                  {/* قبلُ وبعدُ (٨ نوفمبر ٢٠٢٦): «اجعل السعرَ يظهر قبل وبعد مع شطب السعر الأصليّ.. ليعلم ما التغيير في السعر
+                      إن غيّر شيئا، وليعلم أنّ السعرَ بعد المنحة». فالأصليُّ مشطوبٌ بجانب ما يدفعه، وفوقهما «بعد {المنحة}»،
+                      وإن غيّر الاستبدالُ السعرَ قيل بكم (`priceShift`) */}
+                  <span className="block text-muted-foreground">{current.price.grant > 0 ? `بعد ${current.price.grantNameAr ?? "الخصم"}` : "ما تدفعه"}</span>
+                  <span className="flex flex-wrap items-baseline gap-x-1.5">
+                    {current.price.grant > 0 && (
+                      <bdi dir="ltr" className="text-muted-foreground line-through">{fmtMoney(current.price.before, current.price.currency)}</bdi>
+                    )}
+                    <bdi dir="ltr" className="text-base font-black text-foreground">{fmtMoney(current.price.total, current.price.currency)}</bdi>
+                    {priceShift !== 0 && (
+                      <bdi dir="ltr" className={`font-bold ${priceShift > 0 ? "text-gold-ink" : "text-teal-light-ink"}`} data-testid="private-path-price-shift">
+                        {priceShift > 0 ? "+" : "−"}{fmtMoney(Math.abs(priceShift), current.price.currency)}
+                      </bdi>
+                    )}
+                  </span>
+                </>
+              ) : (
+                <span className="flex items-center gap-1.5 text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> نحدث السعر…</span>
+              )}
+            </span>
+            <Button
+              tone="confirm"
+              size="sm"
+              onClick={ready ? buy : () => document.getElementById("buy")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+              disabled={current.state === "loading"}
+            >
+              أكمل التسجيل
+            </Button>
+          </div>
+        </div>
+      )}
+      {showPrice && <div aria-hidden="true" className="h-20" />}
 
       <ResumeCheckout ready={resumed !== null} onResume={() => (session ? setBuyOpen(true) : setAuthOpen(true))} />
 
@@ -385,7 +512,11 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
           email={session?.email ?? ""}
           kind="courses"
           initialCoupon={v.couponCode ?? ""}
-          lines={courseIds.map((id) => ({ courseId: id, name: titleOf(id), cohortId: picked[id] }))}
+          lines={[
+            ...courseIds.map((id) => ({ courseId: id, name: titleOf(id), cohortId: picked[id] })),
+            /* والمجانيّةُ في الطلب إن تحقّق شرطُها — والخادمُ يسعّرها بصفرٍ برمز الرابط ويحكم ثانيةً (`private-path-gift.ts`) */
+            ...(giftOn && gift && giftChosen ? [{ courseId: gift.courseId, name: courseFullById(gift.courseId)?.title ?? gift.titleAr, cohortId: giftChosen.id }] : []),
+          ]}
           onClose={() => setBuyOpen(false)}
         />
       )}
@@ -400,7 +531,7 @@ function Frame({ children, title, user = null }: { children: React.ReactNode; ti
       {/* لا يُفهرس: صفحةٌ باسم إنسانٍ لا تُعرض في محرّكات البحث */}
       <SeoHead title={title} description="مسارك في أكاديمية وجيز" path="/go" noindex />
       <PathwayTopBar user={user} />
-      <div className="mx-auto max-w-5xl px-5 py-12">{children}</div>
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-5 sm:py-12">{children}</div>
       <EcosystemNote className="mx-auto max-w-5xl px-5 pb-8" />
       <SiteFooter />
     </div>
