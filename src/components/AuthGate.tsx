@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { Check, Eye, EyeOff, Linkedin, Lock, Mail, ShieldCheck, UserRound } from "lucide-react";
+import { Check, Eye, EyeOff, Linkedin, Lock, Mail, Phone, ShieldCheck, UserRound } from "lucide-react";
+import { normalizePhone } from "@/application/advisor/guest-contact";
 import {
   OAUTH_READY,
   lockedMinutes,
@@ -77,6 +78,8 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
   const [view, setView] = useState<View>("auth");
   const [name, setName] = useState(prefill?.name ?? "");
   const [email, setEmail] = useState(prefill?.email ?? "");
+  /* رقمُ واتساب — اختياريٌّ عند التسجيل، ليُتواصل مع من لم يسجّل في شعبة (٩ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Optional») */
+  const [phone, setPhone] = useState("");
   const [pass, setPass] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -90,7 +93,8 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
   const passValid = pass.length >= 8;
   const nameValid = mode === "login" || name.trim().length >= 2;
   const consentValid = mode === "login" || agreed;
-  const formValid = emailValid && passValid && nameValid && consentValid;
+  const phoneValid = mode === "login" || phone.trim() === "" || normalizePhone(phone) !== null;
+  const formValid = emailValid && passValid && nameValid && phoneValid && consentValid;
   const strength = strengthOf(pass);
   const locked = lockedMinutes();
 
@@ -107,6 +111,8 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           ? "أدخل اسمك — لنرحب بك باسمك لا برقم"
           : !emailValid
             ? "صيغة البريد غير صحيحة — مثال: name@mail.com"
+            : !phoneValid
+              ? "رقم واتساب غير صحيح — اكتبه بالأرقام مع رمز الدولة، أو اتركه فارغا"
             : !passValid
               ? "كلمة المرور ٨ أحرف على الأقل — أضف رقما أو رمزا لتقويتها"
               : "نحتاج موافقتك على شروط الاستخدام وسياسة الخصوصية أولا"
@@ -118,7 +124,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
     track("account_started", { mode, ...(source ? { source } : {}) });
     try {
       const result =
-        mode === "signup" ? await signUp(name, email, pass, hp.value) : await signIn(email, pass);
+        mode === "signup" ? await signUp(name, email, pass, hp.value, phone) : await signIn(email, pass);
       if (!result.ok) {
         track("account_failed");
         setErr(result.error);
@@ -497,6 +503,34 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 </p>
               )}
             </div>
+
+            {mode === "signup" && (
+              <div>
+                <label htmlFor="auth-phone" className={LABEL_CLS}>رقم واتساب (اختياري)</label>
+                <div className="relative">
+                  <Phone className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
+                  {phone.trim() !== "" && phoneValid && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
+                  <input
+                    id="auth-phone"
+                    name="phone"
+                    dir="ltr"
+                    type="tel"
+                    inputMode="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+962 7X XXX XXXX"
+                    autoComplete="tel"
+                    aria-describedby="auth-phone-hint"
+                    className={FIELD_CLS}
+                  />
+                </div>
+                {!phoneValid && (
+                  <p id="auth-phone-hint" className="mt-1.5 text-read font-semibold text-red-300">
+                    رقم واتساب غير صحيح — اكتبه بالأرقام مع رمز الدولة
+                  </p>
+                )}
+              </div>
+            )}
 
             <div>
               <label htmlFor="auth-pass" className={LABEL_CLS}>كلمة المرور</label>

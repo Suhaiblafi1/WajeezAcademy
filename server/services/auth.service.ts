@@ -10,6 +10,7 @@ import { MAIL_LINK_TTL_MS, RESET_LINK_TTL_MS } from '../../src/application/links
 import { linkLeadsAfterVerification } from './lead-link'
 import { proveApplicationFromAccount } from './email-proof'
 import { recordSignupSource, type SignupVia } from './signup-source.service'
+import { normalizePhone } from '../../src/application/advisor/guest-contact'
 
 /** الدور الأرضيّ لكلّ حساب — يُمنح عند التسجيل ولا يُنزع بترقية */
 const LEARNER_ROLE = 'learner'
@@ -137,10 +138,20 @@ export class AuthService {
     ip?: string,
     /* من أين جاء — كما أرسله المتصفّح، ويُنظَّف هنا (`signup-source.ts`) */
     source?: unknown,
+    /* رقمُ واتساب — اختياريٌّ (٩ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Optional»). ويُردّ قبل إنشاء الحساب إن لم يكن رقما:
+       الشاشةُ تفحصه بالقاعدة نفسِها، فلا يُنشأ حسابٌ ويضيع رقمُه بصمت */
+    phone?: string,
   ): Promise<{ userId: string }> {
+    const cleanPhone = phone?.trim() ? normalizePhone(phone) : null
+    if (phone?.trim() && !cleanPhone) throw new AuthError('invalid_phone', 'رقم واتساب غير صحيح — اكتبه بالأرقام مع رمز الدولة، أو اتركه فارغا', 400)
     await this.assertSignupAllowed(ip)
     try {
       const out = await this.register(email, password, displayName)
+      if (cleanPhone) {
+        await this.prisma.learnerProfile.upsert({
+          where: { userId: out.userId }, create: { userId: out.userId, phone: cleanPhone }, update: { phone: cleanPhone },
+        })
+      }
       await this.prisma.registrationAttempt.create({ data: { ip, outcome: 'created' } })
       await this.recordSignupSource(out.userId, 'self', source)
       return out

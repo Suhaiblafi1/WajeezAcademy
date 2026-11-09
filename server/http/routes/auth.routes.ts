@@ -48,14 +48,16 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService, pris
           email: { type: 'string', format: 'email' }, password: { type: 'string', minLength: 8 }, displayName: { type: 'string' },
           /* من أين جاء — اختياريّ، ويُنظَّف في `recordSignupSource` */
           source: { type: 'object' },
+          /* رقمُ واتساب — اختياريّ (٩ نوفمبر ٢٠٢٦)، ويُحفظ في ملفّه (`registerSelf`) */
+          phone: { type: 'string', maxLength: 40 },
         },
       },
     },
   }, async (req, reply) => {
     assertNotBot(req.body)
-    const body = z.object({ email, password, displayName: z.string().trim().max(80).optional() }).parse(req.body)
+    const body = z.object({ email, password, displayName: z.string().trim().max(80).optional(), phone: z.string().trim().max(40).optional() }).parse(req.body)
     const { userId } = await auth.registerSelf(
-      body.email, body.password, body.displayName ?? '', req.ip, (req.body as { source?: unknown }).source,
+      body.email, body.password, body.displayName ?? '', req.ip, (req.body as { source?: unknown }).source, body.phone,
     )
     /* رابط التوثيق يُرسل مع الإنشاء لا بعده بخطوة يدوية — ولا يُسقط التسجيل
        عند تعذّر الإرسال: الحساب أُنشئ فعلا، وردٌّ بخطأ يجعل المستخدم يظنّ أنه
