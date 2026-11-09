@@ -17,3 +17,14 @@ export const PAY_STATUS: Record<string, string> = { succeeded: 'دفعة ناج�
    ما ينتظر عملا، فيضيع المعلَّقُ بين عشرين «ملغى». تُخفى ولا تُحذف: زرٌّ يُظهرها. */
 export const ARCHIVED_REQ: ReadonlySet<string> = new Set(['cancelled', 'rejected', 'expired'])
 export const ARCHIVED_INV: ReadonlySet<string> = new Set(['void'])
+
+/** أدفعةٌ زائدة؟ ما وصل مالُه بعد دفعةٍ أخرى على الفاتورة نفسِها — صفحةُ دفعٍ ثانيةٌ دُفعت لطلبٍ مدفوع (٩ نوفمبر ٢٠٢٦).
+    والأولى هي التي سوّت الطلب. والخادمُ يحكم بالقاعدة نفسِها في الردّ (`isExtraPayment` في `commerce.service.ts`). */
+export function isExtraPayment(
+  p: { id: string; status: string; succeededAt?: string | null },
+  all: readonly { id: string; status: string; succeededAt?: string | null }[],
+): boolean {
+  if (!(p.status in PAY_STATUS) || !p.succeededAt) return false
+  return all.some((o) => o.id !== p.id && o.status in PAY_STATUS && !!o.succeededAt
+    && (o.succeededAt < p.succeededAt! || (o.succeededAt === p.succeededAt && o.id < p.id)))
+}

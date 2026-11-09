@@ -153,6 +153,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'advisor_payout',
       /* ودفعةٌ وصلت — جرسُ الإدارة (٣ نوفمبر ٢٠٢٦)، خبرُ مالٍ لا يُكتَم كأخواته */
       'admin.order_paid',
+      /* ودفعةٌ زائدة — صفحةٌ ثانيةٌ دُفعت لطلبٍ مدفوع، تنتظر الردّ (٩ نوفمبر ٢٠٢٦) */
+      'admin.payment_extra',
     ],
   },
   {
