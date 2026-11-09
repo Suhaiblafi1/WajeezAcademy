@@ -212,11 +212,12 @@ function QuickViewBio({ bio }: { bio: string }) {
 /* ─────────── النافذةُ والقراءة ─────────── */
 
 /** بطاقةُ المدرّب في نافذة المنصّة: تُقرأ صفحتُه حين تُفتح، ويُزال كلُّ شيءٍ بإغلاقها فيعود التركيزُ إلى ما فتحها */
-export default function TrainerQuickView({ seed, onClose }: { seed: TrainerSeed; onClose: () => void }) {
+export default function TrainerQuickView({ seed, onClose, autoPlay = false }: { seed: TrainerSeed; onClose: () => void; autoPlay?: boolean }) {
   const slug = seed.slug;
   const [reply, setReply] = useState<{ slug: string; attempt: number; page: QuickViewPage | null; failed: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  /* من حلقة الصورة في القائمة: الفيديو يعمل حين تُفتح — ولا يعمل إلّا إن كان يُضمَّن (`isPlaying` في البطاقة) */
+  const [playing, setPlaying] = useState(autoPlay);
 
   useEffect(() => {
     if (!slug) return;

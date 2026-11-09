@@ -267,3 +267,31 @@ describe('⑥ ومسارُ صفحته لبطاقته المنبثقة — لمن
     }
   })
 })
+
+describe('⑦ وقائمةُ المدرّبين تحمل فيديو تعريفه لحلقة صورته — لمن أُعلن وحدَه (٩ نوفمبر ٢٠٢٦)', () => {
+  type ListRow = { id: string; video?: unknown }
+  const list = async () => (await app.inject({ method: 'GET', url: '/api/trainers/public' })).json() as ListRow[]
+
+  it('⚠️ المعلَنُ ذو الفيديو يخرج فيديو تعريفه مبنيّا — ومن لا فيديو له يخرج بلا فيديو', async () => {
+    const withVideo = await trainer('مدرّبة بفيديو في القائمة')
+    const without = await trainer('مدرّب بلا فيديو في القائمة')
+    for (const t of [withVideo, without]) await leads(courses[11]!, t.id)
+    await video(withVideo.id, 'bio', '', `https://youtube.com/shorts/${YT}?feature=share`)
+    const rows = await list()
+    expect(rows.find((t) => t.id === withVideo.id)?.video).toEqual({ kind: 'embed', provider: 'youtube', src: YT_EMBED, vertical: true })
+    expect(rows.find((t) => t.id === without.id)?.video ?? null).toBeNull()
+  })
+
+  it('⚠️ وفيديو من لم يجز عرضُه لا يُقرأ — ولا الموقوف', async () => {
+    const hidden = await trainer('مدرّب مخفيّ بفيديو', false)
+    const suspended = await trainer('مدرّب موقوف بفيديو')
+    await prisma.trainerProfile.update({ where: { id: suspended.id }, data: { suspendedAt: new Date() } })
+    for (const [t, id] of [[hidden, 'hiddenVid01'], [suspended, 'suspendVd01']] as const) {
+      await leads(courses[11]!, t.id)
+      await video(t.id, 'bio', '', `https://youtu.be/${id}`)
+    }
+    const body = JSON.stringify(await list())
+    expect(body).not.toContain('hiddenVid01')
+    expect(body).not.toContain('suspendVd01')
+  })
+})

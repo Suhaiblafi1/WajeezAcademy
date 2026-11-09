@@ -25,7 +25,7 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import { TrainerAvatarRing, TrainerPagePhoto, TrainerVideoLink } from '@/components/trainer/TrainerAvatarRing'
 import { TrainerQuickViewCard } from '@/components/trainer/TrainerQuickView'
-import { mergeQuickView, QUICK_VIEW_SPECIALTIES, type TrainerQuickViewData } from '@/application/trainer/quick-view'
+import { hasVideoRing, mergeQuickView, QUICK_VIEW_SPECIALTIES, type TrainerQuickViewData } from '@/application/trainer/quick-view'
 import { playerSrcOf, videoEmbedOf, type PublicTrainerVideo } from '@/application/trainer/marketing-video'
 
 const SHORTS = videoEmbedOf('https://www.youtube.com/shorts/dQw4w9WgXcQ')
@@ -187,5 +187,19 @@ describe('④ الدمج', () => {
     expect(bad.video).toBeNull()
     expect(bad.photoUrl).toBeNull()
     expect(bad.slug).toBeNull()
+  })
+})
+
+describe('⑦ حلقةُ الصورة في قائمة المدرّبين لما يُضمَّن وحدَه (٩ نوفمبر ٢٠٢٦)', () => {
+  it('فيديو يُضمَّن: حلقة', () => {
+    expect(hasVideoRing({ video: videoEmbedOf('https://youtube.com/shorts/dQw4w9WgXcQ') })).toBe(true)
+  })
+  it.each([
+    ['بلا فيديو', undefined],
+    ['null', null],
+    ['رابطٌ لا يُضمَّن', { kind: 'link', href: 'https://example.com/v' }],
+    ['إطارٌ لم نبنه', { kind: 'embed', provider: 'youtube', src: 'https://evil.example/embed/dQw4w9WgXcQ' }],
+  ])('وبلا حلقة: %s', (_label, video) => {
+    expect(hasVideoRing({ video })).toBe(false)
   })
 })

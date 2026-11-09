@@ -63,3 +63,8 @@ export function mergeQuickView(seed: TrainerSeed, page: QuickViewPage | null): T
   }
 }
 
+/** صورةُ المدرّب في قائمة `/trainers`: تُحاط بحلقة الفيديو وشارة التشغيل لمن له فيديو يُضمَّن وحدَه (٩ نوفمبر ٢٠٢٦) —
+    والرابطُ الذي لا يُضمَّن لا حلقةَ له، كحلقة صفحته وبطاقته */
+export function hasVideoRing(t: { video?: unknown }): boolean {
+  return renderableVideo(t.video)?.kind === 'embed'
+}
