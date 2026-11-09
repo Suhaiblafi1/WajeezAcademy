@@ -13,6 +13,7 @@ export default function Modal({
   children,
   panelClassName = "",
   backdropClassName = "bg-paper/70 backdrop-blur-sm",
+  sheet = false,
 }: {
   onClose: () => void;
   label: string;
@@ -20,6 +21,8 @@ export default function Modal({
   panelClassName?: string;
   /** أرضيّةُ ما خلف النافذة — ورقةٌ شفّافةٌ للنماذج، وداكنةٌ لمشغّل الفيديو (`TrainerVideo.tsx`) */
   backdropClassName?: string;
+  /** لوحٌ يجلس أسفلَ الهاتف كالورقة الصاعدة، ووسطَ الشاشة الواسعة — بطاقةُ المدرّب (`trainer/TrainerQuickView.tsx`) */
+  sheet?: boolean;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<Element | null>(null);
@@ -88,7 +91,7 @@ export default function Modal({
 
   return createPortal(
     <div className={`fixed inset-0 z-[70] overflow-y-auto ${backdropClassName}`} onClick={onClose}>
-      <div className="flex min-h-full items-center justify-center p-5">
+      <div className={`flex min-h-full justify-center ${sheet ? "items-end p-2 sm:items-center sm:p-5" : "items-center p-5"}`}>
         <div
           ref={panelRef}
           role="dialog"

@@ -21,13 +21,22 @@
 
    ومن لا فيديو له لا يُرسم له شيء: لا صندوقٌ فارغٌ ولا «لا فيديو بعد».
 
+   ═══ وفي صفحته حلقةٌ حول صورته، وفي كلّ موضعٍ بطاقتُه المنبثقة (٩ نوفمبر ٢٠٢٦) ═══
+
+   صفحةُ المدرّب لم تعد تعرض هذه النافذة: صورتُه بحلقة «قصّة» تفتح المشغّلَ المكبَّرَ نفسَه (`TrainerVideoZoom`) من
+   موضعها (`trainer/TrainerAvatarRing.tsx`). وهنا اسمُه و«عن المدرب» يفتحان بطاقتَه (`trainer/TrainerQuickView.tsx`)،
+   والنافذةُ الصغيرةُ تبقى للفيديو. والإطارُ نفسُه (`TrainerVideoFrame`) في المشغّل المكبَّر وفي البطاقة.
+
    ═══ والألوانُ هنا حرفيّةٌ عمدا ═══
 
    النافذةُ شاشةُ فيديو: داكنةٌ في المظهرين. و`text-white` و`bg-black/…` يقلبهما المظهرُ الفاتح (`styles/light.css`)
    حبرا على ورق — فكُتبا بقيمتهما (`text-[#fff]` و`bg-[#000]/…`) لتبقى الشاشةُ شاشة. */
 
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
-import { ExternalLink, Loader2, Mic, MonitorPlay, Play, X } from "lucide-react";
+import { ExternalLink, Loader2, Mic, MonitorPlay, Play, UserRound, X } from "lucide-react";
+import TrainerQuickView from "@/components/trainer/TrainerQuickView";
+import { seedOf } from "@/application/trainer/quick-view";
+import { zoomFromEl, type ZoomFrom } from "@/components/trainer/zoom-from";
 import { apiGet } from "@/services/api";
 import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -38,22 +47,7 @@ import {
   playerSrcOf, renderableVideo, safePhotoUrl, type PublicTrainerVideo,
 } from "@/application/trainer/marketing-video";
 
-type EmbedVideo = Extract<PublicTrainerVideo, { kind: "embed" }>;
-
-/** مركزُ ما ضُغط بالنسبة إلى مركز الشاشة — منه يكبر المشغّل */
-type ZoomFrom = { x: number; y: number };
-
-/* والجسمُ مكبَّرٌ على الشاشات الواسعة (`zoom: var(--app-scale)` في `index.css`): المقاسُ يُقرأ بمقياس الشاشة، والإزاحةُ
-   داخل الجسم تُضرب فيه — فتُقسم عليه لتبدأ من النافذة الصغيرة نفسِها */
-function zoomFromEl(el: Element | null): ZoomFrom {
-  if (!el || typeof window === "undefined") return { x: 0, y: 0 };
-  const r = el.getBoundingClientRect();
-  const scale = parseFloat(getComputedStyle(document.body).zoom) || 1;
-  return {
-    x: Math.round((r.left + r.width / 2 - window.innerWidth / 2) / scale),
-    y: Math.round((r.top + r.height / 2 - window.innerHeight / 2) / scale),
-  };
-}
+export type EmbedVideo = Extract<PublicTrainerVideo, { kind: "embed" }>;
 
 /* ─────────── ① النافذةُ الصغيرة ─────────── */
 
@@ -133,6 +127,31 @@ export function TrainerVideoTile({
 
 /* ─────────── ② المشغّلُ المكبَّر ─────────── */
 
+/** الإطارُ وما خلفه حتى يرسم المزوّدُ أوّلَ صورة — يملأ حاويتَه، ومقاسُها عند من يرسمه: النافذةُ المكبَّرة هنا،
+    والبطاقةُ المنبثقة (`trainer/TrainerQuickView.tsx`). ولا إطارَ لما لم نبنه */
+export function TrainerVideoFrame({ video, name, photoUrl }: { video: EmbedVideo; name: string; photoUrl: string | null }) {
+  const photo = safePhotoUrl(photoUrl);
+  const src = playerSrcOf(video);
+  if (!src) return null;
+  return (
+    <>
+      {/* ما خلف الإطار حتى يرسم المزوّدُ أوّلَ صورة: صورتُه معتمةً ودوّامة — لا سوادٌ يُظنّ عطلا */}
+      <div aria-hidden="true" className="absolute inset-0 grid place-items-center overflow-hidden bg-[#000]">
+        {photo && <img src={photo} alt="" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-xl" />}
+        <Loader2 className="relative h-8 w-8 text-[#fff]/80 motion-safe:animate-spin" />
+      </div>
+      <iframe
+        src={src}
+        title={`فيديو تعريفي: ${name}`}
+        referrerPolicy="strict-origin-when-cross-origin"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+        className="absolute inset-0 h-full w-full border-0"
+      />
+    </>
+  );
+}
+
 /** ما في النافذة المكبَّرة: شريطٌ باسمه وزرِّ الإغلاق، والإطارُ بالتشغيل التلقائيّ. ولا إطارَ لما لم نبنه */
 export function TrainerVideoPlayerWindow({
   video, name, photoUrl, from, onClose,
@@ -143,9 +162,7 @@ export function TrainerVideoPlayerWindow({
   from: ZoomFrom;
   onClose: () => void;
 }) {
-  const photo = safePhotoUrl(photoUrl);
-  const src = playerSrcOf(video);
-  if (!src) return null;
+  if (!playerSrcOf(video)) return null;
   /* العموديُّ يقاس بارتفاعه (‎min(80vh, 680px)‎ مع شريطه) والأفقيُّ بعرضه (‎min(92vw, 960px)‎) — وكلاهما لا يتجاوز الشاشة.
      و`vw`/`vh` تُقسم على مقياس الجسم (`--app-scale`): هي مقاسُ الشاشة الحقيقيّ، وما في الجسم يُضرب فيه */
   const vw = "calc(88vw / var(--app-scale, 1))";
@@ -171,21 +188,32 @@ export function TrainerVideoPlayerWindow({
         </button>
       </div>
       <div style={size} className="relative max-w-full">
-        {/* ما خلف الإطار حتى يرسم المزوّدُ أوّلَ صورة: صورتُه معتمةً ودوّامة — لا سوادٌ يُظنّ عطلا */}
-        <div aria-hidden="true" className="absolute inset-0 grid place-items-center overflow-hidden">
-          {photo && <img src={photo} alt="" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-xl" />}
-          <Loader2 className="relative h-8 w-8 text-[#fff]/80 motion-safe:animate-spin" />
-        </div>
-        <iframe
-          src={src}
-          title={`فيديو تعريفي: ${name}`}
-          referrerPolicy="strict-origin-when-cross-origin"
-          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-          allowFullScreen
-          className="absolute inset-0 h-full w-full border-0"
-        />
+        <TrainerVideoFrame video={video} name={name} photoUrl={photoUrl} />
       </div>
     </div>
+  );
+}
+
+/** المشغّلُ المكبَّرُ في نافذة المنصّة على أرضيّةٍ داكنة — يُرسم ما دام `from`، ويُزال بالإغلاق فيقف الصوت.
+    تفتحه النافذةُ الصغيرة هنا، وصورةُ المدرّب بحلقتها في صفحته (`trainer/TrainerAvatarRing.tsx`) */
+export function TrainerVideoZoom({
+  video, name, photoUrl, from, onClose,
+}: {
+  video: EmbedVideo;
+  name: string;
+  photoUrl: string | null;
+  from: ZoomFrom | null;
+  onClose: () => void;
+}) {
+  if (!from) return null;
+  return (
+    <Modal
+      label={`فيديو تعريفي: ${name}`}
+      onClose={onClose}
+      backdropClassName="bg-[#000]/80 backdrop-blur-md motion-safe:animate-backdrop-in"
+    >
+      <TrainerVideoPlayerWindow video={video} name={name} photoUrl={photoUrl} from={from} onClose={onClose} />
+    </Modal>
   );
 }
 
@@ -193,7 +221,7 @@ export function TrainerVideoPlayerWindow({
 
 /** النافذةُ وإلى جانبها اسمُه وسطرٌ يدعو وزرٌّ ثانٍ يفتح المشغّلَ نفسَه. والرابطُ الذي لا يُضمَّن زرٌّ وحدَه */
 export function TrainerVideoCard({
-  video, name, headline, photoUrl, title, kicker,
+  video, name, headline, photoUrl, title, kicker, onAbout,
 }: {
   video: PublicTrainerVideo;
   name: string;
@@ -203,19 +231,42 @@ export function TrainerVideoCard({
   title?: string;
   /** عنوانُ القسم فوق اسمه — لمدرّبٍ واحد، فلا يأخذ العنوانُ سطرا فوق النافذة */
   kicker?: ReactNode;
+  /** يفتح بطاقتَه المنبثقة (`trainer/TrainerQuickView.tsx`) — فيصير اسمُه زرّا، ومعه «عن المدرب» */
+  onAbout?: () => void;
 }) {
   const [from, setFrom] = useState<ZoomFrom | null>(null);
   const tileRef = useRef<HTMLButtonElement>(null);
+
+  /* اسمُه زرٌّ يفتح بطاقتَه حين تُمرَّر — والنافذةُ الصغيرةُ تبقى للفيديو كما كانت */
+  const heading = onAbout && !title ? (
+    <button
+      type="button"
+      onClick={onAbout}
+      className="-my-2 inline-flex min-h-11 items-center text-start text-read font-black leading-snug text-foreground decoration-teal/60 decoration-dotted underline-offset-4 transition hover:text-teal-light-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
+    >
+      {name}
+    </button>
+  ) : (
+    <p className="text-read font-black leading-snug text-foreground">{title ?? name}</p>
+  );
+  const about = onAbout && (
+    <Button tone="ghost" size="sm" icon={UserRound} onClick={onAbout} className="mt-3 whitespace-nowrap">
+      عن المدرب
+    </Button>
+  );
 
   if (video.kind === "link") {
     return (
       <div className="min-w-0">
         {kicker}
-        <p className="text-read font-black leading-snug text-foreground">{title ?? name}</p>
+        {heading}
         {headline && <p className="mt-1 text-read leading-relaxed text-muted-foreground">{headline}</p>}
-        <Button as="a" href={video.href} target="_blank" rel="noopener noreferrer" tone="secondary" size="sm" icon={ExternalLink} className="mt-3">
-          شاهد الفيديو
-        </Button>
+        <div className="flex flex-wrap gap-x-2">
+          <Button as="a" href={video.href} target="_blank" rel="noopener noreferrer" tone="secondary" size="sm" icon={ExternalLink} className="mt-3">
+            شاهد الفيديو
+          </Button>
+          {about}
+        </div>
       </div>
     );
   }
@@ -228,22 +279,17 @@ export function TrainerVideoCard({
       <TrainerVideoTile video={video} name={name} photoUrl={photoUrl ?? null} onOpen={open} tileRef={tileRef} />
       <div className="min-w-0">
         {kicker}
-        <p className="text-read font-black leading-snug text-foreground">{title ?? name}</p>
+        {heading}
         {headline && <p className="mt-1 line-clamp-2 text-read leading-relaxed text-muted-foreground">{headline}</p>}
         <p className="mt-2 text-read leading-relaxed text-muted-foreground">شاهد رسالة مدربك قبل أن تبدأ</p>
-        <Button tone="secondary" size="sm" icon={Play} onClick={open} className="mt-3 whitespace-nowrap">
-          شاهد الفيديو
-        </Button>
+        <div className="flex flex-wrap gap-x-2">
+          <Button tone="secondary" size="sm" icon={Play} onClick={open} className="mt-3 whitespace-nowrap">
+            شاهد الفيديو
+          </Button>
+          {about}
+        </div>
       </div>
-      {from && (
-        <Modal
-          label={`فيديو تعريفي: ${name}`}
-          onClose={() => setFrom(null)}
-          backdropClassName="bg-[#000]/80 backdrop-blur-md motion-safe:animate-backdrop-in"
-        >
-          <TrainerVideoPlayerWindow video={video} name={name} photoUrl={photoUrl ?? null} from={from} onClose={() => setFrom(null)} />
-        </Modal>
-      )}
+      <TrainerVideoZoom video={video} name={name} photoUrl={photoUrl ?? null} from={from} onClose={() => setFrom(null)} />
     </div>
   );
 }
@@ -252,10 +298,11 @@ export function TrainerVideoCard({
 
 interface CourseTrainerReply {
   announced: boolean;
-  trainers: { id: string; name: string; headline: string | null; photoUrl?: unknown; video?: unknown }[];
+  trainers: { id: string; name: string; headline: string | null; photoUrl?: unknown; video?: unknown; slug?: unknown }[];
 }
 
-interface Shown { id: string; name: string; headline: string | null; photoUrl: string | null; video: PublicTrainerVideo }
+interface Shown { id: string; name: string; headline: string | null; photoUrl: string | null; video: PublicTrainerVideo; slug: string | null }
+
 
 /** قسمُ صفحة الدورة — مدرّبوها المعلَنون الذين لهم فيديو. ولا شيءَ إن لم يكن */
 export default function CourseTrainerVideos({ courseId, className = "" }: { courseId: string; className?: string }) {
@@ -270,7 +317,7 @@ export default function CourseTrainerVideos({ courseId, className = "" }: { cour
         const shown = r.announced
           ? r.trainers.flatMap((t) => {
               const video = renderableVideo(t.video);
-              return video ? [{ id: t.id, name: t.name, headline: t.headline, photoUrl: safePhotoUrl(t.photoUrl), video }] : [];
+              return video ? [{ id: t.id, name: t.name, headline: t.headline, photoUrl: safePhotoUrl(t.photoUrl), video, slug: seedOf(t).slug }] : [];
             })
           : [];
         setLoaded({ courseId, shown });
@@ -279,8 +326,12 @@ export default function CourseTrainerVideos({ courseId, className = "" }: { cour
     return () => { alive = false; };
   }, [courseId]);
 
+  /* بطاقةُ المدرّب المنبثقة — من اسمه أو «عن المدرب» (٩ نوفمبر ٢٠٢٦) */
+  const [about, setAbout] = useState<Shown | null>(null);
+
   const shown = loaded?.courseId === courseId ? loaded.shown : [];
   if (shown.length === 0) return null;
+  const quick = about && <TrainerQuickView seed={seedOf(about)} onClose={() => setAbout(null)} />;
 
   const heading = (
     <h2 id="meet-trainer" className="flex items-center gap-2 text-sm font-black text-foreground">
@@ -295,7 +346,9 @@ export default function CourseTrainerVideos({ courseId, className = "" }: { cour
         <TrainerVideoCard
           video={t.video} name={t.name} headline={t.headline} photoUrl={t.photoUrl}
           kicker={<div className="mb-2.5">{heading}</div>}
+          onAbout={() => setAbout(t)}
         />
+        {quick}
       </Card>
     );
   }
@@ -306,10 +359,11 @@ export default function CourseTrainerVideos({ courseId, className = "" }: { cour
       <ul className="mt-3 flex flex-wrap gap-x-12 gap-y-5">
         {shown.map((t) => (
           <li key={t.id}>
-            <TrainerVideoCard video={t.video} name={t.name} headline={t.headline} photoUrl={t.photoUrl} />
+            <TrainerVideoCard video={t.video} name={t.name} headline={t.headline} photoUrl={t.photoUrl} onAbout={() => setAbout(t)} />
           </li>
         ))}
       </ul>
+      {quick}
     </Card>
   );
 }

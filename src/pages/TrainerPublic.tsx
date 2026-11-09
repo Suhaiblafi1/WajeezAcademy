@@ -11,7 +11,7 @@
    وصفحةٌ لمدرّبٍ لم يُعتمد نشرُ ملفّه **غيرُ موجودة**: الخادمُ يردّ ٤٠٤،
    وهذه تعرض «لا مدرّبَ بهذا المسار» — لا تقرّ بوجوده ثمّ تعتذر عن عرضه. */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import { BadgeCheck, CalendarDays, GraduationCap, Star, Users } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
@@ -25,7 +25,9 @@ import { fmtMoney, fmtNum } from "@/application/text/format-ar";
 import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 import { countAr } from "@/application/text/count-ar";
 import { renderableVideo } from "@/application/trainer/marketing-video";
-import { TrainerVideoCard } from "@/components/TrainerVideo";
+import { TrainerVideoZoom } from "@/components/TrainerVideo";
+import { zoomFromEl, type ZoomFrom } from "@/components/trainer/zoom-from";
+import { TrainerPagePhoto, TrainerVideoLink } from "@/components/trainer/TrainerAvatarRing";
 
 interface PublicCohort {
   id: string; title: string; courseId: string; courseTitle: string;
@@ -70,6 +72,13 @@ export default function TrainerPublic() {
   const page = current?.page ?? null;
   const missing = current !== null && current.page === null;
   const video = renderableVideo(page?.video);
+  /* ═══ والفيديو حلقةٌ حول صورته لا قسمٌ تحت نبذته (٩ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: حلقةُ «قصّة» حول صورته وشارةُ تشغيلٍ عليها، ورابطٌ صغيرٌ تحت تعريفه. وكلاهما يفتح المشغّلَ
+     المكبَّرَ نفسَه من موضع الصورة. ومن لا فيديو له: الصفحةُ كما كانت قبل الفيديو تماما (`TrainerAvatarRing.tsx`) */
+  const embed = video?.kind === "embed" ? video : null;
+  const [from, setFrom] = useState<ZoomFrom | null>(null);
+  const photoRef = useRef<HTMLButtonElement>(null);
+  const play = () => setFrom(zoomFromEl(photoRef.current));
 
   /* الرمزُ يُحفظ عند وصول الصفحة لا عند الضغط على شعبة: الزائرُ قد يتصفّح
      ثمّ يعود من طريقٍ آخر، والبابُ الذي دخل منه واحد. */
@@ -109,15 +118,14 @@ export default function TrainerPublic() {
       <div className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
         <Panel className="p-6 sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            {page.photoUrl && (
-              <img src={page.photoUrl} alt="" className="h-24 w-24 shrink-0 rounded-2xl object-cover" />
-            )}
+            <TrainerPagePhoto name={page.name} photoUrl={page.photoUrl} video={video} onPlay={play} buttonRef={photoRef} />
             <div className="min-w-0 flex-1">
               <h1 className="flex flex-wrap items-center gap-2 text-2xl font-black sm:text-3xl">
                 {page.name}
                 <BadgeCheck className="h-5 w-5 text-teal-light-ink" aria-label="مدرّب موثّق" />
               </h1>
               {page.headline && <p className="mt-2 text-read leading-7 text-muted-foreground">{page.headline}</p>}
+              {video && <TrainerVideoLink video={video} onPlay={play} className="mt-1" />}
               <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-read text-muted-foreground">
                 {page.ratingAvg != null && (
                   <li className="flex items-center gap-1.5">
@@ -136,13 +144,7 @@ export default function TrainerPublic() {
             </div>
           </div>
           {page.bio && <p className="mt-6 whitespace-pre-line text-read leading-7">{page.bio}</p>}
-          {/* فيديو تعريفه — النافذةُ الصغيرةُ نفسُها التي في صفحة الدورة بصورته، ولا شيءَ حين لا فيديو.
-              واسمُه في رأس الصفحة، فيُكتب بجانبها عنوانُ القسم مكانَه */}
-          {video && (
-            <div className="mt-6">
-              <TrainerVideoCard video={video} name={page.name} photoUrl={page.photoUrl} title="تعرّف على مدرّبك" />
-            </div>
-          )}
+          {embed && <TrainerVideoZoom video={embed} name={page.name} photoUrl={page.photoUrl} from={from} onClose={() => setFrom(null)} />}
           {page.specialties.length > 0 && (
             <ul className="mt-5 flex flex-wrap gap-2">
               {page.specialties.map((s) => (
