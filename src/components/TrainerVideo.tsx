@@ -138,7 +138,8 @@ export function TrainerVideoTile({
    **وما لا يُرسم، ولماذا**: الترجمةُ وشريطُ التقدّم يحتاجان وقتَ التشغيل من يوتيوب، ولا يُقرأ إلّا بسكربته
    (`iframe_api`) — و`script-src 'self'` في سياسة الموقع يمنعه. والترجمةُ القديمةُ محروقةٌ في صورة الفيديو.
 
-   **ولا تحجب شيئا**: `pointer-events-none` — فاللمسُ يصل أزرارَ يوتيوب تحتها. وتعلو شريطَ تحكّمه (‎bottom-16‎). */
+   **ولا تحجب شيئا**: `pointer-events-none` — فاللمسُ يصل أزرارَ يوتيوب تحتها. وتعلو شريطَ تحكّمه (‎bottom-16‎).
+   **وفي الوسط**: «اجعلها في المنتصف» (صاحب المنصّة، ٩ نوفمبر ٢٠٢٦) — لا على اليمين كشريط الأخبار. */
 const NAME_TAG_MS = 7000;
 
 export function VideoNameTag({ name, headline }: { name: string; headline?: string | null }) {
@@ -151,7 +152,7 @@ export function VideoNameTag({ name, headline }: { name: string; headline?: stri
     <div
       aria-hidden="true"
       data-video-name-tag=""
-      className={`pointer-events-none absolute bottom-16 right-3 z-10 flex max-w-[85%] items-center gap-2.5 rounded-2xl bg-[#fff]/95 py-2 pe-3.5 ps-2 shadow-xl transition-opacity duration-700 motion-safe:animate-backdrop-in ${shown ? "opacity-100" : "opacity-0"}`}
+      className={`pointer-events-none absolute bottom-16 left-1/2 z-10 flex w-max max-w-[85%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-[#fff]/95 py-2 pe-3.5 ps-2 shadow-xl transition-opacity duration-700 motion-safe:animate-backdrop-in ${shown ? "opacity-100" : "opacity-0"}`}
     >
       <img src="/logo-mark.png" alt="" className="h-8 w-8 shrink-0 rounded-lg" />
       <span className="h-8 w-1 shrink-0 rounded-full bg-teal" />

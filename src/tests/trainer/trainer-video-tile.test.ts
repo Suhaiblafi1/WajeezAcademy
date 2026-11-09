@@ -105,6 +105,11 @@ describe('⑤ شارةُ الاسم فوق المشغّل — «النمط ٢» 
     expect(html).toContain('انوار الجراح')
     expect(html).toContain('مدربة كوتشنج')
   })
+  it('⚠️ وفي منتصف المشغّل أفقيّا — لا على أحد جانبيه', () => {
+    const cls = tag!.attrs.class!.split(/\s+/)
+    expect(cls).toEqual(expect.arrayContaining(['left-1/2', '-translate-x-1/2']))
+    expect(cls.some((c) => /^(right|left)-\d/.test(c) && c !== 'left-1/2')).toBe(false)
+  })
   it('⚠️ ولا تحجب أزرارَ يوتيوب تحتها — لا تلتقط لمسا', () => {
     expect(tag!.attrs.class!.split(/\s+/)).toContain('pointer-events-none')
   })
