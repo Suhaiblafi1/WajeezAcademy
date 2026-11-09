@@ -108,15 +108,25 @@ export class AuthService {
     if (password.length < 8) throw new AuthError('weak_password', 'كلمة المرور 8 أحرف على الأقل')
     const existing = await this.prisma.user.findUnique({ where: { email: normalized } })
     if (existing) throw new AuthError('email_taken', 'هذا البريد مسجل — جرّب تسجيل الدخول', 409)
-    const user = await this.prisma.user.create({
-      data: {
-        email: normalized,
-        displayName: displayName.trim() || normalized.split('@')[0],
-        passwordHash: await bcrypt.hash(password, 10),
-        roles: { create: { roleId: LEARNER_ROLE } },
-      },
-    })
-    return { userId: user.id }
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          email: normalized,
+          displayName: displayName.trim() || normalized.split('@')[0],
+          passwordHash: await bcrypt.hash(password, 10),
+          roles: { create: { roleId: LEARNER_ROLE } },
+        },
+      })
+      return { userId: user.id }
+    } catch (e) {
+      /* ═══ وتسجيلان معا بالبريد نفسِه (٩ نوفمبر ٢٠٢٦) ═══
+         ضغطتان على «أنشئ حسابا» تمرّان كلتاهما بالسؤال أعلاه، فيردّ الفهرسُ الفريدُ الثانيةَ — وكان الردُّ «خطأ في الخادم»
+         والحسابُ قد أُنشئ. فهو «البريدُ مسجّل» كما لو سُئل بعد ثانية. والحارس: `server/tests/auth/register-race.test.ts` */
+      if ((e as { code?: string }).code === 'P2002') {
+        throw new AuthError('email_taken', 'هذا البريد مسجل — جرّب تسجيل الدخول', 409)
+      }
+      throw e
+    }
   }
 
   /** تسجيلٌ ذاتيٌّ من الواجهة العامّة — `register` وحوله سقوفُ الشبكة وسجلُّها */
