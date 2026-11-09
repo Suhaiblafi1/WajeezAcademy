@@ -34,10 +34,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Award, Check, ChevronDown, Clock, Clock3, Compass, Copy, Gauge, GraduationCap, Languages, Lightbulb, ExternalLink, Flame, Gift, Hourglass, Loader2, Mail, MessageCircle, PencilRuler, Route, Share2, ShieldCheck, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
+import { Award, Check, ChevronDown, Clock, Compass, Copy, GraduationCap, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
+import { syncPageTheme } from "@/services/theme";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
-import { useSeenOnce } from "@/hooks/useSeenOnce";
 import { coursesLeftOn, useMyGrant } from "@/services/my-grant";
 import { useHoneypot } from "@/components/HoneypotField";
 import { toast, toastError } from "@/components/Toast";
@@ -59,7 +60,7 @@ import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr, parsePicksParam,
-  GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, grantWhySplitAr, GRANT_DIAG_AR, GRANT_DIAG_MORE, GRANT_DIAG_MORE_AR, GRANT_DIAG_PATH, GRANT_DIAG_POINTS_AR,
+  GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_DIAG_PATH, GRANT_HUMAN_DIAG_AR, GRANT_SELF_DIAG_AR,
 } from "@/application/commerce/grant-landing";
 import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
@@ -139,129 +140,68 @@ const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { l
 /** أيقونةُ كلِّ قيمةٍ في «لماذا هذه المنحة؟» */
 const WHY_ICON: Record<(typeof GRANT_WHY_POINTS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, proof: Award, advisor: UserRound };
 
-/** «لماذا هذه المنحة؟» — بين صندوق الكود و«اختر دوراتك» (١ نوفمبر ٢٠٢٦، `GRANT_WHY_AR`): عنوانٌ يسمّي الخسارة وآخرُه
-    «بل وقتك» بالذهبيّ، وتحته الأوقاتُ الثلاثةُ الضائعةُ وسوما ذهبيّةً بجانب جملتها تدخل حين يبلغها، ثمّ أربعُ قيمٍ قصيرةٍ في صفٍّ واحدٍ على
-    الحاسوب ومربّعين على الهاتف، وشريطٌ يقسم السعرَ بنسبة منحته. وأصغرُ بدرجةٍ من أخواته بطلبه: عنوانٌ أصغر، وأيقوناتٌ
-    وحشوٌ أقلّ */
-function GrantWhy({ percentOff }: { percentOff: number }) {
-  const split = grantWhySplitAr(percentOff);
-  const us = Math.min(100, Math.max(0, Math.round(percentOff)));
-  const [lossRef, lossSeen] = useSeenOnce<HTMLDivElement>();
+/** «لماذا هذه المنحة؟» — في صفحة التسجيل الأولى تحت النموذج، بتصميمٍ أخفّ (٨ نوفمبر ٢٠٢٦، `GRANT_WHY_AR`).
+    كان صندوقا بين الكود و«اختر دوراتك»، فيه الأوقاتُ الضائعةُ وسوما ذهبيّة، وأربعُ قيمٍ في صناديق، وشريطٌ يقسم السعر.
+    ثمّ قال صاحبُ المنصّة: «في كافّة أنواع المنح.. أرفق لماذا هذه المنحة في الصفحة الأولى للتسجيل ولكن بتصميمٍ عصريٍّ آخر
+    أخفّ وأجمل.. ولا داعي لشريط "تدفع عنك وأنت تدفع"! لأنّه ينفّر المستخدم». فهو بلا صندوقٍ ولا وسومٍ ولا شريط: عنوانُه،
+    وسطرٌ بالأوقات الثلاثة، وأربعُ قيمٍ بأيقوناتها على الصفحة نفسِها */
+function GrantWhy() {
   return (
-    <Card as="section" aria-labelledby="grant-why" className="mt-6 p-4">
+    <section aria-labelledby="grant-why" className="mt-12 text-center" data-testid="grant-why">
       <p className="inline-flex items-center gap-1.5 text-read font-bold text-gold-ink">
         <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{GRANT_WHY_AR.eyebrow}
       </p>
-      <h2 id="grant-why" className="mt-1 text-lg font-black leading-7">
+      <h2 id="grant-why" className="mt-1 text-xl font-black leading-8">
         {GRANT_WHY_AR.title} <span className="text-gold-ink">{GRANT_WHY_AR.titleMark}</span>
       </h2>
-      {/* الأوقاتُ الضائعة: جملةٌ واحدةٌ تُكملها الوسوم بجانبها — «الوقت الذي تصرفه على دورة: لم تكملها · لم تستفد منها · …».
-          وتلتفّ على الهاتف خلفها كما تلتفّ الكلمات. ولا تقف من أوّل الصفحة: تدخل واحدا بعد واحد حين يبلغها القارئ
-          (`useSeenOnce`) — بطلبه: «لا تجعلها تظهر بثبات» */}
-      <div ref={lossRef} className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <span className="text-read font-bold leading-6">{GRANT_WHY_AR.lossesLead}:</span>
-        {GRANT_WHY_LOSSES_AR.map((x, i) => (
-          <Inset
-            as="span"
-            key={x}
-            tone="warn"
-            style={{ transitionDelay: lossSeen ? `${150 + i * 220}ms` : "0ms" }}
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition duration-500 ease-out motion-reduce:transition-none ${lossSeen ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`}
-          >
-            <Hourglass className="h-3.5 w-3.5 text-gold-ink" aria-hidden="true" />{x}
-          </Inset>
-        ))}
-      </div>
-      <p className="mt-2 text-read leading-6 text-muted-foreground">{GRANT_WHY_AR.lead}</p>
-      <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
+        {GRANT_WHY_AR.lossesLead}: {GRANT_WHY_LOSSES_AR.join("، ")}. {GRANT_WHY_AR.lead}
+      </p>
+      <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4">
         {GRANT_WHY_POINTS_AR.map((x) => {
           const Icon = WHY_ICON[x.id];
           return (
-            <Inset as="li" key={x.id} className="p-3 text-center">
-              <span className="mx-auto grid h-8 w-8 place-items-center rounded-full bg-teal/10"><Icon className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /></span>
-              <span className="mt-1.5 block text-read font-bold leading-5">{x.title}</span>
-              <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{x.body}</span>
-            </Inset>
+            <li key={x.id}>
+              <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-teal/10"><Icon className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /></span>
+              <span className="mt-2 block font-bold leading-6">{x.title}</span>
+              <span className="mt-0.5 block text-read leading-5 text-muted-foreground">{x.body}</span>
+            </li>
           );
         })}
       </ul>
-      {/* السعرُ بالمال قسمين: ما يدفعه هو وما تدفعه الأكاديميّة — والشريطُ زينةٌ يقولها السطرُ تحته */}
-      <div className="mt-3">
-        <div className="flex h-1.5 overflow-hidden rounded-full" aria-hidden="true">
-          <span className="bg-teal" style={{ width: `${100 - us}%` }} />
-          <span className="bg-gold" style={{ width: `${us}%` }} />
-        </div>
-        <p className="mt-1.5 flex flex-wrap justify-between gap-x-4 text-read font-bold">
-          <span className="text-teal-light-ink">{split.you}</span>
-          <span className="text-gold-ink">{split.us}</span>
-        </p>
-      </div>
+    </section>
+  );
+}
+
+/** «لست متأكدا مما تحتاجه؟» — تشخيصٌ بشريٌّ على واتساب (٨ نوفمبر ٢٠٢٦، `GRANT_HUMAN_DIAG_AR`): رسالةُ المستشار نفسُها —
+    سيرتُه الذاتيّة ومستشارُه يحدّد له الدورات (`grantAdvisorTextAr`) — كما يُشخَّص على واتساب اليوم */
+function GrantHumanDiagnosis({ href }: { href: string }) {
+  return (
+    <Card as="section" aria-labelledby="grant-human-diag" className="mt-6 flex flex-col items-center gap-4 text-center sm:flex-row sm:text-start" data-testid="grant-human-diag">
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-teal/10"><MessageCircle className="h-6 w-6 text-teal-light-ink" aria-hidden="true" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-read font-bold text-gold-ink">{GRANT_HUMAN_DIAG_AR.eyebrow}</span>
+        <h2 id="grant-human-diag" className="mt-0.5 text-lg font-black leading-7">{GRANT_HUMAN_DIAG_AR.title}</h2>
+        <span className="block text-read leading-6 text-muted-foreground">{GRANT_HUMAN_DIAG_AR.lead}</span>
+      </span>
+      <Button as="a" href={href} target="_blank" rel="noreferrer" icon={MessageCircle} className="w-full shrink-0 sm:w-auto">{GRANT_HUMAN_DIAG_AR.cta}</Button>
     </Card>
   );
 }
 
-/** أيقونةُ كلِّ بندٍ في «دعنا نشخص احتياجك» وأدواته الأخرى */
-const DIAG_ICON: Record<(typeof GRANT_DIAG_POINTS_AR)[number]["id"], LucideIcon> = { fast: Clock3, reason: Route, free: ShieldCheck };
-const MORE_ICON: Record<(typeof GRANT_DIAG_MORE)[number]["id"], LucideIcon> = { mirror: Lightbulb, english: Languages, skill: Gauge };
-
-/** «دعنا نشخص احتياجك» — بين لوح الدفع وصندوق الإهداء (١ نوفمبر ٢٠٢٦، `GRANT_DIAG_AR`): لمن لا يعرف ما يحتاجه، بقوّة
-    التشخيص في ثلاثة بنود، وزرٌّ يفتحه في صفحةٍ جديدة فلا يضيع ما اختاره هنا. وتحته الأدواتُ المجانيّةُ الأخرى وسوما —
-    هنا وحدَها في الصفحة (`GRANT_DIAG_MORE`) */
-function GrantDiagnostic() {
+/** والتشخيصُ الذاتيّ سطرا واحدا — «باختصارٍ شديد» (٨ نوفمبر ٢٠٢٦، `GRANT_SELF_DIAG_AR`). يُفتح في صفحةٍ جديدة فلا يضيع ما اختاره */
+function GrantSelfDiagnosis() {
   return (
-    <Card as="section" aria-labelledby="grant-diag" className="mt-6">
-      <div className="flex items-start gap-4">
-        {/* والأيقونةُ على الشاشة الواسعة وحدَها — على الهاتف تضيّق العنوانَ إلى عمودٍ نحيل */}
-        <span className="hidden h-12 w-12 shrink-0 place-items-center rounded-full bg-teal/10 sm:grid"><Compass className="h-6 w-6 text-teal-light-ink" aria-hidden="true" /></span>
+    <Inset className="mt-4 flex flex-wrap items-center justify-between gap-3" data-testid="grant-self-diag">
+      <span className="flex min-w-0 items-center gap-2.5">
+        <Compass className="h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
         <span className="min-w-0">
-          <span className="block text-read font-bold text-gold-ink">{GRANT_DIAG_AR.eyebrow}</span>
-          <h2 id="grant-diag" className="mt-0.5 text-xl font-black leading-8">{GRANT_DIAG_AR.title}</h2>
-          <span className="block text-read leading-6 text-muted-foreground">{GRANT_DIAG_AR.lead}</span>
+          <span className="block font-bold leading-6">{GRANT_SELF_DIAG_AR.title}</span>
+          <span className="block text-read text-muted-foreground">{GRANT_SELF_DIAG_AR.meta}</span>
         </span>
-      </div>
-      <ul className="mt-4 grid gap-2 sm:grid-cols-3">
-        {GRANT_DIAG_POINTS_AR.map((x) => {
-          const Icon = DIAG_ICON[x.id];
-          return (
-            <Inset as="li" key={x.id} className="flex items-center gap-2.5">
-              <Icon className="h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              <span className="min-w-0">
-                <span className="block font-bold leading-6">{x.title}</span>
-                <span className="block text-read leading-5 text-muted-foreground">{x.body}</span>
-              </span>
-            </Inset>
-          );
-        })}
-      </ul>
-      <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
-        <span className="text-center text-read text-muted-foreground sm:text-start">{GRANT_DIAG_AR.note}</span>
-        <Button as="a" href={GRANT_DIAG_PATH} target="_blank" rel="noreferrer" icon={Compass} className="w-full shrink-0 sm:w-auto">{GRANT_DIAG_AR.cta}</Button>
-      </div>
-      {/* وأدواتٌ مجانيّةٌ أخرى وسوما — روابطُها في صفحةٍ جديدة، وفحصُ المهارة بلا رابط: يُفتح بمجاله من نتيجة التشخيص */}
-      <div className="mt-4 border-t border-border pt-3">
-        <p className="text-read font-bold text-muted-foreground">{GRANT_DIAG_MORE_AR}</p>
-        <ul className="mt-2 flex flex-wrap gap-2 text-read">
-          {GRANT_DIAG_MORE.map((x) => {
-            const Icon = MORE_ICON[x.id];
-            const body = (
-              <>
-                <Icon className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
-                <span className="font-bold">{x.title}</span>
-                <span className="text-muted-foreground">· {x.meta}</span>
-                {x.href && <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
-              </>
-            );
-            return (
-              <li key={x.id}>
-                {x.href
-                  ? <Inset as="a" href={x.href} target="_blank" rel="noreferrer" interactive className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5">{body}</Inset>
-                  : <Inset className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5">{body}</Inset>}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </Card>
+      </span>
+      <Button as="a" href={GRANT_DIAG_PATH} target="_blank" rel="noreferrer" icon={Compass} size="sm" className="shrink-0">{GRANT_SELF_DIAG_AR.cta}</Button>
+    </Inset>
   );
 }
 
@@ -271,6 +211,11 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const forOpen = variant === "open";
   const kind: GrantKind = forInfluencer ? "influencer" : forOpen ? "open" : "member";
   const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : forOpen ? OPEN_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  /* المنحُ نهاريّة ما لم يختر الليليَّ بيده — ومن جاءها بتنقّلٍ داخل التطبيق أو خرج منها يُعاد مظهرُه (`syncPageTheme`) */
+  useEffect(() => {
+    syncPageTheme();
+    return () => { setTimeout(syncPageTheme, 0); };
+  }, []);
   const storeKey = forInfluencer ? INFLUENCER_GRANT_STORE_KEY : forOpen ? OPEN_GRANT_STORE_KEY : GRANT_STORE_KEY;
   const params = useParams();
   const urlCode = forInfluencer ? normalizeInfluencerCode(params.code) : null;
@@ -634,8 +579,6 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           </p>
         </Card>
 
-        {/* «لماذا هذه المنحة؟» قبل «اختر دوراتك» — لمن له منحةٌ يستعملها وحدَه (١ نوفمبر ٢٠٢٦) */}
-        {grantOn && <GrantWhy percentOff={pct} />}
 
         <h2 className="mt-6 text-xl font-black">
           اختر دوراتك{view.termAr && <span className="text-read font-normal text-muted-foreground"> · {view.termAr}</span>}
@@ -740,7 +683,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 
         {/* «دعنا نشخص احتياجك» بين لوح الدفع وصندوق الإهداء — طلبُ صاحب المنصّة (١ نوفمبر ٢٠٢٦). ولكلّ من في هذه الخطوة:
             من لم يعرف ما يختاره أحوجُ إليه ممّن اختار */}
-        {view.openCourses.length > 0 && <GrantDiagnostic />}
+        {/* ثمّ (٨ نوفمبر ٢٠٢٦): «لست متأكدا» تشخيصٌ بشريٌّ على واتساب، والتشخيصُ الذاتيّ سطرٌ واحدٌ تحت الإهداء */}
+        {view.openCourses.length > 0 && advisorHref && <GrantHumanDiagnosis href={advisorHref} />}
 
         {/* الإهداءُ صندوقٌ وحدَه خارجَ لوح الدفع — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «صندوقُ الإهداء يكون خارجَ صندوق
             الدفع، واجعل الكلمة: يحقّ لك أن تهدي هذه المنحة لأصدقائك (بحدٍّ أعلى ٣)». رسالةٌ جاهزةٌ في واتساب والبريد، فالصديقُ
@@ -762,18 +706,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         {/* والمستشارُ على واتساب مباشرة — قرارُه (٢٤ أكتوبر ٢٠٢٦): «التواصلُ مع المستشار فاشلة لا تمثّل وسيلةً احترافيّة،
             اجعلها واتساب مباشرة». برسالةٍ فيها اسمُه وكودُه، والرقمُ موضعُه في شاشة الربط (`grant_advisor`).
             وطلبُ المستشار المكتوب (`/api/public/grant/advisor`) بقي في الخادم ولا تناديه الصفحة: مكالمةُ الساعتين تُفتح وحدَها */}
-        {advisorHref && (
-          <Card className="mt-4 flex flex-col items-center gap-4 text-center sm:flex-row sm:text-start">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-teal/10"><MessageCircle className="h-6 w-6 text-teal-light-ink" aria-hidden="true" /></span>
-            {/* ويختار المستشارُ الدوراتِ بنفسه من سيرته وحدَها — قرارُ صاحب المنصّة (٨ نوفمبر ٢٠٢٦): «غيّر راسل مستشارك إلى: اطلب
-                من مستشارك يحدّد لك الدوراتِ بنفسه وأرفق له السيرةَ الذاتيّةَ فقط». والرسالةُ الجاهزةُ تقول ذلك (`grantAdvisorTextAr`) */}
-            <span className="min-w-0 flex-1">
-              <span className="block font-black">دع مستشارك يختار لك الدورات</span>
-              <span className="block text-read text-muted-foreground">أرسل له سيرتك الذاتية فقط على واتساب، وهو يحدد لك الدورات المناسبة.</span>
-            </span>
-            <Button as="a" href={advisorHref} target="_blank" rel="noreferrer" icon={MessageCircle} className="shrink-0">اطلب من مستشارك</Button>
-          </Card>
-        )}
+        {/* وصندوقُ المستشار صار التشخيصَ الذاتيَّ باختصار — المستشارُ نفسُه في «لست متأكدا» أعلاه (٨ نوفمبر ٢٠٢٦) */}
+        {view.openCourses.length > 0 && <GrantSelfDiagnosis />}
 
         {authOpen && (
           <Modal onClose={() => setAuthOpen(false)} label="أنشئ حسابك لتدفع" panelClassName="w-full max-w-md">
@@ -899,6 +833,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           <Button type="submit" tone="primary" className="w-full" disabled={busy || !ready}>{c.open ? "احجز منحتي الآن" : "سجلني"}</Button>
           <p className="text-read leading-6 text-muted-foreground">{GRANT_CONSENT_AR}</p>
         </Card>
+        {/* «لماذا هذه المنحة؟» في الصفحة الأولى تحت النموذج — في كلّ أنواع المنح (٨ نوفمبر ٢٠٢٦) */}
+        {c.open && <GrantWhy />}
         {/* وجوهُ مدرّبي الموسم تحت النموذج — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، والعلّةُ عند `grantTrainerFaces` */}
         {/* وبينها وبين النموذج فوقها والأسئلة تحتها مسافةٌ أوسع — قرارُه (٢٧ أكتوبر ٢٠٢٦): «تزيد المسافات ما بين صور المدربين والبوكس» */}
         {trainers.faces.length >= 3 && (
@@ -952,8 +888,10 @@ function Shell({
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SeoHead title={title} description={description} path={path} />
       <header className="border-b border-white/10">
-        <div className="mx-auto flex h-14 max-w-3xl items-center px-5">
+        {/* وزرُّ الليليّ هنا — المنحُ نهاريّةٌ إلّا إن اختار هو الليليّ (٨ نوفمبر ٢٠٢٦، `pageDefaultTheme`) */}
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-5">
           <Link to="/" className="text-sm font-bold text-foreground">أكاديمية وجيز</Link>
+          <ThemeToggle />
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-5 py-8">{children}</main>

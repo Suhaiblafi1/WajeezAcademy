@@ -53,8 +53,30 @@ export function storedTheme(): Theme | null {
   }
 }
 
+/* ═══ وصفحاتُ المنح نهاريّةٌ ما لم يختر الزائرُ الليليّ (٨ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «دائما اجعل المنحَ باللون النهاريّ إلّا إذا هو اختار تحويلها لليليّ». فعلى `/grant` وما تحته
+   (منحةُ وجيز، ومنحةُ المؤثّرين، والمنحةُ المفتوحة) لا يحكم الجهاز: النهاريّ، واختيارُ الزائر بيده يعلو كما في كلّ
+   الموقع. ويُكرَّر في `index.html` لأوّل رسم. */
+export function isDayPage(path: string = typeof location === "undefined" ? "" : location.pathname): boolean {
+  return /^\/grant(\/|$)/.test(path);
+}
+
+/** ما يُعرض بلا اختيارٍ من الزائر — النهاريُّ في صفحات المنح، والجهازُ في غيرها */
+export function pageDefaultTheme(): Theme {
+  return isDayPage() ? "light" : deviceTheme();
+}
+
 export function getTheme(): Theme {
-  return storedTheme() ?? deviceTheme();
+  return storedTheme() ?? pageDefaultTheme();
+}
+
+/** تنقّلٌ داخل التطبيق بين صفحة منحةٍ وغيرها — يُعاد المظهرُ إن لم يختر الزائرُ بيده */
+export function syncPageTheme(): void {
+  if (storedTheme()) return;
+  const t = pageDefaultTheme();
+  if (document.documentElement.dataset.theme === t) return;
+  applyTheme(t);
+  listeners.forEach((fn) => fn(t));
 }
 
 export function applyTheme(t: Theme): void {
@@ -92,7 +114,7 @@ export function initTheme(): void {
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
       /* اختيارُ الزائر يعلو — فلا يُنتزع منه المظهرُ عند الغروب */
       if (storedTheme()) return;
-      const t = deviceTheme();
+      const t = pageDefaultTheme();
       applyTheme(t);
       listeners.forEach((fn) => fn(t));
     });

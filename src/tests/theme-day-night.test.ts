@@ -28,7 +28,7 @@ function fakeStore() {
 }
 
 /** بيئةٌ جديدةٌ لكلّ حالة — ووحدةٌ جديدةٌ معها، فحالةُ المشتركين لا تتسرّب */
-async function boot({ deviceDark, stored }: { deviceDark: boolean; stored?: string }) {
+async function boot({ deviceDark, stored, path }: { deviceDark: boolean; stored?: string; path?: string }) {
   const local = fakeStore()
   const session = fakeStore()
   if (stored) local.setItem('wajeez_theme', stored)
@@ -38,6 +38,7 @@ async function boot({ deviceDark, stored }: { deviceDark: boolean; stored?: stri
 
   vi.stubGlobal('localStorage', local)
   vi.stubGlobal('sessionStorage', session)
+  if (path !== undefined) vi.stubGlobal('location', { pathname: path })
   vi.stubGlobal('document', { documentElement: root, querySelector: () => null })
   vi.stubGlobal('window', {
     matchMedia: (q: string) => ({
@@ -108,5 +109,33 @@ describe('تبديل الجهاز أثناء الجلسة', () => {
     mod.initTheme()
     fireDeviceChange(true)
     expect(root.dataset.theme, 'انتزع اختيار الزائر حين بدّل الجهاز').toBe('light')
+  })
+})
+
+/* ═══ وصفحاتُ المنح نهاريّةٌ ما لم يختر الزائرُ الليليّ (٨ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «دائما اجعل المنحَ باللون النهاريّ إلّا إذا هو اختار تحويلها لليليّ» (`isDayPage` في `theme.ts`) */
+describe('المنح نهارية إلا إن اختار الزائر الليلي', () => {
+  it('⚠️ جهاز داكن على /grant وأخواتها — نهاري', async () => {
+    for (const path of ['/grant', '/grant/i/SARA', '/grant/i', '/grant/open']) {
+      const { mod } = await boot({ deviceDark: true, path })
+      expect(mod.getTheme(), path).toBe('light')
+    }
+  })
+  it('⚠️ واختياره الليلي يعلو — وغير المنح يتبع الجهاز كما كان', async () => {
+    expect((await boot({ deviceDark: false, stored: 'dark', path: '/grant' })).mod.getTheme()).toBe('dark')
+    expect((await boot({ deviceDark: true, path: '/courses' })).mod.getTheme()).toBe('dark')
+    expect((await boot({ deviceDark: true, path: '/grantee' })).mod.getTheme(), 'ليست صفحة منحة').toBe('dark')
+  })
+  it('⚠️ والزر يقلب ما يرى: من النهاري المعروض على المنحة إلى الليلي', async () => {
+    const { mod, root } = await boot({ deviceDark: true, path: '/grant' })
+    mod.initTheme()
+    expect(root.dataset.theme).toBe('light')
+    expect(mod.toggleTheme()).toBe('dark')
+    expect(root.dataset.theme).toBe('dark')
+  })
+  it('⚠️ وأول رسم في index.html يقولها قبل الحزمة', async () => {
+    const { readFileSync } = await import('node:fs')
+    const html = readFileSync('index.html', 'utf8')
+    expect(html).toMatch(/: \/\^\\\/grant\(\\\/\|\$\)\/\.test\(location\.pathname\)\s*\? "light"/)
   })
 })
