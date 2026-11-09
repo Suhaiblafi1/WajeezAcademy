@@ -129,7 +129,41 @@ export function TrainerVideoTile({
 
 /** الإطارُ وما خلفه حتى يرسم المزوّدُ أوّلَ صورة — يملأ حاويتَه، ومقاسُها عند من يرسمه: النافذةُ المكبَّرة هنا،
     والبطاقةُ المنبثقة (`trainer/TrainerQuickView.tsx`). ولا إطارَ لما لم نبنه */
-export function TrainerVideoFrame({ video, name, photoUrl }: { video: EmbedVideo; name: string; photoUrl: string | null }) {
+/* ═══ شارةُ الاسم فوق المشغّل — «النمط ٢» على يوتيوب نفسِه (٩ نوفمبر ٢٠٢٦) ═══
+
+   اختار صاحبُ المنصّة نمطا بهويّة وجيز لفيديو المدرّب (ترجمةٌ بلونها، واسمُه أوّلَ ثوانٍ، وشعارٌ صغير)، ثمّ
+   «2» — أن يُضاف على المشغّل في الموقع لا بمونتاج الملفّ. فيُرسم فوق الإطار ما لا يحتاج وقتَ التشغيل:
+   شارةٌ بيضاءُ أسفلَه بالشعار والاسم والوصف، تظهر حين يُفتح وتغيب بعد ثوانٍ.
+
+   **وما لا يُرسم، ولماذا**: الترجمةُ وشريطُ التقدّم يحتاجان وقتَ التشغيل من يوتيوب، ولا يُقرأ إلّا بسكربته
+   (`iframe_api`) — و`script-src 'self'` في سياسة الموقع يمنعه. والترجمةُ القديمةُ محروقةٌ في صورة الفيديو.
+
+   **ولا تحجب شيئا**: `pointer-events-none` — فاللمسُ يصل أزرارَ يوتيوب تحتها. وتعلو شريطَ تحكّمه (‎bottom-16‎). */
+const NAME_TAG_MS = 7000;
+
+export function VideoNameTag({ name, headline }: { name: string; headline?: string | null }) {
+  const [shown, setShown] = useState(true);
+  useEffect(() => {
+    const t = window.setTimeout(() => setShown(false), NAME_TAG_MS);
+    return () => window.clearTimeout(t);
+  }, []);
+  return (
+    <div
+      aria-hidden="true"
+      data-video-name-tag=""
+      className={`pointer-events-none absolute bottom-16 right-3 z-10 flex max-w-[85%] items-center gap-2.5 rounded-2xl bg-[#fff]/95 py-2 pe-3.5 ps-2 shadow-xl transition-opacity duration-700 motion-safe:animate-backdrop-in ${shown ? "opacity-100" : "opacity-0"}`}
+    >
+      <img src="/logo-mark.png" alt="" className="h-8 w-8 shrink-0 rounded-lg" />
+      <span className="h-8 w-1 shrink-0 rounded-full bg-teal" />
+      <span className="min-w-0 text-right leading-tight">
+        <b className="block truncate text-read font-black text-[#0E2225]">{firstLastNameAr(name)}</b>
+        {headline && <span className="block truncate text-read text-[#4A6266]">{headline}</span>}
+      </span>
+    </div>
+  );
+}
+
+export function TrainerVideoFrame({ video, name, photoUrl, headline }: { video: EmbedVideo; name: string; photoUrl: string | null; headline?: string | null }) {
   const photo = safePhotoUrl(photoUrl);
   const src = playerSrcOf(video);
   if (!src) return null;
@@ -148,17 +182,19 @@ export function TrainerVideoFrame({ video, name, photoUrl }: { video: EmbedVideo
         allowFullScreen
         className="absolute inset-0 h-full w-full border-0"
       />
+      <VideoNameTag name={name} headline={headline} />
     </>
   );
 }
 
 /** ما في النافذة المكبَّرة: شريطٌ باسمه وزرِّ الإغلاق، والإطارُ بالتشغيل التلقائيّ. ولا إطارَ لما لم نبنه */
 export function TrainerVideoPlayerWindow({
-  video, name, photoUrl, from, onClose,
+  video, name, photoUrl, from, onClose, headline,
 }: {
   video: EmbedVideo;
   name: string;
   photoUrl: string | null;
+  headline?: string | null;
   from: ZoomFrom;
   onClose: () => void;
 }) {
@@ -188,7 +224,7 @@ export function TrainerVideoPlayerWindow({
         </button>
       </div>
       <div style={size} className="relative max-w-full">
-        <TrainerVideoFrame video={video} name={name} photoUrl={photoUrl} />
+        <TrainerVideoFrame video={video} name={name} photoUrl={photoUrl} headline={headline} />
       </div>
     </div>
   );
@@ -197,11 +233,12 @@ export function TrainerVideoPlayerWindow({
 /** المشغّلُ المكبَّرُ في نافذة المنصّة على أرضيّةٍ داكنة — يُرسم ما دام `from`، ويُزال بالإغلاق فيقف الصوت.
     تفتحه النافذةُ الصغيرة هنا، وصورةُ المدرّب بحلقتها في صفحته (`trainer/TrainerAvatarRing.tsx`) */
 export function TrainerVideoZoom({
-  video, name, photoUrl, from, onClose,
+  video, name, photoUrl, from, onClose, headline,
 }: {
   video: EmbedVideo;
   name: string;
   photoUrl: string | null;
+  headline?: string | null;
   from: ZoomFrom | null;
   onClose: () => void;
 }) {
@@ -212,7 +249,7 @@ export function TrainerVideoZoom({
       onClose={onClose}
       backdropClassName="bg-[#000]/80 backdrop-blur-md motion-safe:animate-backdrop-in"
     >
-      <TrainerVideoPlayerWindow video={video} name={name} photoUrl={photoUrl} from={from} onClose={onClose} />
+      <TrainerVideoPlayerWindow video={video} name={name} photoUrl={photoUrl} headline={headline} from={from} onClose={onClose} />
     </Modal>
   );
 }
@@ -289,7 +326,7 @@ export function TrainerVideoCard({
           {about}
         </div>
       </div>
-      <TrainerVideoZoom video={video} name={name} photoUrl={photoUrl ?? null} from={from} onClose={() => setFrom(null)} />
+      <TrainerVideoZoom video={video} name={name} headline={headline} photoUrl={photoUrl ?? null} from={from} onClose={() => setFrom(null)} />
     </div>
   );
 }

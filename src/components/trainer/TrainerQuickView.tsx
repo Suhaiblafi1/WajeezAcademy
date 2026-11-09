@@ -65,7 +65,7 @@ export function TrainerQuickViewCard({
         <X className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      {isPlaying && embed && <QuickViewPlayer video={embed} name={data.name} photoUrl={data.photoUrl} />}
+      {isPlaying && embed && <QuickViewPlayer video={embed} name={data.name} headline={data.headline} photoUrl={data.photoUrl} />}
 
       <div className={`flex items-center gap-4 ${isPlaying ? "mt-4" : "pe-10"}`}>
         {!isPlaying && (
@@ -157,7 +157,7 @@ export function TrainerQuickViewCard({
 }
 
 /** المشغّلُ مكانَ الصورة: ‎9:16‎ لـ«شورتس» بارتفاعٍ لا يتجاوز الشاشة، و‎16:9‎ بعرض البطاقة. والإطارُ بالتشغيل التلقائيّ */
-function QuickViewPlayer({ video, name, photoUrl }: { video: EmbedVideo; name: string; photoUrl: string | null }) {
+function QuickViewPlayer({ video, name, photoUrl, headline }: { video: EmbedVideo; name: string; photoUrl: string | null; headline?: string | null }) {
   const ref = useRef<HTMLDivElement>(null);
   /* زرُّ الصورة الذي ضُغط زال — فالتركيزُ إلى المشغّل لا إلى أوّل الصفحة */
   useEffect(() => { ref.current?.focus(); }, []);
@@ -174,7 +174,7 @@ function QuickViewPlayer({ video, name, photoUrl }: { video: EmbedVideo; name: s
       style={size}
       className="relative mx-auto mt-10 overflow-hidden rounded-xl bg-[#000] shadow-lg focus:outline-none"
     >
-      <TrainerVideoFrame video={video} name={name} photoUrl={photoUrl} />
+      <TrainerVideoFrame video={video} name={name} headline={headline} photoUrl={photoUrl} />
     </div>
   );
 }
