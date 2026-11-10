@@ -20,6 +20,7 @@ import { SLOW_REVIEW_DAYS, waitingAr, waitingDays } from '../../src/application/
 import { CatalogAdminService } from './catalog-admin.service'
 import { TrainerDraftingBundleService } from './trainer-drafting-bundle.service'
 import { TrainerSuggestionService } from './trainer-suggestion.service'
+import { REFUND_AWAITING } from '../../src/application/commerce/finance-status'
 
 /* ═══ الحالاتُ التي تنتظرك أنت في طلبات الانضمام (٢٦ سبتمبر ٢٠٢٦) ═══
 
@@ -357,6 +358,57 @@ export class StaffInboxService {
         href: '/admin/support',
         severity: rows.some((t) => t.priority === 'urgent') ? 'urgent' : 'attention',
         sample: rows.map((t) => t.subject),
+      })
+    }
+
+    /* ── رسائلُ الموقع بلا ردّ (١٠ نوفمبر ٢٠٢٦) ──
+       «تواصل معنا» يَعِد صاحبَه بردٍّ خلال يوم عمل (`contact.service.ts`)، وكانت لا تُرى إلّا لمن فتح «رسائل الموقع» في
+       الدعم. فتأتي هنا حتّى تُعلَّم «تم الرد» — بحبّة بابها نفسِها. وما تجاوز يوما عاجل: الوعدُ انقضى. */
+    if (can('support.operate')) {
+      const where = { handledAt: null }
+      const [count, rows] = await Promise.all([
+        this.prisma.contactMessage.count({ where }),
+        this.prisma.contactMessage.findMany({
+          where, orderBy: { createdAt: 'asc' }, take: 5, select: { topic: true, name: true, createdAt: true },
+        }),
+      ])
+      push({
+        key: 'site_messages',
+        titleAr: 'رسائل من الموقع بلا رد',
+        whyAr: 'وعدنا صاحبها بالرد خلال يوم عمل',
+        count,
+        href: '/admin/support',
+        severity: rows.some((r) => now.getTime() - r.createdAt.getTime() > 86_400_000) ? 'urgent' : 'attention',
+        sample: rows.map((r) => `${r.topic} — ${r.name}`),
+      })
+    }
+
+    /* ── استرداداتٌ تنتظر التنفيذ (١٠ نوفمبر ٢٠٢٦) ──
+       طلبُ ردٍّ كُتب ولم يُنفَّذ ولم يُرفض — والدفعةُ الزائدة (`payment.extra`) تنتظر ردَّها بلا طلب. وكانا في «المال» وحدَه،
+       فلا يراهما إلّا من فتح لسانَهما. فيأتيان لمن يملك التنفيذ، بحالة الطلب التي يكتبها الخادم (`REFUND_AWAITING`). */
+    if (can('finance.refund.process')) {
+      const [awaiting, rows, extra] = await Promise.all([
+        this.prisma.refund.count({ where: { status: REFUND_AWAITING } }),
+        this.prisma.refund.findMany({
+          where: { status: REFUND_AWAITING }, orderBy: { createdAt: 'asc' }, take: 5,
+          select: { amount: true, payment: { select: { currency: true, invoice: { select: { number: true } } } } },
+        }),
+        /* زائدةٌ ما زال فيها ما يُردّ ولا طلبَ ردٍّ معلَّقٌ عليها */
+        this.prisma.payment.count({
+          where: { extra: true, status: { in: ['succeeded', 'partially_refunded'] }, refunds: { none: { status: REFUND_AWAITING } } },
+        }),
+      ])
+      push({
+        key: 'refunds',
+        titleAr: 'استردادات تنتظر التنفيذ',
+        whyAr: extra > 0 ? 'مال ينتظر صاحبه — ومنه دفعات زائدة لم يطلب ردها بعد' : 'مال ينتظر صاحبه',
+        count: awaiting + extra,
+        href: '/admin/finance?tab=refunds',
+        severity: extra > 0 ? 'urgent' : 'attention',
+        sample: [
+          ...rows.map((r) => `${Number(r.amount)} ${r.payment.currency} — ${r.payment.invoice.number}`),
+          ...(extra > 0 ? [`${extra} دفعة زائدة — في «الفواتير»`] : []),
+        ],
       })
     }
 
