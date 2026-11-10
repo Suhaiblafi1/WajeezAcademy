@@ -237,6 +237,17 @@ export class CommerceService {
     const plan = await this.prisma.learnerPlan.findUnique({ where: { id: planId }, select: { nameAr: true } })
 
     const order = await this.prisma.$transaction(async (tx) => {
+      /* ═══ والموافقةُ تقع مرّةً واحدة (١٠ نوفمبر ٢٠٢٦) ═══
+         كانت الطلباتُ تُقرأ «معلَّقة» خارج المعاملة ثمّ تُكتب «محجوزة» بلا شرط حالتها. فنقرتان على «وافق» تقرآنها معلَّقةً
+         كلتاهما: طلبا شراءٍ وفاتورتان للخطّة نفسِها، والثانيةُ تأخذ الحجوزَ من الأولى. وجُرّب فمرّ. فتُؤخذ الطلباتُ أوّلَ
+         المعاملة بشرط أنّها ما زالت معلَّقة — والثانيةُ تنتظر الأولى فلا تجد شيئا فتُردّ كلُّها، ولا طلبَ ولا فاتورة. */
+      const claimed = await tx.enrollmentRequest.updateMany({
+        where: { id: { in: reqs.map((r) => r.id) }, status: 'pending' },
+        data: { status: 'seat_held', decidedBy: actorId, decidedAt: new Date() },
+      })
+      if (claimed.count !== reqs.length) {
+        throw new AuthError('plan_already_decided', 'بت في طلبات هذه الخطة للتو — حدث الصفحة', 409)
+      }
       const o = await tx.order.create({
         data: {
           /* لا سلّمَ في هذا الباب — خصمُه كوبونٌ وحدَه، فما بحكم الباقة صفر */
@@ -262,7 +273,7 @@ export class CommerceService {
       }
       await tx.enrollmentRequest.updateMany({
         where: { id: { in: reqs.map((r) => r.id) } },
-        data: { status: 'seat_held', orderId: o.id, decidedBy: actorId, decidedAt: new Date() },
+        data: { orderId: o.id },
       })
       return o
     })
