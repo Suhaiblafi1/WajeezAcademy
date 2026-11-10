@@ -38,6 +38,7 @@ import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/
 import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
 import { publishCohortTrainers } from './trainer-auto-publish'
 import { cohortBeginsAt } from './cohort-start'
+import { EnrollmentService } from './enrollment.service'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -207,6 +208,13 @@ export class CohortService {
     const becameOpen = patch.registrationOpen === true && !cohort.registrationOpen
     if (becameOpen) {
       await notifyIfPurchasable(this.prisma, cohortId)
+    }
+    /* ═══ والسعةُ إن تغيّرت ملأ مقاعدَها الطابور (١٠ نوفمبر ٢٠٢٦) ═══
+       كان رفعُها يُبقي المنتظِرَ منتظِرا والشعبةَ «ممتلئة» — فلا يُرقّى أحدٌ ولا يُشترى المقعدُ الجديد. فيُملأ من الطابور
+       بأقدميّته، ومن بقي له مقعدٌ بعدها فُتحت الشعبة (`EnrollmentService.fillFromWaitlist`) */
+    if (patch.capacity !== undefined && patch.capacity !== cohort.capacity) {
+      await new EnrollmentService(this.prisma).fillFromWaitlist(cohortId, actorId, 'capacity_changed')
+      return this.prisma.cohort.findUniqueOrThrow({ where: { id: cohortId } })
     }
     return updated
   }
