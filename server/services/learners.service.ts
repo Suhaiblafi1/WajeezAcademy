@@ -25,7 +25,7 @@
    الحارس: server/tests/learning/learner-access.test.ts */
 
 import type { PrismaClient, Prisma } from '@prisma/client'
-import { AuthError } from './auth.service'
+import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 
@@ -250,8 +250,15 @@ export class LearnersService {
     patch: { displayName?: string; email?: string; status?: 'active' | 'suspended' },
   ) {
     this.assertWritable(scope)
-    const before = await this.prisma.user.findUnique({ where: { id: userId } })
+    const before = await this.prisma.user.findUnique({ where: { id: userId }, include: { roles: { select: { roleId: true } } } })
     if (!before) throw new AuthError('not_found', 'الحساب غير موجود', 404)
+    /* ═══ وحسابُ الطالب وحدَه — لا حسابُ موظّفٍ ولا مدرّبٍ ولا مستشار (١٠ نوفمبر ٢٠٢٦) ═══
+       كان البابُ يسأل «أتملك إدارةَ التسجيل؟» ولا يسأل «أهذا طالب؟». ومن يملكها — المديرُ الأكاديميُّ والمنسّقُ ومديرُ
+       العمليّات — كان يكتب بريدَ أيّ حساب، فيكتب بريدَه هو على حساب السوبر أدمن ثمّ يطلب «نسيت كلمة المرور» فيأخذه، أو
+       يوقفه. وجُرّب فمرّ. فحسابٌ يحمل دورا غيرَ «متعلّم» لا يُكتب هنا: له «المستخدمون» بحارس رتبته (`refuseRank`). */
+    if (before.roles.some((r) => r.roleId !== 'learner')) {
+      throw new AuthError('not_learner_account', 'هذا حساب له دور غير المتعلم — يعدل من «المستخدمون» لا من هنا', 403)
+    }
 
     if (patch.email && patch.email !== before.email) {
       const taken = await this.prisma.user.findUnique({ where: { email: patch.email } })
@@ -269,17 +276,21 @@ export class LearnersService {
           ...(patch.email !== undefined && patch.email.toLowerCase() !== before.email.toLowerCase()
             ? { email: patch.email, emailVerifiedAt: null, emailVerifyTokenHash: null, emailVerifyExpiresAt: null }
             : {}),
-          ...(patch.status !== undefined
-            ? { status: patch.status, suspendedAt: patch.status === 'suspended' ? new Date() : null }
-            : {}),
         },
       })
-      /* الإيقافُ يُبطل الجلسات فورا — وإلّا بقي الموقوفُ داخلا حتّى تنتهي كعكته */
-      if (patch.status === 'suspended') {
-        await tx.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } })
-      }
       return u
     })
+    /* ═══ والإيقافُ ورفعُه بباب الحساب نفسِه (١٠ نوفمبر ٢٠٢٦) ═══
+       كانا يُكتبان هنا مباشرة: تُبطَل الجلساتُ وحدَها، وتبقى لقاءاتُه في تقويمه ورابطُه في Zoom يعمل حتّى يلحقه العامل.
+       فصارا `AuthService.suspend`/`reinstate` — الجلساتُ والتقويمُ وZoom معا، كما يُوقَف من «المستخدمون». */
+    let status = updated.status
+    if (patch.status === 'suspended' && before.status !== 'suspended') {
+      await new AuthService(this.prisma).suspend(userId)
+      status = 'suspended'
+    } else if (patch.status === 'active' && before.status !== 'active') {
+      await new AuthService(this.prisma).reinstate(userId)
+      status = 'active'
+    }
 
     await recordAudit(this.prisma, {
       actorId, action: 'learner.account.update', entityType: 'user', entityId: userId,
@@ -289,6 +300,6 @@ export class LearnersService {
         ...(patch.status !== undefined ? { status: { from: before.status, to: patch.status } } : {}),
       },
     })
-    return { id: updated.id, email: updated.email, displayName: updated.displayName, status: updated.status }
+    return { id: updated.id, email: updated.email, displayName: updated.displayName, status }
   }
 }
