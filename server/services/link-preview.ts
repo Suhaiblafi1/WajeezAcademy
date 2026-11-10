@@ -16,6 +16,8 @@
 
 import { cohortDayAr } from '../../src/application/learning/cohort-gate'
 import { splitTitle } from '../../src/application/trainer/share-kit'
+import type { PrismaClient } from '@prisma/client'
+import { publicTrainerWhere } from './trainer-visibility'
 
 /** صورةُ المعاينة JPEG ١٢٠٠×٦٣٠ — وسقفُها بعيدٌ عمّا يخرج من اللوح (نحو ١٥٠ ك.ب) */
 export const PREVIEW_MAX_BYTES = 600 * 1024
@@ -139,4 +141,20 @@ export function deadLinkPage(origin: string): string {
 <p>تأكد من نسخه كاملا، أو ابدأ من <a href="${esc(origin)}/">صفحة الأكاديمية</a>.</p>
 </body>
 </html>`
+}
+
+/* ═══ ومعاينةُ رابطِ مدرّبٍ لا تُعرض إلّا وهو يُعرض (١٠ نوفمبر ٢٠٢٦) ═══
+
+   معاينةُ رابطه (`savePreview`) عنوانُها اسمُه وصورتُها صورتُه — وكانت تُقدَّم ما بقي الرابطُ غيرَ مُبطَل، ولو خرج المدرّبُ
+   من بوّابة النشر بعدها (أُوقف، أو لا دورةَ معتمدةً منشورةً له هذا الفصلَ أو بعده): صفحتُه (`/t/…`) تختفي، ورابطُه الذي
+   نشره يبقى يعرض اسمَه وصورتَه في واتساب وفيسبوك. وقاعدةُ صاحب المنصّة (CLAUDE.md): لا اسمَ مدرّبٍ ولا صورتَه إلّا
+   ببوّابةٍ واحدة — `publicTrainerWhere()`. فتُسأل هي عن صاحب الرابط ساعةَ الطلب، كما تُسأل عن صفحته
+   (`trainerPublicPage`): يُعرض فتُعرض معاينتُه، ولا يُعرض فيُحوَّل الرابطُ بلا اسمٍ ولا صورة. ويعود ظهورُه بعودته. */
+export async function previewOwnerShown(prisma: PrismaClient, createdBy: string | null, now = new Date()): Promise<boolean> {
+  if (!createdBy) return false
+  const shown = await prisma.trainerProfile.findFirst({
+    where: { userId: createdBy, ...publicTrainerWhere(now), application: { status: 'active' } },
+    select: { id: true },
+  })
+  return shown !== null
 }

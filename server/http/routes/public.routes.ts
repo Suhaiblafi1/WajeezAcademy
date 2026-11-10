@@ -9,7 +9,7 @@ import { fileUploadsEnabled } from '../../services/storage.service'
 import { TrainerPathService } from '../../services/trainer-path.service'
 import { getCalendlyConfig } from '../../services/integrations.service'
 import { ShortLinkService } from '../../services/short-link.service'
-import { deadLinkPage, previewPage, trainerPagePreview } from '../../services/link-preview'
+import { deadLinkPage, previewOwnerShown, previewPage, trainerPagePreview } from '../../services/link-preview'
 import { SHORT_PURPOSE } from '../../services/trainer-share-code.service'
 import { recordOpen } from '../../services/link-opens'
 import { SeoFeedsService, liveLlmsTxt, liveSitemap } from '../../services/seo-feeds.service'
@@ -235,8 +235,11 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     if (!target) return reply.status(404).type('text/html; charset=utf-8').send(deadLinkPage(origin))
     /* وتُعدّ الفتحةُ إن فتحه إنسان — كم فُتح ومن أيّ منصّة، يراه المدرّبُ تحت رابطه (`link-opens.ts`) */
     await recordOpen(prisma, code, { ip: req.ip, userAgent: req.headers['user-agent'], via: (req.query as { p?: unknown }).p })
-    const row = await prisma.shortLink.findUnique({ where: { code }, select: { previewSig: true, previewTitle: true, previewText: true } })
-    if (!row?.previewSig || !row.previewTitle) return reply.redirect(`${origin}${target}`, 302)
+    const row = await prisma.shortLink.findUnique({ where: { code }, select: { previewSig: true, previewTitle: true, previewText: true, createdBy: true } })
+    /* ومعاينتُه اسمُ مدرّبه وصورتُه — فلا تُعرض إلّا وهو يُعرض (`previewOwnerShown`) */
+    if (!row?.previewSig || !row.previewTitle || !(await previewOwnerShown(prisma, row.createdBy))) {
+      return reply.redirect(`${origin}${target}`, 302)
+    }
     /* ولا تُخزَّن الصفحة: فتحةٌ تُجاب من مخزنٍ في الطريق لا تبلغ الخادمَ فلا تُعدّ */
     return reply.header('cache-control', 'no-store').type('text/html; charset=utf-8')
       .send(previewPage({ origin, code, target, title: row.previewTitle, text: row.previewText ?? '', sig: row.previewSig }))
@@ -277,9 +280,13 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['public-catalog'], summary: 'صورة معاينة رابط قصير' },
   }, async (req, reply) => {
     const { code } = z.object({ code: z.string().min(1).max(32) }).parse(req.params)
-    const row = await prisma.shortLink.findUnique({ where: { code }, select: { previewImage: true, revokedAt: true } })
-    if (!row?.previewImage || row.revokedAt) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'لا معاينة لهذا الرابط' } })
-    return reply.header('cache-control', 'public, max-age=86400').type('image/jpeg').send(Buffer.from(row.previewImage))
+    const row = await prisma.shortLink.findUnique({ where: { code }, select: { previewImage: true, revokedAt: true, createdBy: true } })
+    /* وصورتُها صورةُ مدرّبه — بالبوّابة نفسِها (`previewOwnerShown`)، ولا يُفرَّق في الردّ بين «لا معاينة» و«لا يُعرض» */
+    if (!row?.previewImage || row.revokedAt || !(await previewOwnerShown(prisma, row.createdBy))) {
+      return reply.status(404).send({ error: { code: 'not_found', message_ar: 'لا معاينة لهذا الرابط' } })
+    }
+    /* ساعةٌ لا يوم — كصورة المدرّب نفسِها: من خرج من البوّابة لا تبقى صورتُه في ذاكرةٍ في الطريق يوما */
+    return reply.header('cache-control', 'public, max-age=3600').type('image/jpeg').send(Buffer.from(row.previewImage))
   })
 
   app.get('/api/public/methodology', {
