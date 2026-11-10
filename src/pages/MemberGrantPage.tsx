@@ -48,7 +48,7 @@ import BuyPanel from "@/components/BuyPanel";
 import ResumeCheckout from "@/components/ResumeCheckout";
 import SeoHead from "@/components/SeoHead";
 import { controlCls } from "@/components/FormKit";
-import { Card, Inset } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
@@ -146,30 +146,37 @@ const WHY_ICON: Record<(typeof GRANT_WHY_POINTS_AR)[number]["id"], LucideIcon> =
     أخفّ وأجمل.. ولا داعي لشريط "تدفع عنك وأنت تدفع"! لأنّه ينفّر المستخدم». فهو بلا صندوقٍ ولا وسومٍ ولا شريط: عنوانُه،
     وسطرٌ بالأوقات الثلاثة، وأربعُ قيمٍ بأيقوناتها على الصفحة نفسِها */
 function GrantWhy() {
+  /* ثمّ (١٠ نوفمبر ٢٠٢٦): «ضع حولها إطارا احترافيّا يزيد من جمالها» — إطارُ النظام (`Panel`) بلمسة لونين خفيفة من أعلاه،
+     والسؤالُ شارةٌ فوق العنوان، وخطٌّ رفيعٌ يفصل الفكرةَ عن قيمها. وبقي بلا وسومٍ ولا شريط كما قرّر */
   return (
-    <section aria-labelledby="grant-why" className="mt-12 text-center" data-testid="grant-why">
-      <p className="inline-flex items-center gap-1.5 text-read font-bold text-gold-ink">
+    <Panel
+      as="section"
+      aria-labelledby="grant-why"
+      className="mt-12 bg-gradient-to-b from-teal/[0.07] via-transparent to-gold/[0.05] text-center shadow-sm max-sm:p-5 sm:p-8"
+      data-testid="grant-why"
+    >
+      <p className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1 text-read font-bold text-gold-ink">
         <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{GRANT_WHY_AR.eyebrow}
       </p>
-      <h2 id="grant-why" className="mt-1 text-xl font-black leading-8">
+      <h2 id="grant-why" className="mt-3 text-xl font-black leading-8 sm:text-2xl sm:leading-9">
         {GRANT_WHY_AR.title} <span className="text-gold-ink">{GRANT_WHY_AR.titleMark}</span>
       </h2>
       <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
         {GRANT_WHY_AR.lossesLead}: {GRANT_WHY_LOSSES_AR.join("، ")}. {GRANT_WHY_AR.lead}
       </p>
-      <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4">
+      <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 border-t border-border pt-6 sm:grid-cols-4">
         {GRANT_WHY_POINTS_AR.map((x) => {
           const Icon = WHY_ICON[x.id];
           return (
             <li key={x.id}>
-              <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-teal/10"><Icon className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /></span>
+              <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-teal/10 ring-4 ring-teal/[0.04]"><Icon className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /></span>
               <span className="mt-2 block font-bold leading-6">{x.title}</span>
               <span className="mt-0.5 block text-read leading-5 text-muted-foreground">{x.body}</span>
             </li>
           );
         })}
       </ul>
-    </section>
+    </Panel>
   );
 }
 
