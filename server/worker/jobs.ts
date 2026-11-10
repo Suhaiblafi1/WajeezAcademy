@@ -1559,8 +1559,11 @@ export async function runAdvisorReminders(prisma: PrismaClient, now = new Date()
   const { AdvisorAwayService } = await import('../services/advisor-away.service')
   /* الغطاءُ قبل التذكير: من ينتظر أوّلَ تواصلٍ من مستشارٍ في إجازته يُنقل أوّلا، فلا يُذكَّر الغائبُ به */
   const { moved: covered } = await new AdvisorAwayService(prisma).coverAway(now)
+  /* ومن أُغلق حسابُه بغير بابه تنتقل حالاتُه أوّلا — فلا يُذكَّر موقوفٌ ولا يُترك عملاؤه (`sweepClosedAdvisors`) */
+  const { moved: released } = await new AdvisorService(prisma).sweepClosedAdvisors()
   const { reminded, escalated, followUps } = await new AdvisorService(prisma).remindDue(now)
   const parts = [
+    released > 0 ? `نقل من مستشار أغلق حسابه: ${released}` : '',
     covered > 0 ? `نقل من مستشار في إجازة: ${covered}` : '',
     reminded > 0 ? `تذكير بالتواصل: ${reminded}` : '',
     escalated > 0 ? `إبلاغ من يسند بحالة بلا تواصل منذ يومين: ${escalated}` : '',
@@ -1569,7 +1572,7 @@ export async function runAdvisorReminders(prisma: PrismaClient, now = new Date()
   return {
     job: 'advisor_reminders',
     summaryAr: parts.length === 0 ? 'لا حالة تنتظر تواصلا ولا متابعة حلّ موعدها' : parts.join(' · '),
-    done: covered + reminded + escalated + followUps, failed: 0, ms: Date.now() - started,
+    done: covered + released + reminded + escalated + followUps, failed: 0, ms: Date.now() - started,
   }
 }
 

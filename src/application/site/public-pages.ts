@@ -226,3 +226,12 @@ export function seoFor(path: string): { title: string; description: string; path
   if (!page) throw new Error(`لا صفحة عامّة بالمسار «${path}» في PUBLIC_PAGES`)
   return { title: page.title, description: page.description, path: page.path }
 }
+
+/** ═══ صفحةُ التحقّق — والشهادةُ بعينها لا تُفهرس (١٠ نوفمبر ٢٠٢٦) ═══
+
+    `/verify` صفحةٌ عامّةٌ تُفهرس: من يبحث عن «التحقق من شهادة وجيز» يجدها. أمّا `/verify/<رقم>` فتعرض الاسمَ الكاملَ لصاحب
+    الشهادة، ورابطُها يُنشر في سيرةٍ أو منشور — فكانت بلا `noindex` ويصلها الزاحفُ من حيث نُشرت، وخطابُ التوصية جارُها
+    لا يُفهرس (`EndorsementLetter.tsx`). وقرارُ صاحب المنصّة: «نعم، أصلحه». */
+export function verifySeo(number?: string | null): { title: string; description: string; path: string; noindex: boolean } {
+  return { ...seoFor('/verify'), noindex: !!number?.trim() }
+}

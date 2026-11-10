@@ -543,6 +543,19 @@ export class AuthService {
       this.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ])
     await this.calendarFollows(userId)
+    await this.advisorCasesFollow(userId)
+  }
+
+  /* ═══ وحالاتُ المستشار تنتقل حين يُغلق حسابُه (١٠ نوفمبر ٢٠٢٦، «a») ═══
+     والعلّةُ في `AdvisorService.releaseIfClosed`. وبعد الحال لا قبلها، ولا يُسقط إخفاقُه حالا وقعت: العاملُ يلحقه
+     (`sweepClosedAdvisors`). والاستيرادُ وقتَ النداء لما في `calendarFollows`. */
+  private async advisorCasesFollow(userId: string): Promise<void> {
+    try {
+      const { AdvisorService } = await import('./advisor.service')
+      await new AdvisorService(this.prisma).releaseIfClosed(userId, null)
+    } catch (e) {
+      console.error(`[advisor] تعذّر نقل حالات مستشار أُغلق حسابه (${userId})`, e)
+    }
   }
 
   /* ═══ وتقويمُه يتبع حالَ حسابه (٢٨ أكتوبر ٢٠٢٦) ═══
@@ -582,6 +595,7 @@ export class AuthService {
       }),
     ])
     await this.calendarFollows(userId)
+    await this.advisorCasesFollow(userId)
     void actorId
   }
 
