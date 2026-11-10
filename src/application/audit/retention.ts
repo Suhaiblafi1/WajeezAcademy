@@ -31,21 +31,49 @@
    وشاهدٌ من جدولٍ آخرَ لا يصلح: يُقلَّم في نداءٍ مستقلٍّ فيمرّ الحارسُ ولو
    حُذف تقليمُ الأثر كلُّه. */
 
+/* ═══ والمالُ مثلُ العقد (١٠ نوفمبر ٢٠٢٦) ═══
+
+   خُيّر صاحبُ المنصّة بين أن يبقى أثرُ المال أبدا، وأن يبقى مدّةً أطول، وأن يبقى كغيره سنتين — فاختار «a»: أبدا. فبعضُ
+   حقائق المال لا تُكتب إلّا هنا: من أكّد صرفَ مستحقّ المدرّب أو المستشار (الكشفُ يحفظ من اعتمده وحدَه)، ومن كشف رقمَ
+   حسابه قبل التحويل ومن غيّره، ومن نفّذ ردّا أو رفضه وسببُه، ومن سجّل دفعةً يدويّة. والدفعاتُ والردودُ والكشوفُ نفسُها
+   باقيةٌ في جداولها، والسؤالُ «من صرف لهذا المدرّب وإلى أيّ حساب؟» يُسأل في نزاعٍ أو تدقيقٍ أو ضريبةٍ بعد سنتين. وعددُها
+   صغير — صفٌّ لكلّ فعلٍ ماليّ لا لكلّ نقرة. */
+
 /** عائلاتُ الأثر التي لا يمسّها التقليم — بالبادئة، فتشمل ما يُضاف بعدُ */
 export const PERMANENT_AUDIT_PREFIXES = [
   'trainer.contract.',
   'trainer.offer.',
+  /* المال */
+  'payment.',
+  'refund.',
+  'trainer_payout.',
+  'advisor_payout.',
+  'trainer.bank.',
+  'advisor.bank.',
+] as const
+
+/** وأفعالٌ ماليّةٌ مفردةٌ لا عائلةَ لها — بنصّها، فلا تبتلع بادئةٌ بلا نقطةٍ ما يشبه اسمَها */
+export const PERMANENT_AUDIT_ACTIONS = [
+  'influencer.payout',
 ] as const
 
 /** أيُحفَظ هذا الفعلُ أبدا؟ — تُقرأ في الخادم وفي الاختبار معا */
 export function isPermanentAuditAction(action: string): boolean {
   return PERMANENT_AUDIT_PREFIXES.some((p) => action.startsWith(p))
+    || (PERMANENT_AUDIT_ACTIONS as readonly string[]).includes(action)
 }
 
 /** شرطُ الاستثناء كما يُركَّب في `where` — ولا يُكتب بيدٍ في موضعين.
 
     ولمَ دالّةٌ لا ثابتٌ: `Prisma.AuditEventWhereInput` نوعٌ من الخادم، وهذا
     الملفُّ يُقرأ من الشاشة كذلك. فتُعاد قيمةٌ عاديّةٌ يقبلها `where`. */
-export function notPermanentAuditWhere(): { NOT: { OR: { action: { startsWith: string } }[] } } {
-  return { NOT: { OR: PERMANENT_AUDIT_PREFIXES.map((p) => ({ action: { startsWith: p } })) } }
+export function notPermanentAuditWhere(): { NOT: { OR: ({ action: { startsWith: string } } | { action: { in: string[] } })[] } } {
+  return {
+    NOT: {
+      OR: [
+        ...PERMANENT_AUDIT_PREFIXES.map((p) => ({ action: { startsWith: p } })),
+        { action: { in: [...PERMANENT_AUDIT_ACTIONS] } },
+      ],
+    },
+  }
 }
