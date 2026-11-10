@@ -245,6 +245,9 @@ export async function attributedOrders(prisma: PrismaClient, advisorId: string):
   }))
 }
 
+/** حسابٌ مغلق — لا يتابع عملاءَه (`releaseIfClosed`) */
+const CLOSED_ADVISOR: readonly string[] = ['suspended', 'archived']
+
 export class AdvisorService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {
@@ -537,7 +540,7 @@ export class AdvisorService {
      (`autoAssign`)، فلا يأخذها كلَّها أوّلُ اسمٍ في القائمة. والمغلقةُ تبقى له: إسنادُها
      شاهدُ عمله وعمولتِه. والمستشارُ الجديدُ لم يعمل فيها بعد، فعمولتُه منها كعمولة
      الإسناد التلقائيّ: من أوّل تواصلٍ يسجّله. ولا مستشارَ غيرُه نشطا = تبقى عنده. */
-  async redistribute(fromAdvisorId: string, actorId: string): Promise<{ moved: number; stayed: number }> {
+  async redistribute(fromAdvisorId: string, actorId: string | null): Promise<{ moved: number; stayed: number }> {
     const links = await this.prisma.advisorAssignment.findMany({
       where: {
         advisorId: fromAdvisorId, unassignedAt: null,
@@ -555,6 +558,38 @@ export class AdvisorService {
       meta: { moved, stayed: links.length - moved },
     })
     return { moved, stayed: links.length - moved }
+  }
+
+  /* ═══ ومستشارٌ أُغلق حسابُه — تنتقل حالاتُه المفتوحةُ وحدَها (١٠ نوفمبر ٢٠٢٦) ═══
+
+     كان إيقافُه أو أرشفتُه لا يمسّ حالاتِه: تبقى عنده حتّى يضغط إداريٌّ «وزّع»، ولا يتابع عملاءَه أحد، وتُحسب له
+     عمولةُ ما يشترونه وهو موقوف — فنوبتُه لا تنتهي إلّا بإسنادٍ بعده (`attributedOrders`). وخُيّر صاحبُ المنصّة بين
+     أن تنتقل وحدَها وأن يبقى القرارُ بيد الإداريّ، فاختار «a»: تنتقل بقاعدة «وزّع» نفسِها (`redistribute`)، وعمولتُه
+     تقف ساعتَها. ورفعُ الإيقاف لا يعيدها: من استلمها بدأ العمل فيها.
+
+     يُنادى بعد الإيقاف والأرشفة (`AuthService`)، والعاملُ يلحق ما أُغلق بغير بابهما (`sweepClosedAdvisors`). */
+  async releaseIfClosed(advisorId: string, actorId: string | null): Promise<{ moved: number; stayed: number } | null> {
+    const user = await this.prisma.user.findUnique({ where: { id: advisorId }, select: { status: true } })
+    if (!user || !CLOSED_ADVISOR.includes(user.status)) return null
+    const open = await this.prisma.advisorAssignment.count({
+      where: { advisorId, unassignedAt: null, case: { status: { notIn: ['closed', 'enrolled', 'not_interested'] } } },
+    })
+    if (open === 0) return null
+    return this.redistribute(advisorId, actorId)
+  }
+
+  /** من العامل: مستشارٌ مغلقُ الحساب وفي عهدته حالةٌ مفتوحة — أُغلق بغير باب `AuthService` أو قبل هذا اليوم */
+  async sweepClosedAdvisors(): Promise<{ advisors: number; moved: number }> {
+    const due = await this.prisma.advisorAssignment.findMany({
+      where: {
+        unassignedAt: null, advisor: { status: { in: [...CLOSED_ADVISOR] } },
+        case: { status: { notIn: ['closed', 'enrolled', 'not_interested'] } },
+      },
+      select: { advisorId: true }, distinct: ['advisorId'],
+    })
+    let moved = 0
+    for (const d of due) moved += (await this.releaseIfClosed(d.advisorId, null))?.moved ?? 0
+    return { advisors: due.length, moved }
   }
 
   /* ═══ حالتان لطالبٍ واحد تُدمجان — ويختار الإداريُّ من يبقى مستشارَه (١٩ أكتوبر ٢٠٢٦) ═══
