@@ -32,15 +32,17 @@ import { zonedDay } from "@/application/trainer/cohort-period";
 import { addDays, dayLabelAr } from "@/application/trainer/axis-timeline";
 import {
   ANNOUNCEMENT_BODY_MAX, ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TITLE_MAX, LATE_JOINERS_MAX_DAYS, RECIPIENT_STATE_AR,
-  defaultLateUntil, lateUntilProblem, marketingDraft, recipientState,
+  defaultLateUntil, lateUntilProblem, marketingDraft, recipientState, videoDraft,
 } from "@/application/trainer/announcement";
 
 /* ═══ نصوصٌ جاهزة (٢٨ أكتوبر ٢٠٢٦) ═══
-   كان نصٌّ مقترحٌ واحد؛ وصار اثنين: «بدأنا التسويق» ويصل بالبريد أيضا، و«موعد بدء الشعب» كما كان. ويُملأ النموذجُ
+   كان نصٌّ مقترحٌ واحد؛ وصار اثنين: «بدأنا التسويق» ويصل بالبريد أيضا، و«موعد بدء الشعب» كما كان. ثمّ ثالثٌ أوّلَها
+   (١٠ نوفمبر): «فيديو تعريفي» — يلصق المدرّبُ رابطَه في «التسويق»، ويصل بالبريد أيضا (`videoDraft`). ويُملأ النموذجُ
    بأوّلِ ما لم يُرسَل منهما، ويُختار غيرُه بزرّ — وكلُّه يُعدَّل قبل الإرسال. */
 interface Draft { key: string; labelAr: string; titleAr: string; bodyAr: string; byEmail: boolean; lateUntil: (today: string) => string }
 function draftsFor(origin: string): Draft[] {
   return [
+    { key: "video", labelAr: "فيديو تعريفي", ...videoDraft(origin), byEmail: true, lateUntil: (d) => defaultLateUntil(d, false) },
     { key: "marketing", labelAr: "بدأنا التسويق", ...marketingDraft(origin), byEmail: true, lateUntil: (d) => defaultLateUntil(d, false) },
     { key: "start", labelAr: "موعد بدء الشعب", ...ANNOUNCEMENT_DRAFT, byEmail: false, lateUntil: (d) => defaultLateUntil(d, true) },
   ];

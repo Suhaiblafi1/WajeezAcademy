@@ -12,12 +12,12 @@
       («اعرضه لمن ينضمّ بعدُ أيضا» — ٤ أكتوبر ٢٠٢٦).
    والخادمُ في `server/tests/trainer/trainer-announcements.test.ts`. */
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TEMPLATE_KEY, LATE_JOINERS_DRAFT_UNTIL, announcementParts, announcementToShow, defaultLateUntil,
-  marketingDraft,
+  marketingDraft, videoDraft, VIDEO_EXAMPLE_PATH,
   lateUntilInstant, lateUntilProblem, recipientState,
 } from '@/application/trainer/announcement'
 import { categoryForTemplate } from '@/application/notifications/categories'
@@ -118,6 +118,7 @@ describe('③ ولا يرسل شيء بلا سؤال', () => {
   it('والنموذج يبدأ بأول نص جاهز — ويعدّل كلّه، والنصان الجاهزان كلاهما يختاران', () => {
     expect(ADMIN).toMatch(/useState<string>\(drafts\[0\]\.titleAr\)/)
     expect(ADMIN).toMatch(/useState<string>\(drafts\[0\]\.bodyAr\)/)
+    expect(ADMIN).toMatch(/return \[\s*\{ key: "video"[^\n]*\.\.\.videoDraft\(origin\), byEmail: true/)
     expect(ADMIN).toMatch(/key: "marketing"[^\n]*\.\.\.marketingDraft\(origin\), byEmail: true/)
     expect(ADMIN).toMatch(/key: "start"[^\n]*\.\.\.ANNOUNCEMENT_DRAFT, byEmail: false/)
     expect(ADMIN).toMatch(/drafts\.map\(\(d\) => \([\s\S]{0,240}onClick=\{\(\) => fill\(d\)\}/)
@@ -217,5 +218,44 @@ describe('⑥ «بدأنا التسويق» وبريده', () => {
     expect(ADMIN).toMatch(/onChange=\{\(\) => setByEmail\(true\)\} \/>\s*في المنصة وبالبريد\s*<\/label>\s*<p[^>]*>\s*نافذة وجرس في بوابته، ورسالة إلى بريده/)
     expect(ADMIN).toMatch(/onChange=\{\(\) => setByEmail\(false\)\} \/>\s*في المنصة وحدها\s*<\/label>\s*<p[^>]*>نافذة وجرس في بوابته، بلا بريد\.<\/p>/)
     expect(fnBody(ADMIN, 'send')).toMatch(/lateJoinersUntil: late \? until : null, byEmail,/)
+  })
+})
+
+/* ═══ ⑦ «فيديو تعريفي بك» (١٠ نوفمبر ٢٠٢٦) ═══
+   طلبُ صاحب المنصّة: يضع المدرّبُ رابطَ فيديوه بنفسه في «التسويق» — لا يرسله إلينا — ومعه مثالٌ صورةٌ يُفتح
+   برابط («Link to image»): الإعلانُ نصٌّ وحدَه. */
+describe('⑦ «فيديو تعريفي بك» — يضعه بنفسه في «التسويق»', () => {
+  const d = videoDraft('https://www.wajeezacademy.com')
+  const text = `${d.titleAr}\n${d.bodyAr}`
+  const MARKETING = code('src/pages/trainer/Marketing.tsx')
+
+  it('⚠️ يضعه بنفسه في «التسويق» — لا يرسله إلينا — وبأسماء الصناديق كما في الشاشة', () => {
+    expect(text).toContain('أضفه بنفسك')
+    expect(text).not.toMatch(/أرسله لنا|أرسلوه|يرسله لنا|لنرفعه/)
+    for (const box of ['فيديو تعريفي بك', 'دوراتي ومساراتي']) {
+      expect(text, `لا ذكر لـ«${box}»`).toContain(`«${box}»`)
+      expect(MARKETING.replace(/ّ/g, ''), `لا صندوق «${box}» في «التسويق»`).toContain(box)
+    }
+    expect(text).toMatch(/يوتيوب/)
+    expect(text).toMatch(/Google Drive[^\n]*«أي شخص لديه الرابط»/)
+  })
+
+  it('⚠️ والمثال صورة برابطها، وصفحة «التسويق» برابطها — كلاهما زر في البريد ومن موقعه', () => {
+    const parts = announcementParts(d.bodyAr)
+    expect(parts).toContainEqual({ kind: 'cta', label: 'شاهد المثال', href: `https://www.wajeezacademy.com${VIDEO_EXAMPLE_PATH}` })
+    expect(parts).toContainEqual({ kind: 'cta', label: 'افتح «التسويق»', href: 'https://www.wajeezacademy.com/trainer/marketing' })
+    const list = parts.find((p) => p.kind === 'list')
+    expect(list && list.kind === 'list' ? list.items : []).toHaveLength(3)
+    expect(parts.some((p) => p.kind === 'p' && /https?:/.test(p.text)), 'الرابط بقي نصا').toBe(false)
+    expect(videoDraft('https://staging.example').bodyAr, 'رابط موقع غير الذي يرسل منه').toContain('https://staging.example/trainer/marketing')
+    expect(existsSync(join(process.cwd(), 'public', VIDEO_EXAMPLE_PATH)), 'صورة المثال مكسورة').toBe(true)
+  })
+
+  it('⚠️ قصير، بلا تشكيل إعرابي ولا «عرضك» ولا أمر', () => {
+    expect(text).not.toMatch(/[ً-ِْ]/)
+    expect(text).not.toContain('عرضك')
+    expect(text).not.toMatch(/يجب|ممنوع|إلزامي/)
+    expect(d.bodyAr.length, 'طال النص').toBeLessThan(900)
+    expect(d.titleAr.length).toBeLessThanOrEqual(160)
   })
 })
