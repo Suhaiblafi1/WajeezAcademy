@@ -203,7 +203,17 @@ describe('⑦ معاينة روابطه حين تلصق', () => {
     await expect(shares.savePreview(A.userId, his, JPEG, 'x'), 'رفع معاينة لرابط مدرب آخر').rejects.toMatchObject({ status: 404 })
   })
 
+  /* ومعاينتُه اسمُه وصورتُه — فتُعرض ما دام يُعرض (`previewOwnerShown`، ١٠ نوفمبر ٢٠٢٦). وكان هذا الحارسُ يُخضرّ
+     لمدرّبٍ لم يُعتمد نشرُه بعد: فكان يحرس التسريبَ نفسَه. فيُنشر المدرّبُ أوّلا كما في صفحته (⑨) */
+  const publish = async () => {
+    await prisma.trainerProfile.update({
+      where: { id: A.profileId }, data: { isVerified: true, publicVisibility: true, publishApprovedAt: new Date(), suspendedAt: null },
+    })
+    await prisma.cohort.update({ where: { id: cohort.A1 }, data: { startsAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) } })
+  }
+
   it('⚠️ والرابط القصير يجيب الزاحف بوسوم المعاينة ثم يحول — وما لا معاينة له 302', async () => {
+    await publish()
     const kit = await shares.kit(A.userId)
     const code = codeOf(kit.short.cohorts[cohort.A1])
     const page = await app.inject({ method: 'GET', url: `/s/${code}` })
@@ -225,6 +235,22 @@ describe('⑦ معاينة روابطه حين تلصق', () => {
 
     const dead = await app.inject({ method: 'GET', url: '/s/ZZZZZZ' })
     expect(dead.statusCode).toBe(404)
+  })
+
+  it('⚠️ ومدرب خرج من بوابة النشر: رابطه يحول بلا اسمه ولا صورته — ويعودان بعودته', async () => {
+    await publish()
+    const code = codeOf((await shares.kit(A.userId)).short.cohorts[cohort.A1])
+    await prisma.trainerProfile.update({ where: { id: A.profileId }, data: { suspendedAt: new Date() } })
+
+    const page = await app.inject({ method: 'GET', url: `/s/${code}` })
+    expect(page.statusCode, 'عرضت معاينة مدرب لا يعرض').toBe(302)
+    expect(page.body).not.toContain('مدرّب A')
+    const img = await app.inject({ method: 'GET', url: `/api/public/links/${code}/preview.jpg` })
+    expect(img.statusCode, 'قدمت صورة مدرب لا يعرض').toBe(404)
+
+    await publish()
+    expect((await app.inject({ method: 'GET', url: `/s/${code}` })).statusCode, 'لم تعد المعاينة بعودته').toBe(200)
+    expect((await app.inject({ method: 'GET', url: `/api/public/links/${code}/preview.jpg` })).statusCode).toBe(200)
   })
 })
 
