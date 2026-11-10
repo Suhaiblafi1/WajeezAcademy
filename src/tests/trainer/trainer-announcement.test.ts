@@ -12,12 +12,12 @@
       («اعرضه لمن ينضمّ بعدُ أيضا» — ٤ أكتوبر ٢٠٢٦).
    والخادمُ في `server/tests/trainer/trainer-announcements.test.ts`. */
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TEMPLATE_KEY, LATE_JOINERS_DRAFT_UNTIL, announcementParts, announcementToShow, defaultLateUntil,
-  marketingDraft,
+  marketingDraft, videoDraft, VIDEO_EXAMPLE_PATH, announcementImage,
   lateUntilInstant, lateUntilProblem, recipientState,
 } from '@/application/trainer/announcement'
 import { categoryForTemplate } from '@/application/notifications/categories'
@@ -118,6 +118,7 @@ describe('③ ولا يرسل شيء بلا سؤال', () => {
   it('والنموذج يبدأ بأول نص جاهز — ويعدّل كلّه، والنصان الجاهزان كلاهما يختاران', () => {
     expect(ADMIN).toMatch(/useState<string>\(drafts\[0\]\.titleAr\)/)
     expect(ADMIN).toMatch(/useState<string>\(drafts\[0\]\.bodyAr\)/)
+    expect(ADMIN).toMatch(/return \[\s*\{ key: "video"[^\n]*\.\.\.videoDraft\(origin\), byEmail: true/)
     expect(ADMIN).toMatch(/key: "marketing"[^\n]*\.\.\.marketingDraft\(origin\), byEmail: true/)
     expect(ADMIN).toMatch(/key: "start"[^\n]*\.\.\.ANNOUNCEMENT_DRAFT, byEmail: false/)
     expect(ADMIN).toMatch(/drafts\.map\(\(d\) => \([\s\S]{0,240}onClick=\{\(\) => fill\(d\)\}/)
@@ -217,5 +218,73 @@ describe('⑥ «بدأنا التسويق» وبريده', () => {
     expect(ADMIN).toMatch(/onChange=\{\(\) => setByEmail\(true\)\} \/>\s*في المنصة وبالبريد\s*<\/label>\s*<p[^>]*>\s*نافذة وجرس في بوابته، ورسالة إلى بريده/)
     expect(ADMIN).toMatch(/onChange=\{\(\) => setByEmail\(false\)\} \/>\s*في المنصة وحدها\s*<\/label>\s*<p[^>]*>نافذة وجرس في بوابته، بلا بريد\.<\/p>/)
     expect(fnBody(ADMIN, 'send')).toMatch(/lateJoinersUntil: late \? until : null, byEmail,/)
+  })
+})
+
+/* ═══ ⑦ «فيديو تعريفي بك» (١٠ نوفمبر ٢٠٢٦) ═══
+   طلبُ صاحب المنصّة: يضع المدرّبُ رابطَ فيديوه بنفسه في «التسويق» — لا يرسله إلينا — ومعه مثالٌ صورةٌ يُفتح
+   برابط («Link to image»): الإعلانُ نصٌّ وحدَه. */
+describe('⑦ «فيديو تعريفي بك» — يضعه بنفسه في «التسويق»', () => {
+  const d = videoDraft('https://www.wajeezacademy.com')
+  const text = `${d.titleAr}\n${d.bodyAr}`
+  const MARKETING = code('src/pages/trainer/Marketing.tsx')
+
+  it('⚠️ يضعه بنفسه في «التسويق» — لا يرسله إلينا — وبأسماء الصناديق كما في الشاشة', () => {
+    expect(text).toContain('أضفه بنفسك')
+    expect(text).not.toMatch(/أرسله لنا|أرسلوه|يرسله لنا|لنرفعه/)
+    for (const box of ['فيديو تعريفي بك', 'دوراتي ومساراتي']) {
+      expect(text, `لا ذكر لـ«${box}»`).toContain(`«${box}»`)
+      expect(MARKETING.replace(/ّ/g, ''), `لا صندوق «${box}» في «التسويق»`).toContain(box)
+    }
+    expect(text).toMatch(/يوتيوب/)
+    expect(text).toMatch(/Google Drive[^\n]*«أي شخص لديه الرابط»/)
+  })
+
+  it('⚠️ والمثال صورة داخل الرسالة لا رابط — و«التسويق» زر في البريد، وكلاهما من موقعه', () => {
+    const site = 'https://www.wajeezacademy.com'
+    const parts = announcementParts(d.bodyAr, site)
+    expect(parts).toContainEqual({ kind: 'image', src: `${site}${VIDEO_EXAMPLE_PATH}` })
+    expect(parts.some((p) => p.kind === 'cta' && p.href.endsWith(VIDEO_EXAMPLE_PATH)), 'المثال زر لا صورة').toBe(false)
+    expect(parts).toContainEqual({ kind: 'cta', label: 'افتح «التسويق»', href: `${site}/trainer/marketing` })
+    const list = parts.find((p) => p.kind === 'list')
+    expect(list && list.kind === 'list' ? list.items : []).toHaveLength(3)
+    expect(parts.some((p) => p.kind === 'p' && /https?:/.test(p.text)), 'الرابط بقي نصا').toBe(false)
+    expect(videoDraft('https://staging.example').bodyAr, 'رابط موقع غير الذي يرسل منه').toContain('https://staging.example/trainer/marketing')
+    expect(VIDEO_EXAMPLE_PATH, 'webp لا يقرؤه Outlook').toMatch(/\.(jpe?g|png)$/)
+    expect(existsSync(join(process.cwd(), 'public', VIDEO_EXAMPLE_PATH)), 'صورة المثال مكسورة').toBe(true)
+  })
+
+  it('⚠️ قصير، بلا تشكيل إعرابي ولا «عرضك» ولا أمر', () => {
+    expect(text).not.toMatch(/[ً-ِْ]/)
+    expect(text).not.toContain('عرضك')
+    expect(text).not.toMatch(/يجب|ممنوع|إلزامي/)
+    expect(d.bodyAr.length, 'طال النص').toBeLessThan(900)
+    expect(d.titleAr.length).toBeLessThanOrEqual(160)
+  })
+})
+
+/* ═══ ⑧ صورةٌ في الرسالة (١٠ نوفمبر ٢٠٢٦) ═══
+   «اجعلها سكرين شوت ضمن الرسالة ليس رابطا». فقرةٌ هي رابطُ صورةٍ من موقعنا وحدَه تُرسم صورة — في النافذة والبريد
+   معا. والبريدُ يحرسه `server/tests/trainer/trainer-announcements.test.ts`. */
+describe('⑧ صورة في الرسالة', () => {
+  const site = 'https://www.wajeezacademy.com'
+  const BODY = code('src/components/AnnouncementBody.tsx')
+
+  it('⚠️ فقرة هي رابط صورة من موقعنا وحده صورة — وما سواه كما كان', () => {
+    expect(announcementImage(`${site}/a/b.jpg`, site)).toBe(`${site}/a/b.jpg`)
+    expect(announcementImage(` ${site}/a/b.PNG?v=2 `, site)).toBe(`${site}/a/b.PNG?v=2`)
+    expect(announcementImage('https://evil.example/a.jpg', site), 'صورة موقع آخر').toBeNull()
+    expect(announcementImage(`${site}/trainer/marketing`, site), 'صفحة لا صورة').toBeNull()
+    expect(announcementImage(`انظر ${site}/a.jpg`, site), 'رابط في جملة').toBeNull()
+    expect(announcementImage(`مثال:\n${site}/a.jpg`, site), 'بسطر قبله — زر').toBeNull()
+    expect(announcementParts(`فقرة\n\nhttps://evil.example/a.jpg`, site)).toContainEqual({ kind: 'cta', label: 'افتح الرابط', href: 'https://evil.example/a.jpg' })
+    expect(announcementParts(`${site}/a.jpg`), 'بلا موقع لا صورة').toEqual([{ kind: 'cta', label: 'افتح الرابط', href: `${site}/a.jpg` }])
+  })
+
+  it('⚠️ والنافذة ترسمها صورة تفتح كاملة — بالقاعدة نفسها، ومن أصل الموقع', () => {
+    expect(BODY).toMatch(/announcementImage\(para, site\)/)
+    expect(BODY).toMatch(/window\.location\.origin/)
+    expect(BODY).toMatch(/src \? \(\s*<a key=\{i\} href=\{src\}[^>]*>\s*<img src=\{src\}/)
+    expect(BODY).toMatch(/: \(\s*<LinkedText key=\{i\} text=\{para\}/)
   })
 })

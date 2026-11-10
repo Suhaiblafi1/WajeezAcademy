@@ -140,8 +140,10 @@ describe('③ والشاشات تعرضها منها', () => {
     expect(src).toMatch(/window\.addEventListener\("beforeunload", warn\)/)
   })
 
+  /* وصار في الإعلان صورةٌ (١٠ نوفمبر ٢٠٢٦): فقرةُ صورةِ موقعنا تُرسم صورة، وما سواها من فقراتٍ يمرّ بالعرض
+     نفسِه فقرةً فقرة — فالقاعدتان باقيتان واحدة */
   it('ونصّ الإعلان يعرض من العرض نفسه — فلا تفترق القاعدتان', () => {
-    expect(code('src/components/AnnouncementBody.tsx')).toMatch(/return <LinkedText text=\{text\}/)
+    expect(code('src/components/AnnouncementBody.tsx')).toMatch(/: \(\s*<LinkedText key=\{i\} text=\{para\}/)
   })
 })
 

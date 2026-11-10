@@ -109,6 +109,9 @@ export type MailBlock =
    *  مثلا). ولا يُستعمل لتقديم عنوانٍ مكتوب: العنوانُ لا يُكتب في الـHTML
    *  أصلا، ومكتوبٌ فوقُ لماذا. */
   | { kind: 'cta'; label: string; href: string; caption?: string }
+  /** صورةٌ بعرض الرسالة تُفتح كاملةً بضغطة — ولا تُضاف إلّا من موقعنا (إعلانُ المدرّبين: «سكرين شوت ضمن الرسالة»،
+   *  ١٠ نوفمبر ٢٠٢٦). و`alt` يُقرأ حين لا تُحمَّل الصورة، وهو سطرُها في النصّ الخامّ مع عنوانها */
+  | { kind: 'image'; src: string; alt: string }
   /** تنبيهٌ مؤطَّرٌ بلونٍ ذهبيّ — لما يُفوَّت إن قُرئ فقرةً */
   | { kind: 'callout'; text: MailRich }
   /** خارطةُ الطور: خطواتٌ مرقّمةٌ يُبيَّن فيها أين هو الآن وما بعده.
@@ -186,6 +189,7 @@ function textOf(doc: MailDoc): string {
         out.push(`${b.label}:`, b.href, '')
         break
       case 'callout': out.push(`! ${richText(b.text)}`, ''); break
+      case 'image': out.push(`${b.alt}:`, b.src, ''); break
       case 'note': out.push(b.link ? `${richText(b.text)} ${b.link.href}` : richText(b.text), ''); break
       case 'changes':
         for (const g of b.groups) out.push(`【${g.titleAr}】`, ...g.itemsAr.map((i) => `· ${i}`), '')
@@ -336,6 +340,15 @@ function htmlOf(doc: MailDoc): string {
           + `${b.caption ? esc(b.caption) + ' ' : ''}`
           + `لم يعمل الزرّ؟ ${anchor(b.href, 'افتح الرابط مباشرة', `color:${BRAND.teal};text-decoration:underline;`)}.`
           + `</p>`,
+        )
+        break
+      case 'image':
+        /* `width` صفةً لا أسلوبا وحدَه: Outlook يقرأ الصفةَ ويتجاهل `max-width` */
+        parts.push(
+          `<p style="margin:0 0 16px;"><a href="${esc(b.src)}" style="text-decoration:none;">`
+          + `<img src="${esc(b.src)}" alt="${esc(b.alt)}" width="520" `
+          + `style="display:block;width:100%;max-width:520px;height:auto;border:1px solid ${BRAND.hairline};border-radius:12px;">`
+          + `</a></p>`,
         )
         break
       case 'callout':
