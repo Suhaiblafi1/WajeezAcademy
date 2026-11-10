@@ -224,13 +224,16 @@ describe('⑥ «بدأنا التسويق» وبريده', () => {
 /* ═══ ⑦ «فيديو تعريفي بك» (١٠ نوفمبر ٢٠٢٦) ═══
    طلبُ صاحب المنصّة: يضع المدرّبُ رابطَ فيديوه بنفسه في «التسويق» — لا يرسله إلينا — ومعه مثالٌ صورةٌ يُفتح
    برابط («Link to image»): الإعلانُ نصٌّ وحدَه. */
-describe('⑦ «فيديو تعريفي بك» — يضعه بنفسه في «التسويق»', () => {
+describe('⑦ «فيديو تعريفي بك» — يضعه بنفسه في «موادك الإعلانية»', () => {
   const d = videoDraft('https://www.wajeezacademy.com')
   const text = `${d.titleAr}\n${d.bodyAr}`
   const MARKETING = code('src/pages/trainer/Marketing.tsx')
 
-  it('⚠️ يضعه بنفسه في «التسويق» — لا يرسله إلينا — وبأسماء الصناديق كما في الشاشة', () => {
+  it('⚠️ يضعه بنفسه في «موادك الإعلانية» — لا يرسله إلينا — وبأسماء الصفحة والصناديق كما في الشاشة', () => {
     expect(text).toContain('أضفه بنفسك')
+    expect(MARKETING, 'اسم الصفحة في البوابة تغيّر').toMatch(/<TrainerLayout title="موادك الإعلانية">/)
+    expect(text).toContain('«موادك الإعلانية»')
+    expect(text, 'اسم لا يراه المدرّب في قائمته').not.toContain('«التسويق»')
     expect(text).not.toMatch(/أرسله لنا|أرسلوه|يرسله لنا|لنرفعه/)
     for (const box of ['فيديو تعريفي بك', 'دوراتي ومساراتي']) {
       expect(text, `لا ذكر لـ«${box}»`).toContain(`«${box}»`)
@@ -240,12 +243,13 @@ describe('⑦ «فيديو تعريفي بك» — يضعه بنفسه في «ا
     expect(text).toMatch(/Google Drive[^\n]*«أي شخص لديه الرابط»/)
   })
 
-  it('⚠️ والمثال صورة داخل الرسالة لا رابط — و«التسويق» زر في البريد، وكلاهما من موقعه', () => {
+  it('⚠️ والمثال صورة داخل الرسالة لا رابط — والصفحة ودليلها زرّان في البريد، وكلّها من موقعه', () => {
     const site = 'https://www.wajeezacademy.com'
     const parts = announcementParts(d.bodyAr, site)
     expect(parts).toContainEqual({ kind: 'image', src: `${site}${VIDEO_EXAMPLE_PATH}` })
     expect(parts.some((p) => p.kind === 'cta' && p.href.endsWith(VIDEO_EXAMPLE_PATH)), 'المثال زر لا صورة').toBe(false)
-    expect(parts).toContainEqual({ kind: 'cta', label: 'افتح «التسويق»', href: `${site}/trainer/marketing` })
+    expect(parts).toContainEqual({ kind: 'cta', label: 'افتح «موادك الإعلانية»', href: `${site}/trainer/marketing` })
+    expect(parts).toContainEqual({ kind: 'cta', label: 'الشرح بالصور في دليل المدرّب', href: `${site}/trainer/guide#marketing` })
     const list = parts.find((p) => p.kind === 'list')
     expect(list && list.kind === 'list' ? list.items : []).toHaveLength(3)
     expect(parts.some((p) => p.kind === 'p' && /https?:/.test(p.text)), 'الرابط بقي نصا').toBe(false)

@@ -327,14 +327,14 @@ describe('⑦ وبالبريد إن اختاره المرسل', () => {
 describe('⑧ صورة في البريد', () => {
   const site = 'https://www.wajeezacademy.com'
 
-  it('⚠️ مثال «فيديو تعريفي» يصل صورة داخل الرسالة — لا زرا — وزر «التسويق» باق', () => {
+  it('⚠️ مثال «فيديو تعريفي» يصل صورة داخل الرسالة — لا زرا — وزر «موادك الإعلانية» باق', () => {
     const d = videoDraft(site)
     const { doc } = announcementMail({ id: 'x', ...d }, site)
     expect(doc.blocks).toContainEqual({ kind: 'image', src: `${site}${VIDEO_EXAMPLE_PATH}`, alt: 'صورة من الإعلان' })
     const { html, text } = renderMail(doc)
     expect(html).toContain(`<img src="${site}${VIDEO_EXAMPLE_PATH}"`)
     expect(html).not.toMatch(new RegExp(`<a href="${site}${VIDEO_EXAMPLE_PATH}"[^>]*>[^<]*لم يعمل`))
-    expect(html).toMatch(/href="https:\/\/www\.wajeezacademy\.com\/trainer\/marketing"[^>]*>[^<]*افتح «التسويق»/)
+    expect(html).toMatch(/href="https:\/\/www\.wajeezacademy\.com\/trainer\/marketing"[^>]*>[^<]*افتح «موادك الإعلانية»/)
     expect(text, 'النص الخام بلا عنوان الصورة').toContain(`${site}${VIDEO_EXAMPLE_PATH}`)
   })
 
