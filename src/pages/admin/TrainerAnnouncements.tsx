@@ -311,6 +311,8 @@ export default function TrainerAnnouncements() {
                 aria-label="نصّ الإعلان" className={`${field} leading-7`} />
             </label>
             <p className="text-read text-muted-foreground">{b.length} / {ANNOUNCEMENT_BODY_MAX} حرفا</p>
+            {/* صورةٌ في الرسالة (١٠ نوفمبر ٢٠٢٦) — `announcementImage` */}
+            <p className="text-read text-muted-foreground">لإضافة صورة: الصق رابطها وحده في فقرة. تظهر صورة إن كانت من موقعنا.</p>
           </div>
 
           {(t || b) && (

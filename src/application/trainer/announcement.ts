@@ -139,10 +139,9 @@ export function marketingDraft(origin: string) {
 
    طلبُ صاحب المنصّة: «اريد ان ارسل للمدربين رساله تقول لهم لمن لديه فيديو تعريف بنفسه او بدوراته…» ثمّ «اجعلها
    يضعوه بأنفسهم في قسم التسويق»، و«ارسلها من صفحة إعلانات المدربين». فالمدرّبُ يلصق الرابطَ بيده في «التسويق»
-   (`pages/trainer/Marketing.tsx`) ولا يرسله إلينا. وسُئل: الصورةُ في الإعلان أم رابطٌ إليها؟ فاختار **الرابط** —
-   الإعلانُ نصٌّ وحدَه، والمثالُ صورةٌ في `public/guides/trainer/video-example.webp` (المدرّبةُ أنوار، منشورة).
-   وفي البريد يصير كلٌّ من الرابطين زرّا عنوانُه سطرُه قبله (`announcementParts`). */
-export const VIDEO_EXAMPLE_PATH = '/guides/trainer/video-example.webp'
+   (`pages/trainer/Marketing.tsx`) ولا يرسله إلينا. ومعه مثالٌ (المدرّبةُ أنوار، منشورة) — وقال: «اجعلها سكرين شوت
+   ضمن الرسالة ليس رابطا». فصورةُ المثال فقرةٌ وحدَها تُرسم صورةً في النافذة والبريد (`announcementImage`). */
+export const VIDEO_EXAMPLE_PATH = '/guides/trainer/video-example.jpg'
 
 export function videoDraft(origin: string) {
   return {
@@ -153,7 +152,8 @@ export function videoDraft(origin: string) {
       'أضفه في دقيقة:\n1. افتح «التسويق» من قائمة بوابتك.\n2. فيديو عنك: الصق رابطه في «فيديو تعريفي بك».\n3. فيديو عن دورة: الصق رابطه تحت الدورة في «دوراتي ومساراتي».',
       'والرابط من يوتيوب (عادي أو Shorts)، أو من Google Drive مع المشاركة على «أي شخص لديه الرابط».',
       'ويظهر على صورتك في صفحة الدورة بعلامة تشغيل، وبضغطة تفتح بطاقتك والفيديو. ويظهر أيضا في صفحة المدرّبين وفي صفحتك. ودقيقة أو اثنتان تكفي، بإضاءة جيدة وصوت واضح.',
-      `شاهد المثال:\n${origin}${VIDEO_EXAMPLE_PATH}`,
+      'وهكذا يظهر (مثال):',
+      `${origin}${VIDEO_EXAMPLE_PATH}`,
       `افتح «التسويق»:\n${origin}/trainer/marketing`,
       'مع التقدير،\nإدارة أكاديمية وجيز',
     ].join('\n\n'),
@@ -165,14 +165,39 @@ export type AnnouncementPart =
   | { kind: 'p'; text: string }
   | { kind: 'list'; items: string[] }
   | { kind: 'cta'; label: string; href: string }
+  | { kind: 'image'; src: string }
 
 const BARE_URL = /^https?:\/\/\S+$/
 const NUMBERED = /^\d+[.)]\s+/
 
-/** الإعلانُ فقراتٍ للبريد: الرابطُ في سطرٍ وحدَه زرٌّ عنوانُه ما قبله إن انتهى بنقطتين، والأسطرُ المرقّمةُ قائمة */
-export function announcementParts(body: string): AnnouncementPart[] {
+/* ═══ صورةٌ في الإعلان (١٠ نوفمبر ٢٠٢٦) ═══
+
+   «اجعلها سكرين شوت ضمن الرسالة ليس رابطا» (صاحب المنصّة). فالفقرةُ التي هي رابطُ صورةٍ وحدَه — بلا سطرٍ معه —
+   تُرسم صورةً: في نافذة المدرّب وصندوقه ومعاينة الإدارة (`AnnouncementBody`)، وفي البريد. **ومن موقعنا وحدَه**:
+   سياسةُ المحتوى (`img-src 'self'` في `deploy/Caddyfile`) لا تفتح صورةَ موقعٍ آخر، فتبقى تلك رابطا يُضغط كما كانت.
+   ويُرسل بصيغةٍ يقرؤها كلُّ بريد (jpg/png/gif) — webp لا يقرؤه Outlook. */
+const IMAGE_URL = /^https?:\/\/[^\s/]+\/\S+\.(?:jpe?g|png|gif|webp)(?:\?\S*)?$/i
+
+/** رابطُ صورةٍ من الموقع نفسِه (`site` أصلُه: `https://www.wajeezacademy.com`) — وإلّا `null` */
+export function announcementImage(paragraph: string, site: string): string | null {
+  const t = paragraph.trim()
+  if (!IMAGE_URL.test(t)) return null
+  try {
+    return new URL(t).origin === new URL(site).origin ? t : null
+  } catch {
+    return null
+  }
+}
+
+/** الإعلانُ فقراتٍ للبريد: صورةُ الموقع وحدَها في فقرةٍ صورةٌ، والرابطُ في سطرٍ وحدَه زرٌّ عنوانُه ما قبله إن انتهى بنقطتين، والأسطرُ المرقّمةُ قائمة */
+export function announcementParts(body: string, site?: string): AnnouncementPart[] {
   const out: AnnouncementPart[] = []
   for (const para of body.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)) {
+    const src = site ? announcementImage(para, site) : null
+    if (src) {
+      out.push({ kind: 'image', src })
+      continue
+    }
     const lines = para.split('\n').map((l) => l.trim()).filter(Boolean)
     const last = lines[lines.length - 1]
     if (BARE_URL.test(last)) {

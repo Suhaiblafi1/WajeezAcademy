@@ -53,11 +53,12 @@ export type AnnouncementMailer = (to: string, subject: string, body: { text: str
 const directMailer = (prisma: PrismaClient): AnnouncementMailer => async (to, subject, body) =>
   (await sendDirectEmail(prisma, { to, subject, ...body })).status === 'sent'
 
-/** بريدُ الإعلان — عنوانُه عنوانُه، وفقراتُه كما كُتبت: الرابطُ زرٌّ، والمرقّمُ قائمة. وبلا رابطٍ فيه زرٌّ يفتحه في المنصّة */
+/** بريدُ الإعلان — عنوانُه عنوانُه، وفقراتُه كما كُتبت: الرابطُ زرٌّ، والمرقّمُ قائمة، وصورةُ موقعنا صورة. وبلا رابطٍ فيه زرٌّ يفتحه في المنصّة */
 export function announcementMail(a: { id: string; titleAr: string; bodyAr: string }, site: string): { subject: string; doc: MailDoc } {
-  const parts = announcementParts(a.bodyAr)
+  const parts = announcementParts(a.bodyAr, site)
   const blocks: MailBlock[] = parts.map((p): MailBlock => (p.kind === 'cta'
     ? { kind: 'cta', label: p.label, href: p.href }
+    : p.kind === 'image' ? { kind: 'image', src: p.src, alt: 'صورة من الإعلان' }
     : p.kind === 'list' ? { kind: 'list', items: p.items, numbered: true } : { kind: 'p', text: p.text }))
   if (!parts.some((p) => p.kind === 'cta')) {
     blocks.push({ kind: 'cta', label: 'افتحه في المنصة', href: `${site}/trainer/inbox?m=${encodeURIComponent(a.id)}` })

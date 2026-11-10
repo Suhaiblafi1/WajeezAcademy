@@ -17,7 +17,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TEMPLATE_KEY, LATE_JOINERS_DRAFT_UNTIL, announcementParts, announcementToShow, defaultLateUntil,
-  marketingDraft, videoDraft, VIDEO_EXAMPLE_PATH,
+  marketingDraft, videoDraft, VIDEO_EXAMPLE_PATH, announcementImage,
   lateUntilInstant, lateUntilProblem, recipientState,
 } from '@/application/trainer/announcement'
 import { categoryForTemplate } from '@/application/notifications/categories'
@@ -240,14 +240,17 @@ describe('⑦ «فيديو تعريفي بك» — يضعه بنفسه في «ا
     expect(text).toMatch(/Google Drive[^\n]*«أي شخص لديه الرابط»/)
   })
 
-  it('⚠️ والمثال صورة برابطها، وصفحة «التسويق» برابطها — كلاهما زر في البريد ومن موقعه', () => {
-    const parts = announcementParts(d.bodyAr)
-    expect(parts).toContainEqual({ kind: 'cta', label: 'شاهد المثال', href: `https://www.wajeezacademy.com${VIDEO_EXAMPLE_PATH}` })
-    expect(parts).toContainEqual({ kind: 'cta', label: 'افتح «التسويق»', href: 'https://www.wajeezacademy.com/trainer/marketing' })
+  it('⚠️ والمثال صورة داخل الرسالة لا رابط — و«التسويق» زر في البريد، وكلاهما من موقعه', () => {
+    const site = 'https://www.wajeezacademy.com'
+    const parts = announcementParts(d.bodyAr, site)
+    expect(parts).toContainEqual({ kind: 'image', src: `${site}${VIDEO_EXAMPLE_PATH}` })
+    expect(parts.some((p) => p.kind === 'cta' && p.href.endsWith(VIDEO_EXAMPLE_PATH)), 'المثال زر لا صورة').toBe(false)
+    expect(parts).toContainEqual({ kind: 'cta', label: 'افتح «التسويق»', href: `${site}/trainer/marketing` })
     const list = parts.find((p) => p.kind === 'list')
     expect(list && list.kind === 'list' ? list.items : []).toHaveLength(3)
     expect(parts.some((p) => p.kind === 'p' && /https?:/.test(p.text)), 'الرابط بقي نصا').toBe(false)
     expect(videoDraft('https://staging.example').bodyAr, 'رابط موقع غير الذي يرسل منه').toContain('https://staging.example/trainer/marketing')
+    expect(VIDEO_EXAMPLE_PATH, 'webp لا يقرؤه Outlook').toMatch(/\.(jpe?g|png)$/)
     expect(existsSync(join(process.cwd(), 'public', VIDEO_EXAMPLE_PATH)), 'صورة المثال مكسورة').toBe(true)
   })
 
@@ -257,5 +260,31 @@ describe('⑦ «فيديو تعريفي بك» — يضعه بنفسه في «ا
     expect(text).not.toMatch(/يجب|ممنوع|إلزامي/)
     expect(d.bodyAr.length, 'طال النص').toBeLessThan(900)
     expect(d.titleAr.length).toBeLessThanOrEqual(160)
+  })
+})
+
+/* ═══ ⑧ صورةٌ في الرسالة (١٠ نوفمبر ٢٠٢٦) ═══
+   «اجعلها سكرين شوت ضمن الرسالة ليس رابطا». فقرةٌ هي رابطُ صورةٍ من موقعنا وحدَه تُرسم صورة — في النافذة والبريد
+   معا. والبريدُ يحرسه `server/tests/trainer/trainer-announcements.test.ts`. */
+describe('⑧ صورة في الرسالة', () => {
+  const site = 'https://www.wajeezacademy.com'
+  const BODY = code('src/components/AnnouncementBody.tsx')
+
+  it('⚠️ فقرة هي رابط صورة من موقعنا وحده صورة — وما سواه كما كان', () => {
+    expect(announcementImage(`${site}/a/b.jpg`, site)).toBe(`${site}/a/b.jpg`)
+    expect(announcementImage(` ${site}/a/b.PNG?v=2 `, site)).toBe(`${site}/a/b.PNG?v=2`)
+    expect(announcementImage('https://evil.example/a.jpg', site), 'صورة موقع آخر').toBeNull()
+    expect(announcementImage(`${site}/trainer/marketing`, site), 'صفحة لا صورة').toBeNull()
+    expect(announcementImage(`انظر ${site}/a.jpg`, site), 'رابط في جملة').toBeNull()
+    expect(announcementImage(`مثال:\n${site}/a.jpg`, site), 'بسطر قبله — زر').toBeNull()
+    expect(announcementParts(`فقرة\n\nhttps://evil.example/a.jpg`, site)).toContainEqual({ kind: 'cta', label: 'افتح الرابط', href: 'https://evil.example/a.jpg' })
+    expect(announcementParts(`${site}/a.jpg`), 'بلا موقع لا صورة').toEqual([{ kind: 'cta', label: 'افتح الرابط', href: `${site}/a.jpg` }])
+  })
+
+  it('⚠️ والنافذة ترسمها صورة تفتح كاملة — بالقاعدة نفسها، ومن أصل الموقع', () => {
+    expect(BODY).toMatch(/announcementImage\(para, site\)/)
+    expect(BODY).toMatch(/window\.location\.origin/)
+    expect(BODY).toMatch(/src \? \(\s*<a key=\{i\} href=\{src\}[^>]*>\s*<img src=\{src\}/)
+    expect(BODY).toMatch(/: \(\s*<LinkedText key=\{i\} text=\{para\}/)
   })
 })

@@ -25,8 +25,9 @@ import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 import { addDays } from '../../../src/application/trainer/axis-timeline'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
-import { TrainerAnnouncementService } from '../../services/trainer-announcement.service'
-import { marketingDraft } from '../../../src/application/trainer/announcement'
+import { TrainerAnnouncementService, announcementMail } from '../../services/trainer-announcement.service'
+import { renderMail } from '../../services/mail-template'
+import { marketingDraft, videoDraft, VIDEO_EXAMPLE_PATH } from '../../../src/application/trainer/announcement'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -318,5 +319,28 @@ describe('⑦ وبالبريد إن اختاره المرسل', () => {
     expect(r.json().emailed).toBe(0)
     expect((await prisma.trainerAnnouncement.findUnique({ where: { id: r.json().id } }))?.byEmail).toBe(true)
     await prisma.notificationPreference.deleteMany({ where: { userId: people.b.id, category: 'announcements' } })
+  })
+})
+
+/* ═══ ⑧ صورةٌ في البريد (١٠ نوفمبر ٢٠٢٦) ═══
+   «اجعلها سكرين شوت ضمن الرسالة ليس رابطا». فصورةُ موقعنا وحدَها في فقرةٍ تصل البريدَ صورةً لا زرّا. */
+describe('⑧ صورة في البريد', () => {
+  const site = 'https://www.wajeezacademy.com'
+
+  it('⚠️ مثال «فيديو تعريفي» يصل صورة داخل الرسالة — لا زرا — وزر «التسويق» باق', () => {
+    const d = videoDraft(site)
+    const { doc } = announcementMail({ id: 'x', ...d }, site)
+    expect(doc.blocks).toContainEqual({ kind: 'image', src: `${site}${VIDEO_EXAMPLE_PATH}`, alt: 'صورة من الإعلان' })
+    const { html, text } = renderMail(doc)
+    expect(html).toContain(`<img src="${site}${VIDEO_EXAMPLE_PATH}"`)
+    expect(html).not.toMatch(new RegExp(`<a href="${site}${VIDEO_EXAMPLE_PATH}"[^>]*>[^<]*لم يعمل`))
+    expect(html).toMatch(/href="https:\/\/www\.wajeezacademy\.com\/trainer\/marketing"[^>]*>[^<]*افتح «التسويق»/)
+    expect(text, 'النص الخام بلا عنوان الصورة').toContain(`${site}${VIDEO_EXAMPLE_PATH}`)
+  })
+
+  it('⚠️ وصورة موقع آخر لا تصير صورة — تبقى زرا كما كانت', () => {
+    const { doc } = announcementMail({ id: 'x', titleAr: 'ع', bodyAr: 'نص\n\nhttps://evil.example/a.jpg' }, site)
+    expect(doc.blocks.some((b) => b.kind === 'image')).toBe(false)
+    expect(doc.blocks).toContainEqual({ kind: 'cta', label: 'افتح الرابط', href: 'https://evil.example/a.jpg' })
   })
 })
