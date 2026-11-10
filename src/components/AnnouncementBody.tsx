@@ -24,7 +24,7 @@ export default function AnnouncementBody({ text, className = "" }: { text: strin
         return src ? (
           <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block">
             <img src={src} alt="صورة من الإعلان" loading="lazy"
-              className="w-full rounded-xl border border-white/12" />
+              className="w-full rounded-xl" />
           </a>
         ) : (
           <LinkedText key={i} text={para} className="text-read leading-7" />
