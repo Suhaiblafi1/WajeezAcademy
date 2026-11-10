@@ -393,6 +393,8 @@ export class EnrollmentService {
     /* وتقويمُه ينتقل معه: لقاءاتُ المغادَرة تُرفع — وإلّا رأى شعبتَين في أسبوعٍ
        فحضر ما ليس له — ولقاءاتُ الوجهة تصله برابطه. */
     await this.seatMoved(enrollmentId, userId, from.id, to)
+    /* ومقعدُه في المغادَرة لمن ينتظره — لا لمشترٍ جديد (`fillFromWaitlist`) */
+    await this.fillFromWaitlist(from.id, userId, 'seat_freed_by_switch')
     return moved
   }
 
@@ -414,7 +416,7 @@ export class EnrollmentService {
 
     /* ═══ ويُخبَر من أُسقط تسجيلُه، لا من أخذ مقعدَه وحدَه (ي-٤) ═══
 
-       كان في هذه الطريقة إشعارٌ واحدٌ يخرج — `fillSeatFromWaitlist` أدناه
+       كان في هذه الطريقة إشعارٌ واحدٌ يخرج — `fillFromWaitlist` أدناه
        يُبشّر **من دخل المقعدَ الشاغر**. فالفعلُ يبدو مُخبِرا وهو يُخبر إنسانا
        آخر: صاحبُ المقعد يجد شعبتَه اختفت من «رحلتي» بلا كلمة.
 
@@ -436,8 +438,8 @@ export class EnrollmentService {
       await this.seatLeft(enrollmentId, e.userId, e.cohortId, `أسقط تسجيلك في «${cohort?.title ?? 'شعبتك'}»، فرفعت لقاءاتها من تقويمك.`)
     }
 
-    const promoted = await this.fillSeatFromWaitlist(e.cohortId, actorId)
-    return { ...e, promotedEnrollmentId: promoted?.id ?? null }
+    const promoted = await this.fillFromWaitlist(e.cohortId, actorId, 'seat_freed_by_drop')
+    return { ...e, promotedEnrollmentId: promoted[0]?.id ?? null }
   }
 
   /* ─────────── المقعدُ الشاغرُ يُملأ من الطابور ───────────
@@ -452,7 +454,27 @@ export class EnrollmentService {
 
      والحسابُ داخل معاملةٍ واحدة: انسحابان متزامنان على مقعدين قد يرقّيان
      ثلاثةً لو عُدّ المسجَّلون خارجها. */
-  private async fillSeatFromWaitlist(cohortId: string, actorId: string | null) {
+  /* ═══ ومن كلّ بابٍ يُخلي مقعدا — لا من الإسقاط وحدَه (١٠ نوفمبر ٢٠٢٦) ═══
+
+     كان يُنادى من `drop` وحدَه. فثلاثةُ أبوابٍ تُخلي مقعدا ولا تُرقّي أحدا، وجُرّبت فمرّت:
+     · **التبديلُ إلى شعبةٍ أخرى** — تعود الشعبةُ «مفتوحة» فيشتري المقعدَ غيرُ المنتظِر.
+     · **ورفعُ السعة** — يبقى المنتظِرُ منتظِرا، وتبقى الشعبةُ «ممتلئة» فلا يُشترى مقعدُها الجديد أصلا.
+     · **وحجزٌ لم يُدفع يُفكّ** — بإلغاء صاحبه أو بانقضاء ساعته (`reclaimAbandonedOrders`).
+     والمنتظِرُ قد يكون دفع: مشترٍ امتلأت الشعبةُ قبل أن يتأكّد دفعُه (`settleOrder`). فتُملأ المقاعدُ الشاغرةُ كلُّها
+     من الطابور بأقدميّته، من كلّ بابٍ يُخليها — والقرارُ قرارُ صاحب المنصّة في الإسقاط نفسُه، ممدودا إلى أخواته.
+     ويعود بمن رُقّي. */
+  async fillFromWaitlist(cohortId: string, actorId: string | null, reason: string) {
+    const promoted: { id: string }[] = []
+    /* حدٌّ لا تبلغه شعبة — فلا تدور حلقةٌ بلا نهاية إن عطب شيء */
+    for (let i = 0; i < 1000; i += 1) {
+      const one = await this.promoteOne(cohortId, actorId, reason)
+      if (!one) break
+      promoted.push(one)
+    }
+    return promoted
+  }
+
+  private async promoteOne(cohortId: string, actorId: string | null, reason: string) {
     const promoted = await this.prisma.$transaction(async (tx) => {
       const cohort = await tx.cohort.findUnique({ where: { id: cohortId } })
       if (!cohort) return null
@@ -497,7 +519,7 @@ export class EnrollmentService {
 
     await recordAudit(this.prisma, {
       actorId, action: 'enrollment.waitlist.promote', entityType: 'enrollment', entityId: promoted.moved.id,
-      meta: { cohortId, userId: promoted.moved.userId, reason: 'seat_freed_by_drop' },
+      meta: { cohortId, userId: promoted.moved.userId, reason },
     })
 
     /* ولا تُبتلع خيبةُ الإشعار: من رُقّي وهو لا يعلم يظنّ نفسَه منتظِرا،

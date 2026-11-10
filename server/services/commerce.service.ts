@@ -1508,10 +1508,12 @@ export class CommerceService {
     /* النقلُ بشرطِ الحالة لا بعدها: إلغاءٌ من صاحبه ومن المُشغِّل الخلفيّ في
        اللحظة نفسِها ينقل أحدُهما وحدَه — فلا يُفرَج عن استعمال الكوبون مرّتين. */
     let released = false
+    let freed: string[] = []
     const cancelled = await this.prisma.$transaction(async (tx) => {
       const moved = await tx.order.updateMany({ where: { id: orderId, status: 'pending_payment' }, data: { status: 'cancelled' } })
       if (moved.count === 0) return null
       if (order.invoice) await tx.invoice.update({ where: { id: order.invoice.id }, data: { status: 'void' } })
+      freed = (await tx.enrollmentRequest.findMany({ where: { orderId, status: 'seat_held' }, select: { cohortId: true } })).map((r) => r.cohortId)
       await tx.enrollmentRequest.updateMany({
         where: { orderId, status: 'seat_held' },
         data: { status: 'cancelled', orderId: null },
@@ -1527,6 +1529,8 @@ export class CommerceService {
       meta: { total: num(order.total), currency: order.currency, couponReleased: released },
       reason: 'ألغاه صاحبه قبل الدفع — فكّت حجوزه',
     })
+    /* والمقعدُ المفكوكُ لمن ينتظره أوّلا (`EnrollmentService.fillFromWaitlist`، ١٠ نوفمبر ٢٠٢٦) */
+    for (const cohortId of new Set(freed)) await this.enrollments.fillFromWaitlist(cohortId, null, 'seat_hold_released')
     return cancelled
   }
 

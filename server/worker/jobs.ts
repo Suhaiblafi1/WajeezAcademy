@@ -36,6 +36,7 @@ import { TrainerDeferralService } from '../services/trainer-deferral.service'
 import { recordAudit } from '../services/audit'
 import { releaseCouponUse } from '../services/commerce/coupon-ledger'
 import { CommerceService } from '../services/commerce.service'
+import { EnrollmentService } from '../services/enrollment.service'
 import { ProgressService } from '../services/progress.service'
 import { LEARNER_PLAN_QUERY } from '../services/learner-gate'
 import { LEARNER_SESSION_WHERE } from '../services/session-visibility'
@@ -1019,12 +1020,14 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
     }
     try {
       let released = false
+      let freed: string[] = []
       const moved = await prisma.$transaction(async (tx) => {
         /* بشرطِ الحالة: صاحبُه قد يُلغيه أو يدفعه في اللحظة نفسِها — فلا يُلغى
            مدفوعٌ، ولا يُفرَج عن استعمالِ كوبونٍ مرّتين */
         const m = await tx.order.updateMany({ where: { id: order.id, status: 'pending_payment' }, data: { status: 'cancelled' } })
         if (m.count === 0) return false
         if (order.invoice) await tx.invoice.update({ where: { id: order.invoice.id }, data: { status: 'void' } })
+        freed = (await tx.enrollmentRequest.findMany({ where: { orderId: order.id, status: 'seat_held' }, select: { cohortId: true } })).map((r) => r.cohortId)
         /* المقعدُ يعود إلى العدّ، والحجزُ يُفكّ عن الطلب فلا يبقى معلَّقا به */
         await tx.enrollmentRequest.updateMany({
           where: { orderId: order.id, status: 'seat_held' },
@@ -1040,6 +1043,14 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
         meta: { userId: order.userId, total: String(order.total), currency: order.currency, ageMs: now.getTime() - order.createdAt.getTime(), couponReleased: released },
         reason: 'طلب مهجور لم يدفع — ألغي آليّا وأفرج عن مقاعده',
       })
+      /* والمقعدُ المفكوكُ لمن ينتظره أوّلا — لا لمشترٍ جديد (`EnrollmentService.fillFromWaitlist`، ١٠ نوفمبر ٢٠٢٦) */
+      for (const cohortId of new Set(freed)) {
+        try {
+          await new EnrollmentService(prisma).fillFromWaitlist(cohortId, null, 'seat_hold_released')
+        } catch (e) {
+          console.error('[reclaim] تعذّر ملء المقعد من قائمة الانتظار', cohortId, e)
+        }
+      }
       /* ═══ ويُقال لصاحبه (ي-٤) ═══
 
          وظيفةٌ لا إنسانٌ تُلغي طلبَه وتُفرج عن مقعده بعد ساعة، و`actorId`
