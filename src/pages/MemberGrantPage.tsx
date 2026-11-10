@@ -889,7 +889,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 }
 
 function Shell({
-  children, title = MEMBER_GRANT_NAME_AR, path = "/grant", description = "منحة حصرية لقراء وجيز: دورات مباشرة على Zoom بخصم كبير، والمقاعد محدودة.",
+  children, title = MEMBER_GRANT_NAME_AR, path = "/grant", description = "منحة حصرية لقرّاء وجيز: دورات مباشرة على Zoom بخصم كبير، والمقاعد محدودة.",
 }: { children: React.ReactNode; title?: string; path?: string; description?: string }) {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">

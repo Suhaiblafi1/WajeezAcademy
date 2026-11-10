@@ -232,7 +232,7 @@ export const grantFollowupAr = (name: string, grantNameAr = MEMBER_GRANT_NAME_AR
    من منتجنا الجديد أكاديمية وجيز، وهذه المنحة حصريّة». ثمّ في اليوم نفسِه: «بدل عضو.. استخدم قرّاء وجيز بدلا من مستخدم» —
    فوجيزُ تطبيقُ ملخّصات كتب، ومن فيه قرّاؤه. */
 export const grantThanksAr = (percentOff: number) =>
-  `تطبيق وجيز يشكرك لأنك من قرائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى ${percentOff}% لتستفيد من منتجنا الجديد: أكاديمية وجيز.`
+  `تطبيق وجيز يشكرك لأنك من قرّائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى ${percentOff}% لتستفيد من منتجنا الجديد: أكاديمية وجيز.`
 
 /** وسطرُ «منحة وجيز العامة» — للجميع، فلا شكرَ لقرّاء ولا «حصريّة» (١ نوفمبر ٢٠٢٦) */
 export const openGrantLineAr = (percentOff: number) =>
@@ -491,7 +491,7 @@ export function grantRecordLink(host: string, key: string): string {
    وصفحةُ منحة المؤثّرين تُهدي برابط مؤثّرها (`/grant/i/<كوده>`) — فالصديقُ يأخذ منحتَها هي، ويُحسب للمؤثّر الذي جاء
    به صاحبُها (٢٦ أكتوبر ٢٠٢٦)، ولا يقول «لأنّي من مستخدمي تطبيق وجيز»: منحتُها من المؤثّر لا من التطبيق. */
 export function grantShareAr(link: string, percentOff: number, lastDay: string | null, fromWajeezApp = true): string {
-  const who = fromWajeezApp ? 'حصلت على منحة حصرية من تطبيق وجيز لأني من قرائه' : 'حصلت على منحة من أكاديمية وجيز'
+  const who = fromWajeezApp ? 'حصلت على منحة حصرية من تطبيق وجيز لأني من قرّائه' : 'حصلت على منحة من أكاديمية وجيز'
   return [
     `${who}، ويحق لي أن أشاركها مع ${GRANT_GIFT_MAX} من أصدقائي، واخترتك منهم.`,
     '',
