@@ -195,8 +195,8 @@ describe('بعد النموذج', () => {
     /* و«منحة وجيز العامة» للجميع: بلا شكرٍ لقرّاء وجيز ولا «حصريّة» (١ نوفمبر ٢٠٢٦) */
     expect(PAGE).toMatch(/\{forOpen\s*\? openGrantLineAr\(c\.percentOff\)/)
     expect(openGrantLineAr(50)).toBe('منحة من أكاديمية وجيز لكل من يريد أن يتعلم، تصل إلى 50% من سعر دوراتك.')
-    expect(openGrantLineAr(50), 'شكر قراء وجيز في المنحة العامة').not.toMatch(/قرائه|حصرية/)
-    expect(grantThanksAr(60)).toBe('تطبيق وجيز يشكرك لأنك من قرائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى 60% لتستفيد من منتجنا الجديد: أكاديمية وجيز.')
+    expect(openGrantLineAr(50), 'شكر قراء وجيز في المنحة العامة').not.toMatch(/قرّ?ائه|حصرية/)
+    expect(grantThanksAr(60)).toBe('تطبيق وجيز يشكرك لأنك من قرّائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى 60% لتستفيد من منتجنا الجديد: أكاديمية وجيز.')
     /* وفي منحة المؤثّرين باسم المؤثّر إن جاء برابطه (٢٦ أكتوبر ٢٠٢٦) */
     expect(PAGE).toContain('`بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
     /* وخانةُ الكود باسم المؤثّر لا «كود المؤثّر» — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦) */
@@ -553,7 +553,7 @@ describe('بعد النموذج', () => {
     /* ونصُّها يتباهى بمنحته ويختار صديقَه، بلا رمزٍ تعبيريّ وبرابطٍ قصير — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
     const link = 'https://wajeezacademy.com/s/AB12CD'
     const m = grantShareAr(link, 60, '30 أكتوبر 2026')
-    expect(m.split('\n')[0]).toBe('حصلت على منحة حصرية من تطبيق وجيز لأني من قرائه، ويحق لي أن أشاركها مع 3 من أصدقائي، واخترتك منهم.')
+    expect(m.split('\n')[0]).toBe('حصلت على منحة حصرية من تطبيق وجيز لأني من قرّائه، ويحق لي أن أشاركها مع 3 من أصدقائي، واخترتك منهم.')
     expect(m).toContain('المنحة تصل إلى 60% من سعر دورات مباشرة على Zoom مع مدربين معتمدين، وآخر يوم لها 30 أكتوبر 2026.')
     expect(m.trim().split('\n').at(-1), 'الرابط آخر الرسالة وحده').toBe(link)
     expect(m, 'رمز تعبيري — كان يصل مربعا في واتساب الحاسوب').not.toMatch(/\p{Extended_Pictographic}/u)
@@ -829,9 +829,9 @@ describe('النصوص', () => {
     const all = [grantThanksAr(60), grantShareAr('u', 60, '30 أكتوبر'), grantShareAr('u', 45, '30 أكتوبر', false),
       grantShareMailto('u', 60, '30 أكتوبر'), grantAdvisorTextAr({ name: 'سارة' }), ...WHATSAPP_SPOTS.map((s) => s.labelAr)]
     for (const t of all) expect(t).not.toMatch(/أعضاء|عضو|مستخدم/)
-    expect(grantThanksAr(60)).toContain('من قرائه')
-    expect(grantShareAr('u', 60, '30 أكتوبر')).toContain('لأني من قرائه')
-    expect(code('src/pages/MemberGrantPage.tsx')).toContain('منحة حصرية لقراء وجيز')
+    expect(grantThanksAr(60)).toContain('من قرّائه')
+    expect(grantShareAr('u', 60, '30 أكتوبر')).toContain('لأني من قرّائه')
+    expect(code('src/pages/MemberGrantPage.tsx')).toContain('منحة حصرية لقرّاء وجيز')
   })
 
   /* «هذا الخصمُ الخاصّ بشراء أوّل دورةٍ تمّ منحُه لدورة كذا الأعلى سعرا، باختصار» — قرارُه (٢٧ أكتوبر ٢٠٢٦) */
