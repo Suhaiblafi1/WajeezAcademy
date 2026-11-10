@@ -879,8 +879,9 @@ describe('لماذا هذه المنحة؟ · ما ستخرج به · التشخ
 
   it('⚠️ «لماذا» أخف: بلا صندوق ولا وسوم ولا شريط «تدفع عنك وأنت تدفع»', () => {
     const why = fnOf('GrantWhy')
-    expect(why).toMatch(/<section aria-labelledby="grant-why"/)
-    expect(why, 'عاد صندوقا').not.toMatch(/<Card|<Inset/)
+    /* في إطار النظام (١٠ نوفمبر ٢٠٢٦: «ضع حولها إطارا احترافيّا») — لا صناديقَ داخلَه للقيم */
+    expect(why).toMatch(/<Panel\s+as="section"\s+aria-labelledby="grant-why"/)
+    expect(why, 'عادت صناديق داخل «لماذا»').not.toMatch(/<Card|<Inset/)
     expect(why, 'عادت الوسوم').not.toMatch(/GRANT_WHY_LOSSES_AR\.map/)
     expect(why).toMatch(/\{GRANT_WHY_AR\.lossesLead\}: \{GRANT_WHY_LOSSES_AR\.join\("، "\)\}\. \{GRANT_WHY_AR\.lead\}/)
     expect(PAGE, 'عاد شريط السعر').not.toMatch(/تدفعها وجيز عنك|grantWhySplitAr|bg-gold" style=\{\{ width/)
