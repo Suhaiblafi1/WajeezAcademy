@@ -280,6 +280,29 @@ export class AdvisorService {
       create: { userId, diagnosticSnapshot: snapshot as object, attachedAt: new Date() },
     })
 
+    /* ═══ وحالتُه القائمةُ أوّلا — من أيّ بابٍ فُتحت (١٠ نوفمبر ٢٠٢٦) ═══
+       كانت تُطلب عبر أوّل عميلٍ محتملٍ له وحدَه (`lead.findFirst`)، وللمتعلّم أكثرُ من عميل: نموذجُ المنحة، والشراءُ
+       (`ensureBuyerCase`)، وواتساب. فإن وقع على عميلٍ بلا حالةٍ فُتحت له ثانيةٌ عند مستشارٍ ثانٍ — يراسله اثنان ويُعدّ
+       عميلين. وجُرّب فمرّ. فيُسأل عن حالته كما يسأل الشراءُ: بحسابه أو بأيّ عميلٍ له، والمفتوحةُ تبقى هي. */
+    const existing = await this.prisma.advisorCase.findFirst({
+      where: {
+        status: { notIn: ['closed', 'enrolled', 'not_interested'] },
+        OR: [{ clientId: userId }, { lead: { userId } }],
+      },
+      orderBy: { createdAt: 'asc' },
+    })
+    if (existing) {
+      const kase = await this.prisma.advisorCase.update({
+        where: { id: existing.id },
+        data: { diagnosticSnapshot: snapshot as object, ...(existing.clientId ? {} : { clientId: userId }) },
+      })
+      await recordAudit(this.prisma, {
+        actorId: userId, action: 'diagnostic.attach', entityType: 'advisor_case', entityId: kase.id, ip,
+        meta: { leadId: kase.leadId, reused: true },
+      })
+      return { lead: null, case: kase }
+    }
+
     /* عميل محتمل أو تحديث القائم */
     let lead = await this.prisma.lead.findFirst({ where: { userId } })
     if (!lead) {
