@@ -49,6 +49,7 @@ function allText(doc: { subject: string; doc: { heading: string; preheader?: str
       case 'steps': parts.push(b.items.map((i) => i.textAr).join(' ')); break
       case 'facts': parts.push(b.rows.map((r) => `${r.label}: ${r.value}`).join(' ')); break
       case 'cta': parts.push(`${b.label} ${b.href}`); break
+      case 'image': parts.push(`${b.alt} ${b.src}`); break
       case 'changes': parts.push(b.groups.map((g) => `${g.titleAr} ${g.itemsAr.join(' ')}`).join(' ')); break
       default: {
         const never: never = b
