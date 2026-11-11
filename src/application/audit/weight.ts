@@ -465,6 +465,8 @@ const LOW: readonly string[] = [
   /* وفيديوهاتُ التسويق وصورُه: يكتبها صاحبُها لنفسه، ولا يُخبَر بها أحد */
   'trainer.marketing.video.set', 'trainer.marketing.video.remove',
   'trainer.marketing.photo.add', 'trainer.marketing.photo.remove',
+  /* و«الفيديو طولي» من الإدارة (١١ نوفمبر ٢٠٢٦): شكلُ إطاره في الموقع لا رابطُه — لا يمسّ وصولَه ولا مالَه */
+  'trainer.marketing.video.orientation',
   /* حفظُ مسوّدة موادّ دورةٍ في طور العرض المشروط — عملُه قبل أن يُعلنه؛
      والإعلانُ نفسُه عالٍ (`trainer.contract.materials_declared`) */
   'trainer.materials.save',
