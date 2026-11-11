@@ -36,6 +36,7 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
       targetId: z.string().trim().max(64).nullish(),
       url: link,
       noteAr: note,
+      vertical: z.boolean().optional(),
     }).parse(req.body)
     return svc.setVideo(req.auth!.userId, { ...body, url: body.url ?? null })
   })
@@ -80,6 +81,17 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     return svc.adminDetail(profileId)
+  })
+
+  app.put('/api/admin/trainer-marketing/:profileId/videos/vertical', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: '«الفيديو طولي» — علامة إطاره ‎9:16‎، والرابط للمدرّب لا يُمسّ' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      targetKind: z.enum(MARKETING_TARGET_KINDS), targetId: z.string().trim().max(64).nullish(), vertical: z.boolean(),
+    }).parse(req.body)
+    return svc.adminSetVertical(req.auth!.userId, profileId, body)
   })
 
   app.post('/api/admin/trainer-marketing/:profileId/posters', {

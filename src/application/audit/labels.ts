@@ -457,6 +457,7 @@ const PHRASES: Record<string, string> = {
   'trainer.prep.reminder': 'إرسال «ما بقي من دوراتك» للمدرّب بموعد',
   'trainer.marketing.video.set': 'رابط فيديو تعريفيّ من المدرّب',
   'trainer.marketing.video.remove': 'حذف المدرّب فيديو تعريفيّا',
+  'trainer.marketing.video.orientation': 'علّمت الإدارة فيديو المدرّب طوليّا أو عريضا',
   'trainer.marketing.photo.add': 'صورة للملصقات من المدرّب',
   'trainer.marketing.photo.remove': 'حذف المدرّب صورة للملصقات',
   'trainer.poster.submit': 'إرسال ملصق إلى المدرّب ليوافق عليه',

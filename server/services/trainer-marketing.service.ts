@@ -145,7 +145,7 @@ export class TrainerMarketingService {
     ])
     const videoOf = (kind: string, id: string) => {
       const v = videos.find((x) => x.targetKind === kind && x.targetId === id)
-      return v ? { url: v.url, noteAr: v.noteAr, updatedAt: v.updatedAt } : null
+      return v ? { url: v.url, noteAr: v.noteAr, vertical: v.vertical, updatedAt: v.updatedAt } : null
     }
     return {
       uploadsEnabled: fileUploadsEnabled(),
@@ -168,7 +168,7 @@ export class TrainerMarketingService {
   }
 
   /** رابطُ فيديو — يُكتب أو يُبدَّل، و`url: null` يمحوه */
-  async setVideo(userId: string, input: { targetKind: MarketingTargetKind; targetId?: string | null; url: string | null; noteAr?: string | null }) {
+  async setVideo(userId: string, input: { targetKind: MarketingTargetKind; targetId?: string | null; url: string | null; noteAr?: string | null; vertical?: boolean }) {
     const profile = await this.profileForUser(userId)
     const targetId = input.targetKind === 'bio' ? '' : String(input.targetId ?? '')
     if (input.targetKind !== 'bio') {
@@ -187,16 +187,18 @@ export class TrainerMarketingService {
     const url = cleanMarketingUrl(input.url)
     if (!url) throw new AuthError('bad_url', 'الرابط يبدأ بـhttps:// — ألصقه كما يظهر في المتصفّح', 422)
     const noteAr = String(input.noteAr ?? '').trim().slice(0, MAX_MARKETING_NOTE) || null
+    /* ولا علامةَ في الطلب ← تبقى كما كانت: من بدّل الرابطَ وحدَه لا يُمحى طولُه */
+    const vertical = input.vertical
     const row = await this.prisma.trainerMarketingVideo.upsert({
       where,
-      create: { profileId: profile.id, targetKind: input.targetKind, targetId, url, noteAr },
-      update: { url, noteAr },
+      create: { profileId: profile.id, targetKind: input.targetKind, targetId, url, noteAr, vertical: vertical ?? false },
+      update: { url, noteAr, ...(vertical === undefined ? {} : { vertical }) },
     })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'trainer.marketing.video.set', entityType: 'trainer_profile', entityId: profile.id,
-      meta: { targetKind: input.targetKind, targetId },
+      meta: { targetKind: input.targetKind, targetId, vertical: row.vertical },
     })
-    return { url: row.url, noteAr: row.noteAr, updatedAt: row.updatedAt }
+    return { url: row.url, noteAr: row.noteAr, vertical: row.vertical, updatedAt: row.updatedAt }
   }
 
   /** صورةٌ للملصقات — ملفٌّ برابطِ رفعٍ موقّت، أو رابطٌ حين يكون الرفعُ مطفأً */
@@ -355,6 +357,22 @@ export class TrainerMarketingService {
     })
     if (!profile) throw new AuthError('not_found', 'لا ملفّ مدرّب بهذا المعرّف', 404)
     return { profileId: profile.id, fullName: profile.application.fullName, email: profile.application.email, ...(await this.view(profile.id, true)) }
+  }
+
+  /** «الفيديو طولي» من الإدارة — العلامةُ وحدَها، والرابطُ للمدرّب لا يُمسّ (١١ نوفمبر ٢٠٢٦: «يجب ان يكون الفيديو طولي»).
+   *  ولا رابطَ بعدُ ← لا شيء يُعلَّم */
+  async adminSetVertical(actorId: string, profileId: string, input: { targetKind: MarketingTargetKind; targetId?: string | null; vertical: boolean }) {
+    const targetId = input.targetKind === 'bio' ? '' : String(input.targetId ?? '')
+    const row = await this.prisma.trainerMarketingVideo.findUnique({
+      where: { profileId_targetKind_targetId: { profileId, targetKind: input.targetKind, targetId } },
+    })
+    if (!row) throw new AuthError('not_found', 'لا رابط فيديو هنا بعد', 404)
+    const saved = await this.prisma.trainerMarketingVideo.update({ where: { id: row.id }, data: { vertical: input.vertical } })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.marketing.video.orientation', entityType: 'trainer_profile', entityId: profileId,
+      meta: { targetKind: input.targetKind, targetId, vertical: input.vertical },
+    })
+    return { url: saved.url, noteAr: saved.noteAr, vertical: saved.vertical, updatedAt: saved.updatedAt }
   }
 
   /** نسخةُ ملصقٍ جديدة — مسوّدةً حتّى تُرسَل. ملفٌّ برابطِ رفع، أو رابطُ تصميمٍ جاهز */

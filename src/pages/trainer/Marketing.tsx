@@ -27,7 +27,7 @@ import Chip from "@/components/ui/Chip";
 import { fmtDateLong } from "@/application/text/format-ar";
 import { cleanMarketingUrl, MAX_MARKETING_NOTE, MAX_MARKETING_PHOTOS, POSTER_STATUS_AR } from "@/application/trainer/marketing";
 
-interface VideoRow { url: string; noteAr: string | null; updatedAt: string }
+interface VideoRow { url: string; noteAr: string | null; vertical?: boolean; updatedAt: string }
 interface Poster {
   id: string; targetKind: string; targetId: string; version: number; imageUrl: string | null;
   status: string; staffNoteAr: string | null; trainerNoteAr: string | null;
@@ -133,15 +133,17 @@ function VideoEditor({
   const [editing, setEditing] = useState(!value);
   const [url, setUrl] = useState(value?.url ?? "");
   const [noteAr, setNoteAr] = useState(value?.noteAr ?? "");
+  /* «الفيديو طولي» (١١ نوفمبر ٢٠٢٦) — درايف وفيميو لا يقولان اتّجاهَهما، فيُرسم الطوليُّ بإطارٍ ‎9:16‎ بهذه العلامة */
+  const [vertical, setVertical] = useState(value?.vertical ?? false);
   const [busy, setBusy] = useState(false);
   const valid = cleanMarketingUrl(url) !== null;
 
   const save = async (next: string | null) => {
     setBusy(true);
     try {
-      await apiPut("/api/trainer/marketing/videos", { targetKind, targetId, url: next, noteAr: noteAr.trim() || null });
+      await apiPut("/api/trainer/marketing/videos", { targetKind, targetId, url: next, noteAr: noteAr.trim() || null, vertical });
       toast(next ? "حفظ الرابط" : "حذف الفيديو");
-      if (!next) { setUrl(""); setNoteAr(""); }
+      if (!next) { setUrl(""); setNoteAr(""); setVertical(false); }
       setEditing(!next);
       onSaved();
     } catch (e) {
@@ -159,7 +161,9 @@ function VideoEditor({
             <span className="truncate">{value.url}</span>
           </a>
           {value.noteAr && <p className="mt-1 text-sm text-muted-foreground">{value.noteAr}</p>}
-          <p className="mt-0.5 text-sm text-muted-foreground/80">حدّث {fmtDateLong(value.updatedAt)}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground/80">
+            {value.vertical ? "فيديو طولي · " : ""}حدّث {fmtDateLong(value.updatedAt)}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button size="sm" tone="secondary" icon={PenLine} onClick={() => setEditing(true)}>بدّله</Button>
@@ -179,11 +183,16 @@ function VideoEditor({
         <input className={staffControlCls} value={noteAr} maxLength={MAX_MARKETING_NOTE}
           placeholder="مثلا: النسخة القصيرة" onChange={(e) => setNoteAr(e.target.value)} />
       </StaffField>
+      <label className="flex items-center gap-2 text-read font-bold sm:col-span-2">
+        <input type="checkbox" checked={vertical} onChange={(e) => setVertical(e.target.checked)} className="h-4 w-4 accent-teal" />
+        الفيديو طولي
+        <span className="font-normal text-muted-foreground">مثل الريلز والستوري</span>
+      </label>
       <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
         <Button size="sm" tone="confirm" icon={Check} loading={busy} disabled={!valid} onClick={() => void save(url.trim())}>
           احفظ الرابط
         </Button>
-        {value && <Button size="sm" tone="ghost" icon={X} onClick={() => { setEditing(false); setUrl(value.url); setNoteAr(value.noteAr ?? ""); }}>تراجع</Button>}
+        {value && <Button size="sm" tone="ghost" icon={X} onClick={() => { setEditing(false); setUrl(value.url); setNoteAr(value.noteAr ?? ""); setVertical(value.vertical ?? false); }}>تراجع</Button>}
         {url.trim() && !valid && <span className="text-sm font-bold text-red-300">الرابط يبدأ بـhttps:// بلا مسافات</span>}
       </div>
     </div>
