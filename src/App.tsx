@@ -59,6 +59,7 @@ const AdminRatingModeration = lazy(() => import('./pages/admin/RatingModeration'
 const TrainerPlacementReview = lazy(() => import('./pages/trainer/PlacementReview'))
 const AdminPlacementReview = lazy(() => import('./pages/admin/PlacementReview'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
+const Unsubscribe = lazy(() => import('./pages/Unsubscribe'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const ModuleStudy = lazy(() => import('./pages/student/ModuleStudy'))
 const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
@@ -263,6 +264,8 @@ export default function App() {
           <Route path="/auth/verify" element={<VerifyEmail />} />
           <Route path="/auth/reset" element={<ResetPassword />} />
           <Route path="/verify" element={<Verify />} />
+          {/* إلغاءُ الاشتراك في رسائل التسويق — من تذييل البريد (١١ نوفمبر ٢٠٢٦، `mail-optout.service.ts`) */}
+          <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/verify/:number" element={<Verify />} />
           <Route path="/letter/:number" element={<EndorsementLetter />} />
           <Route path="/p/:slug" element={<StaticPage />} />

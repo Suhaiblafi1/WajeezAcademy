@@ -21,6 +21,7 @@
 
    والحارس: `server/tests/commerce/grant-registrants.test.ts`. */
 
+import { optedOut, unsubscribeLinks } from './mail-optout.service'
 import { randomUUID } from 'node:crypto'
 import { Prisma, type PrismaClient } from '@prisma/client'
 import ExcelJS from 'exceljs'
@@ -351,13 +352,18 @@ export async function messageRegistrants(
     where: { id: { in: ids }, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null },
     select: { id: true, fullName: true, email: true },
   })
-  const to = leads.filter((l): l is typeof l & { email: string } => !!l.email)
+  const withEmail = leads.filter((l): l is typeof l & { email: string } => !!l.email)
+  /* ومن ألغى اشتراكَه في رسائل التسويق لا تصله — ويُقال كم هم (١١ نوفمبر ٢٠٢٦، `mail-optout.service.ts`) */
+  const off = await optedOut(prisma, withEmail.map((l) => l.email))
+  const to = withEmail.filter((l) => !off.has(l.email.toLowerCase()))
+  const unsubscribed = withEmail.length - to.length
   const batchId = randomUUID()
   await prisma.$transaction(async (tx) => {
     for (const l of to) {
       await enqueueMail(tx, {
-        to: l.email, purpose: 'grant.message', subject, batchId,
+        to: l.email, purpose: 'grant.message', subject, batchId, unsubscribeUrl: unsubscribeLinks(l.email).oneClick,
         ...renderMail({
+          unsubscribeUrl: unsubscribeLinks(l.email).page,
           greetingName: l.fullName,
           preheader: paragraphs[0].slice(0, 140),
           heading: subject,
@@ -368,9 +374,9 @@ export async function messageRegistrants(
     await recordAudit(tx, {
       /* لواحدٍ يُقرأ في أثره هو، ولأكثرَ أثرُ الدفعة بمرجعها */
       action: 'coupon.grant_message', ...(to.length === 1 ? { entityType: 'lead', entityId: to[0].id } : { entityType: 'mail_batch', entityId: batchId }), actorId, ip,
-      meta: { batchId, subject, sent: to.length, noEmail: leads.length - to.length, asked: ids.length },
+      meta: { batchId, subject, sent: to.length, noEmail: leads.length - withEmail.length, unsubscribed, asked: ids.length },
     })
   }, { timeout: 120_000 })
   const mailOn = (await liveChannels(prisma)).includes('email')
-  return { sent: to.length, noEmail: leads.length - to.length, mailOn, batchId }
+  return { sent: to.length, noEmail: leads.length - withEmail.length, unsubscribed, mailOn, batchId }
 }

@@ -49,6 +49,7 @@ import { publicSiteUrl } from './site-url'
 import { GrantCoursesService } from './grant-courses.service'
 import { GRANT_CAMPAIGNS, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
 import { influencerLink } from '../../src/application/commerce/influencer'
+import { optedOut, unsubscribeLinks } from './mail-optout.service'
 import {
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, GRANT_VALUE_AR, grantCallDueAt, grantDaysLeftAr, grantPicksLink, grantPicksPreheaderAr,
   grantShortTitleAr, leadProfileAr,
@@ -229,6 +230,8 @@ export async function sendGrantReminders(
     },
   })
   const paid = await paidEmails(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
+  /* ومن ألغى اشتراكَه في رسائل التسويق لا يُذكَّر (١١ نوفمبر ٢٠٢٦، `mail-optout.service.ts`) */
+  const off = await optedOut(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
 
   /* ودوراتُ المنحة اليوم بسعرها — فما اختاره يُسمّى بما يُشترى منه الآن، وما أُغلقت شعبتُه لا يُذكر */
   const pool = new Map((await new GrantCoursesService(prisma).openCourses(now)).courses.map((c) => [c.courseId, c]))
@@ -238,7 +241,7 @@ export async function sendGrantReminders(
   let sent = 0
   for (const lead of leads) {
     const coupon = lead.grantCode?.coupon
-    if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase())) continue
+    if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase()) || off.has(lead.email.toLowerCase())) continue
     const pct = coupon.percentOff ?? campaign.percentOff
     const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}${grantPagePath(slug)}`
     const lastDayRow = days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]
@@ -277,8 +280,9 @@ export async function sendGrantReminders(
       })
       /* بقالب الأكاديمية لا نصّا خاما — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «رسالةُ البريد يجب أن تكون احترافيّة» */
       await enqueueMail(tx, {
-        to: lead.email!, purpose: 'grant.reminder', subject,
+        to: lead.email!, purpose: 'grant.reminder', subject, unsubscribeUrl: unsubscribeLinks(lead.email!).oneClick,
         ...renderMail({
+          unsubscribeUrl: unsubscribeLinks(lead.email!).page,
           greetingName: lead.fullName,
           /* المنحةُ بنسبتها لا بما يبقى — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، كسطر الصفحة الأولى. ومن اختار: ما اختاره وقيمتُه */
           preheader: mine.length > 0
@@ -453,6 +457,7 @@ export async function sendGrantExtendedNotice(
   if (leads.length === 0) return { sent: 0, mailOff: false }
   if (!(await liveChannels(prisma)).includes('email')) return { sent: 0, mailOff: true }
   const paid = await paidEmails(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
+  const off = await optedOut(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
 
   const pool = new Map((await new GrantCoursesService(prisma).openCourses(now)).courses.map((c) => [c.courseId, c]))
   const lastDay = fmtDateLong(new Date(closesAt.getTime() - 1))
@@ -460,7 +465,7 @@ export async function sendGrantExtendedNotice(
   let sent = 0
   for (const lead of leads) {
     const coupon = lead.grantCode?.coupon
-    if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase())) continue
+    if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase()) || off.has(lead.email.toLowerCase())) continue
     const pct = coupon.percentOff ?? campaign.percentOff
     const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant`
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
@@ -483,8 +488,9 @@ export async function sendGrantExtendedNotice(
         meta: { stage: GRANT_EXTENDED_STAGE, campaign: slug, picks: mine.length },
       })
       await enqueueMail(tx, {
-        to: lead.email!, purpose: 'grant.extended', subject,
+        to: lead.email!, purpose: 'grant.extended', subject, unsubscribeUrl: unsubscribeLinks(lead.email!).oneClick,
         ...renderMail({
+          unsubscribeUrl: unsubscribeLinks(lead.email!).page,
           greetingName: lead.fullName,
           preheader: `كودك يعمل حتى ${lastDay}.`,
           heading: subject,
