@@ -376,10 +376,12 @@ function WriteMail({ to, mailOn, onClose, onSent }: { to: Registrant[]; mailOn: 
   const send = async () => {
     setBusy(true);
     try {
-      const out = await apiPost<{ sent: number; noEmail: number }>("/api/admin/member-grant/registrants/mail", {
+      const out = await apiPost<{ sent: number; noEmail: number; unsubscribed?: number }>("/api/admin/member-grant/registrants/mail", {
         ids: withMail.map((r) => r.id), subject, body,
       });
-      toast(out.sent === 1 ? "كتبت الرسالة، وتصله خلال دقائق" : `كتبت الرسالة لـ${out.sent} شخصا، وتصلهم خلال دقائق`);
+      /* ومن ألغى اشتراكَه لا تصله — ويُقال كم هم، فلا يُظنّ أنّ الرسالة سقطت عنهم (١١ نوفمبر ٢٠٢٦) */
+      const off = out.unsubscribed ? ` · ${out.unsubscribed} ألغوا الاشتراك فلم تصلهم` : "";
+      toast((out.sent === 1 ? "كتبت الرسالة، وتصله خلال دقائق" : `كتبت الرسالة لـ${out.sent} شخصا، وتصلهم خلال دقائق`) + off);
       onSent();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر الإرسال"); }
     finally { setBusy(false); }

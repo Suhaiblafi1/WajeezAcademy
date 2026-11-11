@@ -24,6 +24,9 @@ export interface MailInput {
   /** منهجُ الدعوة في نوع المرفق — ويطابق سطرَ `METHOD` في الملفّ نفسِه، وإلّا قرأ
       بعضُ العملاء رفعَ لقاءٍ دعوةً إليه. `REQUEST` افتراضا كما كان */
   icsMethod?: 'REQUEST' | 'CANCEL' | 'PUBLISH'
+  /** رابطُ الإلغاء بنقرةٍ واحدة — يُرسَل في رأسَي `List-Unsubscribe` و`List-Unsubscribe-Post` (RFC 8058)، فيظهر زرُّ
+      «إلغاء الاشتراك» في صندوق الوارد. لرسائل التسويق وحدَها (`mail-optout.service.ts`، ١١ نوفمبر ٢٠٢٦) */
+  unsubscribeUrl?: string
   /* مرفقاتٌ أخرى — ملفُّ المتقدّم وسيرتُه حين تُحجز مقابلتُه.
 
      ولماذا حقلٌ عامٌّ بجانب `icsContent` لا بدلا عنه: الدعوةُ مرفقٌ بشروط
@@ -74,6 +77,9 @@ export async function sendEmail(config: EmailConfig, input: MailInput): Promise<
       text: input.text,
       ...(input.html ? { html: input.html } : {}),
       attachments: attachmentsOf(input),
+      ...(input.unsubscribeUrl
+        ? { headers: { 'List-Unsubscribe': `<${input.unsubscribeUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } }
+        : {}),
     })
     if (error) {
       /* أخطاء Resend الشائعة بصياغة مفهومة لمن يراجع السجل */

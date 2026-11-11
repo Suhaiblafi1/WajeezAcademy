@@ -154,7 +154,13 @@ export interface MailDoc {
   /** عنوانٌ يُقرأ أوّلَ المتن — غالبا هو موضوعُ الرسالة بصيغةٍ أطول */
   heading: string
   blocks: MailBlock[]
+  /** رابطُ إلغاء الاشتراك — في رسائل التسويق وحدَها (`mail-optout.service.ts`)، سطرٌ في التذييل (١١ نوفمبر ٢٠٢٦) */
+  unsubscribeUrl?: string
 }
+
+/** سطرُ الإلغاء في التذييل — ما يُلغى رسائلُ المنح والإعلانات، لا رسائلُ حسابه ودوراته */
+export const UNSUBSCRIBE_LINE_AR = 'لا تريد رسائل المنح والإعلانات؟'
+export const UNSUBSCRIBE_LINK_AR = 'ألغ الاشتراك'
 
 /* ─────────── النصُّ الخام ─────────── */
 
@@ -199,6 +205,7 @@ function textOf(doc: MailDoc): string {
   /* وعنوانُ الدعم ظاهرا في التذييل — «أين يصل الردّ؟ أليس في التذييل طريقٌ إلينا؟» (صاحب المنصّة، ١٢ أكتوبر
      ٢٠٢٦، واختار «البريد وحدَه»). وهو من المصدر الواحد `ACADEMY_EMAILS.support`، والـHTML مثلُه */
   out.push('— أكاديمية وجيز', `للدعم: ${ACADEMY_EMAILS.support}`)
+  if (doc.unsubscribeUrl) out.push(`${UNSUBSCRIBE_LINE_AR} ${UNSUBSCRIBE_LINK_AR}: ${doc.unsubscribeUrl}`)
   /* لا يزيد الفراغُ عن سطرين مهما تجاور الكتل */
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
@@ -440,7 +447,9 @@ ${parts.join('\n')}
 <div style="font-size:12px;line-height:1.9;color:${BRAND.muted};">
 ${anchor(site, 'أكاديمية وجيز', `color:${BRAND.teal};font-weight:700;text-decoration:none;`)} — من ${anchor(GROUP_URL, 'مجموعة وجيز', `color:${BRAND.teal};text-decoration:none;`)}<br>
 هذه رسالة آليّة؛ وردّك عليها يصل فريق الدعم.<br>
-للدعم: <span dir="ltr">${anchor(`mailto:${ACADEMY_EMAILS.support}`, ACADEMY_EMAILS.support, `color:${BRAND.teal};font-weight:700;text-decoration:none;`)}</span>
+للدعم: <span dir="ltr">${anchor(`mailto:${ACADEMY_EMAILS.support}`, ACADEMY_EMAILS.support, `color:${BRAND.teal};font-weight:700;text-decoration:none;`)}</span>${doc.unsubscribeUrl
+  ? `<br>\n${UNSUBSCRIBE_LINE_AR} ${anchor(doc.unsubscribeUrl, UNSUBSCRIBE_LINK_AR, `color:${BRAND.muted};text-decoration:underline;`)}`
+  : ''}
 </div>
 </td></tr>
 

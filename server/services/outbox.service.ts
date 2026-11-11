@@ -72,6 +72,8 @@ export interface OutboxEntry {
   batchId?: string
   /** دعوةُ تقويمٍ مرفقة — ومنهجُها يطابق سطرَ `METHOD` فيها */
   ics?: OutboxIcs
+  /** رابطُ الإلغاء بنقرةٍ واحدة — رسائلُ التسويق وحدَها، يُرسَل في رأسها (`mail-optout.service.ts`) */
+  unsubscribeUrl?: string
 }
 
 export interface OutboxIcs {
@@ -87,6 +89,7 @@ export async function enqueueMail(db: Db, entry: OutboxEntry): Promise<void> {
       to: entry.to, subject: entry.subject, text: entry.text, html: entry.html ?? null,
       purpose: entry.purpose ?? null, batchId: entry.batchId ?? null,
       icsContent: entry.ics?.content ?? null, icsMethod: entry.ics?.method ?? null, icsFilename: entry.ics?.filename ?? null,
+      unsubscribeUrl: entry.unsubscribeUrl ?? null,
     },
   })
 }
@@ -114,7 +117,7 @@ export interface OutboxRun {
    يفحص القاعدةَ لا الشيفرة: نُزع محوُ المتن من الدالّة فبقي أخضر. فالمُرسِلُ
    يُحقَن، وافتراضُه المُرسِلُ الحقيقيّ — والعاملُ لا يمرّر شيئا. */
 export type OutboxSender = (
-  to: string, subject: string, text: string, html?: string, ics?: OutboxIcs,
+  to: string, subject: string, text: string, html?: string, ics?: OutboxIcs, unsubscribeUrl?: string,
 ) => Promise<DirectMailResult>
 
 export async function drainOutbox(
@@ -123,9 +126,10 @@ export async function drainOutbox(
 ): Promise<OutboxRun> {
   const gap = opts.gapMs ?? OUTBOX_GAP_MS
   const send: OutboxSender = opts.send
-    ?? ((to, subject, text, html, ics) => sendDirectEmail(prisma, {
+    ?? ((to, subject, text, html, ics, unsubscribeUrl) => sendDirectEmail(prisma, {
       to, subject, text, html,
       ...(ics ? { icsContent: ics.content, icsMethod: ics.method, icsFilename: ics.filename } : {}),
+      ...(unsubscribeUrl ? { unsubscribeUrl } : {}),
     }))
   const due = await prisma.outboxMail.findMany({
     where: { status: 'queued', attempts: { lt: OUTBOX_MAX_ATTEMPTS } },
@@ -147,7 +151,7 @@ export async function drainOutbox(
           filename: row.icsFilename ?? 'wajeez-event.ics',
         }
       : undefined
-    const out = await send(row.to, row.subject, row.text ?? '', row.html ?? undefined, ics)
+    const out = await send(row.to, row.subject, row.text ?? '', row.html ?? undefined, ics, row.unsubscribeUrl ?? undefined)
 
     if (out.status === 'sent') {
       await prisma.outboxMail.update({

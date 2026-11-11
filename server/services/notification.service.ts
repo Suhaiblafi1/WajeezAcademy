@@ -118,6 +118,8 @@ export async function sendDirectEmail(
   input: {
     to: string; subject: string; text: string; html?: string; replyTo?: string
     icsContent?: string; icsFilename?: string; icsMethod?: 'REQUEST' | 'CANCEL' | 'PUBLISH'
+    /** رابطُ الإلغاء بنقرةٍ واحدة لرأس الرسالة — رسائلُ التسويق وحدَها */
+    unsubscribeUrl?: string
     /** مرفقاتٌ تُسلَّم كما هي — ملفُّ المتقدّم وسيرتُه حين تُحجز مقابلتُه */
     attachments?: MailAttachment[]
   },

@@ -4920,6 +4920,8 @@ model OutboxMail {
   /// منهجُ الدعوة — `REQUEST` تدعو أو تحدّث، و`CANCEL` ترفع من التقويم
   icsMethod   String?
   icsFilename String?
+  /// رابطُ إلغاء الاشتراك لرسائل التسويق — يُرسَل في رأس `List-Unsubscribe` فيظهر زرُّه في صندوق الوارد (١١ نوفمبر ٢٠٢٦)
+  unsubscribeUrl String?
   /// queued | sent | failed
   status    String    @default("queued")
   attempts  Int       @default(0)
@@ -5148,4 +5150,13 @@ model GrantVisit {
   @@unique([campaign, visitorId])
   @@index([campaign, firstAt])
   @@index([leadId])
+}
+
+/// من طلب ألّا تصله رسائلُ التسويق (١١ نوفمبر ٢٠٢٦) — `mail-optout.service.ts`. بالبريد بحروفٍ صغيرة لا بحساب:
+/// كثيرٌ ممّن يصلهم بريدُ المنحة لا حسابَ لهم. ورسائلُ الحساب والدورات والدفع تصله كما هي.
+model MailOptOut {
+  email     String   @id
+  createdAt DateTime @default(now())
+  /// الرسالةُ التي ألغى منها — `grant.reminder` ونحوُها
+  purpose   String?
 }
