@@ -5160,3 +5160,15 @@ model MailOptOut {
   /// الرسالةُ التي ألغى منها — `grant.reminder` ونحوُها
   purpose   String?
 }
+
+/// من ردّ «توقف» على واتساب — لا نراسله عليه بعدُ (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`). بذيل رقمه (`phoneTail`) لا بعميلٍ
+/// أو حساب: الرقمُ نفسُه قد يكون في نموذجَي منحتين وفي حالة مستشار، ويُكتب بمسافاتٍ ومفتاحِ دولةٍ أو بلا.
+model WhatsAppOptOut {
+  tail      String   @id
+  /// الرقمُ كما كان حين سُجّل — يُقرأ في الأثر
+  phone     String
+  createdAt DateTime @default(now())
+  /// من سجّله: مديرٌ من قائمة من عبّأ، أو مستشارُ الحالة
+  createdBy String?  @db.Uuid
+}
+

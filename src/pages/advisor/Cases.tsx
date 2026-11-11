@@ -26,6 +26,9 @@ const STATUS_LABELS = STATUS_AR;
 const CHANNEL_LABELS: Record<string, string> = { whatsapp: "واتساب", email: "بريد", phone: "اتصال", in_app: "داخل المنصة" };
 /* من أين جاء العميل — و`whatsapp` حالةٌ فتحتها منصّةُ المحادثات (`whatsapp-hook.service.ts`) */
 const SOURCE_LABELS: Record<string, string> = { diagnostic: "التشخيص الذكي", whatsapp: "واتساب" };
+/** من ردّ «توقف» على واتساب — زرُّه وما يُقال بعده، بلا تشكيل (١١ نوفمبر ٢٠٢٦) */
+export const WA_STOP_CASE_AR = "رد «توقف» على واتساب";
+export const WA_STOPPED_CASE_AR = "طلب ألا نراسله على واتساب";
 
 interface CaseRow {
   id: string; status: string; nextAction: string | null; nextFollowUpAt: string | null;
@@ -51,6 +54,8 @@ interface CaseDetail extends CaseRow {
     cvSubmissions: { id: string; originalName: string; mime: string; sizeBytes: number; createdAt: string }[];
   }) | null;
   notes: { id: string; body: string; createdAt: string }[];
+  /** ردّ «توقف» على واتساب — فلا يراسله عليه (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
+  whatsappStopped?: boolean;
   tasks: { id: string; title: string; status: string; dueAt: string | null; doneAt: string | null; createdAt: string }[];
   followUps: { id: string; scheduledAt: string; channel: string; note: string | null; doneAt: string | null; outcome: string | null }[];
   /* و`source` يقول من سجّله: المستشارُ بيده، أو منصّةُ محادثات واتساب (`whatsapp-hook.service.ts`) */
@@ -165,6 +170,21 @@ export default function AdvisorCases() {
             <p className="font-black">{partyOf(detail).name}</p>
             {partyOf(detail).email && <p className="mt-1 text-read text-muted-foreground" dir="ltr">{partyOf(detail).email}</p>}
             {partyOf(detail).phone && <p className="text-read text-muted-foreground" dir="ltr">{partyOf(detail).phone}</p>}
+            {/* ومن ردّ «توقف» على واتساب — يُقال بجانب رقمه، ويسجّله المستشارُ أو يرجع عنه (١١ نوفمبر ٢٠٢٦) */}
+            {partyOf(detail).phone && (detail.whatsappStopped ? (
+              <p className="mt-1 text-read">
+                <span className="font-bold text-gold-ink">{WA_STOPPED_CASE_AR}</span>
+                <button type="button" className="ms-2 font-bold text-muted-foreground underline underline-offset-4"
+                  onClick={() => void act(() => apiPost(`/api/advisor/cases/${detail.id}/whatsapp`, { stopped: false }), "عاد واتساب له")}>
+                  تراجع
+                </button>
+              </p>
+            ) : (
+              <button type="button" className="mt-1 text-read font-bold text-muted-foreground underline underline-offset-4"
+                onClick={() => void act(() => apiPost(`/api/advisor/cases/${detail.id}/whatsapp`, { stopped: true }), "سجلنا أنه لا يريد رسائل واتساب")}>
+                {WA_STOP_CASE_AR}
+              </button>
+            ))}
             <p className="mt-2 text-read text-muted-foreground">المصدر: {SOURCE_LABELS[partyOf(detail).source ?? ""] ?? partyOf(detail).source ?? "حساب مسجل"}</p>
             {/* ولم تلحق حسابا بعد — بريدُه يربطها حين يوثّقه (`setLeadEmail`) */}
             {!detail.client && (

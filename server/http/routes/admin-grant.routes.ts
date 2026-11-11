@@ -9,7 +9,7 @@ import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { GrantService } from '../../services/grant.service'
 import { GrantCoursesService } from '../../services/grant-courses.service'
-import { eraseRegistrant, messageRegistrants, registrantsFull, registrantsXlsx } from '../../services/grant-registrants.service'
+import { eraseRegistrant, messageRegistrants, registrantsFull, registrantsXlsx, setRegistrantWhatsapp } from '../../services/grant-registrants.service'
 import { GRANT_MESSAGE_BODY_MAX, GRANT_MESSAGE_MAX_TO, GRANT_MESSAGE_SUBJECT_MAX } from '../../../src/application/commerce/grant-registrants'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { signedUpXlsx } from '../../services/signed-up-export'
@@ -88,6 +88,16 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { disableCode } = z.object({ disableCode: z.boolean() }).parse(req.body ?? {})
     return eraseRegistrant(prisma, id, { disableCode }, req.auth!.userId, req.ip)
+  })
+
+  /* من ردّ «توقف» على واتساب — يسجّله من قرأ الردّ، أو يرجع عنه (١١ نوفمبر ٢٠٢٦) */
+  app.put('/api/admin/member-grant/registrants/:id/whatsapp', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'تسجيل من رد «توقف» على واتساب، أو الرجوع عنه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { stopped } = z.object({ stopped: z.boolean() }).parse(req.body ?? {})
+    return setRegistrantWhatsapp(prisma, id, stopped, req.auth!.userId, req.ip)
   })
 
   app.post('/api/admin/member-grant/registrants/mail', {

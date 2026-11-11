@@ -60,6 +60,16 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     return advisors.setNextAction(req.auth!.userId, id, body.nextAction, body.nextFollowUpAt)
   })
 
+  /* من ردّ «توقف» على واتساب — يسجّله مستشارُ الحالة، أو يرجع عنه (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
+  app.post('/api/advisor/cases/:id/whatsapp', {
+    preHandler: requirePermission('advisor.cases.operate'),
+    schema: { tags: ['advisor-portal'], summary: 'تسجيل أن العميل رد «توقف» على واتساب، أو الرجوع عنه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { stopped } = z.object({ stopped: z.boolean() }).parse(req.body ?? {})
+    return advisors.setWhatsappStop(req.auth!.userId, id, stopped, req.ip)
+  })
+
   app.post('/api/advisor/cases/:id/notes', {
     preHandler: requirePermission('advisor.cases.operate'),
     schema: { tags: ['advisor-portal'], summary: 'ملاحظة داخلية — لا تظهر للعميل' },

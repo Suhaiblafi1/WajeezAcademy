@@ -22,6 +22,7 @@
    والحارس: `server/tests/commerce/grant-registrants.test.ts`. */
 
 import { optedOut, unsubscribeLinks } from './mail-optout.service'
+import { isWhatsappStopped, setWhatsappStop, whatsappStopped } from './whatsapp-optout.service'
 import { randomUUID } from 'node:crypto'
 import { Prisma, type PrismaClient } from '@prisma/client'
 import ExcelJS from 'exceljs'
@@ -102,6 +103,8 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
     stagesSent.set(a.entityId, s)
   }
   const campaign = new Map(campaigns.map((c) => [c.slug, c]))
+  /* ومن ردّ «توقف» على واتساب — لا يظهر له زرُّه (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
+  const waOff = await whatsappStopped(prisma, base.map((r) => r.phone))
 
   /* ورابطُ المدرّب يُسمّى بصاحبه — نداءٌ واحدٌ للقائمة كلّها، كقائمة المستخدمين */
   const touches = base.map((r) => {
@@ -167,6 +170,7 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
       boughtVia: viaFor(r),
       /* وأيُّ منحةٍ عبّأ — والثالثةُ «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
       grant: grantKindOf(r.campaign),
+      waStopped: isWhatsappStopped(waOff, r.phone),
       pageOpenedAt: r.pageOpenedAt ?? (t.page?.at ? new Date(t.page.at) : null),
       firstSeenAt: t.first?.at ? new Date(t.first.at) : null,
       landingPath: t.page?.landingPath ?? t.first?.landingPath ?? null,
@@ -337,6 +341,15 @@ export async function eraseRegistrant(
 }
 
 /* ═══ رسالةُ صاحب المنصّة ═══ */
+
+/** من ردّ «توقف» على واتساب — يسجّله مديرٌ قرأ الردّ، أو يرجع عنه (`whatsapp-optout.service.ts`) */
+export async function setRegistrantWhatsapp(prisma: PrismaClient, id: string, stopped: boolean, actorId: string, ip?: string) {
+  const lead = await prisma.lead.findFirst({
+    where: { id, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null }, select: { id: true, phone: true },
+  })
+  if (!lead) throw new AuthError('not_found', 'لم نجده في القائمة', 404)
+  return setWhatsappStop(prisma, lead.phone, stopped, actorId, { entityType: 'lead', entityId: lead.id }, ip)
+}
 
 export async function messageRegistrants(
   prisma: PrismaClient,

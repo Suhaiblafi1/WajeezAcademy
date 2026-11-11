@@ -191,6 +191,9 @@ const PHRASES: Record<string, string> = {
   'coupon.grant_reminder': 'تذكير من أخذ كود المنحة ولم يشتر قبل انتهائها',
   'coupon.grant_registrant_removed': 'حذف مدير شخصا من قائمة من عبأ نموذج المنحة',
   'coupon.grant_message': 'رسالة بريد كتبها مدير لمن عبأ نموذج المنحة',
+  /* ومن ردّ «توقف» على واتساب (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
+  'contact.whatsapp_stop': 'تسجيل أن صاحب الرقم طلب ألا نراسله على واتساب',
+  'contact.whatsapp_resume': 'الرجوع عن طلب ألا نراسله على واتساب',
   /* طلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦) — القبولُ يفعّل حسابَه بنسبته في خطوةٍ واحدة */
   'advisor.application.approve': 'قبول طلب انضمام مستشار وتفعيل حسابه',
   'advisor.application.reject': 'الاعتذار عن طلب انضمام مستشار',
