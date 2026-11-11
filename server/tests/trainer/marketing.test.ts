@@ -113,6 +113,31 @@ describe('الفيديو — رابطٌ لما له وحدَه', () => {
   })
 })
 
+/* «الفيديو طولي» (١١ نوفمبر ٢٠٢٦): علامةٌ بجانب الرابط يكتبها المدرّب، وتضبطها الإدارةُ بلا مسّ رابطه */
+describe('«الفيديو طولي» — علامةٌ مع الرابط', () => {
+  it('⚠️ يكتبها المدرّب مع رابطه — وتبديلُ الرابط بلا علامةٍ لا يمحوها', async () => {
+    const t = await mkTrainer()
+    await svc.setVideo(t.userId, { targetKind: 'bio', url: 'https://drive.google.com/file/d/Tall1/view', vertical: true })
+    expect((await svc.mine(t.userId)).bioVideo?.vertical).toBe(true)
+    await svc.setVideo(t.userId, { targetKind: 'bio', url: 'https://drive.google.com/file/d/Tall2/view' })
+    expect((await svc.mine(t.userId)).bioVideo?.vertical, 'محا تبديلُ الرابط العلامة').toBe(true)
+    await svc.setVideo(t.userId, { targetKind: 'bio', url: 'https://drive.google.com/file/d/Tall2/view', vertical: false })
+    expect((await svc.mine(t.userId)).bioVideo?.vertical).toBe(false)
+  })
+
+  it('⚠️ والإدارةُ تضبطها بلا مسّ رابطه — ويُكتب أثرُها، ولا علامةَ بلا رابط', async () => {
+    const t = await mkTrainer()
+    await svc.setVideo(t.userId, { targetKind: 'course', targetId: COURSE, url: 'https://drive.google.com/file/d/Adm1/view' })
+    const r = await svc.adminSetVertical(adminId, t.profileId, { targetKind: 'course', targetId: COURSE, vertical: true })
+    expect(r).toMatchObject({ url: 'https://drive.google.com/file/d/Adm1/view', vertical: true })
+    const audit = await prisma.auditEvent.findFirst({
+      where: { action: 'trainer.marketing.video.orientation', entityId: t.profileId }, orderBy: { createdAt: 'desc' },
+    })
+    expect(audit?.actorId).toBe(adminId)
+    expect(await codeOf(svc.adminSetVertical(adminId, t.profileId, { targetKind: 'bio', vertical: true })), 'علّم ما لا رابط له').toBe('not_found')
+  })
+})
+
 describe('الصور — ملفٌّ يعرف المخزنُ مالكَه، أو رابط', () => {
   it('⚠️ الرفعُ المطفأُ يُردّ بالبديل — والرابطُ يُقبل', async () => {
     const t = await mkTrainer()

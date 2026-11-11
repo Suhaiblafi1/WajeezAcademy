@@ -5050,6 +5050,9 @@ model TrainerMarketingVideo {
   targetId   String         @default("")
   url        String
   noteAr     String?
+  /// «الفيديو طولي» — يُرسم إطارُه ‎9:16‎. رابطُ درايف وفيميو لا يقول اتّجاهَه، و«شورتس» يوتيوب طوليٌّ من رابطه
+  /// بلا علامة (١١ نوفمبر ٢٠٢٦)
+  vertical   Boolean        @default(false)
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
   profile    TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)

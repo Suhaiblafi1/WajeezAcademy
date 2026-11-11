@@ -295,3 +295,23 @@ describe('⑦ وقائمةُ المدرّبين تحمل فيديو تعريفه
     expect(body).not.toContain('suspendVd01')
   })
 })
+
+/* ═══ ⑦ «الفيديو طولي» (١١ نوفمبر ٢٠٢٦) ═══
+   «يجب ان يكون الفيديو طولي» — فيديو درايف لا يقول اتّجاهَه، فعلامةُ صاحبه تخرج مع إطاره ويُرسم ‎9:16‎. */
+describe('⑦ «الفيديو طولي» يخرج مع إطاره', () => {
+  it('⚠️ درايف بعلامة «طولي» يخرج طوليّا على صفحته — وبلا علامة عريضا كما كان', async () => {
+    const tall = await trainer('مدرّبة بفيديو طولي')
+    await leads(courses[7]!, tall.id)
+    await prisma.trainerMarketingVideo.create({
+      data: { profileId: tall.id, targetKind: 'bio', targetId: '', url: 'https://drive.google.com/file/d/TallDrive01/view', vertical: true },
+    })
+    const page = (await app.inject({ method: 'GET', url: `/api/public/trainers/${tall.publicSlug}` })).json() as { video: unknown }
+    expect(page.video).toEqual({ kind: 'embed', provider: 'drive', src: 'https://drive.google.com/file/d/TallDrive01/preview', vertical: true })
+
+    const wide = await trainer('مدرّب بفيديو عريض')
+    await leads(courses[7]!, wide.id)
+    await video(wide.id, 'bio', '', 'https://drive.google.com/file/d/WideDrive01/view')
+    const p2 = (await app.inject({ method: 'GET', url: `/api/public/trainers/${wide.publicSlug}` })).json() as { video: unknown }
+    expect(p2.video).toEqual({ kind: 'embed', provider: 'drive', src: 'https://drive.google.com/file/d/WideDrive01/preview' })
+  })
+})

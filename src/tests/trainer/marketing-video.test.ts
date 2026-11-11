@@ -241,3 +241,21 @@ describe('⑥ صورةُ النافذة الصغيرة', () => {
     },
   )
 })
+
+/* ═══ ⑦ «الفيديو طولي» (١١ نوفمبر ٢٠٢٦) ═══
+   «يجب ان يكون الفيديو طولي». درايف وفيميو لا يقولان اتّجاهَهما، فعلامةُ صاحبه تُطوِّل الإطار — والزرُّ لا إطارَ له. */
+describe('⑦ «الفيديو طولي» من علامة صاحبه', () => {
+  const row = (url: string, vertical?: boolean): MarketingVideoRow => ({ targetKind: 'bio', targetId: '', url, vertical })
+
+  it('⚠️ درايف بعلامة طولي يخرج طوليا، وبلا علامة عريضا — ويمرّ بفحص الواجهة كما هو', () => {
+    const tall = pickPublicVideo([row(`https://drive.google.com/file/d/${DRIVE}/view`, true)], null)
+    expect(tall).toEqual({ kind: 'embed', provider: 'drive', src: `https://drive.google.com/file/d/${DRIVE}/preview`, vertical: true })
+    expect(renderableVideo(tall), 'فحص الواجهة أسقط العلامة').toEqual(tall)
+    expect(pickPublicVideo([row(`https://drive.google.com/file/d/${DRIVE}/view`)], null)).not.toHaveProperty('vertical')
+  })
+
+  it('والشورتس طولي بلا علامة، والزر لا يأخذ العلامة', () => {
+    expect(pickPublicVideo([row(`https://youtube.com/shorts/${YT}`)], null)).toMatchObject({ vertical: true })
+    expect(pickPublicVideo([row('https://example.com/v', true)], null)).toEqual({ kind: 'link', href: 'https://example.com/v' })
+  })
+})

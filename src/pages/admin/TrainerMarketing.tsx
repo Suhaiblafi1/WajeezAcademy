@@ -20,7 +20,7 @@ import AdminLayout from "./AdminLayout";
 import EmptyState from "@/components/EmptyState";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { toast, toastError } from "@/components/Toast";
-import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
+import { apiDelete, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { mediaSrc, putSigned } from "@/services/signed-upload";
 import { staffControlCls, StaffField } from "@/components/FormKit";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
@@ -37,7 +37,7 @@ interface ListRow {
   /** من ينشر فعلا: كم شخصا فتح روابطه القصيرة، وكم ملتحقا سجّل عبره (`sharesOf`) */
   shares: { opens: number; registered: number };
 }
-interface VideoRow { url: string; noteAr: string | null; updatedAt: string }
+interface VideoRow { url: string; noteAr: string | null; vertical?: boolean; updatedAt: string }
 interface Poster {
   id: string; targetKind: string; targetId: string; version: number; imageUrl: string | null;
   status: string; staffNoteAr: string | null; trainerNoteAr: string | null;
@@ -141,7 +141,7 @@ function TrainerDetail({ profileId, onBack }: { profileId: string; onBack: () =>
             <p className="text-sm text-muted-foreground">{d.email}</p>
             <div className="mt-3">
               <p className="text-sm font-bold text-muted-foreground">فيديو التعريف به</p>
-              <VideoLink v={d.bioVideo} />
+              <VideoLink v={d.bioVideo} profileId={d.profileId} targetKind="bio" targetId="" onChanged={load} />
             </div>
           </Panel>
 
@@ -179,8 +179,23 @@ function TrainerDetail({ profileId, onBack }: { profileId: string; onBack: () =>
   );
 }
 
-function VideoLink({ v }: { v: VideoRow | null }) {
+/* الرابطُ للمدرّب، وعلامةُ «الفيديو طولي» تضبطها الإدارةُ أيضا (١١ نوفمبر ٢٠٢٦: «يجب ان يكون الفيديو طولي» —
+   فيديو درايف لا يقول اتّجاهَه، فيُرسم الطوليُّ بإطارٍ ‎9:16‎ بها) */
+function VideoLink({
+  v, profileId, targetKind, targetId, onChanged,
+}: { v: VideoRow | null; profileId: string; targetKind: "bio" | "course" | "path"; targetId: string; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
   if (!v) return <p className="mt-1 text-sm text-muted-foreground">لم يضف رابطا بعد.</p>;
+  const setVertical = async (vertical: boolean) => {
+    setBusy(true);
+    try {
+      await apiPut(`/api/admin/trainer-marketing/${profileId}/videos/vertical`, { targetKind, targetId, vertical });
+      toast(vertical ? "صار طوليا" : "صار عريضا");
+      onChanged();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
+    } finally { setBusy(false); }
+  };
   return (
     <div className="mt-1">
       <a href={v.url} target="_blank" rel="noreferrer noopener" dir="ltr"
@@ -188,6 +203,11 @@ function VideoLink({ v }: { v: VideoRow | null }) {
         <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="truncate">{v.url}</span>
       </a>
       {v.noteAr && <p className="text-sm text-muted-foreground">{v.noteAr}</p>}
+      <label className="mt-1.5 flex items-center gap-2 text-sm font-bold">
+        <input type="checkbox" checked={v.vertical ?? false} disabled={busy}
+          onChange={(e) => void setVertical(e.target.checked)} className="h-4 w-4 accent-teal" />
+        الفيديو طولي
+      </label>
     </div>
   );
 }
@@ -240,7 +260,7 @@ function TargetPosters({
       </div>
       <div className="mt-2">
         <p className="text-sm font-bold text-muted-foreground">فيديو المدرّب عنها</p>
-        <VideoLink v={t.video} />
+        <VideoLink v={t.video} profileId={profileId} targetKind={t.kind} targetId={t.id} onChanged={onChanged} />
       </div>
 
       {lastDecision?.trainerNoteAr && (

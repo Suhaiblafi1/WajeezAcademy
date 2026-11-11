@@ -19,7 +19,7 @@
    يُبنى رابطُ التضمين من أصلٍ ثابتٍ معروف:
 
      يوتيوب  (watch?v= · youtu.be/ · /shorts/ · /embed/ · /live/) ← www.youtube-nocookie.com/embed/<id>
-             و«شورتس» يُعلَّم ‎`vertical`‎ فيُرسم إطارُه عموديّا ‎9:16‎
+             و«شورتس» يُعلَّم ‎`vertical`‎ فيُرسم إطارُه عموديّا ‎9:16‎ — وغيرُه بعلامة «الفيديو طولي» من صاحبه
      فيميو   (vimeo.com/<id>[/<hash>] · player.vimeo.com/video/<id>) ← player.vimeo.com/video/<id>
      درايف   (/file/d/<id>/… · open?id=<id>)                       ← drive.google.com/file/d/<id>/preview
 
@@ -144,6 +144,8 @@ export interface MarketingVideoRow {
   targetKind: string
   targetId: string
   url: string
+  /** «الفيديو طولي» — علامةُ صاحبه بجانب الرابط (١١ نوفمبر ٢٠٢٦): درايف وفيميو لا يقولان اتّجاهَهما */
+  vertical?: boolean
 }
 
 /** فيديو المدرّب لهذه الدورة، ثمّ تعريفُه — أوّلُ ما يصلح منهما للعرض. و`courseId` فارغٌ لصفحته هو: تعريفُه وحدَه */
@@ -152,7 +154,8 @@ export function pickPublicVideo(rows: readonly MarketingVideoRow[], courseId: st
   const bio = rows.find((r) => r.targetKind === 'bio' && r.targetId === '')
   for (const r of [course, bio]) {
     const v = r ? videoEmbedOf(r.url) : null
-    if (v) return v
+    /* والعلامةُ تُطوِّل الإطارَ وحدَه — زرُّ الرابط لا إطارَ له */
+    if (v) return v.kind === 'embed' && r!.vertical ? { ...v, vertical: true } : v
   }
   return null
 }

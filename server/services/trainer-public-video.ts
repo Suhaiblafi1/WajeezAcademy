@@ -26,7 +26,7 @@ export async function publicVideosOf(
         ...(courseId ? [{ targetKind: 'course', targetId: courseId }] : []),
       ],
     },
-    select: { profileId: true, targetKind: true, targetId: true, url: true },
+    select: { profileId: true, targetKind: true, targetId: true, url: true, vertical: true },
   })
   const out = new Map<string, PublicTrainerVideo>()
   for (const id of visibleProfileIds) {
