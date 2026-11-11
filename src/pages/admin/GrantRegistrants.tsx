@@ -16,7 +16,7 @@ import { useSearchParams } from "react-router";
 import { ChevronDown, FileDown, Link2, Mail, MessageCircle, Send, Trash2 } from "lucide-react";
 import { useRealSession } from "@/services/session";
 import BuyLinkBuilder from "@/components/BuyLinkBuilder";
-import { apiDelete, apiDownload, apiGet, apiPost, ApiError } from "@/services/api";
+import { apiDelete, apiDownload, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { fmtDateWith } from "@/application/text/format-ar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
@@ -52,6 +52,8 @@ interface Registrant {
   influencer: boolean; influencerCode: string | null;
   /** أيُّ منحةٍ عبّأ — والثالثةُ «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
   grant: GrantKind;
+  /** ردّ «توقف» على واتساب — فلا زرَّ واتساب له (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
+  waStopped: boolean;
   /** متى فتح صفحةَ المنحة، ومتى زار الموقعَ أوّلَ مرّة، ومن أين جاء */
   pageOpenedAt: string | null; firstSeenAt: string | null; landingPath: string | null; source: RegistrantSource;
   /** ما كُتب لبريده، وما هو آتٍ له */
@@ -64,6 +66,9 @@ interface List { mailOn: boolean; rows: Registrant[]; funnel: GrantFunnel; funne
 const when = (v: string) => fmtDateWith(v, { day: "numeric", month: "numeric", hour: "numeric", minute: "2-digit" });
 
 const STATE_AR: Record<State, string> = { bought: "اشترى", pending: "ينتظر الدفع", none: "لم يشتر بعد" };
+/** زرُّ «قال توقف» وما يُقال بعده — بلا تشكيل (١١ نوفمبر ٢٠٢٦) */
+export const WA_STOP_AR = "قال توقف";
+export const WA_STOPPED_AR = "لا يريد رسائل واتساب";
 const GRANT_AR: Record<GrantKind, string> = { member: "منحة وجيز", influencer: "منحة المؤثرين", open: "المنحة العامة" };
 
 /** كم بين لحظتين — «بعد ٥ د» */
@@ -97,6 +102,17 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
   const [downloading, setDownloading] = useState(false);
   const [downloadingSignedUp, setDownloadingSignedUp] = useState(false);
   const load = useCallback(() => apiGet<List>("/api/admin/member-grant/registrants").then(setData).catch(() => setData(null)), []);
+  /* من ردّ «توقف» على واتساب — يسجّله من قرأ الردّ، ويُرجَع عنه (`whatsapp-optout.service.ts`) */
+  const [waBusy, setWaBusy] = useState<string | null>(null);
+  const setWa = async (r: Registrant, stopped: boolean) => {
+    setWaBusy(r.id);
+    try {
+      await apiPut(`/api/admin/member-grant/registrants/${r.id}/whatsapp`, { stopped });
+      toast(stopped ? "سجلنا أنه لا يريد رسائل واتساب" : "عاد زر واتساب له");
+      await load();
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر الحفظ"); }
+    finally { setWaBusy(null); }
+  };
   useEffect(() => { void load(); }, [load]);
   const rows = data?.rows ?? null;
   useEffect(() => {
@@ -226,10 +242,23 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
                         </td>
                         <td className="p-2">
                           <span dir="ltr">{r.phone ?? "—"}</span>
-                          {wa && (
-                            <a href={wa} target="_blank" rel="noreferrer" className="ms-2 inline-flex items-center gap-1 font-bold text-teal-light-ink">
-                              <MessageCircle className="h-4 w-4" aria-hidden="true" /> واتساب
-                            </a>
+                          {/* ومن ردّ «توقف» لا زرَّ واتساب له — يُقال ذلك، ويُرجَع عنه بزرّ (١١ نوفمبر ٢٠٢٦) */}
+                          {r.waStopped ? (
+                            <>
+                              <span className="ms-2 font-bold text-gold-ink">{WA_STOPPED_AR}</span>
+                              <button type="button" disabled={waBusy === r.id} onClick={() => void setWa(r, false)} className="ms-2 font-bold text-muted-foreground underline underline-offset-4">
+                                تراجع
+                              </button>
+                            </>
+                          ) : wa && (
+                            <>
+                              <a href={wa} target="_blank" rel="noreferrer" className="ms-2 inline-flex items-center gap-1 font-bold text-teal-light-ink">
+                                <MessageCircle className="h-4 w-4" aria-hidden="true" /> واتساب
+                              </a>
+                              <button type="button" disabled={waBusy === r.id} onClick={() => void setWa(r, true)} className="ms-2 font-bold text-muted-foreground underline underline-offset-4">
+                                {WA_STOP_AR}
+                              </button>
+                            </>
                           )}
                           <br /><span dir="ltr" className="text-muted-foreground">{r.email ?? "—"}</span>
                           {/* وبريدٌ يكتبه لهذا الشخص وحدَه — كزرّ الواتساب، ويخرج من بريد الأكاديمية فيُرى في رسائله */}

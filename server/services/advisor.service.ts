@@ -1,6 +1,7 @@
 /* خدمة المستشارين — حالات العملاء من لحظة التشخيص حتى التسجيل أو الإغلاق.
    القاعدة: المستشار يرى الحالات المسندة إليه فقط، والملاحظات الداخلية لا تظهر للعميل. */
 
+import { isWhatsappStopped, setWhatsappStop, whatsappStopped } from './whatsapp-optout.service'
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
@@ -1220,7 +1221,20 @@ export class AdvisorService {
       },
     })
     if (!kase) throw new AuthError('not_found', 'الحالة غير موجودة', 404)
-    return kase
+    /* ومن ردّ «توقف» على واتساب — يراه المستشارُ بجانب رقمه فلا يراسله (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
+    const phone = kase.lead?.phone ?? kase.client?.learnerProfile?.phone ?? null
+    const whatsappStoppedFlag = isWhatsappStopped(await whatsappStopped(this.prisma, [phone]), phone)
+    return { ...kase, whatsappStopped: whatsappStoppedFlag }
+  }
+
+  /** المستشارُ قرأ «توقف» في واتساب — يسجّله في حالته، أو يرجع عنه */
+  async setWhatsappStop(advisorId: string, caseId: string, stopped: boolean, ip?: string) {
+    await this.assertAssigned(advisorId, caseId)
+    const kase = await this.prisma.advisorCase.findUnique({
+      where: { id: caseId }, select: { lead: { select: { phone: true } }, client: { select: { learnerProfile: { select: { phone: true } } } } },
+    })
+    const phone = kase?.lead?.phone ?? kase?.client?.learnerProfile?.phone ?? null
+    return setWhatsappStop(this.prisma, phone, stopped, advisorId, { entityType: 'advisor_case', entityId: caseId }, ip)
   }
 
   /* ── الوجه الثاني: المتابعة الأكاديمية ──
