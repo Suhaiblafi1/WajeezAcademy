@@ -300,6 +300,23 @@ describe('٥٦ · الرئيسة أقصر — جدارا الشعارات صار
     expect(order[at + 1], 'لا يلي الجدارَ قسمُ الأسئلة').toBe('<Faq />')
   })
 
+  /* «ضعها أسفل المسارات» — صاحب المنصّة (١٣ نوفمبر ٢٠٢٦). وكانت «وجيز مهارات بالأرقام» داخلَ «شركاؤنا» تحت الشعارات.
+     والمساراتُ آخرُ ما في `Bestsellers` (الدوراتُ ثمّ «لا نقيس…» ثمّ المسارات) — فالأرقامُ قسمٌ قائمٌ يليه مباشرة */
+  it('⚠️ وأرقام وجيز مهارات قسمٌ قائمٌ تحت المسارات مباشرة — لا داخل «شركاؤنا»', () => {
+    const bare = home.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
+    const order = bare.match(/<(Hero|HowItWorks|DiagnosticTeaser|Partners|Bestsellers|TrustMetricsBar|Stories|AdvisorStrip|EcosystemOrgStrip|Faq|FinalCta)\b[^>]*\/>/g) ?? []
+    const at = order.findIndex((t) => t.startsWith('<TrustMetricsBar'))
+    expect(at, 'الأرقام ليست بين أقسام الصفحة').toBeGreaterThan(-1)
+    expect(order[at - 1] ?? '', 'لا تلي الأرقامُ شريطَ الدورات والمسارات').toMatch(/^<Bestsellers\b/)
+    expect(bare.match(/<TrustMetricsBar\b/g) ?? [], 'الأرقام تعرض مرتين').toHaveLength(1)
+    const partners = bare.slice(bare.indexOf('function Partners()'), bare.indexOf('function MobileCtaBar()'))
+    expect(partners.length, 'دالّة «شركاؤنا» لم توجد').toBeGreaterThan(0)
+    expect(partners, 'عادت الأرقام داخل «شركاؤنا»').not.toMatch(/<TrustMetricsBar\b/)
+    const best = read('src/pages/home/Bestsellers.tsx')
+    expect(best.lastIndexOf('morePaths.map('), 'المسارات ليست بعد الدورات في الشريط').toBeGreaterThan(best.lastIndexOf('moreCourses.map('))
+    expect(read('src/components/TrustMetricsBar.tsx'), 'الأرقام ليست قسما قائما').toMatch(/<section\s+aria-label="وجيز مهارات بالأرقام"/)
+  })
+
   it('والادّعاءان يبقيان مميّزين — دمج الوقفة لا دمج المعنى', () => {
     expect(home).toContain('تحدث عنا الإعلام')
     expect(read('src/components/EcosystemOrgStrip.tsx')).toContain('مؤسسات وثقت بمنظومة وجيز')
