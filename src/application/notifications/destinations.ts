@@ -73,6 +73,7 @@ const LEARNER: Table = {
   'order.seats_held': { path: '/student/billing', ctaAr: 'أتمم الدفع' },
   /* وكان بلا وجهة فخرج بريدُه بلا زرّ (٣ نوفمبر ٢٠٢٦) */
   'order.cancelled_abandoned': { path: '/student/billing', ctaAr: 'افتح فواتيرك' },
+  'order.cohort_cancelled': { path: '/student/billing', ctaAr: 'افتح فواتيرك' },
   'payment.refunded': { path: '/student/billing', ctaAr: 'افتح كشف فواتيرك' },
   /* والخبرُ يقول «راسل الدعم إن كان لديك ما تضيفه» — فبابُه الدعمُ لا الفاتورة (١٩ أكتوبر ٢٠٢٦) */
   'payment.refund_rejected': { path: '/student/support', ctaAr: 'راسل الدعم' },
