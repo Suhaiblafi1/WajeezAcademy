@@ -516,6 +516,31 @@ describe('⑩ ومن اشترى ببعض كوده — بما بقي عليه', (
     expect(await leftMails(lead.email), 'ذكّر مرتين').toHaveLength(1)
   })
 
+  /* وإن مُدّت المنحةُ فلنهايتها الجديدة تذكيرُها — كتذكيرَي من لم يشترِ (#935، `remindedFor`). وكان أثرُ «left» يُعرف بمرحلته
+     وحدَها، فمن ذُكِّر بالنهاية القديمة لا يُذكَّر بالجديدة، وفي بريده تاريخٌ مضى */
+  it('⚠️ وإن مدت المنحة ذكّر بنهايتها الجديدة — مرة لكل نهاية', async () => {
+    const lead = await member()
+    const buyer = await learner(lead.email)
+    const o = await commerce.checkout(buyer, [(await cohort()).id], lead.code)
+    await commerce.payOrder(o.orderId, buyer, `fu-left-${o.orderId}`)
+    await sendGrantLeftReminders(prisma, at(30))
+    expect(await leftMails(lead.email)).toHaveLength(1)
+
+    const T2 = new Date(T.getTime() + 7 * 24 * HOUR)
+    await new GrantService(prisma).update({ closesAt: T2 }, ownerId)
+    try {
+      const before2 = (h: number) => new Date(T2.getTime() - h * HOUR)
+      await sendGrantLeftReminders(prisma, before2(30))
+      const m = await leftMails(lead.email)
+      expect(m, 'لم يذكّر بالنهاية الجديدة').toHaveLength(2)
+      expect(m.map((x) => x.text).join(' '), 'التذكير الثاني لا يقول النهاية الجديدة').toContain(fmtDateLong(new Date(T2.getTime() - 1)))
+      await sendGrantLeftReminders(prisma, before2(10))
+      expect(await leftMails(lead.email), 'ذكّر مرتين للنهاية نفسها').toHaveLength(2)
+    } finally {
+      await new GrantService(prisma).update({ closesAt: T }, ownerId)
+    }
+  })
+
   it('⚠️ ومن استعمل كوده كله لا يذكّر — ولا يقول له بريد الدفع شيئا عنه', async () => {
     await new GrantService(prisma).update({ maxCourses: 1 }, ownerId)
     try {

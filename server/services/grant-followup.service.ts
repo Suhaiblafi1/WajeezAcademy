@@ -221,14 +221,17 @@ export const GRANT_REMINDERS = [
    تاريخِ نهاياتٍ يُستعاد. فأثرُ ٣٠ أكتوبر لا يمنع تذكيرَ ١٢ نوفمبر، وأثرُ ١٠ نوفمبر يمنع تكرارَه. ولم يُختر «يطابق كلَّ
    نهاية» (السلوكُ القديم: يعيد العلّةَ نفسَها) ولا «لا يطابق شيئا» (يكرّر بريدَ النهاية السارية لمن وصله).
    وإن قصُر تمديدٌ عن طول النافذة فوقع أثرٌ قديمٌ في نافذتي النهايتين حُسب للجديدة — وصله تذكيرٌ قبل ساعات، فلا يُطرق ثانية. */
-export function remindedFor(row: { meta: unknown; createdAt: Date }, stage: string, closesAt: Date): boolean {
+export function remindedFor(
+  row: { meta: unknown; createdAt: Date }, stage: string, closesAt: Date,
+  /* نافذةُ المرحلة — من `GRANT_REMINDERS`، أو تُمرَّر لمرحلةٍ ليست فيه (`left` في `sendGrantLeftReminders`) */
+  windowMs: number | undefined = GRANT_REMINDERS.find((r) => r.stage === stage)?.beforeMs,
+): boolean {
   const meta = (row.meta ?? {}) as { stage?: unknown; closesAt?: unknown }
   if (meta.stage !== stage) return false
   if (typeof meta.closesAt === 'string') return meta.closesAt === closesAt.toISOString()
-  const window = GRANT_REMINDERS.find((r) => r.stage === stage)
-  if (!window) return false
+  if (windowMs === undefined) return false
   const at = row.createdAt.getTime()
-  return at >= closesAt.getTime() - window.beforeMs && at < closesAt.getTime()
+  return at >= closesAt.getTime() - windowMs && at < closesAt.getTime()
 }
 
 /** تذكيرُ من أخذ كودا ولم يشترِ قبل انتهاء المنحة — المرحلةُ الحالّةُ الأحدثُ، مرّةً لكلّ عميل. ولكلّ حملةٍ بنهايتها */
@@ -340,7 +343,8 @@ export async function sendGrantReminders(
    (`coursesLeft`). وتذكيرُ ما قبل النهاية (`sendGrantReminders`) لمن لم يشترِ وحدَه، فمن اشترى دورةً وبقي على كوده ثلاثٌ
    لم يكن يُذكَّر أنّها تنتهي. فهنا تذكيرٌ واحدٌ له، في موعد تذكير «قبل ثلاثة أيام» (`GRANT_REMINDERS[0]`):
    · لمن اشترى بكوده شيئا دُفع (`BOUGHT`) وبقي عليه شيء — والعدُّ عدُّ الدفع نفسِه، فلا يُقال رقمٌ يردّه الشراء.
-   · مرّةً لكلّ عميل (`coupon.grant_reminder` بمرحلة `left`)، ولا يصل من ألغى رسائلَ التسويق، ولا يُكتب شيءٌ والبريدُ مفصول.
+   · مرّةً لكلّ عميلٍ لكلّ نهاية (`coupon.grant_reminder` بمرحلة `left` ونهايتِه، `remindedFor`) — فإن مُدّت المنحةُ ذُكِّر
+     بنهايتها الجديدة كتذكيرَي من لم يشترِ (١٣ نوفمبر ٢٠٢٦، #935). ولا يصل من ألغى رسائلَ التسويق، ولا يُكتب شيءٌ والبريدُ مفصول.
    · والزرُّ إلى «الدورات»: كودُه يُطبَّق وحده عند الشراء من حسابه (`learnerGrant`)، فلا يُعاد إلى نموذج المنحة. */
 export const GRANT_LEFT_STAGE = 'left'
 
@@ -354,10 +358,10 @@ export async function sendGrantLeftReminders(
   if (!campaign?.active || !closesAt || closesAt <= now) return { sent: 0, mailOff: false }
   if (now.getTime() < closesAt.getTime() - GRANT_REMINDERS[0].beforeMs) return { sent: 0, mailOff: false }
 
-  const told = await prisma.auditEvent.findMany({
+  const told = (await prisma.auditEvent.findMany({
     where: { action: 'coupon.grant_reminder', entityType: 'lead', meta: { path: ['stage'], equals: GRANT_LEFT_STAGE } },
-    select: { entityId: true },
-  })
+    select: { entityId: true, meta: true, createdAt: true },
+  })).filter((r) => remindedFor(r, GRANT_LEFT_STAGE, closesAt, GRANT_REMINDERS[0].beforeMs))
   const leads = await prisma.lead.findMany({
     where: {
       campaign: slug, erasedAt: null, email: { not: null },
@@ -396,7 +400,7 @@ export async function sendGrantLeftReminders(
     await prisma.$transaction(async (tx) => {
       await recordAudit(tx, {
         action: 'coupon.grant_reminder', entityType: 'lead', entityId: lead.id,
-        meta: { stage: GRANT_LEFT_STAGE, campaign: slug, left },
+        meta: { stage: GRANT_LEFT_STAGE, campaign: slug, left, closesAt: closesAt.toISOString() },
       })
       await enqueueMail(tx, {
         to: lead.email!, purpose: 'grant.reminder', subject, unsubscribeUrl: unsubscribeLinks(lead.email!).oneClick,
