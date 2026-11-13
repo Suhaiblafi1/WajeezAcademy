@@ -531,6 +531,13 @@ export function toggleCourse(picked: readonly string[], id: string, max: number)
   return picked.length < max ? [...picked, id] : [...picked]
 }
 
+/** ما يجده مختارا حين تُفتح الدورات — ما اختاره هو إن كان (من رحلة الدفع أو رابط التذكير أو جهازه)، وإلّا أولى ما نقترحه
+    وحدَها: «ابدأ بها». قرارُ صاحب المنصّة (١٣ نوفمبر ٢٠٢٦) حين سُئل أن تُختار له الأولى: «أوك» — نسخا لـ«لا تختر عنه أنت»
+    (٢٤ أكتوبر) في هذه الواحدة وحدَها. فدورةٌ واحدةٌ لا أربع: «الناس تستصعب شراء أربع دورات»، والكودُ يبقى لباقي المسار */
+export function firstPicks(own: readonly string[], suggested: readonly string[], max: number): string[] {
+  return (own.length > 0 ? own : suggested.slice(0, 1)).slice(0, Math.max(0, max))
+}
+
 /** عنوانُ تذكير ما قبل انتهاء المنحة — من أيّامها الباقية بتقويم عمّان، واليومُ نفسُه منها
     (`sendGrantReminders` في `grant-followup.service.ts`) */
 export function grantDaysLeftAr(days: number): string {

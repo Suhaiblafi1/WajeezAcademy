@@ -58,7 +58,7 @@ import { GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_A
 import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_DIAG_PATH, GRANT_HUMAN_DIAG_AR, GRANT_SELF_DIAG_AR,
 } from "@/application/commerce/grant-landing";
@@ -290,9 +290,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 
   /* ما نقترحه مرّةً واحدةً حين يصير له كود: خمسُ دوراتٍ لا تتعارض ولا يتكرّر فيها مدرّب، أوّلُها دوراتُ المسار الرئيسيّ
      الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، ثمّ ما يناسبهما (`suggestCourses`) — ويختار منها حتّى الحدّ. قرارُ صاحب
-     المنصّة (٢٧ أكتوبر ٢٠٢٦). وتُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه**:
-     قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) «لا تختر عنه أنت، فقط اكتب له بخطٍّ صغير: نقترحها لك». ويعود ما تركه قبل أن
-     يخرج ليوثّق بريده مختارا كما كان */
+     المنصّة (٢٧ أكتوبر ٢٠٢٦). وتُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه** — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦)
+     «لا تختر عنه أنت، فقط اكتب له بخطٍّ صغير: نقترحها لك» — **إلّا أولاها**: «ابدأ بها» تُختار له إن لم يختر شيئا
+     (١٣ نوفمبر ٢٠٢٦، `firstPicks`). ويعود ما تركه قبل أن يخرج ليوثّق بريده مختارا كما كان */
   useEffect(() => {
     if (!view || !stored || seeded) return;
     const max = view.campaign.maxCourses;
@@ -300,7 +300,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const ours = suggestCourses(view.openCourses, stored.interests, stored.workField, GRANT_SUGGESTED_COURSES, found.main?.courseIds ?? []);
     const open = new Set(view.openCourses.map((x) => x.courseId));
     setSuggested(ours);
-    setPicked((resumed ? resumed.intent.courseIds : linkPicks.length > 0 ? linkPicks : stored.picks ?? []).filter((id) => open.has(id)).slice(0, max));
+    setPicked(firstPicks((resumed ? resumed.intent.courseIds : linkPicks.length > 0 ? linkPicks : stored.picks ?? []).filter((id) => open.has(id)), ours, max));
     setSeeded(true);
   }, [view, stored, seeded, resumed, linkPicks]);
 
