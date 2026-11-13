@@ -244,21 +244,17 @@ function Hero() {
             ابدأ من هنا
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           </Link>
-          {/* الفعلُ الثانويّ يجب أن يُرى فعلا: حدٌّ خفيفٌ بحشوٍ ظاهر، زرٌّ هادئٌ
-              إلى جانب الدعوة لا يزاحمها — فالخطُّ تحت النصّ وحدَه لا يظهر إلّا
-              بالتحويم، وهو ما لا يقع على الهاتف أصلا.
+          {/* ── سطرُ الموسم تحت الدعوة: جملةٌ لا زرّ (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦) ──
 
-              وكان «اختر مسارك بنفسك» إلى `#bestsellers`، فصار «جرب التشخيص الذكي»
-              إلى `/diagnostic` بأمر صاحب المنصّة (١٣ نوفمبر ٢٠٢٦). والوجهةُ
-              التشخيصُ الكاملُ لا «مؤشر وجيز» في الصفحة: الاسمُ اسمُه، و«التشخيص
-              الذكي» في الموقع كلِّه رابطُه `/diagnostic`. */}
-          <Link
-            to="/diagnostic"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:bg-teal/[0.07] hover:text-teal-light-ink"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span className="underline-offset-4 hover:underline">جرب التشخيص الذكي</span>
-          </Link>
+              كان تحت الدعوة زرٌّ ثانويّ: «اختر مسارك بنفسك» ثمّ «جرب التشخيص الذكي» (`/diagnostic`). فقال:
+              «احذف جرب التشخيص.. وضع مكانها جملة عادية "موسم الشتاء مفتوح للتسجيل Dec-Jan"». فالصدرُ زرٌّ واحد،
+              وتحته جملةٌ تُقرأ ولا تُنقر. والتشخيصُ باقيةٌ أبوابُه في الرئيسة تحت الصدر وفي القائمة.
+
+              والجملةُ مكتوبةٌ لا مشتقّةٌ من الفصل — بنصّه. فإذا انقضى الشتاءُ تُغيَّر هنا. ويحرسها
+              `hero-cta-descriptor.test.ts`. */}
+          <p className="mt-4 text-read leading-6 text-muted-foreground">
+            موسم الشتاء مفتوح للتسجيل Dec-Jan
+          </p>
           {/* ── وسطرُ «الفصل القادم» رُفع من الصدر (١٢ سبتمبر ٢٠٢٦) ──
 
               كان `<UpcomingTermLine prefix="الفصل القادم:" />` هنا، فيُقرأ:
