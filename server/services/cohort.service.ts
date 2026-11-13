@@ -2088,12 +2088,17 @@ export class CohortService {
     }
 
     const role: ZoomSdkRole = isTrainer ? 1 : 0
+    /* ═══ والبريدُ يدخل معه (١٣ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Fix both») ═══
+       كان الدخولُ من داخل الموقع بالاسم وحدَه، فيأتي صفُّه في تقرير Zoom بلا بريد — ولا يُطابَق بأحد، فيُكتب غائبا
+       من حضر اللقاءَ كلَّه. فبريدُ حسابه يُرسَل مع الدخول (`SessionEmbed.tsx`)، والمطابقةُ به (`syncAttendance`). */
+    const account = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
     return {
       signature: signMeetingSdkJwt({ meetingNumber: session.zoom.meetingId, role }),
       sdkKey: meetingSdkKey(),
       meetingNumber: session.zoom.meetingId.replace(/[\s-]/g, ''),
       passcode: session.zoom.passcodeEnc ?? '',
       role,
+      userEmail: account?.email ?? '',
     }
   }
 
