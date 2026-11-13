@@ -275,14 +275,19 @@ export class ZoomEventService {
     /* الوقائعُ أوّلا: تُمحى وتُكتب من جديد فلا تتراكم على إعادة إرسالٍ من Zoom */
     await this.prisma.sessionParticipation.deleteMany({ where: { sessionId } })
 
-    const links = await this.prisma.sessionJoinLink.findMany({
-      where: { sessionId },
-      select: { enrollmentId: true, enrollment: { select: { user: { select: { email: true } } } } },
+    /* ═══ المطابقةُ ببريد كلّ من له مقعدٌ في الشعبة — لا بمن له رابطُ تسجيلٍ وحدَه (١٣ نوفمبر ٢٠٢٦) ═══
+       كانت الخريطةُ من روابط التسجيل عند Zoom. ومن لا رابطَ له — التحق بعد إنشاء اللقاء، أو أبى Zoom تسجيلَه
+       لنوع الحساب، أو دخل من داخل الموقع — يُكتب غائبا ولو حضر اللقاءَ كلَّه. وجُرّب: ٥٥ دقيقةً من ٦٠، «غائب».
+       فالبريدُ بريدُ حسابه، ومعه بريدُ رابطه إن كان (والرابطُ يُسجَّل ببريد الحساب نفسِه). قرارُ صاحب المنصّة «Fix both».
+       والحارس: `server/tests/learning/zoom-attendance-no-link.test.ts` */
+    const seated = await this.prisma.enrollment.findMany({
+      where: { cohort: { sessions: { some: { id: sessionId } } }, status: { in: ['enrolled', 'completed'] } },
+      select: { id: true, user: { select: { email: true } } },
     })
     const byEmail = new Map<string, string>()
-    for (const l of links) {
-      const em = l.enrollment.user?.email?.toLowerCase()
-      if (em) byEmail.set(em, l.enrollmentId)
+    for (const e of seated) {
+      const em = e.user?.email?.trim().toLowerCase()
+      if (em) byEmail.set(em, e.id)
     }
 
     /* الدقائقُ تُجمع لصاحبها: من انقطع اتّصالُه وعاد صفّان في التقرير */

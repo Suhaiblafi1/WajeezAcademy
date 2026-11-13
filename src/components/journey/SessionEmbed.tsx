@@ -36,6 +36,8 @@ interface MeetingTicket {
   meetingNumber: string;
   passcode: string;
   role: 0 | 1;
+  /** بريدُ الحساب — يدخل به فيُطابَق حضورُه في تقرير Zoom */
+  userEmail?: string;
 }
 
 /* الشكلُ الذي نستعمله من الحزمة — لا نستورد أنواعَها لأنّها ليست في node_modules */
@@ -121,6 +123,8 @@ export default function SessionEmbed({
           meetingNumber: ticket.meetingNumber,
           password: ticket.passcode,
           userName,
+          /* بلا بريدٍ يأتي صفُّه في تقرير Zoom بلا صاحب، فيُكتب غائبا وقد حضر */
+          ...(ticket.userEmail ? { userEmail: ticket.userEmail } : {}),
         });
         if (!cancelled) setPhase("joined");
       } catch (err) {
