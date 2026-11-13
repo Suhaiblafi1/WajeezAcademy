@@ -115,7 +115,11 @@ describe('② القائمة تقول ما وصله وما هو آت له', () =
     expect(row.upcoming.map((u) => u.at)).toEqual(GRANT_REMINDERS.map((s) => new Date(closesAt.getTime() - s.beforeMs).toISOString()))
     expect(row.upcoming.map((u) => u.labelAr)).toEqual(['تذكير: بقيت ثلاثة أيام', 'تذكير: اليوم آخر يوم'])
 
-    await prisma.auditEvent.create({ data: { action: 'coupon.grant_reminder', entityType: 'lead', entityId: p.ref, meta: { stage: '3d' } } })
+    /* بالنهاية التي ذُكِّر لها، كما يكتبه `sendGrantReminders` (١٣ نوفمبر ٢٠٢٦) — وأثرُ نهايةٍ أخرى لا يُسقطه */
+    await prisma.auditEvent.create({ data: { action: 'coupon.grant_reminder', entityType: 'lead', entityId: p.ref, meta: { stage: '3d', closesAt: new Date(closesAt.getTime() - 86_400_000).toISOString() } } })
+    row = (await rowOf(p.ref))!
+    expect(row.upcoming.map((u) => u.labelAr), 'أسقطه أثر نهاية سابقة').toEqual(['تذكير: بقيت ثلاثة أيام', 'تذكير: اليوم آخر يوم'])
+    await prisma.auditEvent.create({ data: { action: 'coupon.grant_reminder', entityType: 'lead', entityId: p.ref, meta: { stage: '3d', closesAt: closesAt.toISOString() } } })
     row = (await rowOf(p.ref))!
     expect(row.upcoming.map((u) => u.labelAr)).toEqual(['تذكير: اليوم آخر يوم'])
   })
