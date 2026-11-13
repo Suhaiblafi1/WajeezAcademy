@@ -20,8 +20,9 @@
    ٤) **وتذكيرٌ قبل انتهاء المنحة** (٢١ أكتوبر ٢٠٢٦) — من أفكار «الاستحواذ على العميل» التي اختارها صاحبُ
       المنصّة: بريدٌ لمن أخذ كودا ولم يشترِ، **قبل ثلاثة أيّام** و**في آخر يوم**، التاسعةَ صباحا بتوقيت عمّان
       لا في منتصف الليل حين ينقلب اليوم (`sendGrantReminders`، كلَّ ساعةٍ في العامل).
-      · **مرّةً لكلّ مرحلة**: أثرُ التذكير (`coupon.grant_reminder`) يُكتب مع البريد في معاملةٍ واحدة، وبه
-        يُعرف من ذُكِّر — فلا يُطرق عنوانٌ مرّتين ولو دارت الوظيفةُ كلَّ ساعة.
+      · **مرّةً لكلّ مرحلةٍ من كلّ نهاية**: أثرُ التذكير (`coupon.grant_reminder`) يُكتب مع البريد في معاملةٍ واحدة،
+        وفيه النهايةُ التي ذُكِّر لها، وبه يُعرف من ذُكِّر — فلا يُطرق عنوانٌ مرّتين ولو دارت الوظيفةُ كلَّ ساعة،
+        وإن مُدّت المنحةُ فلنهايتها الجديدة تذكيراها (`remindedFor`، ١٣ نوفمبر ٢٠٢٦).
       · **والمرحلةُ الأحدثُ وحدَها**: إن توقّف العاملُ حتّى آخر يوم لم يصل تذكيرُ الأيّام الثلاثة متأخّرا ثمّ
         الأخيرُ معه — يصل الأخيرُ وحدَه، وعنوانُه من الأيّام الباقية حقّا (`grantDaysLeftAr`).
       · **ولا يُذكَّر** من اشترى، ولا من ينتظر طلبُه الدفعَ وهو في منتصفه (فإن هُجر طلبُه لحقه تذكيرُ المرحلة
@@ -37,7 +38,7 @@
    (`grantRegistrants`) للحملتين معا (٢٧ أكتوبر ٢٠٢٦): كانت للأولى وحدَها، فرابطُ ملفّه (`/g/<كوده>`) في رسالة «راسل
    مستشارك» من صفحة المؤثّر كان يفتح قائمةً ليس هو فيها. وكلُّ صفٍّ يقول من أيّ منحةٍ جاء وبكود أيّ مؤثّر.
 
-   والحارس: `server/tests/commerce/grant-followup.test.ts` و`influencer-grant.test.ts`. */
+   والحارس: `server/tests/commerce/grant-followup.test.ts` و`influencer-grant.test.ts` و`grant-reminder-deadline.test.ts`. */
 
 import type { PrismaClient } from '@prisma/client'
 import { recordAudit } from './audit'
@@ -208,6 +209,27 @@ export const GRANT_REMINDERS = [
   { stage: '1d', beforeMs: 15 * HOUR },
 ] as const
 
+/* ═══ و«ذُكِّر قبلُ» لهذه النهاية لا لأيّ نهاية (١٣ نوفمبر ٢٠٢٦) ═══
+
+   كان الأثرُ يُعرف بمرحلته وحدَها ('3d' أو '1d'). فلمّا مُدّت المنحةُ (١ نوفمبر ٢٠٢٦ إلى ١٢ نوفمبر) تُخطّي في تذكيرَي
+   النهاية الجديدة كلُّ من وصله تذكيرا القديمة — وإن لم يُفقد شيءٌ يومَها، فكلُّ تمديدٍ بعده يعيده. فالأثرُ يحمل الآن
+   النهايةَ التي ذُكِّر لها (`meta.closesAt`)، ولكلّ نهايةٍ تذكيراها مرّةً مرّة.
+
+   **والأثرُ القديمُ بلا نهاية** يُحسب للنهاية التي كُتب في نافذة مرحلتها وحدَها: من ٦٣ ساعةً (أو ١٥) قبلها إلى لحظتها.
+   فالتذكيرُ لا يُكتب إلّا في نافذة نهايته (`sendGrantReminders`)، ووقتُ الأثر يدلّ على النهاية التي كانت سارية — بلا
+   تاريخِ نهاياتٍ يُستعاد. فأثرُ ٣٠ أكتوبر لا يمنع تذكيرَ ١٢ نوفمبر، وأثرُ ١٠ نوفمبر يمنع تكرارَه. ولم يُختر «يطابق كلَّ
+   نهاية» (السلوكُ القديم: يعيد العلّةَ نفسَها) ولا «لا يطابق شيئا» (يكرّر بريدَ النهاية السارية لمن وصله).
+   وإن قصُر تمديدٌ عن طول النافذة فوقع أثرٌ قديمٌ في نافذتي النهايتين حُسب للجديدة — وصله تذكيرٌ قبل ساعات، فلا يُطرق ثانية. */
+export function remindedFor(row: { meta: unknown; createdAt: Date }, stage: string, closesAt: Date): boolean {
+  const meta = (row.meta ?? {}) as { stage?: unknown; closesAt?: unknown }
+  if (meta.stage !== stage) return false
+  if (typeof meta.closesAt === 'string') return meta.closesAt === closesAt.toISOString()
+  const window = GRANT_REMINDERS.find((r) => r.stage === stage)
+  if (!window) return false
+  const at = row.createdAt.getTime()
+  return at >= closesAt.getTime() - window.beforeMs && at < closesAt.getTime()
+}
+
 /** تذكيرُ من أخذ كودا ولم يشترِ قبل انتهاء المنحة — المرحلةُ الحالّةُ الأحدثُ، مرّةً لكلّ عميل. ولكلّ حملةٍ بنهايتها */
 export async function sendGrantReminders(
   prisma: PrismaClient, now = new Date(), slug: GrantSlug = MEMBER_GRANT_SLUG,
@@ -221,10 +243,10 @@ export async function sendGrantReminders(
   if (!due) return { sent: 0, stage: null, mailOff: false }
   if (!(await liveChannels(prisma)).includes('email')) return { sent: 0, stage: due.stage, mailOff: true }
 
-  const reminded = await prisma.auditEvent.findMany({
+  const reminded = (await prisma.auditEvent.findMany({
     where: { action: 'coupon.grant_reminder', entityType: 'lead', meta: { path: ['stage'], equals: due.stage } },
-    select: { entityId: true },
-  })
+    select: { entityId: true, meta: true, createdAt: true },
+  })).filter((r) => remindedFor(r, due.stage, closesAt))
   const leads = await prisma.lead.findMany({
     where: {
       campaign: slug, erasedAt: null, email: { not: null },
@@ -289,7 +311,7 @@ export async function sendGrantReminders(
     await prisma.$transaction(async (tx) => {
       await recordAudit(tx, {
         action: 'coupon.grant_reminder', entityType: 'lead', entityId: lead.id,
-        meta: { stage: due.stage, campaign: slug, picks: mine.length },
+        meta: { stage: due.stage, campaign: slug, picks: mine.length, closesAt: closesAt.toISOString() },
       })
       /* بقالب الأكاديمية لا نصّا خاما — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «رسالةُ البريد يجب أن تكون احترافيّة» */
       await enqueueMail(tx, {

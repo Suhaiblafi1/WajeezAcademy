@@ -32,7 +32,7 @@ import { enqueueMail } from './outbox.service'
 import { renderMail } from './mail-template'
 import { liveChannels } from './notification.service'
 import { eraseLeadCases, ERASED_NAME_AR } from './guest-erasure.service'
-import { BOUGHT, GRANT_REMINDERS, grantRegistrants } from './grant-followup.service'
+import { BOUGHT, GRANT_REMINDERS, grantRegistrants, remindedFor } from './grant-followup.service'
 import { grantVisitFunnels } from './grant-visit.service'
 import { cleanTouch, storedSource, type FirstTouch } from '../../src/application/marketing/signup-source'
 import { GRANT_CAMPAIGNS, GRANT_KIND_SLUG, GRANT_SLUGS, grantKindOf } from '../../src/application/commerce/grant'
@@ -79,7 +79,7 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
     }),
     prisma.auditEvent.findMany({
       where: { action: 'coupon.grant_reminder', entityType: 'lead', entityId: { in: base.map((r) => r.id) } },
-      select: { entityId: true, meta: true },
+      select: { entityId: true, meta: true, createdAt: true },
     }),
     liveChannels(prisma).then((c) => c.includes('email')),
   ])
@@ -94,14 +94,9 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
     byTo.set(m.to.toLowerCase(), list)
   }
   const account = new Map(accounts.map((a) => [a.email.toLowerCase(), a.signupSource]))
-  const stagesSent = new Map<string, Set<string>>()
-  for (const a of reminded) {
-    const stage = (a.meta as { stage?: string } | null)?.stage
-    if (!stage) continue
-    const s = stagesSent.get(a.entityId) ?? new Set<string>()
-    s.add(stage)
-    stagesSent.set(a.entityId, s)
-  }
+  /* وأثرُ تذكيرٍ يُسقط الآتيَ لنهايته هي لا لأيّ نهاية — فإن مُدّت المنحةُ ظهر تذكيرا الجديدة (`remindedFor`) */
+  const remindedOf = new Map<string, typeof reminded>()
+  for (const a of reminded) remindedOf.set(a.entityId, [...(remindedOf.get(a.entityId) ?? []), a])
   const campaign = new Map(campaigns.map((c) => [c.slug, c]))
   /* ومن ردّ «توقف» على واتساب — لا يظهر له زرُّه (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
   const waOff = await whatsappStopped(prisma, base.map((r) => r.phone))
@@ -148,10 +143,12 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
     })
     const upcoming: Upcoming[] = []
     const c = r.campaign ? campaign.get(r.campaign) : undefined
-    if (c?.active && c.closesAt && r.code && r.email && r.state !== 'bought') {
+    const closesAt = c?.closesAt
+    if (c?.active && closesAt && r.code && r.email && r.state !== 'bought') {
       for (const s of GRANT_REMINDERS) {
-        const due = new Date(c.closesAt.getTime() - s.beforeMs)
-        if (due > now && !stagesSent.get(r.id)?.has(s.stage)) upcoming.push({ kind: 'reminder', at: due.toISOString(), labelAr: STAGE_AR[s.stage] ?? 'تذكير' })
+        const due = new Date(closesAt.getTime() - s.beforeMs)
+        const sent = remindedOf.get(r.id)?.some((a) => remindedFor(a, s.stage, closesAt)) ?? false
+        if (due > now && !sent) upcoming.push({ kind: 'reminder', at: due.toISOString(), labelAr: STAGE_AR[s.stage] ?? 'تذكير' })
       }
     }
     if (r.nextCall) {
