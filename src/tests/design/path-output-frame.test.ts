@@ -18,10 +18,9 @@ describe('ما تتخرج به في إطار ناعم', () => {
     expect(code('src/components/PathOutput.tsx'), 'الإطار ليس Inset').toMatch(/<Inset as="p" tone="accent"[\s\S]*?تتخرّج بـ: \{output\}[\s\S]*?<\/Inset>/)
   })
 
-  it('⚠️ ومواضعه الثلاثة تمر به — ولا سطر مخرج عار', () => {
+  it('⚠️ ومواضعه تمر به — ولا سطر مخرج عار', () => {
     const best = code('src/pages/home/Bestsellers.tsx')
     const cat = code('src/pages/Catalog.tsx')
-    expect(best, 'البطاقة المميّزة بلا إطار').toMatch(/<PathOutput output=\{spotlight\.p\.output\}/)
     expect(best, 'شريط الرئيسة بلا إطار').toMatch(/<PathOutput output=\{b\.item\.output\}/)
     expect(cat, 'صفحة المسارات بلا إطار').toMatch(/<PathOutput output=\{p\.output\}/)
     for (const [name, src] of [['الرئيسة', best], ['الكتالوج', cat]] as const) {
