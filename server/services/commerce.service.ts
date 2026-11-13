@@ -20,6 +20,7 @@ import { getPaymentConfig } from './integrations.service'
 import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
 import { TrainerDiscountService } from './trainer-discount.service'
+import { grantLeftForCoupon } from './grant.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
 import { assertFirstPurchase } from './commerce/first-purchase'
 import { payByOf, teamHeldOrderIds } from './commerce/seat-hold'
@@ -28,7 +29,7 @@ import { giftForCart } from './private-path-gift'
 import { buyLinkForOrder } from './buy-link.service'
 import { CODE_ATTEMPTS_AR, type CodeAttemptGuard } from './commerce/code-attempts'
 import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse, idLockKey } from './commerce/coupon-ledger'
-import { GRANT_CHECKOUT_ONLY_AR, GRANT_ERROR_CODES } from '../../src/application/commerce/grant'
+import { GRANT_CHECKOUT_ONLY_AR, GRANT_ERROR_CODES, grantLeftLineAr } from '../../src/application/commerce/grant'
 import { COMMERCE_LOCKS, nextInvoiceNumber } from './commerce/invoice-number'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { assertSeasonOpen, cohortAcceptsRegistration, PLAN_GATE_SELECT, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
@@ -1200,10 +1201,14 @@ export class CommerceService {
           : converted.length > 0
             ? 'مقاعدك صارت تسجيلا فعليا — شعبك تظهر في «تعلّمي».'
             : 'تفاصيل طلبك في «الفواتير».'
+      /* وما بقي على كود منحته — «دورةٌ واحدةٌ أوّلا والكودُ يبقى لباقي المسار» (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦).
+         والعدُّ عدُّ الدفع نفسِه، فلا يقول البريدُ رقما يردّه الشراء؛ وتعذُّرُه لا يُسقط تأكيدَ الدفع */
+      const grant = order.couponId ? await grantLeftForCoupon(this.prisma, order.couponId).catch(() => null) : null
+      const grantTail = grant ? ` ${grantLeftLineAr(grant.left, grant.percentOff, grant.closesAt)} يطبق وحده عند شرائك التالي.` : ''
       await safeNotify(this.prisma, {
         userId: order.userId, channel: 'in_app',
         title: 'تأكد دفعك ✓ — أهلا بك',
-        body: `استلمنا دفعتك (${num(order.total)} ${order.currency}) عن ${what}. ${tail}`,
+        body: `استلمنا دفعتك (${num(order.total)} ${order.currency}) عن ${what}. ${tail}${grantTail}`,
         templateKey: 'payment.succeeded',
         data: { orderId, total: num(order.total), enrolled: converted.length, of: targets.size },
       })

@@ -48,7 +48,8 @@ import { enqueueMail } from './outbox.service'
 import { renderMail, type MailBlock } from './mail-template'
 import { publicSiteUrl } from './site-url'
 import { GrantCoursesService } from './grant-courses.service'
-import { GRANT_CAMPAIGNS, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
+import { GrantService } from './grant.service'
+import { GRANT_CAMPAIGNS, GRANT_CONTINUE_AR, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr, grantLeftLineAr, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
 import { influencerLink } from '../../src/application/commerce/influencer'
 import { optedOut, unsubscribeLinks } from './mail-optout.service'
 import {
@@ -331,6 +332,86 @@ export async function sendGrantReminders(
     sent += 1
   }
   return { sent, stage: due.stage, mailOff: false }
+}
+
+/* ═══ وتذكيرُ من اشترى ببعض كوده قبل النهاية (١٣ نوفمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «أرى الناس تستصعب شراء أربع دورات» — فدورةٌ واحدةٌ أوّلا، والكودُ يبقى لباقي المسار حتى آخر يوم
+   (`coursesLeft`). وتذكيرُ ما قبل النهاية (`sendGrantReminders`) لمن لم يشترِ وحدَه، فمن اشترى دورةً وبقي على كوده ثلاثٌ
+   لم يكن يُذكَّر أنّها تنتهي. فهنا تذكيرٌ واحدٌ له، في موعد تذكير «قبل ثلاثة أيام» (`GRANT_REMINDERS[0]`):
+   · لمن اشترى بكوده شيئا دُفع (`BOUGHT`) وبقي عليه شيء — والعدُّ عدُّ الدفع نفسِه، فلا يُقال رقمٌ يردّه الشراء.
+   · مرّةً لكلّ عميل (`coupon.grant_reminder` بمرحلة `left`)، ولا يصل من ألغى رسائلَ التسويق، ولا يُكتب شيءٌ والبريدُ مفصول.
+   · والزرُّ إلى «الدورات»: كودُه يُطبَّق وحده عند الشراء من حسابه (`learnerGrant`)، فلا يُعاد إلى نموذج المنحة. */
+export const GRANT_LEFT_STAGE = 'left'
+
+export async function sendGrantLeftReminders(
+  prisma: PrismaClient, now = new Date(), slug: GrantSlug = MEMBER_GRANT_SLUG,
+): Promise<{ sent: number; mailOff: boolean }> {
+  const campaign = await prisma.grantCampaign.findUnique({
+    where: { slug }, select: { id: true, active: true, closesAt: true, percentOff: true, maxCourses: true },
+  })
+  const closesAt = campaign?.closesAt
+  if (!campaign?.active || !closesAt || closesAt <= now) return { sent: 0, mailOff: false }
+  if (now.getTime() < closesAt.getTime() - GRANT_REMINDERS[0].beforeMs) return { sent: 0, mailOff: false }
+
+  const told = await prisma.auditEvent.findMany({
+    where: { action: 'coupon.grant_reminder', entityType: 'lead', meta: { path: ['stage'], equals: GRANT_LEFT_STAGE } },
+    select: { entityId: true },
+  })
+  const leads = await prisma.lead.findMany({
+    where: {
+      campaign: slug, erasedAt: null, email: { not: null },
+      grantCode: { campaignId: campaign.id, coupon: { orders: { some: { status: { in: [...BOUGHT] } } } } },
+      id: { notIn: told.map((r) => r.entityId) },
+    },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true, fullName: true, email: true,
+      grantCode: { select: { coupon: { select: { id: true, code: true, percentOff: true, usedCount: true, maxUses: true } } } },
+    },
+  })
+  if (leads.length === 0) return { sent: 0, mailOff: false }
+  if (!(await liveChannels(prisma)).includes('email')) return { sent: 0, mailOff: true }
+  const off = await optedOut(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
+
+  const grants = new GrantService(prisma)
+  const lastDay = new Date(closesAt.getTime() - 1)
+  let sent = 0
+  for (const lead of leads) {
+    const coupon = lead.grantCode?.coupon
+    if (!coupon || !lead.email || off.has(lead.email.toLowerCase())) continue
+    const left = await grants.coursesLeft({ ...coupon, grantCode: { campaign: { id: campaign.id, active: campaign.active, closesAt, maxCourses: campaign.maxCourses } } })
+    if (left <= 0) continue
+    const pct = coupon.percentOff ?? campaign.percentOff
+    const subject = `بقي لك ${grantCoursesAr(left)} على كود منحتك`
+    const blocks: MailBlock[] = [
+      { kind: 'p', text: grantLeftLineAr(left, pct, closesAt) },
+      { kind: 'p', text: 'أكمل مسارك بدورة تالية قبل آخر يوم. كودك يطبق وحده عند الشراء من حسابك.' },
+      { kind: 'facts', rows: [
+        { label: 'كود منحتك', value: coupon.code },
+        { label: 'آخر يوم', value: fmtDateLong(lastDay) },
+      ] },
+      { kind: 'cta', label: GRANT_CONTINUE_AR, href: `${publicSiteUrl()}/courses` },
+    ]
+    await prisma.$transaction(async (tx) => {
+      await recordAudit(tx, {
+        action: 'coupon.grant_reminder', entityType: 'lead', entityId: lead.id,
+        meta: { stage: GRANT_LEFT_STAGE, campaign: slug, left },
+      })
+      await enqueueMail(tx, {
+        to: lead.email!, purpose: 'grant.reminder', subject, unsubscribeUrl: unsubscribeLinks(lead.email!).oneClick,
+        ...renderMail({
+          unsubscribeUrl: unsubscribeLinks(lead.email!).page,
+          greetingName: lead.fullName,
+          preheader: grantLeftLineAr(left, pct, closesAt),
+          heading: subject,
+          blocks,
+        }),
+      })
+    })
+    sent += 1
+  }
+  return { sent, mailOff: false }
 }
 
 /* ═══ آخرُ يومٍ للمنحة ٣٠ أكتوبر — بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) ═══

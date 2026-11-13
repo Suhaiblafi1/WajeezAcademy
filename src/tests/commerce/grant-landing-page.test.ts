@@ -14,7 +14,7 @@ import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_DIAG_PATH, GRANT_HUMAN_DIAG_AR, GRANT_SELF_DIAG_AR,
@@ -324,7 +324,8 @@ describe('بعد النموذج', () => {
     expect(card, 'التعارض يمنع الاختيار').toMatch(/const full = !on && picked\.length >= max;/)
     /* و«لا تتعارض» لا تُقال إلّا وكلُّ مقترحةٍ لها لقاءاتٌ معتمَدة */
     expect(PAGE).toMatch(/const timedSuggested = top\.length > 0 && top\.every\(\(x\) => \(x\.sessions\?\.length \?\? 0\) > 0\);/)
-    expect(PAGE).toMatch(/تناسبك\{timedSuggested \? " ولا تتعارض مواعيدها" : ""\}\.\{suggested\.length > max && ` اختر منها حتى \$\{max\}\.`\}/)
+    /* ودورةٌ أوّلا والكودُ يبقى لباقيها — صاحب المنصّة (١٣ نوفمبر ٢٠٢٦): «أرى الناس تستصعب شراء أربع دورات» */
+    expect(PAGE).toMatch(/تناسبك\{timedSuggested \? " ولا تتعارض مواعيدها" : ""\}\. ابدأ بالأولى، وكودك يبقى لك لباقيها بنفس الخصم\{lastDayLong \? ` حتى \$\{lastDayLong\}` : ""\}\./)
   })
 
   /* «عندما يقوم بالدفع لا يظهر نفس السعر… يجب أن يصلح من جهتك» — واختار صاحبُ المنصّة المطابقةَ بالبريد (٢٧ أكتوبر ٢٠٢٦) */
@@ -416,7 +417,7 @@ describe('بعد النموذج', () => {
   /* من حدّث الصفحةَ أو عاد إليها كان يجد الدوراتِ فارغة — وقد اختارها وحُفظت في ملفّه عندنا (٢٧ أكتوبر ٢٠٢٦) */
   it('⚠️ ما اختاره يبقى على جهازه — ويعود إليه حين يحدّث الصفحة', () => {
     expect(PAGE).toMatch(/if \(kept\?\.ref === ref\) saveStoredGrant\(\{ \.\.\.kept, picks: picked \}, storeKey\);/)
-    expect(PAGE).toMatch(/setPicked\(\(resumed \? resumed\.intent\.courseIds : linkPicks\.length > 0 \? linkPicks : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)\);/)
+    expect(PAGE).toMatch(/setPicked\(firstPicks\(\(resumed \? resumed\.intent\.courseIds : linkPicks\.length > 0 \? linkPicks : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\), ours, max\)\);/)
     /* ومن رابط بريد التذكير (`?picks=`) — يعود إلى اختياره ولو فتحه من جهازٍ آخر (٣١ أكتوبر ٢٠٢٦) */
     expect(PAGE).toMatch(/const \[linkPicks\] = useState\(\(\) => parsePicksParam\(window\.location\.search\)\);/)
     expect(parsePicksParam('?picks=C-MKT-103,C-FIN-101,C-MKT-103,<x>,')).toEqual(['C-MKT-103', 'C-FIN-101'])
@@ -468,18 +469,30 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'عاد خيار بدّل المسار').not.toMatch(/switchPath|بدّل إليه|أو مسار|\.alt\b/)
   })
 
-  it('⚠️ نقترحها ولا نختارها عنه — وما تركه قبل توثيق بريده يعود مختارا، ولا تتجاوز الحد', () => {
+  /* «لا تختر عنه أنت» (٢٤ أكتوبر ٢٠٢٦) — إلّا أولاها: «ابدأ بها» تُختار له إن لم يختر شيئا. قرارُ صاحب المنصّة (١٣ نوفمبر
+     ٢٠٢٦): «الناس تستصعب شراء أربع دورات»، فسُئل أن تُختار له الأولى فقال «أوك». واحدةٌ لا أكثر، وما اختاره هو يسبقها */
+  it('⚠️ يجد أولى المقترحات مختارة وحدها — وما اختاره هو يسبقها، ولا تتجاوز الحد', () => {
+    expect(firstPicks([], ['S1', 'S2', 'S3'], 4), 'لم تختر له الأولى').toEqual(['S1'])
+    expect(firstPicks([], ['S1', 'S2', 'S3'], 4).length, 'اختار عنه أكثر من واحدة').toBe(1)
+    expect(firstPicks(['M1', 'M2'], ['S1', 'S2'], 4), 'غلب اقتراحنا اختياره').toEqual(['M1', 'M2'])
+    expect(firstPicks(['M1', 'M2', 'M3'], ['S1'], 2), 'تجاوز الحد').toEqual(['M1', 'M2'])
+    expect(firstPicks([], [], 4), 'اختار ما لم نقترحه').toEqual([])
+    expect(firstPicks([], ['S1'], 0), 'اختار بلا ما بقي له').toEqual([])
+  })
+
+  it('⚠️ نقترحها ولا نختار عنه غير أولاها — وما تركه قبل توثيق بريده يعود مختارا، ولا تتجاوز الحد', () => {
     const effect = PAGE.slice(PAGE.indexOf('useEffect(() => {\n    if (!view || !stored || seeded) return;'))
     expect(effect.length, 'الاختيار الأول لا ينتظر الكود').toBeGreaterThan(0)
     expect(effect).toMatch(/suggestCourses\(view\.openCourses, stored\.interests, stored\.workField, GRANT_SUGGESTED_COURSES, found\.main\?\.courseIds \?\? \[\]\)/)
-    /* ما يعود مختارا ما اختاره هو — من رحلة الدفع أو من جهازه — لا ما اقترحناه */
+    /* ما يعود مختارا ما اختاره هو — من رحلة الدفع أو من جهازه — وإلّا أولى ما نقترحه وحدَها (`firstPicks`) */
     const seed = effect.match(/setPicked\(([^;]*)\);/)
     expect(seed, 'لا اختيار أول').not.toBeNull()
-    expect(seed![1], 'اختارها عنه').toMatch(/^\(resumed \? resumed\.intent\.courseIds : linkPicks\.length > 0 \? linkPicks : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)$/)
-    expect(seed![1], 'اختارها عنه').not.toMatch(/\bours\b|suggested|found/)
+    expect(seed![1], 'اختارها عنه').toMatch(/^firstPicks\(\(resumed \? resumed\.intent\.courseIds : linkPicks\.length > 0 \? linkPicks : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\), ours, max\)$/)
+    expect(seed![1], 'اختارها عنه بغير firstPicks').not.toMatch(/suggested|found|ours\.slice|ours\[/)
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
     /* وسمٌ نصّيٌّ أعلى البطاقة لا قرصٌ يشبه الزرّ — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/const tag = ours\.has\(x\.courseId\) \? "نقترحها لك" : fits\(x\) > 0 \? "يناسب ما تريد تطويره" : null;/)
+    /* وأولاها «ابدأ بها» — الخطوةُ الأولى من مساره، وتبقى غيرَ مختارةٍ عنه (١٣ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const tag = ours\.has\(x\.courseId\) \? \(suggested\[0\] === x\.courseId \? "ابدأ بها" : "نقترحها لك"\) : fits\(x\) > 0 \? "يناسب ما تريد تطويره" : null;/)
     const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf(TOP_CARD))
     expect(card, 'الوسم قرص').not.toMatch(/<Chip/)
     /* وأصغرُ وأهدأُ من العنوان — قرارُه (٢٧ أكتوبر ٢٠٢٦): «كلمة نقترحها لك يجب أن تكون أصغر وبخطٍّ أقلّ أهميّةً للنظر» */
@@ -807,7 +820,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'نقترحها لك', 'نقترح لك', 'تناسبك', ' ولا تتعارض مواعيدها', ' اختر منها حتى', 'يناسب ما تريد تطويره', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
+      'نقترحها لك', 'نقترح لك', 'تناسبك', ' ولا تتعارض مواعيدها', ' ابدأ بالأولى، وكودك يبقى لك لباقيها بنفس الخصم', 'ابدأ بها', 'يناسب ما تريد تطويره', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')

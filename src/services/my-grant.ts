@@ -14,6 +14,8 @@ export interface MyGrant {
   nameAr?: string;
   left?: number;
   max?: number;
+  /** نهايةُ حملته — «حتى آخر يوم» في شاشة الشكر */
+  closesAt?: string | null;
 }
 
 export function fetchMyGrant(): Promise<MyGrant> {

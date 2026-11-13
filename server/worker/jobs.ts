@@ -43,7 +43,7 @@ import { LEARNER_SESSION_WHERE } from '../services/session-visibility'
 import { learnerGate, whenAr } from '../../src/application/learning/cohort-gate'
 import { timelineEvents, type TimelineEvent } from '../../src/application/learning/timeline-events'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
-import { INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG } from '../../src/application/commerce/grant'
+import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG } from '../../src/application/commerce/grant'
 import { sessionEnd } from '../../src/application/trainer/axis-timeline'
 import { MIN_SESSION_MS } from '../../src/application/trainer/session-length'
 import { notPermanentAuditWhere } from '../../src/application/audit/retention'
@@ -1603,7 +1603,7 @@ export async function runGrantFollowups(prisma: PrismaClient, now = new Date()):
 /** من أخذ كود المنحة ولم يشترِ — بريدٌ قبل انتهائها بثلاثة أيّامٍ وفي آخر يوم، مرّةً لكلٍّ (`grant-followup.service.ts`) */
 export async function runGrantReminders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
-  const { applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, applyOpenGrantLaunch, sendGrantExtendedNotice, sendGrantReminders } = await import('../services/grant-followup.service')
+  const { applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, applyOpenGrantLaunch, sendGrantExtendedNotice, sendGrantLeftReminders, sendGrantReminders } = await import('../services/grant-followup.service')
   const { seedGrantAdvisorWhatsApp } = await import('../services/integrations.service')
   /* آخرُ يومٍ ٣٠ أكتوبر، والحدُّ ٤ دورات — بقرار صاحب المنصّة، قبل التذكير فيتبع التذكيرُ اليومَ الصحيح.
      ورقمُ مستشار المنحة على واتساب — والعاملُ يدور بكلّ وظائفه حين يبدأ، فيُكتب أوّلَ ما يُنشر */
@@ -1623,16 +1623,24 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   const members = await sendGrantReminders(prisma, now)
   const influencers = await sendGrantReminders(prisma, now, INFLUENCER_GRANT_SLUG)
   const open = await sendGrantReminders(prisma, now, OPEN_GRANT_SLUG)
+  /* ومن اشترى ببعض كوده: تذكيرٌ واحدٌ قبل النهاية بما بقي عليه — لكلّ حملة (١٣ نوفمبر ٢٠٢٦) */
+  const leftBySlug = [
+    await sendGrantLeftReminders(prisma, now, MEMBER_GRANT_SLUG),
+    await sendGrantLeftReminders(prisma, now, INFLUENCER_GRANT_SLUG),
+    await sendGrantLeftReminders(prisma, now, OPEN_GRANT_SLUG),
+  ]
+  const leftSent = leftBySlug.reduce((n, r) => n + r.sent, 0)
   const sent = members.sent + influencers.sent + open.sent
   const stage = members.stage ?? influencers.stage ?? open.stage
-  const mailOff = members.mailOff || influencers.mailOff || open.mailOff || toldMembers.mailOff || toldInfluencers.mailOff
+  const mailOff = members.mailOff || influencers.mailOff || open.mailOff || toldMembers.mailOff || toldInfluencers.mailOff || leftBySlug.some((r) => r.mailOff)
   return {
     job: 'grant_reminders',
     summaryAr: (fixed ? 'صار آخر يوم للمنحة 30 أكتوبر · ' : '') + (extended ? 'مدت المنحة إلى 12 نوفمبر · ' : '') + (extendedInfluencers ? 'مدت منحة المؤثرين إلى 12 نوفمبر · ' : '') + (told > 0 ? `أخبر ${told} ممن لم يشتر بتمديد المنحة · ` : '') + (limited ? 'صار حد المنحة 4 دورات · ' : '')
-      + (launched ? 'شغلت منحة وجيز العامة حتى 30 نوفمبر · ' : '') + (seeded ? 'ضبط رقم واتساب مستشار المنحة · ' : '') + (mailOff
+      + (launched ? 'شغلت منحة وجيز العامة حتى 30 نوفمبر · ' : '') + (seeded ? 'ضبط رقم واتساب مستشار المنحة · ' : '')
+      + (leftSent > 0 ? `ذكّر ${leftSent} ممن اشترى ببعض كوده بما بقي عليه · ` : '') + (mailOff
       ? 'حلّ تذكير المنحة وقناة البريد غير موصولة — لا يذكّر أحد حتى توصل'
       : sent === 0 ? 'لا تذكير منحة مستحق' : `ذكّر ${sent} ممن لم يشتر بأن المنحة تنتهي (${stage === '1d' ? 'آخر يوم' : 'قبل ثلاثة أيام'})`),
-    done: sent + told + (fixed ? 1 : 0) + (extended ? 1 : 0) + (extendedInfluencers ? 1 : 0) + (limited ? 1 : 0) + (launched ? 1 : 0) + (seeded ? 1 : 0), failed: 0, ms: Date.now() - started,
+    done: sent + told + leftSent + (fixed ? 1 : 0) + (extended ? 1 : 0) + (extendedInfluencers ? 1 : 0) + (limited ? 1 : 0) + (launched ? 1 : 0) + (seeded ? 1 : 0), failed: 0, ms: Date.now() - started,
   }
 }
 

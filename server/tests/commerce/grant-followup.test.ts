@@ -17,9 +17,9 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
-import { GrantService } from '../../services/grant.service'
+import { GrantService, learnerGrant } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
-import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_EXTEND_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, GRANT_EXTENDED_PERKS_AR, grantExtendedSubjectAr, sendGrantExtendedNotice, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
+import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_EXTEND_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, applyGrantCoursesFix, applyGrantExtendFix, GRANT_EXTENDED_PERKS_AR, grantExtendedSubjectAr, sendGrantExtendedNotice, sendGrantLeftReminders, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { grantCallDueAt } from '../../../src/application/commerce/grant-landing'
 import { INFLUENCER_GRANT_SLUG, grantClosesAt } from '../../../src/application/commerce/grant'
@@ -461,5 +461,73 @@ describe('⑨ وبريد «مددنا منحتك» لمن لم يشتر — بق
     expect(m[0].text).toContain(code)
     expect(m[0].text).toContain(who.code)
     await inf.update({ closesAt: null }, ownerId)
+  })
+})
+
+/* ═══ ⑩ ومن اشترى ببعض كوده: ما بقي عليه في بريد الدفع، وتذكيرٌ واحدٌ قبل النهاية (١٣ نوفمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «أرى الناس تستصعب شراء أربع دورات» — فدورةٌ أوّلا، والكودُ يبقى لباقي المسار حتى آخر يوم.
+   وكان تذكيرُ ما قبل النهاية لمن لم يشترِ وحدَه: من اشترى دورةً وبقي على كوده ثلاثٌ لا يُقال له إنّها تنتهي. */
+describe('⑩ ومن اشترى ببعض كوده — بما بقي عليه', () => {
+  const T = new Date(`${zonedDay(new Date(Date.now() + 10 * 24 * HOUR))}T00:00:00+03:00`)
+  const at = (hoursBefore: number) => new Date(T.getTime() - hoursBefore * HOUR)
+  const leftMails = (to: string) => prisma.outboxMail.findMany({ where: { to, purpose: 'grant.reminder', subject: { contains: 'على كود منحتك' } } })
+  const receiptOf = (userId: string) => prisma.notification.findFirst({ where: { userId, templateKey: 'payment.succeeded', channel: 'in_app' }, orderBy: { queuedAt: 'desc' } })
+  const mailChannel = (enabled: boolean) => prisma.integrationSetting.upsert({
+    where: { provider: 'email' },
+    update: { enabled, config: { apiKey: 'test-key', fromEmail: 'no-reply@test.local' } },
+    create: { provider: 'email', enabled, config: { apiKey: 'test-key', fromEmail: 'no-reply@test.local' } },
+  })
+  let had: { enabled: boolean; config: unknown } | null = null
+
+  beforeAll(async () => {
+    had = await prisma.integrationSetting.findUnique({ where: { provider: 'email' }, select: { enabled: true, config: true } })
+    await new GrantService(prisma).update({ active: true, maxCourses: 4, closesAt: T }, ownerId)
+    await mailChannel(true)
+  })
+  afterAll(async () => {
+    if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
+    else await prisma.integrationSetting.delete({ where: { provider: 'email' } })
+    await new GrantService(prisma).update({ maxCourses: 4, closesAt: null }, ownerId)
+  })
+
+  it('⚠️ اشترى دورة بكوده: بريد الدفع يقول ما بقي، وتذكير واحد قبل النهاية — لا لمن لم يشتر ولا مرتين', async () => {
+    const lead = await member()
+    const buyer = await learner(lead.email)
+    const o = await commerce.checkout(buyer, [(await cohort()).id], lead.code)
+    await commerce.payOrder(o.orderId, buyer, `fu-left-${o.orderId}`)
+
+    expect((await receiptOf(buyer))?.body, 'بريد الدفع لا يقول ما بقي على الكود').toContain('بقي لك على كود منحتك 3 دورات بخصم')
+    const mine = await learnerGrant(prisma, buyer)
+    expect(mine.left).toBe(3)
+    expect(mine.closesAt, 'شاشة الشكر لا تعرف آخر يوم').toBe(T.toISOString())
+
+    const idle = await member()
+    expect((await sendGrantLeftReminders(prisma, at(80))).sent, 'ذكّر قبل موعده').toBe(0)
+    expect((await sendGrantLeftReminders(prisma, at(30))).sent).toBeGreaterThanOrEqual(1)
+    const m = await leftMails(lead.email)
+    expect(m, 'لم يذكّر من اشترى ببعض كوده').toHaveLength(1)
+    expect(m[0].subject).toBe('بقي لك 3 دورات على كود منحتك')
+    expect(m[0].text).toContain(lead.code)
+    expect(m[0].text, 'الزر لا يصل الدورات').toContain('/courses')
+    expect(await leftMails(idle.email), 'ذكّر بما بقي من لم يشتر').toHaveLength(0)
+
+    await sendGrantLeftReminders(prisma, at(10))
+    expect(await leftMails(lead.email), 'ذكّر مرتين').toHaveLength(1)
+  })
+
+  it('⚠️ ومن استعمل كوده كله لا يذكّر — ولا يقول له بريد الدفع شيئا عنه', async () => {
+    await new GrantService(prisma).update({ maxCourses: 1 }, ownerId)
+    try {
+      const lead = await member()
+      const buyer = await learner()
+      const o = await commerce.checkout(buyer, [(await cohort()).id], lead.code)
+      await commerce.payOrder(o.orderId, buyer, `fu-left-${o.orderId}`)
+      expect((await receiptOf(buyer))?.body, 'قال بريد الدفع إن على الكود شيئا').not.toContain('بقي لك على كود منحتك')
+      await sendGrantLeftReminders(prisma, at(30))
+      expect(await leftMails(lead.email), 'ذكّر من لم يبق على كوده شيء').toHaveLength(0)
+    } finally {
+      await new GrantService(prisma).update({ maxCourses: 4 }, ownerId)
+    }
   })
 })

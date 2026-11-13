@@ -312,6 +312,8 @@ export interface LearnerGrant {
   nameAr?: string
   left?: number
   max?: number
+  /** نهايةُ حملته — يُقال بها «حتى آخر يوم» في شاشة الشكر (١٣ نوفمبر ٢٠٢٦) */
+  closesAt?: string | null
 }
 
 const LEARNER_COUPON = {
@@ -360,7 +362,22 @@ export async function learnerGrant(prisma: PrismaClient, userId: string, now = n
   if (!coupon || !campaign || !isOpen(campaign, now)) return { code: null }
   const left = await new GrantService(prisma).coursesLeft(coupon)
   if (left <= 0) return { code: null }
-  return { code: coupon.code, percentOff: coupon.percentOff, nameAr: campaign.nameAr, left, max: campaign.maxCourses }
+  return {
+    code: coupon.code, percentOff: coupon.percentOff, nameAr: campaign.nameAr, left, max: campaign.maxCourses,
+    closesAt: campaign.closesAt ? campaign.closesAt.toISOString() : null,
+  }
+}
+
+/** ما بقي على كود منحةٍ بعينه — لبريد الدفع (١٣ نوفمبر ٢٠٢٦). و`null` إن لم يكن كودَ منحة، أو أُغلقت حملتُه، أو لم يبقَ عليه شيء.
+    والعدُّ عدُّ الدفع نفسِه (`coursesLeft`)، فلا يقول البريدُ رقما يردّه الشراء */
+export async function grantLeftForCoupon(
+  prisma: PrismaClient, couponId: string, now = new Date(),
+): Promise<{ left: number; percentOff: number; closesAt: Date | null } | null> {
+  const coupon = await prisma.coupon.findUnique({ where: { id: couponId }, select: LEARNER_COUPON })
+  const campaign = coupon?.grantCode?.campaign
+  if (!coupon || !campaign || !isOpen(campaign, now)) return null
+  const left = await new GrantService(prisma).coursesLeft(coupon)
+  return left > 0 ? { left, percentOff: coupon.percentOff ?? 0, closesAt: campaign.closesAt } : null
 }
 
 function isUniqueViolation(e: unknown): boolean {

@@ -16,7 +16,7 @@ import { readPendingCheckout } from "@/services/pending-checkout";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
-  BookOpen, CheckCircle2, CircleSlash, Loader2, RefreshCw, Route as RouteIcon,
+  BookOpen, CheckCircle2, CircleSlash, Gift, Loader2, RefreshCw, Route as RouteIcon,
   ServerOff,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
@@ -37,7 +37,13 @@ import {
   buildJourney, defaultTrackId,
   type JourneyPlan, type JourneyRow, type JourneyTrack,
 } from "@/application/student/journey";
-import { courseFullById } from "@/data/courses";
+import { courseById, courseFullById } from "@/data/courses";
+import { publicPathways } from "@/data/public-pathways";
+import { useMyGrant } from "@/services/my-grant";
+import { useListedCourses } from "@/services/listed-courses";
+import { availableThisSeason } from "@/application/catalog/listed-courses";
+import { GRANT_CONTINUE_AR, grantLeftLineAr } from "@/application/commerce/grant";
+import { boughtCourseIds, nextInPath } from "@/application/commerce/grant-next";
 import { toast, toastError } from '@/components/Toast';
 import { fmtSession } from "@/application/text/format-ar";
 
@@ -49,7 +55,7 @@ interface PaidOrder {
   status: string;
   total: string | number;
   currency: string;
-  items: { id: string; titleAr: string; unitPrice: string | number }[];
+  items: { id: string; titleAr: string; unitPrice: string | number; kind?: string; refId?: string }[];
   invoice: { number: string; status: string } | null;
   /** آخرُ لحظةٍ للدفع لما لم يُدفع (`seat-hold.ts`) */
   payBy?: string | null;
@@ -84,6 +90,23 @@ export default function Journey() {
   const [pickedCohort, setPickedCohort] = useState<Record<string, string>>(() => readPendingCheckout()?.cohortByCourse ?? {});
 
   const { cohorts } = useCourseCohorts();
+  /* ═══ «أكمل مسارك» في شاشة الشكر (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦) ═══
+     «أرى الناس تستصعب شراء أربع دورات» — فدورةٌ أوّلا، والكودُ يبقى لباقي المسار حتى آخر يوم. فبعد الدفع يُقال ما بقي على
+     كوده (`learnerGrant`، عدُّ الدفع نفسُه)، وما يلي ما اشتراه في مساره ممّا يُشترى الآن (`nextInPath`) — وكلٌّ إلى صفحة
+     دورته، ولوحُ الشراء هناك يطبّق كودَه وحده. ولا كودَ أو لا شيءَ عليه = لا شيء يُقال */
+  const grant = useMyGrant();
+  const listed = useListedCourses();
+  const nextCourses = useMemo(() => {
+    if (!paid) return [];
+    const courseOfCohort = (id: string) => {
+      for (const [courseId, list] of cohorts) if (list.some((c) => c.id === id)) return courseId;
+      return undefined;
+    };
+    return nextInPath(boughtCourseIds(paid.items, courseOfCohort), publicPathways, (id) => availableThisSeason(id, listed) === true)
+      .map((id) => courseById(id))
+      .filter((c): c is NonNullable<typeof c> => !!c);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- الكتالوجُ يُستبدل وقت التشغيل (`catalogVersion`)
+  }, [paid, cohorts, listed, catalogVersion]);
 
   /* ولا تصفيرَ عند القراءة الثانية: القائمةُ القديمة تبقى معروضةً حتى تصل
      الجديدة، فلا تنقلب الصفحةُ دوّارةً فوق ما يقرأه المتعلّم. */
@@ -373,6 +396,26 @@ export default function Journey() {
                     {Number(paid.total).toLocaleString("en-US")} {paid.currency}
                   </span>
                 </div>
+              </Inset>
+            )}
+            {paid && grant?.code && (grant.left ?? 0) > 0 && (
+              <Inset tone="accent" className="mt-3 p-3.5">
+                <p className="flex items-start gap-2 text-read font-bold leading-6 text-foreground">
+                  <Gift className="mt-1 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
+                  {grantLeftLineAr(grant.left ?? 0, grant.percentOff ?? 0, grant.closesAt)}
+                </p>
+                {nextCourses.length > 0 && (
+                  <ul className="mt-2 space-y-1 ps-6">
+                    {nextCourses.map((c) => (
+                      <li key={c.id} className="text-read leading-6">
+                        <Link to={`/build/${c.id}`} className="font-bold text-teal-light-ink underline underline-offset-4">{c.name}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Button as={Link} to={nextCourses[0] ? `/build/${nextCourses[0].id}` : "/courses"} tone="confirm" size="sm" className="mt-3">
+                  {GRANT_CONTINUE_AR}
+                </Button>
               </Inset>
             )}
             <p className="mt-2.5 text-read leading-6 text-muted-foreground">
