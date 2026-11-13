@@ -149,6 +149,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
          (١٩ أكتوبر ٢٠٢٦): كان في «تقدّمي» فيُكتَم، ومهلتُه مهلةُ أخيه — والطلبُ يُلغى بعد ساعة */
       'order.seats_held', 'plan.seats_held',
       'order.cancelled_abandoned', 'trainer_payout',
+      /* ومقعدٌ لم يُدفع في شعبةٍ أُلغيت — فُكّ وقيل لصاحبه (١٣ نوفمبر ٢٠٢٦) */
+      'order.cohort_cancelled',
       /* وكشفُ عمولة المستشار كمستحقّات المدرّب (١٩ أكتوبر ٢٠٢٦) — مالُه لا يُكتَم خبرُه */
       'advisor_payout',
       /* ودفعةٌ وصلت — جرسُ الإدارة (٣ نوفمبر ٢٠٢٦)، خبرُ مالٍ لا يُكتَم كأخواته */

@@ -674,6 +674,14 @@ export class CohortService {
        كان الإلغاءُ يقع صامتا: تُعلَّم الشعبةُ `cancelled` ولا يصل متعلّميها شيء، فيأتي أحدُهم يومَ
        اللقاء إلى رابطٍ لا يُفتح. وبابُه الدعم: النقلُ إلى شعبةٍ أخرى أو ردُّ ما دُفع يقرّره إنسان. */
     if (to === 'cancelled') {
+      /* وحجوزُها التي لم تُدفع تُفكّ ويُقال لأصحابها — ولا يُدفع بعدها عنها (`releaseCancelledCohortHolds`، ١٣ نوفمبر ٢٠٢٦).
+         والاستيرادُ وقتَ النداء: خدمةُ الشراء تستورد ما يستورد هذه. ولا يُسقط إخفاقُه إلغاءً وقع: الدفعُ يردّه على كلّ حال */
+      try {
+        const { CommerceService } = await import('./commerce.service')
+        await new CommerceService(this.prisma).releaseCancelledCohortHolds(cohortId)
+      } catch (e) {
+        console.error('[cohort] تعذّر فكّ حجوز شعبةٍ أُلغيت', cohortId, e)
+      }
       const learners = await this.prisma.enrollment.findMany({
         where: { cohortId, status: { not: 'dropped' } }, select: { userId: true },
       })

@@ -11,7 +11,7 @@
 export const LEARNER_EMAIL_KEYS: ReadonlySet<string> = new Set([
   /* المال: قبضٌ وردٌّ وردُّ طلبه، ومقعدٌ محجوزٌ ينتظر الدفع، وطلبٌ أُلغي لأنّه لم يُدفع */
   'payment.succeeded', 'payment.refunded', 'payment.refund_rejected',
-  'order.seats_held', 'plan.seats_held', 'order.cancelled_abandoned',
+  'order.seats_held', 'plan.seats_held', 'order.cancelled_abandoned', 'order.cohort_cancelled',
   /* تغيّرُ الشعبة: موعدٌ تحرّك أو أُلغي، وشعبةٌ أُلغيت، وتسجيلٌ أُسقط، ومدرّبٌ رحل */
   'cohort.schedule_changed', 'cohort.cancelled', 'cohort.reopened', 'enrollment.dropped',
   'departure.choice', 'departure.resolved',

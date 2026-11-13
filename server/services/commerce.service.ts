@@ -759,6 +759,19 @@ export class CommerceService {
     if (existing) return existing
     if (existing) return existing // idempotent — نفس المفتاح يعيد نفس الدفعة
 
+    /* ═══ ولا دفعَ عن شعبةٍ أُلغيت (١٣ نوفمبر ٢٠٢٦) ═══
+       من حُجز مقعدُه ثمّ أُلغيت الشعبةُ (رفضُ المدرّب تأجيلَها، أو سكوتُه حتّى المهلة، أو يدُ الإدارة) كان يفتح صفحةَ
+       الدفع ويدفع: يُقتطع ماله، ثمّ لا يُسجَّل في شعبةٍ ملغاة — فمالٌ عن لا شيء حتّى تنتبه الماليّة. وجُرّب فمرّ. فيُردّ
+       قبل أن تُفتح الصفحة، ويُقال له ما وقع. وقرارُ صاحب المنصّة: «yes». */
+    const lines = await this.prisma.orderItem.findMany({ where: { orderId, kind: 'cohort' }, select: { refId: true, titleAr: true } })
+    const cancelled = new Set((await this.prisma.cohort.findMany({
+      where: { id: { in: lines.map((l) => l.refId) }, status: 'cancelled' }, select: { id: true },
+    })).map((c) => c.id))
+    const cancelledItem = lines.find((l) => cancelled.has(l.refId))
+    if (cancelledItem) {
+      throw new AuthError('cohort_cancelled', `ألغيت شعبة «${cancelledItem.titleAr}» في هذا الطلب، فلا يدفع عنها ولم يقتطع منك شيء. ألغ الطلب واختر شعبة أخرى.`, 409)
+    }
+
     /* وبابُ الموسم هنا لا في رأس النداء: ما فوقَه **قراءاتٌ تُعيد ما وقع**
        (طلبٌ سُوّي، ودفعةٌ بالمفتاح نفسِه). فمن دفع أمس ثمّ حدّث صفحتَه اليوم
        يجب أن يرى إيصالَه لا «لم يفتح باب التسجيل» — الإغلاقُ يمنع دفعةً
@@ -1543,6 +1556,44 @@ export class CommerceService {
     /* والمقعدُ المفكوكُ لمن ينتظره أوّلا (`EnrollmentService.fillFromWaitlist`، ١٠ نوفمبر ٢٠٢٦) */
     for (const cohortId of new Set(freed)) await this.enrollments.fillFromWaitlist(cohortId, null, 'seat_hold_released')
     return cancelled
+  }
+
+  /* ═══ وشعبةٌ أُلغيت تُفكّ حجوزُها التي لم تُدفع (١٣ نوفمبر ٢٠٢٦) ═══
+     كان المقعدُ يبقى محجوزا لشعبةٍ ملغاة، وصفحةُ الدفع تُفتح له (`payOrder` يردّه الآن). فيُفكّ الحجزُ ساعةَ الإلغاء،
+     ويُقال لصاحبه. وطلبٌ ليس فيه غيرُها يُلغى كلُّه (`cancelOrder`: فاتورتُه وكوبونُه)، وطلبٌ فيه دوراتٌ أخرى يبقى بها
+     وحجزُ الملغاة وحدَه يُفكّ — والدفعُ يقول له أن يلغيه ويختار شعبةً أخرى. يعود بعدد من فُكّ حجزُه. */
+  async releaseCancelledCohortHolds(cohortId: string): Promise<number> {
+    const all = await this.prisma.enrollmentRequest.findMany({
+      where: { cohortId, status: 'seat_held', orderId: { not: null } },
+      select: { id: true, userId: true, orderId: true, cohort: { select: { title: true } } },
+    })
+    /* وما دُفع لا يُمسّ: حجزٌ دُفع طلبُه ينتظر تسويتَه، وتسويتُه تقول ما لم يُسجَّل (`settleOrder`) */
+    const unpaid = new Set((await this.prisma.order.findMany({
+      where: { id: { in: all.map((h) => h.orderId!) }, status: 'pending_payment' }, select: { id: true },
+    })).map((o) => o.id))
+    const holds = all.filter((h) => unpaid.has(h.orderId!))
+    let released = 0
+    for (const h of holds) {
+      const orderId = h.orderId!
+      const lines = await this.prisma.orderItem.findMany({ where: { orderId, kind: 'cohort' }, select: { refId: true } })
+      const alive = await this.prisma.cohort.count({ where: { id: { in: lines.map((l) => l.refId) }, status: { not: 'cancelled' } } })
+      if (alive === 0) {
+        await this.cancelOrder(orderId, h.userId)
+      } else {
+        await this.prisma.enrollmentRequest.updateMany({ where: { id: h.id, status: 'seat_held' }, data: { status: 'cancelled', orderId: null } })
+      }
+      released += 1
+      await safeNotify(this.prisma, {
+        userId: h.userId, channel: 'in_app', audience: 'learner',
+        templateKey: 'order.cohort_cancelled',
+        title: `ألغيت شعبة «${h.cohort.title}» قبل أن تدفع`,
+        body: alive === 0
+          ? 'ألغينا طلبك عنها، ولم يقتطع منك شيء. اختر شعبة أخرى من الدورة نفسها متى شئت.'
+          : 'فككنا مقعدك فيها ولم يقتطع منك شيء. ألغ طلبك من «الفواتير» واشتر ما بقي منه مع شعبة أخرى.',
+        data: { cohortId, orderId },
+      })
+    }
+    return released
   }
 
   /* مقاعدي المحجوزةُ ولم تصر تسجيلا بعد — النافذةُ بين الدفع وتأكيده.
