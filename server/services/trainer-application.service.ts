@@ -693,10 +693,10 @@ export class TrainerApplicationService {
   async getPublicStatus(email: string, reference?: string | null): Promise<{
     reference: string; status: TrainerStatus; createdAt: Date; completed: boolean
     hasInterview: boolean
-    /** موعدُ أقربِ مقابلةٍ قائمة — يُعرض لصاحبه في صفحة المتابعة العامّة */
-    interviewAt: Date | null
-    /** رابطُ تعديل الموعد عند Calendly — لصاحب الحجز وحدَه، ولا يُشتقّ عندنا */
-    interviewRescheduleUrl: string | null
+    /** فارغٌ دائما هنا — الموعدُ في حساب صاحبه (`myApplication`). يبقى الحقلُ لعميلٍ قديمٍ يقرؤه */
+    interviewAt: null
+    /** فارغٌ دائما هنا — رابطُ Calendly يعدّل الموعدَ ويلغيه، فلا يُعطى لمن يعرف البريدَ وحدَه */
+    interviewRescheduleUrl: null
     /* ═══ ولماذا يُعاد التوثيقُ هنا ═══
 
        شاشةُ «وصل طلبك» تقول للمتقدّم إنّ رسالةَ التوثيق أُرسلت، ثمّ لا تقول
@@ -718,12 +718,6 @@ export class TrainerApplicationService {
       /* الملغاةُ لا تُعَدّ حجزا — من ألغى موعدَه يُدعى إلى حجزٍ جديد */
       include: {
         _count: { select: { interviews: { where: LIVE_INTERVIEW } } },
-        interviews: {
-          where: LIVE_INTERVIEW,
-          orderBy: { scheduledAt: 'asc' },
-          take: 1,
-          select: { scheduledAt: true, rescheduleUrl: true },
-        },
         statusHistory: {
           where: { toStatus: DEFERRED }, orderBy: { createdAt: 'desc' }, take: 1,
           select: { toStatus: true, note: true },
@@ -733,13 +727,16 @@ export class TrainerApplicationService {
     if (!app) {
       throw new AuthError('not_found', ref ? 'لا يوجد طلب بهذا الرقم والبريد معا' : 'لا يوجد طلب بهذا البريد', 404)
     }
+    /* ═══ والموعدُ ورابطُ تعديله لصاحب الحساب وحدَه (١٣ نوفمبر ٢٠٢٦) ═══
+       هذا البابُ يكفي فيه البريد. وكان يعيد موعدَ المقابلة ورابطَ Calendly الذي يعدّلها ويلغيها — فمن عرف بريدَ
+       متقدّمٍ ألغى مقابلتَه. وجُرّب فمرّ. والمتقدّمُ له حسابٌ منذ القسم الأوّل، وصفحتُه (`myApplication`) تعرضهما.
+       فهنا «لك موعد» وحدَها، والشاشةُ تدلّه على حسابه. قرارُ صاحب المنصّة: «Email shows status only».
+       والحارس: `server/tests/trainer/public-status-private.test.ts` */
     return {
       reference: app.reference, status: app.status as TrainerStatus, createdAt: app.createdAt,
       completed: !!app.phase2CompletedAt, hasInterview: app._count.interviews > 0,
-      interviewAt: app.interviews[0]?.scheduledAt ?? null,
-      /* الفراغُ وارد: مقابلةٌ سُجّلت يدويّا، أو حُجزت قبل حفظِ الرابط. فتُعرض
-         بلا زرِّ تعديلٍ بدل زرٍّ لا يفتح شيئا. */
-      interviewRescheduleUrl: app.interviews[0]?.rescheduleUrl ?? null,
+      interviewAt: null,
+      interviewRescheduleUrl: null,
       emailVerified: !!app.emailVerifiedAt,
       intakeDeferred: deferredByIntake(app),
     }

@@ -115,16 +115,18 @@ describe('②③ أين تعرض', () => {
       'التهيئة خارج كتلة الموعد — فتعرض لمن لم يحجز بعد',
     ).toContain('<InterviewPrep')
 
-    const lookupFrom = LOOKUP.indexOf('{lookupResult.hasInterview && lookupResult.interviewAt && (')
+    const lookupFrom = LOOKUP.indexOf('{lookupResult.hasInterview && (')
     const lookupTo = LOOKUP.indexOf('BOOKABLE_STATUSES.includes(lookupResult.status)', lookupFrom)
     expect(lookupFrom, 'زال حدّ كتلة الموعد في صفحة المتابعة').toBeGreaterThan(-1)
     expect(lookupTo, 'زال حدّ ما بعدها').toBeGreaterThan(lookupFrom)
     expect(LOOKUP.slice(lookupFrom, lookupTo)).toContain('<InterviewPrep')
   })
 
-  it('ورابط تعديل الموعد في البابين معا — لا في أحدهما', () => {
+  /* ورابطُ التعديل في الحساب وحدَه (١٣ نوفمبر ٢٠٢٦): المتابعةُ بالبريد يكفي فيها البريد، والرابطُ يلغي المقابلة */
+  it('ورابط تعديل الموعد في صفحة الحساب — والمتابعة بالبريد تدل عليها ولا تحمله', () => {
     expect(STATUS, 'صفحة الحساب تحيله إلى بريده ولا تعطيه الرابط').toContain('rescheduleUrl')
-    expect(LOOKUP).toContain('interviewRescheduleUrl')
+    expect(LOOKUP, 'المتابعة بالبريد تحمل رابط تعديل الموعد').not.toContain('interviewRescheduleUrl')
+    expect(LOOKUP, 'المتابعة بالبريد لا تدل على الحساب').toContain('/join-trainer/status')
     /* والخادمُ يردّه فعلا لصاحب الحساب، وإلّا كان الشرطُ في الشاشة ميّتا */
     expect(
       read('server/services/trainer-application.service.ts'),
