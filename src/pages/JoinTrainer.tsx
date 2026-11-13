@@ -80,7 +80,6 @@ import {
 } from "./join-trainer/options";
 import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
 import { firstTouch } from "@/services/first-touch";
-import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -318,7 +317,7 @@ export default function JoinTrainer() {
   const [lookupResult, setLookupResult] = useState<
     {
       reference: string; label: string; explain: string; status: string
-      hasInterview: boolean; interviewAt: string | null; interviewRescheduleUrl: string | null
+      hasInterview: boolean
       emailVerified: boolean
     } | null
   >(null);
@@ -809,8 +808,7 @@ export default function JoinTrainer() {
       const q = new URLSearchParams({ email: lookup.email.trim().toLowerCase() });
       if (lookup.reference.trim()) q.set("reference", lookup.reference.trim());
       const res = await apiGet<{
-        reference: string; status: string; hasInterview: boolean; interviewAt: string | null
-        interviewRescheduleUrl: string | null; emailVerified: boolean; intakeDeferred?: boolean
+        reference: string; status: string; hasInterview: boolean; emailVerified: boolean; intakeDeferred?: boolean
       }>(
         `/api/v1/trainer-applications/status?${q.toString()}`,
       );
@@ -818,8 +816,7 @@ export default function JoinTrainer() {
       setLookupResult({
         reference: res.reference, label: st?.label ?? res.status,
         explain: res.intakeDeferred ? INTAKE_DEFERRED_EXPLAIN_AR : st?.explain ?? "",
-        status: res.status, hasInterview: res.hasInterview, interviewAt: res.interviewAt,
-        interviewRescheduleUrl: res.interviewRescheduleUrl, emailVerified: res.emailVerified,
+        status: res.status, hasInterview: res.hasInterview, emailVerified: res.emailVerified,
       });
     } catch (err) {
       setLookupError(err instanceof ApiError ? err.message : "تعذر جلب الحالة");
@@ -1935,29 +1932,23 @@ export default function JoinTrainer() {
                   صفحةُ الحالة للمسجَّل تعرضه منذ مدّة؛ وهذه — العامّةُ
                   بالبريد وحدَه — كانت تعرض الزرَّ أو لا شيء. فمن حجز ثمّ عاد
                   ليطمئنّ لا يجد موعدَه، فيحجز ثانيا. */}
-              {lookupResult.hasInterview && lookupResult.interviewAt && (
+              {/* ═══ والموعدُ ورابطُ تعديله في حسابه لا هنا (١٣ نوفمبر ٢٠٢٦) ═══
+
+                  هذه الصفحةُ يكفي فيها البريد، وكانت تعرض الموعدَ ورابطَ Calendly الذي يعدّله ويلغيه — فمن عرف
+                  بريدَ متقدّمٍ ألغى مقابلتَه. فهنا «لك موعد» وبابُ حسابه، وهناك الموعدُ والرابط
+                  (`ApplicantStatus.tsx`). ومن حجز يرى أنّه حجز، فلا يحجز ثانيا. */}
+              {lookupResult.hasInterview && (
                 <Inset tone="positive" className="mt-3">
                   <p className="flex items-center gap-2 text-read leading-5 font-black text-emerald-300">
-                    <CalendarClock className="h-4 w-4" /> موعد لقاء التعارف
+                    <CalendarClock className="h-4 w-4" /> لك موعد لقاء تعارف محجوز
                   </p>
                   <p className="mt-2 text-read leading-6 text-foreground">
-                    {fmtDateTime(new Date(lookupResult.interviewAt))} — عن بعد
+                    سجّل الدخول ببريدك لترى موعدك وتعدّله أو تلغيه.
                   </p>
-                  {/* ═══ ورابطُ التعديل هنا لا في البريد وحدَه ═══
-
-                      كان يُقال «تجدهما في بريدك»، وهو صحيحٌ ولا يكفي: من
-                      يفتح صفحةَ المتابعة إنّما فتحها لأنّه لم يجد الرسالة.
-                      والرابطُ محفوظٌ عندنا منذ المزامنة، فلا نداءَ زائد. */}
-                  {lookupResult.interviewRescheduleUrl ? (
-                    <a href={lookupResult.interviewRescheduleUrl} target="_blank" rel="noopener noreferrer"
-                      className="mt-2 inline-flex items-center gap-1.5 text-read font-bold text-teal-light-ink hover:underline">
-                      <CalendarClock className="h-3.5 w-3.5" /> عدّل موعدك أو ألغه عند Calendly
-                    </a>
-                  ) : (
-                    <p className="mt-1 text-read leading-6 text-muted-foreground">
-                      أرسل Calendly إلى بريدك تفاصيل الاجتماع ورابط تغيير الموعد أو إلغائه.
-                    </p>
-                  )}
+                  <Link to={`/auth?next=${encodeURIComponent("/join-trainer/status")}`}
+                    className="mt-2 inline-flex items-center gap-1.5 text-read font-bold text-teal-light-ink hover:underline">
+                    <CalendarClock className="h-3.5 w-3.5" /> افتح طلبك
+                  </Link>
                   {/* وما يُعمل به قبل الموعد — البابان يقرآن الأسطرَ نفسَها */}
                   <InterviewPrep className="mt-4" />
                 </Inset>

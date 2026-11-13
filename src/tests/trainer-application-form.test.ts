@@ -513,18 +513,20 @@ describe('الحجز يرى لصاحبه، والإطار لا يمرّر داخ
   const card = () => readFileSync(join(root, 'src/components/BookInterview.tsx'), 'utf8')
   const clean = (x: string) => x.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 
-  it('ومتابعة الحالة العامّة تعرض الموعد المحجوز لا زرّ حجز ثان', () => {
-    /* صفحةُ المسجَّل تعرضه منذ مدّة، وشاشةُ الإدارة كذلك (TrainerOps).
-       والعامّةُ — بالبريد وحدَه — كانت تعرض الزرَّ أو لا شيء. */
+  it('ومتابعة الحالة العامّة تقول «لك موعد» لا زرّ حجز ثان — والموعد ورابطه في حسابه', () => {
+    /* صفحةُ المسجَّل تعرضه منذ مدّة، وشاشةُ الإدارة كذلك (TrainerOps). والعامّةُ — بالبريد وحدَه — كانت تعرض الزرَّ
+       أو لا شيء، ثمّ صارت تعرض الموعدَ ورابطَ إلغائه لمن يعرف البريد. فصارت تقول «لك موعد» وتدلّ على حسابه
+       (١٣ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Email shows status only»). */
     const page = read(PAGE)
     const block = page.slice(page.indexOf('lookupResult &&'))
     /* على **الشرط** لا على ورودِ الاسم: تعطيلُ الشرط يُبقي الاسمَ في الوسم
        الميّت، فمرّ الحارسُ وهو منقوض قبل أن يُشدّ. */
-    expect(block, 'عرض الموعد غير مشروط بوجوده — أو حذف الشرط')
-      .toMatch(/lookupResult\.hasInterview && lookupResult\.interviewAt/)
-    expect(block, 'لا يسمّى الموعد لصاحبه').toContain('موعد لقاء التعارف')
+    expect(block, 'عرض الموعد غير مشروط بوجوده — أو حذف الشرط').toMatch(/lookupResult\.hasInterview && \(/)
+    expect(block, 'لا يقال له إن له موعدا').toContain('لك موعد لقاء تعارف محجوز')
+    expect(block, 'لا يدل على حسابه').toContain('/join-trainer/status')
+    expect(block, 'المتابعة بالبريد تعرض الموعد').not.toMatch(/lookupResult\.interviewAt/)
     const svc = readFileSync(join(root, 'server/services/trainer-application.service.ts'), 'utf8')
-    expect(svc, 'الخادم لا يردّ موعد المقابلة').toMatch(/interviewAt: app\.interviews\[0\]\?\.scheduledAt/)
+    expect(svc, 'الخادم يردّ موعد المقابلة في المتابعة العامة').not.toMatch(/interviewAt: app\.interviews\[0\]\?\.scheduledAt/)
   })
 
   it('⚠️ وارتفاع الإطار يتبع محتوى Calendly — لا تمرير داخل تمرير', () => {

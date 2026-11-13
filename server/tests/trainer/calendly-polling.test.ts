@@ -169,13 +169,16 @@ describe('الحجزُ المقروءُ يصير مقابلةً', () => {
     expect(application.status).toBe('interview_scheduled')
   })
 
-  it('⚠️ وصاحبُ الطلب يقرأ رابطَ تعديله في المتابعة العامّة — لا في بريده وحدَه', async () => {
-    /* من يفتح صفحةَ المتابعة إنّما فتحها لأنّه لم يجد رسالةَ Calendly. فلو
-       بقي الرابطُ في القاعدة ولم يخرج إلى الواجهة لم يُغنِ عنه شيئا. */
+  it('⚠️ وصاحبُ الطلب يقرأ رابطَ تعديله في حسابه — والمتابعةُ بالبريد تقول «لك موعد» وحدَها', async () => {
+    /* كان الرابطُ يخرج في المتابعة العامّة، وهي يكفي فيها البريد — فمن عرف بريدَ متقدّمٍ ألغى مقابلتَه
+       (١٣ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Email shows status only»). فصار في حسابه وحدَه. */
     const svc = new TrainerApplicationService(prisma)
     const status = await svc.getPublicStatus(EMAIL, REFERENCE)
     expect(status.hasInterview).toBe(true)
-    expect(status.interviewRescheduleUrl, 'الرابطُ محفوظٌ ولا يصل صاحبَه').toBe(RESCHEDULE_URL)
+    expect(status.interviewRescheduleUrl, 'رابطُ الإلغاء لمن يعرف البريد').toBeNull()
+    const app = await prisma.trainerApplication.findFirstOrThrow({ where: { email: EMAIL } })
+    const interview = await prisma.trainerInterview.findFirstOrThrow({ where: { applicationId: app.id } })
+    expect(interview.rescheduleUrl, 'الرابطُ وصل ولم يُحفظ لحسابه').toBe(RESCHEDULE_URL)
   })
 
   it('وإعادةُ الدورة لا تُنشئ ثانيةً ولا تسأل عن مدعوّي موعدٍ تُعرف حالتُه', async () => {
