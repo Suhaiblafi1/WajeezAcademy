@@ -13,6 +13,7 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import {
   verifySignature, recordDocumentSize, recordSubmissionUpload, readDocumentContent, resolveStorageOwner,
   MAX_UPLOAD_ANY, UPLOADABLE_KINDS, PHOTO_KEY_PREFIX, sniffImageMime, kindRequiresImage,
+  sniffDocumentMime, kindRequiresDocument, inlineSafeMime,
 } from '../../services/storage.service'
 import { assertSafeKey } from '../../services/object-store'
 import { publicTrainerWhere } from '../../services/trainer-visibility'
@@ -323,6 +324,16 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       /* والنوعُ المخزَّنُ ما ثبت من البايتات، لا ما قيل عنها */
       owner.mime = sniffed
     }
+    /* ووثيقةُ المتقدّم PDF أو صورة — بالبايتات لا بالاسم (١٣ نوفمبر ٢٠٢٦، العلّةُ عند `APPLICATION_DOC_MIMES`) */
+    if (kindRequiresDocument(owner.kind)) {
+      const sniffed = sniffDocumentMime(buffer)
+      if (!sniffed) {
+        return reply.status(415).send({
+          error: { code: 'bad_mime', message_ar: 'الملف ليس PDF ولا صورة — الصيغ المقبولة: PDF أو JPEG أو PNG أو WebP' },
+        })
+      }
+      owner.mime = sniffed
+    }
 
     /* النوعُ والاسمُ من السجلّ حيث يعرفهما، وإلّا فمن الطلب نفسِه: ثلاثةٌ من
        النماذج الستّة لا تحمل عمودَ نوعٍ ولا اسمٍ أصليّ. */
@@ -401,8 +412,11 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     const meta = await getObjectMeta(storageKey)
     const mime = meta?.mime || owner.mime || 'application/octet-stream'
     const name = meta?.originalName || owner.originalName || storageKey
-    reply.header('content-type', mime)
-    reply.header('content-disposition', `inline; filename*=UTF-8''${encodeURIComponent(name)}`)
+    /* وما قد يُجري شيئا لا يُفتح في الصفحة — يُنزَّل ملفّا بنوعٍ محايد (`inlineSafeMime`). والحارس:
+       `server/tests/trainer/document-upload-safe.test.ts` */
+    const inline = inlineSafeMime(mime)
+    reply.header('content-type', inline ? mime : 'application/octet-stream')
+    reply.header('content-disposition', `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(name)}`)
     return reply.send(content)
   })
 

@@ -752,9 +752,13 @@ export class AdvisorService {
      والموقوفُ لا يُذكَّر — لا يرى جرسَه؛ وحالتُه تُبلَّغ لمن يُسند فتُنقل. */
 
   /** إسناداتٌ نشطةٌ على حالاتٍ مفتوحة لم يسجّل مستشارُها تواصلا بعدها — الأحدثُ أوّلا */
-  private async uncontactedLinks(assignedAt: { gte?: Date; lte: Date }, take: number) {
+  private async uncontactedLinks(assignedAt: { gte?: Date; lte: Date }, take?: number, pendingOnly = false) {
     const links = await this.prisma.advisorAssignment.findMany({
-      where: { unassignedAt: null, assignedAt, case: { status: { notIn: ['closed', 'enrolled', 'not_interested'] } } },
+      where: {
+        unassignedAt: null, assignedAt, case: { status: { notIn: ['closed', 'enrolled', 'not_interested'] } },
+        /* ما بقي له تذكيرٌ أو إبلاغ — وما خُتم بالاثنين لا يُقرأ ثانية */
+        ...(pendingOnly ? { OR: [{ contactRemindedAt: null }, { contactEscalatedAt: null }] } : {}),
+      },
       select: {
         id: true, caseId: true, advisorId: true, assignedBy: true, assignedAt: true,
         contactRemindedAt: true, contactEscalatedAt: true,
@@ -769,7 +773,7 @@ export class AdvisorService {
         },
       },
       orderBy: { assignedAt: 'desc' },
-      take,
+      ...(take ? { take } : {}),
     })
     return links.filter((l) => l.assignedBy !== l.advisorId
       && !l.case.contactEvents.some((e) => e.createdBy === l.advisorId && e.createdAt >= l.assignedAt))
@@ -786,10 +790,14 @@ export class AdvisorService {
 
   /** دورةُ العامل (`advisor_reminders`) — وكلُّ تذكيرٍ يُختم قبل جرسه، فدورتان لا تذكّران مرّتين */
   async remindDue(now = new Date()): Promise<{ reminded: number; escalated: number; followUps: number }> {
+    /* ═══ النافذةُ كلُّها لا أحدثُ مئتين (١٣ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Read the whole window») ═══
+       كان يُقرأ أحدثُ مئتي إسنادٍ ثمّ يُترك من تُوصِل معه. ففي يومٍ كثيرِ الإسناد — ومتابعةُ المنحة تفتح مئتي حالةٍ في
+       الدورة — كانت أحدثُها تملأ المئتين، ولا يُقرأ ما بلغ يومين فلا يُبلَّغ عنه أحد. فالنافذةُ (سبعةُ أيّام) تُقرأ كلُّها،
+       وما خُتم بالتذكير والإبلاغ معا لا يُقرأ. والحارس: `server/tests/advisors/uncontacted-window.test.ts` */
     const due = await this.uncontactedLinks({
       gte: new Date(now.getTime() - REMIND_WINDOW_DAYS * 24 * HOUR_MS),
       lte: new Date(now.getTime() - REMIND_AFTER_HOURS * HOUR_MS),
-    }, 200)
+    }, undefined, true)
     const nameOf = (c: { client: { displayName: string } | null; lead: { fullName: string | null } | null }) =>
       c.client?.displayName ?? c.lead?.fullName ?? 'عميل'
 

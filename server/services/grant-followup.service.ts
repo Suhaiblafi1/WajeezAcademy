@@ -141,46 +141,59 @@ export async function grantRegistrants(prisma: PrismaClient) {
 /** من لم يشترِ بعد ساعة — حالةٌ عند مستشار ومكالمةٌ مجدولة، مرّةً لكلّ عميل */
 export async function openGrantFollowups(prisma: PrismaClient, now = new Date()): Promise<{ opened: number }> {
   const cutoff = new Date(now.getTime() - GRANT_FOLLOWUP_HOURS * 3_600_000)
-  const leads = await prisma.lead.findMany({
+  const advisors = new AdvisorService(prisma)
+  let opened = 0
+  /* ═══ ويُقرأ ما بعد من اشترى — لا أقدمُ مئتين وحدَهم (١٣ نوفمبر ٢٠٢٦) ═══
+     من اشترى يُتخطّى ولا تُفتح له حالة، فيبقى في أوّل الطابور أبدا. وكانت الدورةُ تقرأ أقدمَ مئتين وحدَهم: فإذا اشترى
+     مئتان من الأوائل امتلأت بهم كلُّ دورة، ولم يُتّصل بعدهم بأحد. فالقراءةُ صفحةً بعد صفحةٍ حتّى تُفتح مئتا حالةٍ أو
+     ينتهي الطابور. قرارُ صاحب المنصّة: «Look past buyers». والحارس: `server/tests/commerce/grant-followup-buyers.test.ts` */
+  const page = (after: string | null) => prisma.lead.findMany({
     where: { campaign: { in: [...GRANT_SLUGS] }, erasedAt: null, createdAt: { lte: cutoff }, cases: { none: {} } },
-    orderBy: { createdAt: 'asc' },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     take: FOLLOWUP_BATCH,
+    ...(after ? { cursor: { id: after }, skip: 1 } : {}),
     select: {
       id: true, email: true, workField: true, careerLevel: true, interests: true, createdAt: true, campaign: true,
       grantPicks: true, influencer: { select: { code: true } },
       grantCode: { select: { coupon: { select: { orders: { where: { status: { in: [...BOUGHT, 'pending_payment'] } }, select: { id: true } } } } } },
     },
   })
-  const paid = await paidEmails(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
-  const advisors = new AdvisorService(prisma)
-  /* وما اختاره من دوراتٍ يقرؤه المستشارُ في حالته قبل أن يتّصل */
-  const titles = await courseTitles(prisma, [...new Set(leads.flatMap((l) => l.grantPicks))])
-  let opened = 0
-  for (const lead of leads) {
-    if ((lead.grantCode?.coupon.orders.length ?? 0) > 0) continue
-    if (lead.email && paid.has(lead.email.toLowerCase())) continue
-    const callAt = grantCallDueAt(lead.createdAt, now)
-    const kase = await prisma.advisorCase.create({
-      data: {
-        leadId: lead.id,
-        nextAction: [
-          lead.campaign === INFLUENCER_GRANT_SLUG
-            ? `اتصل به — عبأ نموذج منحة المؤثرين${lead.influencer ? ` بكود ${lead.influencer.code}` : ''} ولم يشتر بعد`
-            : lead.campaign === OPEN_GRANT_SLUG
-              ? 'اتصل به — عبأ نموذج منحة وجيز العامة ولم يشتر بعد'
-              : 'اتصل به — عبأ نموذج المنحة ولم يشتر بعد',
-          leadProfileAr({ ...lead, picks: lead.grantPicks.map((id) => titles.get(id) ?? id) }),
-        ].filter(Boolean).join(' · '),
-        nextFollowUpAt: callAt,
-        followUps: { create: { scheduledAt: callAt, channel: 'phone', note: 'مكالمة المنحة — خلال ساعتين من النموذج' } },
-      },
-    })
-    await recordAudit(prisma, {
-      action: 'advisor.case.grant_followup', entityType: 'advisor_case', entityId: kase.id,
-      meta: { leadId: lead.id, campaign: lead.campaign },
-    })
-    try { await advisors.autoAssign(kase.id) } catch { /* بلا مستشارٍ متاح: تبقى في «حالات بلا مستشار» */ }
-    opened += 1
+  let cursor: string | null = null
+  for (;;) {
+    const leads = await page(cursor)
+    if (leads.length === 0) break
+    cursor = leads[leads.length - 1].id
+    const paid = await paidEmails(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
+    /* وما اختاره من دوراتٍ يقرؤه المستشارُ في حالته قبل أن يتّصل */
+    const titles = await courseTitles(prisma, [...new Set(leads.flatMap((l) => l.grantPicks))])
+    for (const lead of leads) {
+      if (opened >= FOLLOWUP_BATCH) break
+      if ((lead.grantCode?.coupon.orders.length ?? 0) > 0) continue
+      if (lead.email && paid.has(lead.email.toLowerCase())) continue
+      const callAt = grantCallDueAt(lead.createdAt, now)
+      const kase = await prisma.advisorCase.create({
+        data: {
+          leadId: lead.id,
+          nextAction: [
+            lead.campaign === INFLUENCER_GRANT_SLUG
+              ? `اتصل به — عبأ نموذج منحة المؤثرين${lead.influencer ? ` بكود ${lead.influencer.code}` : ''} ولم يشتر بعد`
+              : lead.campaign === OPEN_GRANT_SLUG
+                ? 'اتصل به — عبأ نموذج منحة وجيز العامة ولم يشتر بعد'
+                : 'اتصل به — عبأ نموذج المنحة ولم يشتر بعد',
+            leadProfileAr({ ...lead, picks: lead.grantPicks.map((id) => titles.get(id) ?? id) }),
+          ].filter(Boolean).join(' · '),
+          nextFollowUpAt: callAt,
+          followUps: { create: { scheduledAt: callAt, channel: 'phone', note: 'مكالمة المنحة — خلال ساعتين من النموذج' } },
+        },
+      })
+      await recordAudit(prisma, {
+        action: 'advisor.case.grant_followup', entityType: 'advisor_case', entityId: kase.id,
+        meta: { leadId: lead.id, campaign: lead.campaign },
+      })
+      try { await advisors.autoAssign(kase.id) } catch { /* بلا مستشارٍ متاح: تبقى في «حالات بلا مستشار» */ }
+      opened += 1
+    }
+    if (opened >= FOLLOWUP_BATCH || leads.length < FOLLOWUP_BATCH) break
   }
   return { opened }
 }
