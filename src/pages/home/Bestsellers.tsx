@@ -254,15 +254,96 @@ export function Bestsellers() {
       <div className="shell">
         <div className="reveal">
           <SectionLabel>مختارات وجيز</SectionLabel>
-          <h2 className="mt-4 text-3xl font-bold md:text-4xl">مسارات ودورات من اختيارنا</h2>
+          <h2 className="mt-4 text-3xl font-bold md:text-4xl">دورات ومسارات من اختيارنا</h2>
           {/* كانت تقول «اختر مجالك أولا» وتحتها فلتر. ذهب الفلتر، فذهبت
               الإحالةُ إليه. ثمّ قُصّرت بقرار صاحب المنصّة (١٢ سبتمبر ٢٠٢٦):
               وصفُ ما تحتها («مثالٌ ثمّ بابان») كانت تقوله البطاقاتُ نفسُها،
               فبقي من الجملة دعوةٌ واحدةٌ صريحةٌ لمن لا يريد التشخيص. */}
           <p className="mt-3 max-w-lg leading-8 text-muted-foreground">
-            لا تريد البدء بالتشخيص؟ اختر المسار الذي يناسبك
+            لا تريد البدء بالتشخيص؟ اختر الدورة التي تناسبك
           </p>
         </div>
+
+        {/* ── الدوراتُ أوّلا ثمّ المسارات (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦) ──
+
+            «ضع الدورات مكان المسارات في الصفحة الرئيسية.. ليبدأ الشخص تصفح الدورات وأسفل يتصفح
+            المسارات». فكان القسمُ: البطاقةُ المميّزةُ (مسار) ثمّ شريطُ المسارات ثمّ «ودورات مفردة».
+            وصار شريطُ الدورات أوّلَه، وتحته «مسارات كاملة»: المميّزةُ ثمّ شريطُها — والمميّزةُ مسارٌ
+            فنزلت مع المسارات، وإلّا لبدأ الزائرُ بمسارٍ لا بدورة. */}
+        {moreCourses.length > 0 && (
+          <div className="reveal mt-8">
+            <h3 className="text-lg font-bold md:text-xl">دورات مفردة</h3>
+            <CategoryFilter counts={crCounts} allCount={crAllCount} active={crCat} onChange={setCrCat} label="تصفية الدورات حسب المجال" />
+            <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
+              {moreCourses.map((b) => (
+                /* ⚠️ `‎/build/:courseId` لا `‎/courses/:id`.
+                   الثاني **ليس مسارا في التطبيق** — كتبتُه في #46 فكانت كلُّ
+                   بطاقةِ دورةٍ رابطا مكسورا على الإنتاج. والكتالوجُ يقصد
+                   `‎/build/` نفسَه: صفحةٌ من هذه الدورة وحدَها. */
+                <Card
+                  key={b.item.id}
+                  as={Link}
+                  to={`/build/${b.item.id}`}
+                  interactive
+                  /* والأرضيّةُ نفسُها لبطاقة الدورة — الشكوى شملتهما معا،
+                     وشريطان متجاوران بكثافتين مختلفتين يُقرآن قائمتين لا
+                     قائمةً واحدةً بابين. وهي أقصرُ قليلا: محتواها أربعةُ
+                     أسطرٍ لا خمسة. */
+                  className="group flex min-h-[17rem] w-[260px] shrink-0 snap-start flex-col gap-3.5 p-5 md:min-h-[19rem] md:w-[310px] md:gap-4 md:p-6"
+                >
+                  <PickBadge note={b.note} fromDomain={b.kind === 'other' ? pathwayDomain(b.item.pathwayId) : undefined} />
+                  <CourseTitle as="h4" name={b.item.name} termEn={b.item.termEn} className="font-bold leading-relaxed" />
+                  {/* الوعدُ — ما يخرج به المتعلّم، وهو ما يُشترى */}
+                  {b.item.promise && (
+                    <p className="line-clamp-3 text-read leading-6 text-muted-foreground">{b.item.promise}</p>
+                  )}
+                  {/* ═══ ورقاقةُ المهارة تصعد، والأسابيعُ تنزل (١٥ سبتمبر ٢٠٢٦) ═══
+
+                      كانت الرقاقةُ ملاصقةً لـ«تفاصيل الدورة» في ذيلٍ واحد.
+                      وهي صندوقٌ باسمٍ طويل («تقييم موثوقية المعلومات»)
+                      فينكسر سطرين إلى جانب اللافتة، فيُقرأ الذيلُ مزدحما.
+
+                      فقال صاحبُ المنصّة: «ضع البوكس الذي فيه الموثوقية في
+                      الأعلى بدل عدد الأسابيع، وعددُ الأسابيع ينزل». وهو
+                      تبديلٌ يصحّ بصريّا: «٢ أسابيع» كلمتان تجاوران اللافتةَ
+                      بلا انكسار، والرقاقةُ تأخذ سطرَها كاملا.
+
+                      وبطاقةُ المسار المجاورةُ ذيلُها سطرٌ واحد لأنّ حجمَها
+                      ثلاثُ حقائق — واختلافُهما مقصود. */}
+                  <span className="w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
+                    {b.item.skill}
+                  </span>
+                  {/* ووجوهُ مدرّبيها فوق الذيل — يهبطان معا (`trainerFacesOf`) */}
+                  <span className="mt-auto grid gap-3">
+                    <TrainerFaces {...trainerFacesOf([b.item.id], cohorts)} />
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="text-read text-muted-foreground">
+                        {b.item.weeks} {b.item.weeks === 1 ? 'أسبوع' : 'أسابيع'}
+                      </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-fine font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
+                        تفاصيل الدورة
+                        <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
+                      </span>
+                    </span>
+                  </span>
+                </Card>
+              ))}
+            </div>
+            <div className="mt-2 flex justify-center">
+              <Link
+                to="/courses"
+                className={`${DOOR} border-white/15 text-muted-foreground hover:border-gold/50 hover:text-gold-ink`}
+              >
+                تصفح كل الدورات
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {(spotlight || morePaths.length > 0) && (
+          <h3 className="reveal mt-12 text-lg font-bold md:text-xl">مسارات كاملة</h3>
+        )}
 
         {/* البطاقة المميزة — اختيار وجيز الأول */}
         {/* ── ولماذا `article` لا `div` ──
@@ -284,7 +365,7 @@ export function Bestsellers() {
             رفيعٌ للأيقونة، وشارةُ «اختيار وجيز» في صفّ العنوان لا معلّقةً فوق
             فراغ. */}
         {spotlight && (
-          <article className="reveal relative mt-8">
+          <article className="reveal relative mt-5">
             <Link
               to={`/pathways/${spotlight.id}`}
               className="group grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-6"
@@ -340,7 +421,7 @@ export function Bestsellers() {
             ٢٠٢٦) ثلاثةً حدًّا أدنى وأربعةً حدًّا أعلى **لكلّ رقاقة** —
             والحسابُ كلُّه في `home-picks.ts` ومعه علّتُه. */}
         {morePaths.length > 0 && (
-          <div className="reveal mt-12">
+          <div className="reveal mt-10">
             <h3 className="text-lg font-bold md:text-xl">مسارات أخرى من اختيارنا</h3>
             <CategoryFilter counts={pwCounts} allCount={pwAllCount} active={pwCat} onChange={setPwCat} label="تصفية المسارات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
@@ -422,77 +503,6 @@ export function Bestsellers() {
                 className={`${DOOR} border-teal/40 text-teal-light-ink hover:bg-teal-deep hover:text-white`}
               >
                 تصفح كل المسارات
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {moreCourses.length > 0 && (
-          <div className="reveal mt-10">
-            <h3 className="text-lg font-bold md:text-xl">ودورات مفردة</h3>
-            <CategoryFilter counts={crCounts} allCount={crAllCount} active={crCat} onChange={setCrCat} label="تصفية الدورات حسب المجال" />
-            <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
-              {moreCourses.map((b) => (
-                /* ⚠️ `‎/build/:courseId` لا `‎/courses/:id`.
-                   الثاني **ليس مسارا في التطبيق** — كتبتُه في #46 فكانت كلُّ
-                   بطاقةِ دورةٍ رابطا مكسورا على الإنتاج. والكتالوجُ يقصد
-                   `‎/build/` نفسَه: صفحةٌ من هذه الدورة وحدَها. */
-                <Card
-                  key={b.item.id}
-                  as={Link}
-                  to={`/build/${b.item.id}`}
-                  interactive
-                  /* والأرضيّةُ نفسُها لبطاقة الدورة — الشكوى شملتهما معا،
-                     وشريطان متجاوران بكثافتين مختلفتين يُقرآن قائمتين لا
-                     قائمةً واحدةً بابين. وهي أقصرُ قليلا: محتواها أربعةُ
-                     أسطرٍ لا خمسة. */
-                  className="group flex min-h-[17rem] w-[260px] shrink-0 snap-start flex-col gap-3.5 p-5 md:min-h-[19rem] md:w-[310px] md:gap-4 md:p-6"
-                >
-                  <PickBadge note={b.note} fromDomain={b.kind === 'other' ? pathwayDomain(b.item.pathwayId) : undefined} />
-                  <CourseTitle as="h4" name={b.item.name} termEn={b.item.termEn} className="font-bold leading-relaxed" />
-                  {/* الوعدُ — ما يخرج به المتعلّم، وهو ما يُشترى */}
-                  {b.item.promise && (
-                    <p className="line-clamp-3 text-read leading-6 text-muted-foreground">{b.item.promise}</p>
-                  )}
-                  {/* ═══ ورقاقةُ المهارة تصعد، والأسابيعُ تنزل (١٥ سبتمبر ٢٠٢٦) ═══
-
-                      كانت الرقاقةُ ملاصقةً لـ«تفاصيل الدورة» في ذيلٍ واحد.
-                      وهي صندوقٌ باسمٍ طويل («تقييم موثوقية المعلومات»)
-                      فينكسر سطرين إلى جانب اللافتة، فيُقرأ الذيلُ مزدحما.
-
-                      فقال صاحبُ المنصّة: «ضع البوكس الذي فيه الموثوقية في
-                      الأعلى بدل عدد الأسابيع، وعددُ الأسابيع ينزل». وهو
-                      تبديلٌ يصحّ بصريّا: «٢ أسابيع» كلمتان تجاوران اللافتةَ
-                      بلا انكسار، والرقاقةُ تأخذ سطرَها كاملا.
-
-                      وبطاقةُ المسار المجاورةُ ذيلُها سطرٌ واحد لأنّ حجمَها
-                      ثلاثُ حقائق — واختلافُهما مقصود. */}
-                  <span className="w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
-                    {b.item.skill}
-                  </span>
-                  {/* ووجوهُ مدرّبيها فوق الذيل — يهبطان معا (`trainerFacesOf`) */}
-                  <span className="mt-auto grid gap-3">
-                    <TrainerFaces {...trainerFacesOf([b.item.id], cohorts)} />
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="text-read text-muted-foreground">
-                        {b.item.weeks} {b.item.weeks === 1 ? 'أسبوع' : 'أسابيع'}
-                      </span>
-                      <span className="inline-flex shrink-0 items-center gap-1 text-fine font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
-                        تفاصيل الدورة
-                        <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
-                      </span>
-                    </span>
-                  </span>
-                </Card>
-              ))}
-            </div>
-            <div className="mt-2 flex justify-center">
-              <Link
-                to="/courses"
-                className={`${DOOR} border-white/15 text-muted-foreground hover:border-gold/50 hover:text-gold-ink`}
-              >
-                تصفح كل الدورات
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </div>

@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { availabilityNoteAr, listedFirst, listedFromResponse, listedOnly, seasonFromResponse, seasonsFromResponse, type ListedCourses } from '@/application/catalog/listed-courses'
+import { SEASON_COURSES_ONLY, availabilityNoteAr, listedFirst, listedFromResponse, listedOnly, seasonFromResponse, seasonsFromResponse, type ListedCourses } from '@/application/catalog/listed-courses'
 
 const rows = [{ id: 'C-A' }, { id: 'C-B' }, { id: 'C-C' }]
 const ready = (ids: string[]): ListedCourses => ({ state: 'ready', ids: new Set(ids) })
@@ -21,6 +21,20 @@ describe('المرشِّح', () => {
 
   it('⚠️ وإن تعذّر الجوابُ فالكتالوجُ كلُّه — لا قسمٌ فارغ', () => {
     expect(listedOnly(rows, { state: 'failed' })).toHaveLength(3)
+  })
+
+  /* «لا تظهر الدورات التي لا تبدأ في فصل الشتاء.. اخفي البقية وذكرني نظهرهم في شهر ١٢» (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦) */
+  it('⚠️ وما شعبُه كلُّها خارج موسم البيع تُخفى — ومن له شعبةٌ فيه يبقى ولو كانت له أخرى بعده', () => {
+    const listed: ListedCourses = {
+      state: 'ready', ids: new Set(['C-A', 'C-B', 'C-C']), season: '2026-nov_jan',
+      seasons: new Map([['C-A', new Set(['2026-nov_jan'])], ['C-B', new Set(['2027-feb_apr'])], ['C-C', new Set(['2026-nov_jan', '2027-may_jul'])]]),
+    }
+    expect(SEASON_COURSES_ONLY, 'عادت الدوراتُ كلُّها قبل أن يقرّر صاحبُ المنصّة').toBe(true)
+    expect(listedOnly(rows, listed).map((r) => r.id)).toEqual(['C-A', 'C-C'])
+  })
+
+  it('وخادمٌ أقدمُ بلا فصولٍ لا يُخفي شيئا له شعبة', () => {
+    expect(listedOnly(rows, { state: 'ready', ids: new Set(['C-A', 'C-B']), season: '2026-nov_jan' }).map((r) => r.id)).toEqual(['C-A', 'C-B'])
   })
 
   it('والجوابُ المعطوبُ لا يُقرأ قائمةً فارغة — بل تعذّرا', () => {

@@ -30,11 +30,21 @@ export type ListedCourses =
       season?: string
     }
 
-/** القائمةُ العامّةُ بلا ما لا شعبةَ له — والترتيبُ كما جاء */
+/* ═══ والدورةُ كالمسار: شعبتُها في موسم البيع (١٣ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «لا تظهر الدورات التي لا تبدأ في فصل الشتاء.. اخفي البقية وذكرني نظهرهم في شهر ١٢».
+   فالقوائمُ العامّةُ كلُّها (الرئيسة و«الكل» والبحث و«من نحن») تُبقي ما له شعبةٌ معروضةٌ في موسم البيع — وهو
+   «2026-nov_jan» يومَ القرار — كما تفعل المساراتُ منذ ٢٨ أكتوبر. والمخفيّةُ صفحتُها باقيةٌ لمن يملك رابطَها.
+   وموسمُ البيع من الخادم (`sellingSeason`)، وخادمٌ أقدمُ بلا فصولٍ يُكتفى فيه بأنّ لها شعبة (`availableThisSeason`).
+
+   والتذكيرُ بإعادتها مضبوطٌ لصاحب المنصّة في ١ ديسمبر ٢٠٢٦، وإعادتُها `false` هنا. */
+export const SEASON_COURSES_ONLY = true
+
+/** القائمةُ العامّةُ بلا ما لا شعبةَ له — ولا ما شعبُه خارج موسم البيع ما دام `SEASON_COURSES_ONLY` — والترتيبُ كما جاء */
 export function listedOnly<T extends { id: string }>(items: readonly T[], listed: ListedCourses): T[] {
   if (listed.state === 'loading') return []
   if (listed.state === 'failed') return [...items]
-  return items.filter((c) => listed.ids.has(c.id))
+  return items.filter((c) => (SEASON_COURSES_ONLY ? availableThisSeason(c.id, listed) === true : listed.ids.has(c.id)))
 }
 
 /* ═══ والمسارُ: يُعرض حين تكون لكلّ دوراته شعبة (٢١ أكتوبر ٢٠٢٦) ═══
