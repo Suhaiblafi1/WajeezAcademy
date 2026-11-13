@@ -21,7 +21,7 @@ import {
   TRAINER_INTAKE_CLOSED, deferredByIntake, intakeClosed, intakeFollowUpAt,
 } from '../../src/application/trainer/intake-closed'
 import { cleanProposals } from '../../src/application/trainer/teachable-proposals'
-import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
+import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES, APPLICATION_DOC_MIMES } from './storage.service'
 import { deleteObject } from './object-store'
 import { PURGEABLE_STATUSES as SHARED_PURGEABLE } from '../../src/application/trainer/purgeable'
 import type { ImpactCohort } from '../../src/application/trainer/purge-impact'
@@ -1071,6 +1071,10 @@ export class TrainerApplicationService {
     const app = await this.resolveCandidate(reference, token)
     const max = MAX_UPLOAD_BYTES[input.kind]
     if (!max) throw new AuthError('bad_kind', 'نوع وثيقة غير مدعوم')
+    /* والصيغةُ من قائمةٍ مغلقة — والبايتاتُ تُسأل عند الرفع (`sniffDocumentMime`) */
+    if (!APPLICATION_DOC_MIMES.includes(input.mime.split(';')[0].trim().toLowerCase())) {
+      throw new AuthError('bad_mime', 'الصيغ المقبولة: PDF أو JPEG أو PNG أو WebP', 415)
+    }
     if (input.sizeBytes <= 0 || input.sizeBytes > max) {
       throw new AuthError('too_large', `حجم الملف يتجاوز الحد المسموح لهذا النوع (${Math.round(max / 1048576)}MB)`, 413)
     }
@@ -1078,7 +1082,7 @@ export class TrainerApplicationService {
     const doc = await this.prisma.trainerApplicationDocument.create({
       data: {
         applicationId: app.id, kind: input.kind, storageKey,
-        originalName: input.originalName.slice(0, 200), mime: input.mime, sizeBytes: input.sizeBytes,
+        originalName: input.originalName.slice(0, 200), mime: input.mime.split(';')[0].trim().toLowerCase(), sizeBytes: input.sizeBytes,
       },
     })
     const exp = Date.now() + SIGNED_URL_TTL_MS
