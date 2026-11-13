@@ -52,11 +52,11 @@ async function cohort() {
     },
   })
 }
-/** عضوٌ عبّأ النموذج قبل `hoursAgo` ساعة */
-async function member(hoursAgo = GRANT_FOLLOWUP_HOURS + 1) {
+/** عضوٌ عبّأ النموذج قبل `hoursAgo` ساعة — و`now` ساعةُ النموذج حين يُقاس ما بعد نهاية الحملة الحقيقيّة */
+async function member(hoursAgo = GRANT_FOLLOWUP_HOURS + 1, now?: Date) {
   seq += 1
   const email = `fu-${seq}-${STAMP}@test.local`
-  const out = await landing.apply({ fullName: `عضو ${seq}`, phone: `0792${String(600000 + seq)}`, email, workField: 'الهندسة' })
+  const out = await landing.apply({ fullName: `عضو ${seq}`, phone: `0792${String(600000 + seq)}`, email, workField: 'الهندسة' }, undefined, now)
   await prisma.lead.update({ where: { id: out.ref }, data: { createdAt: new Date(Date.now() - hoursAgo * HOUR) } })
   return { ref: out.ref, code: out.grant!.code!, email }
 }
@@ -385,6 +385,10 @@ describe('⑧ وتمدد المنحتان إلى 12 نوفمبر — بقرار 
 
 describe('⑨ وبريد «مددنا منحتك» لمن لم يشتر — بقرار صاحب المنصة، مرة لكل عميل', () => {
   const reason = 'قرار صاحب المنصة (1 نوفمبر 2026): تمديد المنحة إلى 12 نوفمبر'
+  /* ساعةُ الاختبار داخلَ التمديد لا ساعةُ الجهاز. كانت النداءاتُ بلا `now` فتقرأ اليومَ الحقيقيّ، والبريدُ لا يخرج
+     بعد نهاية الحملة (`closesAt <= now`) — فاحمرّ الاختبارُ وحدَه حين فات ١٢ نوفمبر (١٣ نوفمبر ٢٠٢٦) وما تغيّر شيء.
+     وما يُرتَّب بالزمن الحقيقيّ — من عبّأ قبل التمديد ومن عبّأ بعده — يبقى بالزمن الحقيقيّ كما كان. */
+  const during = new Date(Date.parse(GRANT_EXTEND_FIX.to) - 6 * HOUR)
   const mails = (to: string) => prisma.outboxMail.findMany({ where: { to, purpose: 'grant.extended' }, orderBy: { createdAt: 'asc' } })
   const mailChannel = (enabled: boolean) => prisma.integrationSetting.upsert({
     where: { provider: 'email' },
@@ -408,17 +412,17 @@ describe('⑨ وبريد «مددنا منحتك» لمن لم يشتر — بق
     await g.update({ closesAt: new Date(GRANT_CLOSE_FIX.to) }, ownerId)
     await prisma.auditEvent.deleteMany({ where: { reason, entityId: c.id } })
     await mailChannel(true)
-    expect((await sendGrantExtendedNotice(prisma)).sent, 'أخبر قبل التمديد').toBe(0)
+    expect((await sendGrantExtendedNotice(prisma, during)).sent, 'أخبر قبل التمديد').toBe(0)
 
     /* مُدّت والقناةُ مفصولة — لا بريد ولا أثر */
     expect(await applyGrantExtendFix(prisma)).toBe(true)
     await mailChannel(false)
-    expect((await sendGrantExtendedNotice(prisma)).mailOff).toBe(true)
+    expect((await sendGrantExtendedNotice(prisma, during)).mailOff).toBe(true)
     expect(await mails(idle.email)).toHaveLength(0)
     expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_reminder', entityId: idle.ref, meta: { path: ['stage'], equals: 'extended' } } })).toBe(0)
 
     await mailChannel(true)
-    expect((await sendGrantExtendedNotice(prisma)).sent).toBeGreaterThanOrEqual(1)
+    expect((await sendGrantExtendedNotice(prisma, during)).sent).toBeGreaterThanOrEqual(1)
     const m = await mails(idle.email)
     expect(m, 'لم يخبر من لم يشتر').toHaveLength(1)
     expect(m[0].subject).toBe(grantExtendedSubjectAr(fmtDateLong(new Date(Date.parse(GRANT_EXTEND_FIX.to) - 1))))
@@ -430,9 +434,9 @@ describe('⑨ وبريد «مددنا منحتك» لمن لم يشتر — بق
     expect(await mails(paying.email), 'أخبر من ينتظر طلبه الدفع').toHaveLength(0)
 
     /* عبّأ بعد التمديد — آخرُ يومٍ أمامه، فلا يُقال له «مددنا». ولا يتكرّر لمن وصله */
-    const late = await member()
+    const late = await member(GRANT_FOLLOWUP_HOURS + 1, during)
     await prisma.lead.update({ where: { id: late.ref }, data: { createdAt: new Date(Date.now() + 1000) } })
-    await runJob(prisma, 'grant_reminders')
+    await runJob(prisma, 'grant_reminders', during)
     expect(await mails(idle.email), 'أخبر مرتين').toHaveLength(1)
     expect(await mails(late.email), 'أخبر من عبأ بعد التمديد').toHaveLength(0)
     await g.update({ closesAt: null }, ownerId)
@@ -451,7 +455,7 @@ describe('⑨ وبريد «مددنا منحتك» لمن لم يشتر — بق
     await inf.update({ closesAt: new Date(GRANT_CLOSE_FIX.to) }, ownerId)
     await prisma.auditEvent.deleteMany({ where: { reason, entityId: c.id } })
     await mailChannel(true)
-    await runJob(prisma, 'grant_reminders')
+    await runJob(prisma, 'grant_reminders', during)
     const m = await mails(email)
     expect(m).toHaveLength(1)
     expect(m[0].text).toContain(code)

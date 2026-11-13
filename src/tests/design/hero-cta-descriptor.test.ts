@@ -2,8 +2,8 @@
 
    ═══ ما يُحرَس ═══
 
-   دعوةُ الصدر «اعرف من أين تبدأ» يتبعها سطرٌ يقول ما يقع بعد النقر
-   («مجاناً · بلا حساب»). والسطرُ ليس زينة: بغيره لا يعرف الزائرُ الجديدُ كم
+   دعوةُ الصدر — رابطُ «منحة وجيز العامة» منذ ١٣ نوفمبر ٢٠٢٦، وكانت «اعرف من أين
+   تبدأ» — يتبعها سطرٌ يقول ما يقع بعد النقر («دقيقة واحدة · كودك فورا»). والسطرُ ليس زينة: بغيره لا يعرف الزائرُ الجديدُ كم
    يُطلب منه ولا إلامَ يُفضي، فيدفع ثمنَ القرار قبل أن يعرف سعرَه.
 
    ═══ ولماذا شجرةُ النحو لا `toMatch` ═══
@@ -19,7 +19,7 @@
    لا عطبٌ يُمنع.
 
    فالمقروءُ هنا **شجرةُ النحو** (`typescript`): يُفتَّش عن دالّة `Hero`،
-   ثمّ عن المرساة التي `href="#diagnostic"` داخلَها — وهي الدعوةُ نفسُها —
+   ثمّ عن الرابط الذي `to={OPEN_GRANT_PATH}` داخلَها — وهو الدعوةُ نفسُها —
    ثمّ يُنظر في إخوتها: أوّلُ عنصرٍ بعدها يجب أن يكون `<p>` وفيه نصٌّ.
 
    والتعاليقُ لا وجودَ لها في الشجرة، فلا تُطابَق. والنصُّ لا يُقاس بحرفه بل
@@ -48,20 +48,20 @@ function find(node: ts.Node, ok: (n: ts.Node) => boolean): ts.Node | undefined {
   return ts.forEachChild(node, (child) => find(child, ok))
 }
 
-/** اسمُ وسمِ العنصر — `a` و`p` وأمثالُهما */
+/** اسمُ وسمِ العنصر — `Link` و`p` وأمثالُهما */
 function tagOf(node: ts.Node): string | null {
   if (ts.isJsxElement(node)) return node.openingElement.tagName.getText(source)
   if (ts.isJsxSelfClosingElement(node)) return node.tagName.getText(source)
   return null
 }
 
-/** قيمةُ خاصّيّةٍ نصّيّة على العنصر — أو `null` إن لم تكن نصّا ساكنا */
-function attr(node: ts.JsxElement, name: string): string | null {
+/** نصُّ التعبير في خاصّيّةٍ على العنصر — `to={OPEN_GRANT_PATH}` يُقرأ `OPEN_GRANT_PATH` — أو `null` */
+function attrExpr(node: ts.JsxElement, name: string): string | null {
   const found = node.openingElement.attributes.properties.find(
     (p): p is ts.JsxAttribute => ts.isJsxAttribute(p) && p.name.getText(source) === name,
   )
   const init = found?.initializer
-  return init && ts.isStringLiteral(init) ? init.text : null
+  return init && ts.isJsxExpression(init) && init.expression ? init.expression.getText(source) : null
 }
 
 /** أهلُ العنصر من العناصر وحدَها — يسقط الفراغُ بين الوسوم والتعاليق */
@@ -78,9 +78,9 @@ describe('السطر تحت دعوة الصدر', () => {
     expect(hero).toBeDefined()
   })
 
-  const cta = hero && find(hero, (n) => ts.isJsxElement(n) && tagOf(n) === 'a' && attr(n, 'href') === '#diagnostic')
+  const cta = hero && find(hero, (n) => ts.isJsxElement(n) && tagOf(n) === 'Link' && attrExpr(n, 'to') === 'OPEN_GRANT_PATH')
 
-  it('وفيها الدعوة — مرساة إلى «مؤشر وجيز»', () => {
+  it('وفيها الدعوة — رابط إلى «منحة وجيز العامة»', () => {
     expect(cta).toBeDefined()
   })
 

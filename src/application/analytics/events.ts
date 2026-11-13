@@ -21,7 +21,10 @@ export const ANALYTICS_EVENTS = [
   'module_video_chapter_opened',
   /* خطوةٌ في مشغّل دروس الوحدة — يقيس أين يتوقّف المتعلّمون فعلا */
   'module_step',
+  /* دعوةُ الهيرو إلى «مؤشر وجيز» — حتّى حلّ محلَّها رابطُ المنحة (١٣ نوفمبر ٢٠٢٦)، ويبقى للسجلّ التاريخيّ */
   'hero_cta_clicked',
+  /* ودعوتُه إلى «منحة وجيز العامة» — حدثٌ باسمه: وجهةٌ أخرى، فلا يُقرأ قياسان باسمٍ واحد */
+  'hero_grant_clicked',
   'mirror_started',
   'mirror_completed',
   'diagnostic_started',
