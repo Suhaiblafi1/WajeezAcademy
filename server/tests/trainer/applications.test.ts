@@ -207,9 +207,10 @@ describe('دورة طلب المدرب', () => {
   })
 
   it('7) رفع وثيقة خاصة برابط موقع، وقراءتها برابط موقع، ورفض توقيع مزور', async () => {
-    const content = Buffer.from('سيرة ذاتية تجريبية — محتوى خاص')
+    /* PDF لا نصّ: وثائقُ الطلب PDF وثلاثُ صورٍ لا غير، والبايتاتُ تُسأل (١٣ نوفمبر ٢٠٢٦ — `document-upload-safe.test.ts`) */
+    const content = Buffer.from('%PDF-1.4\nسيرة ذاتية تجريبية — محتوى خاص\n%%EOF\n')
     const doc = await apps.requestDocumentUpload(reference, candidateToken, {
-      kind: 'cv', originalName: 'cv.txt', mime: 'text/plain', sizeBytes: content.length,
+      kind: 'cv', originalName: 'cv.pdf', mime: 'application/pdf', sizeBytes: content.length,
     })
     expect(doc.uploadUrl).toContain('/api/v1/uploads/')
 

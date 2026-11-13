@@ -37,6 +37,7 @@
 
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
+import pg from 'pg'
 import { JOBS, runJob, type JobResult } from './jobs'
 import { recordBeat } from './heartbeat'
 
@@ -90,6 +91,33 @@ export async function beat(prisma: PrismaClient, startedAt: Date, now = new Date
   }
 }
 
+/* ═══ القفلُ على اتّصالٍ له وحدَه — يبقى ما بقي العامل (١٣ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Dedicated connection») ═══
+
+   `pg_try_advisory_lock` قفلُ جلسة: يعيش ما عاش الاتّصالُ الذي أخذه. وكان يؤخذ من عميل Prisma، وهو بركةُ اتّصالاتٍ
+   تُغلق الخاملَ بعد عشر ثوانٍ — فيسقط القفلُ بين دورتين (ستّون ثانية) ولا يدري أحد، ونسخةٌ ثانيةٌ (نشرٌ يتراكب، أو
+   `--once` باليد) تأخذه وتعمل معها: تذكيرٌ مرّتين وحالةٌ مرّتين. والفكُّ عند التوقّف قد يقع على اتّصالٍ غيرِ الذي أخذه.
+   فالقفلُ على اتّصالٍ مستقلٍّ يُفتح له ويُغلق معه. والحارس: `server/tests/worker/worker-lock.test.ts` */
+export async function acquireWorkerLock(connectionString: string): Promise<{ release: () => Promise<void> } | null> {
+  const client = new pg.Client({ connectionString })
+  await client.connect()
+  /* وإن انقطع الاتّصالُ سقط القفل — فلا يبقى عاملٌ يعمل بلا قفل: يخرج ويُعيده المشرف */
+  client.on('error', (e) => {
+    log(`⚠ انقطع اتّصالُ القفل — نخرج كي لا نعمل بلا قفل: ${e.message}`)
+    process.exit(1)
+  })
+  const { rows } = await client.query<{ locked: boolean }>('SELECT pg_try_advisory_lock($1::bigint) AS locked', [LOCK_KEY])
+  if (!rows[0]?.locked) {
+    await client.end()
+    return null
+  }
+  return {
+    release: async () => {
+      await client.query('SELECT pg_advisory_unlock($1::bigint)', [LOCK_KEY]).catch(() => {})
+      await client.end().catch(() => {})
+    },
+  }
+}
+
 async function main(): Promise<void> {
   if (process.env.WORKER_ENABLED !== 'on') {
     log('غير مفعّل — يشغّل بـ WORKER_ENABLED=on على خادم دائم. لا شيء يعمل الآن.')
@@ -103,9 +131,9 @@ async function main(): Promise<void> {
   }
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) })
 
-  /* القفلُ غيرُ الحاجب: إن كانت نسخةٌ أخرى تعمل، نخرج بلا ضجيج */
-  const [{ locked }] = await prisma.$queryRaw<{ locked: boolean }[]>`SELECT pg_try_advisory_lock(${LOCK_KEY}::bigint) AS locked`
-  if (!locked) {
+  /* القفلُ غيرُ الحاجب: إن كانت نسخةٌ أخرى تعمل، نخرج بلا ضجيج — وعلى اتّصالٍ له وحدَه (`acquireWorkerLock`) */
+  const lock = await acquireWorkerLock(url)
+  if (!lock) {
     log('نسخة أخرى من العامل تعمل بالفعل — نخرج.')
     await prisma.$disconnect()
     return
@@ -120,7 +148,7 @@ async function main(): Promise<void> {
     const results = await tick(prisma, lastRun)
     for (const r of results) log(`${r.job}: ${r.summaryAr}`)
     await beat(prisma, startedAt)
-    await prisma.$queryRaw`SELECT pg_advisory_unlock(${LOCK_KEY}::bigint)`
+    await lock.release()
     await prisma.$disconnect()
     return
   }
@@ -131,7 +159,7 @@ async function main(): Promise<void> {
     stopping = true
     log('توقّف مرتّب — ننهي الدورة الحاليّة ونفرج عن القفل.')
     clearInterval(timer)
-    await prisma.$queryRaw`SELECT pg_advisory_unlock(${LOCK_KEY}::bigint)`.catch(() => {})
+    await lock.release()
     await prisma.$disconnect().catch(() => {})
   }
   process.on('SIGTERM', () => void stop())

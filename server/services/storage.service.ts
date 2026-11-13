@@ -149,8 +149,9 @@ export const MAX_UPLOAD_ANY = 4 * 1024 * 1024
    ملفّ الوصف ويُعاد في `content-type` عند القراءة. فمن رفع HTML وسمّاه كذلك
    يُخدَم HTML من أصل الواجهة.
 
-   وذاك دَينٌ قائمٌ في مساره، **وهذا مسارٌ جديدٌ لا يُبنى عليه**: وثيقةُ
-   الهويّة تُفتح أمام موظّفٍ في لوحته، فصيغُها ثلاثُ صورٍ وPDF لا غير. */
+   وذاك كان دَينا قائما في مساره، **وهذا مسارٌ جديدٌ لا يُبنى عليه**: وثيقةُ
+   الهويّة تُفتح أمام موظّفٍ في لوحته، فصيغُها ثلاثُ صورٍ وPDF لا غير.
+   وسُدّ الدَّينُ (١٣ نوفمبر ٢٠٢٦): وثائقُ الطلب على هذه القائمة نفسِها (`APPLICATION_DOC_MIMES` أدناه). */
 export const MAX_CONTRACT_DOC_BYTES = 4 * 1024 * 1024
 export const IDENTITY_MIMES = [
   'image/jpeg', 'image/png', 'image/webp', 'application/pdf',
@@ -468,4 +469,34 @@ export async function readDocumentContent(
   })
   if (!row?.content) return null
   return Buffer.from(row.content)
+}
+
+/* ═══ وثائقُ المتقدّم: PDF وثلاثُ صورٍ لا غير — والبايتاتُ تُسأل (١٣ نوفمبر ٢٠٢٦) ═══
+
+   كان القسمُ الأوّلُ يقبل أيَّ `mime` يعلنه الرافع، ويُخدَم المعلَنُ عند القراءة. فمن تقدّم بلا حسابٍ رفع صفحةَ HTML
+   وسمّاها سيرتَه، فإذا فتحها المراجعُ جرى ما فيها في جلسته — يعتمد ويغيّر الأجرَ ويقرأ. وجُرّب فجرى. والنموذجُ نفسُه
+   لا يعرض غيرَ PDF والصور (`src/pages/join-trainer/options.ts`). قرارُ صاحب المنصّة: «PDF + images only». */
+export const APPLICATION_DOC_MIMES: readonly string[] = IDENTITY_MIMES
+
+/** نوعُ الوثيقة من بايتاتها — PDF أو إحدى الصور الثلاث — أو `null` */
+export function sniffDocumentMime(buffer: Buffer): string | null {
+  if (buffer.length >= 5 && buffer.toString('ascii', 0, 5) === '%PDF-') return 'application/pdf'
+  return sniffImageMime(buffer)
+}
+
+/** الأنواعُ التي لا يُقبل فيها إلّا ما ثبت أنّه PDF أو صورة */
+export function kindRequiresDocument(kind: StorageOwnerKind): boolean {
+  return kind === 'trainer_document'
+}
+
+/* ═══ وما يُفتح في المتصفّح عند القراءة — لكلّ ملفٍّ أيّا كان صاحبُه ═══
+
+   مسارُ القراءة يخدم ستّةَ أصحاب: وثائقَ المتقدّم وتسليماتِ المتعلّم وموادَّ الشعبة والتسجيلاتِ وغيرَها. وما رُفع قبل
+   الحارس أعلاه — أو من بابٍ لا يسأل البايتات، كتسليمِ متعلّمٍ يفتحه مدرّبُه — قد يحمل HTML أو SVG بسكربت. فلا يُفتح في
+   الصفحة إلّا ما لا يُجري شيئا: PDF والصورُ النقطيّة والصوتُ والفيديو. وما سواه يُنزَّل ملفّا بنوعٍ محايد. */
+export function inlineSafeMime(mime: string): boolean {
+  const m = mime.split(';')[0].trim().toLowerCase()
+  return m === 'application/pdf'
+    || ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(m)
+    || /^(video|audio)\/[a-z0-9.+-]+$/.test(m)
 }
