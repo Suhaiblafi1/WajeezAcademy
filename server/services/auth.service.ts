@@ -5,7 +5,7 @@
 
 import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient, User } from '@prisma/client'
 import { MAIL_LINK_TTL_MS, RESET_LINK_TTL_MS } from '../../src/application/links/mail-link-window'
 import { linkLeadsAfterVerification } from './lead-link'
 import { proveApplicationFromAccount } from './email-proof'
@@ -203,6 +203,23 @@ export class AuthService {
 
   /** دخول — يسجل المحاولة دائما، ولا يكشف هل البريد موجود، وله ثلاثةُ سقوف (أعلاه) */
   async login(email: string, password: string, ip?: string, userAgent?: string): Promise<{ token: string; expiresAt: Date }> {
+    const { user, ok } = await this.checkPassword(email, password, ip)
+    if (!user || !ok) throw new AuthError('bad_credentials', GENERIC_LOGIN_FAIL, 401)
+    if (user.status !== 'active') throw new AuthError('account_suspended', 'هذا الحساب موقوف — تواصل مع الدعم', 403)
+    const token = newToken()
+    const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 86400_000)
+    await this.prisma.session.create({
+      data: { userId: user.id, tokenHash: sha256(token), expiresAt, ip, userAgent, lastSeenAt: new Date() },
+    })
+    return { token, expiresAt }
+  }
+
+  /* ═══ فحصُ كلمة مرورٍ لحسابٍ قائم — بسقوف الدخول وسجلِّه، أيّا كان الباب (١٣ نوفمبر ٢٠٢٦) ═══
+     كان نموذجُ «انضم كمدرّب» يقارن الكلمةَ بكلمة الحساب القائم بنفسه: لا سقفَ للبريد ولا سجلّ، وحدُّه حدُّ المسار
+     لكلّ شبكة. فمن بدّل شبكاتِه خمّن كلمةَ أيّ حسابٍ بلا قفل — وجُرّب: أربعون تخمينا خاطئا مرّت، ثمّ الصحيحةُ قُبلت،
+     وسجلُّ الدخول فارغ. فكلُّ بابٍ يقارن كلمةً يمرّ من هنا (قرارُ صاحب المنصّة «Same limits as login»): الإخفاقُ
+     يُعدّ مع إخفاق الدخول ويُقفَل معه. والحارس: `server/tests/auth/password-check-throttle.test.ts` */
+  async checkPassword(email: string, password: string, ip?: string): Promise<{ user: User | null; ok: boolean }> {
     const normalized = email.trim().toLowerCase()
 
     /* السقوفُ الثلاثة تُقاس على النافذة نفسِها، وتُعدُّ معا في رحلةٍ واحدة.
@@ -231,14 +248,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email: normalized } })
     const ok = user ? await bcrypt.compare(password, user.passwordHash) : false
     await this.prisma.loginAttempt.create({ data: { email: normalized, ip, success: ok } })
-    if (!user || !ok) throw new AuthError('bad_credentials', GENERIC_LOGIN_FAIL, 401)
-    if (user.status !== 'active') throw new AuthError('account_suspended', 'هذا الحساب موقوف — تواصل مع الدعم', 403)
-    const token = newToken()
-    const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 86400_000)
-    await this.prisma.session.create({
-      data: { userId: user.id, tokenHash: sha256(token), expiresAt, ip, userAgent, lastSeenAt: new Date() },
-    })
-    return { token, expiresAt }
+    return { user, ok }
   }
 
   /** يحلّ رمز الجلسة إلى سياق مستخدم كامل الصلاحيات — يُستدعى في كل طلب محمي */

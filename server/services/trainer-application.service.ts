@@ -8,7 +8,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
-import { AuthError } from './auth.service'
+import { AuthError, AuthService } from './auth.service'
 import { retireOrphanPrepCohorts } from './prep-cohort-cleanup'
 import { recordAudit } from './audit'
 import { LIVE_INTERVIEW } from './trainer-interview-state'
@@ -301,6 +301,8 @@ const VERIFY_TTL_MS = MAIL_LINK_TTL_MS
 
 export interface Phase1Input {
   fullName: string
+  /** شبكةُ المتقدّم — تُعدّ عليها إخفاقاتُ كلمة الحساب القائم كما تُعدّ في الدخول */
+  ip?: string
   /** من أين جاء — كما أرسله المتصفّح، ويُنظَّف عند الكتابة (`signup-source.service.ts`) */
   source?: unknown
   email: string
@@ -396,7 +398,8 @@ export class TrainerApplicationService {
     /* الحساب: قائمٌ فكلمتُه، أو جديدٌ بكلمته */
     const user = await this.prisma.user.findUnique({ where: { email } })
     if (user) {
-      const ok = await bcrypt.compare(input.password, user.passwordHash)
+      /* بسقوف الدخول وسجلِّه لا بمقارنةٍ هنا — وإلّا صار النموذجُ بابَ تخمينٍ بلا قفل (`AuthService.checkPassword`) */
+      const { ok } = await new AuthService(this.prisma).checkPassword(email, input.password, input.ip)
       if (!ok) {
         throw new AuthError(
           'email_taken',

@@ -100,6 +100,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     }).parse(req.body)
     const result = await svc.submitPhase1({
       ...body,
+      ip: req.ip,
       linkedinUrl: body.linkedinUrl || undefined,
       youtubeUrl: body.youtubeUrl || undefined,
       instagramUrl: body.instagramUrl || undefined,
