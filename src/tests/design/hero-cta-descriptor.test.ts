@@ -1,10 +1,11 @@
-/* حارسُ السطر تحت دعوة الصدر — على البنية لا على الحرف.
+/* حارسُ دعوة الصدر — على البنية لا على الحرف.
 
    ═══ ما يُحرَس ═══
 
-   دعوةُ الصدر — رابطُ «منحة وجيز العامة» منذ ١٣ نوفمبر ٢٠٢٦، وكانت «اعرف من أين
-   تبدأ» — يتبعها سطرٌ يقول ما يقع بعد النقر («دقيقة واحدة · كودك فورا»). والسطرُ ليس زينة: بغيره لا يعرف الزائرُ الجديدُ كم
-   يُطلب منه ولا إلامَ يُفضي، فيدفع ثمنَ القرار قبل أن يعرف سعرَه.
+   دعوةُ الصدر رابطُ «منحة وجيز العامة» منذ ١٣ نوفمبر ٢٠٢٦ (وكانت «اعرف من أين تبدأ»). وكان يتبعها سطرٌ يقول ما
+   يقع بعد النقر («دقيقة واحدة · كودك فورا»)، ونصُّها «احصل على منحة 50%». ثمّ قال صاحبُ المنصّة في اليوم نفسِه:
+   «لا تقل احصل على منحة.. اجعل العنوان "ابدأ من هنا" واحذف دقيقة واحدة كودك فورا». فالمحروسُ الآن: الزرُّ لا يَعِد
+   بمنحةٍ ولا نسبة، ويليه الزرُّ الثانويُّ بلا سطرٍ بينهما.
 
    ═══ ولماذا شجرةُ النحو لا `toMatch` ═══
 
@@ -20,10 +21,10 @@
 
    فالمقروءُ هنا **شجرةُ النحو** (`typescript`): يُفتَّش عن دالّة `Hero`،
    ثمّ عن الرابط الذي `to={OPEN_GRANT_PATH}` داخلَها — وهو الدعوةُ نفسُها —
-   ثمّ يُنظر في إخوتها: أوّلُ عنصرٍ بعدها يجب أن يكون `<p>` وفيه نصٌّ.
+   ثمّ يُقرأ نصُّها من عُقَد النصّ فيها، ويُنظر في إخوتها: أوّلُ عنصرٍ بعدها الزرُّ الثانويّ لا `<p>`.
 
    والتعاليقُ لا وجودَ لها في الشجرة، فلا تُطابَق. والنصُّ لا يُقاس بحرفه بل
-   بوجوده. والموضعُ يُقاس بالأخوّة والترتيب لا بقربِ السطور. */
+   بما يَعِد به. والموضعُ يُقاس بالأخوّة والترتيب لا بقربِ السطور. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -71,7 +72,7 @@ function elementSiblings(node: ts.Node): ts.Node[] {
   return parent.children.filter((c) => tagOf(c) !== null)
 }
 
-describe('السطر تحت دعوة الصدر', () => {
+describe('دعوة الصدر — «ابدأ من هنا» بلا سطر تحتها', () => {
   const hero = find(source, (n) => ts.isFunctionDeclaration(n) && n.name?.getText(source) === 'Hero')
 
   it('ودالّة الصدر موجودة — وإلّا فالحارس يحرس العدم', () => {
@@ -79,28 +80,31 @@ describe('السطر تحت دعوة الصدر', () => {
   })
 
   const cta = hero && find(hero, (n) => ts.isJsxElement(n) && tagOf(n) === 'Link' && attrExpr(n, 'to') === 'OPEN_GRANT_PATH')
+  const label = () => (cta as ts.JsxElement).children.filter(ts.isJsxText).map((t) => t.text.trim()).join(' ').trim()
 
   it('وفيها الدعوة — رابط إلى «منحة وجيز العامة»', () => {
     expect(cta).toBeDefined()
   })
 
-  it('ويتبعها عنصر `p` مباشرة — لا قبلها ولا عنصر آخر بينهما', () => {
+  /* «لا تقل احصل على منحة.. اجعل العنوان "ابدأ من هنا"» — صاحب المنصّة (١٣ نوفمبر ٢٠٢٦). والمحروسُ القرارُ لا حرفُه:
+     الزرُّ لا يَعِد بمنحةٍ ولا نسبة، ونصُّه يُقرأ. فتغييرُ الكلمات بعدُ حقُّه، والحارسُ لا يحمرّ عليه */
+  it('⚠️ ونصُّها لا يقول «منحة» ولا نسبة — ويُقرأ', () => {
+    expect(label().length, 'زرٌّ بلا نصّ').toBeGreaterThan(0)
+    expect(label(), 'عاد الزرُّ يقول منحة').not.toMatch(/منح/)
+    expect((cta as ts.JsxElement).children.some(ts.isJsxExpression), 'نسبةٌ أو تعبيرٌ في نصّ الزرّ').toBe(false)
+  })
+
+  /* «واحذف دقيقة واحدة · كودك فورا» — القرارُ نفسُه. فيلي الدعوةَ الزرُّ الثانويّ رأسا، لا سطرٌ بينهما */
+  it('⚠️ ويتبعها الزرّ الثانويّ مباشرة — لا سطر تحتها', () => {
     const siblings = elementSiblings(cta!)
     const at = siblings.indexOf(cta!)
     expect(at).toBeGreaterThanOrEqual(0)
-
-    const next = siblings[at + 1]
+    const next = siblings[at + 1] as ts.JsxElement | undefined
     expect(next, 'لا عنصر بعد الدعوة').toBeDefined()
-    expect(tagOf(next!)).toBe('p')
-  })
-
-  it('وفي السطر نصّ يقرأ — لا وسم فارغ', () => {
-    const siblings = elementSiblings(cta!)
-    const next = siblings[siblings.indexOf(cta!) + 1] as ts.JsxElement
-    const text = next.children
-      .filter(ts.isJsxText)
-      .map((t) => t.text.trim())
-      .join('')
-    expect(text.length).toBeGreaterThan(0)
+    expect(tagOf(next!), 'عاد سطرٌ تحت الدعوة').not.toBe('p')
+    const to = next!.openingElement.attributes.properties.find(
+      (p): p is ts.JsxAttribute => ts.isJsxAttribute(p) && p.name.getText(source) === 'to',
+    )?.initializer
+    expect(to && ts.isStringLiteral(to) ? to.text : null, 'ما يلي الدعوةَ ليس «جرب التشخيص الذكي»').toBe('/diagnostic')
   })
 })

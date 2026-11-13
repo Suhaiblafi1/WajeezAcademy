@@ -90,7 +90,8 @@ describe('متنُ الاتفاقية يُعرض بخطِّ قراءةٍ لا ب
     expect(read(DOCUMENT)).toMatch(/className="contract-doc contract-prose(?: [^"]*)?"/)
   })
 
-  it('ولا يُترك للمتصفّح خطُّه: الصنفُ معرَّفٌ في ورقة النمط وأوّلُ خطوطه Avenir Arabic', () => {
+  /* وأوّلُ خطوطه Tajawal — خطُّ الموقع كلِّه بقرار صاحب المنصّة (١٣ نوفمبر ٢٠٢٦). وكان Avenir Arabic ولم تُرفع ملفّاتُه للويب */
+  it('ولا يُترك للمتصفّح خطُّه: الصنفُ معرَّفٌ في ورقة النمط وأوّلُ خطوطه Tajawal', () => {
     /* والتعليقاتُ تُنزَع أوّلا: تعليقُ القاعدة يشرح لمَ هي قاعدةٌ ثانيةٌ لا
        قائمةُ مُحدِّدات، فيسوق في سياقه `{ … }` — ولو قُرئ النصُّ خاما لَوقع
        الفاصلُ داخلَ التعليق فلم تُقرأ القاعدةُ أصلا. */
@@ -102,13 +103,12 @@ describe('متنُ الاتفاقية يُعرض بخطِّ قراءةٍ لا ب
     const body = rule![2]
     const family = /font-family:\s*([^;]+);/.exec(body)
     expect(family, 'الصنفُ معرَّفٌ بلا `font-family` — فلا يغيّر شيئا').toBeTruthy()
-    expect(family![1].trim().startsWith('"Avenir Arabic"'), `أوّلُ الخطوط ليس Avenir Arabic: ${family![1]}`).toBe(true)
+    expect(family![1].trim().startsWith('"Tajawal"'), `أوّلُ الخطوط ليس Tajawal: ${family![1]}`).toBe(true)
   })
 
   it('والخطُّ محمَّلٌ فعلا — لا اسمٌ يرتدّ عنه المتصفّحُ صامتا', () => {
-    const css = read('src/index.css')
-    const faces = [...css.matchAll(/@font-face\s*\{[^}]*font-family:\s*"Avenir Arabic"[^}]*\}/g)]
-    expect(faces.length, 'لا `@font-face` لـAvenir Arabic — فالاسمُ وحدَه لا يجلب خطّا').toBeGreaterThan(0)
+    /* يطلبه رابطُ Google Fonts في رأس الصفحة — فالاسمُ وحدَه لا يجلب خطّا */
+    expect(read('index.html'), 'رابطُ الخطوط لا يطلب Tajawal').toMatch(/fonts\.googleapis\.com\/css2\?[^"]*family=Tajawal:wght@/)
   })
 
   it('ولا يُنقَض المكسبُ بصنفِ خطِّ شيفرةٍ على الوثيقة نفسِها', () => {

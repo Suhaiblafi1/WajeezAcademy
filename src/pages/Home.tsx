@@ -39,7 +39,7 @@ import ProofBand from '@/components/ProofBand'
 import { Card, Panel, Inset } from '@/components/ui/Surface'
 import { waHref, whatsAppFor } from '@/application/site/whatsapp'
 import { useWhatsAppNumbers } from '@/services/whatsapp'
-import { OPEN_GRANT_DEFAULTS, OPEN_GRANT_PATH } from '@/application/commerce/grant'
+import { OPEN_GRANT_PATH } from '@/application/commerce/grant'
 
 /* «مؤشر وجيز» — سؤالا وعيٍ مستقلّان (البند ٥٧): يُحفظان محليا على جهاز الزائر
    فقط، ولا يغذّيان التشخيص إلّا `m4` — وهو الذي يوفّر سؤالا في التشخيص فعلا
@@ -230,31 +230,20 @@ function Hero() {
           {/* ── الدعوةُ الأولى: «منحة وجيز العامة» (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦) ──
 
               كانت «اعرف من أين تبدأ» مرساةً إلى «مؤشر وجيز» في الصفحة نفسِها،
-              فأمر صاحبُ المنصّة أن يحلّ محلَّها رابطُ المنحة العامّة بـ٥٠٪ (`/grant/open`)،
+              فأمر صاحبُ المنصّة أن يحلّ محلَّها رابطُ المنحة العامّة (`/grant/open`)،
               وأن ينزل التشخيصُ إلى الزرّ الثانويّ.
 
-              والنسبةُ من `OPEN_GRANT_DEFAULTS` لا من صفّ الحملة: الصفُّ يُقرأ
-              بطلبٍ يجمع دوراتِ الفصل كلَّها (`view()`)، وهو أثقلُ من أن يُطلب في كلّ
-              فتحٍ للرئيسة. فمن غيّر نسبتَها من اللوحة غيّرها هنا معها. */}
+              ثمّ قال في اليوم نفسِه: «لا تقل احصل على منحة.. اجعل العنوان "ابدأ من هنا"
+              واحذف دقيقة واحدة كودك فورا». فالزرُّ «ابدأ من هنا» بلا نسبةٍ ولا سطرٍ تحته،
+              ووجهتُه المنحةُ كما هي — ويحرسه `hero-cta-descriptor.test.ts`. */}
           <Link
             to={OPEN_GRANT_PATH}
             onClick={() => track('hero_grant_clicked')}
             className="group btn-teal w-full px-10 py-3.5 text-base shadow-[0_0_40px_-8px_#38A7B4] sm:w-auto sm:py-4 sm:text-lg"
           >
-            احصل على منحة {OPEN_GRANT_DEFAULTS.percentOff}%
+            ابدأ من هنا
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           </Link>
-          {/* ── السطرُ تحت الدعوة: ما يقع بعد النقر ──
-
-              بغيره لا يعرف الزائرُ الجديدُ كم يُطلب منه ولا إلامَ يُفضي — فيدفع
-              ثمنَ القرار قبل أن يعرف سعرَه.
-
-              **والنصُّ يُقاس بوجهة الزرّ لا بما نتمنّاه:** صفحةُ المنحة نموذجٌ
-              قصيرٌ يعطي الكودَ فورا، وهي تقول عن نفسها «دقيقة واحدة، وتأخذ كود
-              منحتك فورا» — فالسطرُ هنا لا يعِد بأكثرَ منها. */}
-          <p className="mt-2.5 text-read leading-5 text-muted-foreground">
-            دقيقة واحدة · كودك فورا
-          </p>
           {/* الفعلُ الثانويّ يجب أن يُرى فعلا: حدٌّ خفيفٌ بحشوٍ ظاهر، زرٌّ هادئٌ
               إلى جانب الدعوة لا يزاحمها — فالخطُّ تحت النصّ وحدَه لا يظهر إلّا
               بالتحويم، وهو ما لا يقع على الهاتف أصلا.
@@ -265,7 +254,7 @@ function Hero() {
               الذكي» في الموقع كلِّه رابطُه `/diagnostic`. */}
           <Link
             to="/diagnostic"
-            className="mt-3.5 inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:bg-teal/[0.07] hover:text-teal-light-ink"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:bg-teal/[0.07] hover:text-teal-light-ink"
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span className="underline-offset-4 hover:underline">جرب التشخيص الذكي</span>

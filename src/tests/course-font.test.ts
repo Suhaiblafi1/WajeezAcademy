@@ -55,9 +55,20 @@ function licenceRecords(file: string): string[] {
 }
 const isOfl = (file: string) => licenceRecords(file).some((t) => /SIL Open Font License/i.test(t))
 
-const FAMILY = '"Avenir Arabic"'
-/* الارتداد الذي تُقرأ به الصفحة اليوم — لا ملفّ في public/fonts بعد */
+/* خطُّ الموقع كلِّه — Tajawal بقرار صاحب المنصّة (١٣ نوفمبر ٢٠٢٦). وكان Avenir Arabic للمتن وحدَه، ولم تُرفع
+   ملفّاتُه المرخّصةُ للويب قطّ. وTajawal مرخّصٌ OFL ويُحمَّل من Google Fonts كما كان خطُّ الواجهة قبله */
+const FAMILY = '"Tajawal"'
+/* الارتدادُ العربيّ بعده — إن تعذّر تحميلُه */
 const FALLBACK = '"IBM Plex Sans Arabic"'
+
+/** أوزانُ الخطّ التي يطلبها رابطُ Google Fonts في index.html — و`null` إن لم يُطلب أصلا */
+function linkedWeights(family: string): number[] | null {
+  const href = /href="(https:\/\/fonts\.googleapis\.com\/css2\?[^"]+)"/.exec(read('index.html'))?.[1]
+  if (!href) return null
+  const spec = new URL(href.replace(/&amp;/g, '&')).searchParams.getAll('family').find((f) => f.split(':')[0] === family)
+  if (!spec) return null
+  return (spec.split('wght@')[1] ?? '').split(';').map(Number).filter((n) => n > 0)
+}
 
 describe('خطّ متن الدورة', () => {
   it('الصنف معرّف مرّة واحدة، وأوّله الخطّ وبعده ارتداد عربيّ', () => {
@@ -72,17 +83,22 @@ describe('خطّ متن الدورة', () => {
     expect(faces.slice(1), 'لا ارتداد عربيّ بعده').toContain(FALLBACK)
   })
 
-  it('كلّ @font-face للخطّ يشير إلى woff2 محلّيّ ولا يحجب النصّ', () => {
-    const css = read('src/index.css')
-    const blocks = (css.match(/@font-face\s*\{[^}]*\}/g) ?? []).filter((b) => b.includes(FAMILY))
-    expect(blocks.length, 'لا @font-face للخطّ').toBeGreaterThan(0)
+  it('والخطُّ محمَّلٌ فعلا — رابطُ الصفحة يطلبه بأوزانه، ولا يحجب النصّ', () => {
+    /* اسمٌ في المكدّس بلا تحميلٍ يرتدّ عنه المتصفّحُ صامتا — وهو ما كان مع Avenir Arabic بلا ملفّاته */
+    const weights = linkedWeights('Tajawal')
+    expect(weights, 'رابطُ Google Fonts لا يطلب Tajawal').not.toBeNull()
+    for (const w of [400, 500, 700, 900]) expect(weights, `الوزن ${w} غير مطلوب`).toContain(w)
+    /* بلا swap يبقى النصُّ غيرَ مرئيّ حتى يصل الخطّ — أو أبدا لو لم يصل */
+    expect(read('index.html')).toMatch(/fonts\.googleapis\.com\/css2\?[^"]*display=swap/)
+  })
 
-    for (const b of blocks) {
-      const src = /src:\s*([^;}]+)/.exec(b)?.[1] ?? ''
-      expect(src, `مصدر ليس woff2 محلّيّا: ${src}`).toMatch(/url\("\/fonts\/[\w.-]+\.woff2"\)/)
-      /* بلا swap يبقى المتن غيرَ مرئيّ حتى يصل الملفّ — أو أبدا لو لم يصل */
-      expect(b, 'font-display: swap مفقود').toMatch(/font-display:\s*swap/)
-    }
+  it('⚠️ والموقعُ كلُّه بالخطّ نفسِه — body أوّلُ خطوطه Tajawal', () => {
+    /* «حوّل خطَّ الموقع كاملا» — قرارُ صاحب المنصّة (١٣ نوفمبر ٢٠٢٦) */
+    const css = read('src/index.css').replace(/\/\*[\s\S]*?\*\//g, '')
+    const body = /\bbody\s*\{[^}]*font-family:\s*([^;}]+)/.exec(css)?.[1]?.trim()
+    expect(body, 'body بلا font-family').toBeTruthy()
+    expect(body!.split(',')[0].trim(), `أوّلُ خطوط الموقع: ${body}`).toBe(FAMILY)
+    expect(read('src/components/trainer/share-art.ts'), 'صورُ المشاركة بخطٍّ آخر').toMatch(/const FONT = '"Tajawal"/)
   })
 
   it('الصنف على حاوية المتن وحدها لا على الواجهة', () => {

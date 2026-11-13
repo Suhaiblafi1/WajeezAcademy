@@ -45,7 +45,8 @@ const SIZE: Record<ArtKind, [number, number]> = {
 }
 
 export const C = { paper: '#F5F3EE', ink: '#1F2A2E', muted: '#5C6B70', teal: '#38A7B4', tealInk: '#1A5C64', gold: '#FABC05', white: '#FFFFFF', live: '#E5484D' }
-const FONT = '"Avenir Arabic", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif'
+/* خطُّ الموقع نفسُه (Tajawal، ١٣ نوفمبر ٢٠٢٦) — فالصورةُ المشارَكةُ تشبه الصفحةَ التي تدلّ عليها */
+const FONT = '"Tajawal", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif'
 export const font = (weight: number, px: number) => `${weight} ${px}px ${FONT}`
 
 /** المزايا — ممّا تقدّمه المنصّةُ فعلا: البثُّ على Zoom، والتسجيلُ في «مصادر هذه المرحلة»، والشهادةُ الموثّقةُ بشروط إنجاز */
