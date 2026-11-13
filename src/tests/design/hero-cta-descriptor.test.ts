@@ -5,7 +5,7 @@
    دعوةُ الصدر رابطُ «منحة وجيز العامة» منذ ١٣ نوفمبر ٢٠٢٦ (وكانت «اعرف من أين تبدأ»). وكان يتبعها سطرٌ يقول ما
    يقع بعد النقر («دقيقة واحدة · كودك فورا»)، ونصُّها «احصل على منحة 50%». ثمّ قال صاحبُ المنصّة في اليوم نفسِه:
    «لا تقل احصل على منحة.. اجعل العنوان "ابدأ من هنا" واحذف دقيقة واحدة كودك فورا». فالمحروسُ الآن: الزرُّ لا يَعِد
-   بمنحةٍ ولا نسبة، ويليه الزرُّ الثانويُّ بلا سطرٍ بينهما.
+   بمنحةٍ ولا نسبة. ثمّ: «احذف جرب التشخيص.. وضع مكانها جملة عادية» — فيليه سطرُ الموسم جملةً لا زرّا، ولا زرَّ تشخيصٍ في الصدر.
 
    ═══ ولماذا شجرةُ النحو لا `toMatch` ═══
 
@@ -21,7 +21,7 @@
 
    فالمقروءُ هنا **شجرةُ النحو** (`typescript`): يُفتَّش عن دالّة `Hero`،
    ثمّ عن الرابط الذي `to={OPEN_GRANT_PATH}` داخلَها — وهو الدعوةُ نفسُها —
-   ثمّ يُقرأ نصُّها من عُقَد النصّ فيها، ويُنظر في إخوتها: أوّلُ عنصرٍ بعدها الزرُّ الثانويّ لا `<p>`.
+   ثمّ يُقرأ نصُّها من عُقَد النصّ فيها، ويُنظر في إخوتها: أوّلُ عنصرٍ بعدها سطرُ الموسم `<p>` لا رابط.
 
    والتعاليقُ لا وجودَ لها في الشجرة، فلا تُطابَق. والنصُّ لا يُقاس بحرفه بل
    بما يَعِد به. والموضعُ يُقاس بالأخوّة والترتيب لا بقربِ السطور. */
@@ -72,7 +72,7 @@ function elementSiblings(node: ts.Node): ts.Node[] {
   return parent.children.filter((c) => tagOf(c) !== null)
 }
 
-describe('دعوة الصدر — «ابدأ من هنا» بلا سطر تحتها', () => {
+describe('دعوة الصدر — «ابدأ من هنا» وتحتها سطر الموسم', () => {
   const hero = find(source, (n) => ts.isFunctionDeclaration(n) && n.name?.getText(source) === 'Hero')
 
   it('ودالّة الصدر موجودة — وإلّا فالحارس يحرس العدم', () => {
@@ -94,17 +94,21 @@ describe('دعوة الصدر — «ابدأ من هنا» بلا سطر تحت�
     expect((cta as ts.JsxElement).children.some(ts.isJsxExpression), 'نسبةٌ أو تعبيرٌ في نصّ الزرّ').toBe(false)
   })
 
-  /* «واحذف دقيقة واحدة · كودك فورا» — القرارُ نفسُه. فيلي الدعوةَ الزرُّ الثانويّ رأسا، لا سطرٌ بينهما */
-  it('⚠️ ويتبعها الزرّ الثانويّ مباشرة — لا سطر تحتها', () => {
+  /* ثمّ قال (١٣ نوفمبر ٢٠٢٦): «احذف جرب التشخيص.. وضع مكانها جملة عادية "موسم الشتاء مفتوح للتسجيل Dec-Jan"».
+     فيلي الدعوةَ سطرٌ يُقرأ — جملةٌ لا زرّ — والصدرُ بلا رابطٍ إلى التشخيص (وأبوابُه في الرئيسة باقيةٌ تحت الصدر) */
+  it('⚠️ ويتبعها سطر الموسم جملةً لا زرّا — ولا زرّ تشخيص في الصدر', () => {
     const siblings = elementSiblings(cta!)
     const at = siblings.indexOf(cta!)
     expect(at).toBeGreaterThanOrEqual(0)
     const next = siblings[at + 1] as ts.JsxElement | undefined
     expect(next, 'لا عنصر بعد الدعوة').toBeDefined()
-    expect(tagOf(next!), 'عاد سطرٌ تحت الدعوة').not.toBe('p')
-    const to = next!.openingElement.attributes.properties.find(
-      (p): p is ts.JsxAttribute => ts.isJsxAttribute(p) && p.name.getText(source) === 'to',
-    )?.initializer
-    expect(to && ts.isStringLiteral(to) ? to.text : null, 'ما يلي الدعوةَ ليس «جرب التشخيص الذكي»').toBe('/diagnostic')
+    expect(tagOf(next!), 'ما يلي الدعوةَ ليس جملة').toBe('p')
+    const text = next!.children.filter(ts.isJsxText).map((t) => t.text.trim()).join(' ').trim()
+    expect(text, 'سطرٌ فارغ').not.toBe('')
+    const links = (n: ts.Node): string[] => {
+      const own = ts.isJsxElement(n) && tagOf(n) === 'Link' ? [attrExpr(n, 'to') ?? n.openingElement.attributes.getText(source)] : []
+      return [...own, ...n.getChildren(source).flatMap(links)]
+    }
+    expect(links(hero!).join(' '), 'عاد زرُّ التشخيص إلى الصدر').not.toMatch(/\/diagnostic/)
   })
 })

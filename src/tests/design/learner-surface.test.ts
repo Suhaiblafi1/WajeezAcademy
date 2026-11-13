@@ -287,8 +287,17 @@ describe('٥٦ · الرئيسة أقصر — جدارا الشعارات صار
   const home = read('src/pages/Home.tsx')
 
   it('وقفة واحدة للشعارات لا وقفتان بينهما قسم المختارات كلّه', () => {
-    expect(home).toContain('<EcosystemOrgStrip nested />')
     expect(home.match(/<EcosystemOrgStrip/g) ?? []).toHaveLength(1)
+  })
+
+  /* «اجعلها أسفل الصفحة قبل الأسئلة المتكررة» — صاحب المنصّة (١٣ نوفمبر ٢٠٢٦). وكانت تحت «شركاؤنا» وأرقام وجيز
+     في أعلى الصفحة. فصارت قسما قائما بنفسه يلي ما قبل الأسئلة ويسبقها مباشرة — والترتيبُ يُقاس في ترتيب الأقسام */
+  it('⚠️ وجدار «مؤسسات وثقت» قسمٌ قائمٌ قبل الأسئلة المتكررة مباشرة', () => {
+    const order = home.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ').match(/<(Hero|HowItWorks|DiagnosticTeaser|Partners|ProofBand|Bestsellers|Stories|AdvisorStrip|EcosystemOrgStrip|Faq|FinalCta)\b[^>]*\/>/g) ?? []
+    const at = order.findIndex((t) => t.startsWith('<EcosystemOrgStrip'))
+    expect(at, 'الجدار ليس بين أقسام الصفحة — ما زال داخل قسم').toBeGreaterThan(-1)
+    expect(order[at], 'الجدار متداخلٌ في قسمٍ لا قائمٌ بنفسه').not.toMatch(/nested/)
+    expect(order[at + 1], 'لا يلي الجدارَ قسمُ الأسئلة').toBe('<Faq />')
   })
 
   it('والادّعاءان يبقيان مميّزين — دمج الوقفة لا دمج المعنى', () => {
