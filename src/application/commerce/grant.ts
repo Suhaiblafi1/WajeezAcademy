@@ -6,6 +6,7 @@
 
 import { money } from './discount-policy'
 import { ACADEMY_ZONE, zonedDay, zonedInstant } from '../trainer/cohort-period'
+import { fmtDateLong } from '../text/format-ar'
 
 /** الحملةُ الأولى — وبها يُقرأ صفُّها، ويُنشأ أوّلَ مرّة بإعداداتٍ افتراضيّة. واسمُها «منحة وجيز» بقرار صاحب
     المنصّة (٢٦ أكتوبر ٢٠٢٦)، وكان «منحة أعضاء وجيز» — والمعرّفُ باقٍ: به حُفظ كلُّ من عبّأ نموذجها */
@@ -99,3 +100,21 @@ export function grantClosesAt(lastDay: string): string {
 export function grantLastDay(closesAt: string | Date): string {
   return zonedDay(new Date(new Date(closesAt).getTime() - 1), ACADEMY_ZONE)
 }
+
+/* ═══ دورةٌ واحدةٌ أوّلا، والكودُ يبقى لباقي المسار (١٣ نوفمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «أرى الناس تستصعب شراء أربع دورات». واختار أن يُقال للمشتري بعد الدفع ما بقي على كوده — في
+   شاشة الشكر وبريد الدفع وتذكيرٍ قبل النهاية. فالجملةُ واحدةٌ في المواضع الثلاثة، والكودُ يُطبَّق وحده عند الشراء
+   (`learnerGrant`)، وما بقي منه هو ما يحسبه الدفعُ نفسُه (`GrantService.coursesLeft`). */
+
+/** «دورة واحدة» و«دورتان» و«3 دورات» */
+export const grantCoursesAr = (n: number): string => (n === 1 ? 'دورة واحدة' : n === 2 ? 'دورتان' : `${n} دورات`)
+
+/** «بقي لك على كود منحتك دورتان بخصم 50٪ حتى 30 نوفمبر 2026.» — وبلا تاريخ إن لم تكن للحملة نهاية */
+export function grantLeftLineAr(left: number, percentOff: number, closesAt: string | Date | null | undefined): string {
+  const until = closesAt ? ` حتى ${fmtDateLong(new Date(new Date(closesAt).getTime() - 1))}` : ''
+  return `بقي لك على كود منحتك ${grantCoursesAr(left)} بخصم ${percentOff}٪${until}.`
+}
+
+/** دعوةُ إكمال المسار — زرُّ شاشة الشكر وبريد التذكير */
+export const GRANT_CONTINUE_AR = 'أكمل مسارك'

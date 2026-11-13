@@ -458,7 +458,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       const on = picked.includes(x.courseId);
       const full = !on && picked.length >= max;
       const seats = seatsLeftAr(x.seatsLeft);
-      const tag = ours.has(x.courseId) ? "نقترحها لك" : fits(x) > 0 ? "يناسب ما تريد تطويره" : null;
+      /* وأولى المقترحات «ابدأ بها» — دورةٌ أوّلا والكودُ يبقى لباقي المسار (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦). ولا تُختار عنه */
+      const tag = ours.has(x.courseId) ? (suggested[0] === x.courseId ? "ابدأ بها" : "نقترحها لك") : fits(x) > 0 ? "يناسب ما تريد تطويره" : null;
       const sum = x.summary ?? null;
       /* و«نبذة» لأهدافها ولمن هي — وعدُها ظاهرٌ فوقُ، فلا نبذةَ إن لم يكن لها غيرُه */
       const more = !!sum && (sum.goalsAr.length > 0 || !!sum.audienceAr);
@@ -593,7 +594,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         {suggested.length > 0 && (
           <p className="mt-2 text-read">
             {/* «لا تتعارض» قولٌ يُقاس: يُقال حين لكلِّ مقترحةٍ لقاءاتٌ معتمَدة، وإلّا فـ«تناسبك» وحدَها */}
-            نقترح لك {coursesAr(suggested.length)} تناسبك{timedSuggested ? " ولا تتعارض مواعيدها" : ""}.{suggested.length > max && ` اختر منها حتى ${max}.`}
+            {/* «أرى الناس تستصعب شراء أربع دورات» — صاحب المنصّة (١٣ نوفمبر ٢٠٢٦). فيُقال: دورةٌ أوّلا، والكودُ يبقى لباقيها
+                حتى آخر يوم (`coursesLeft` في كلّ شراء). والحدُّ يُقال تحت العدّاد (`grantLimitAr`) */}
+            نقترح لك {coursesAr(suggested.length)} تناسبك{timedSuggested ? " ولا تتعارض مواعيدها" : ""}. ابدأ بالأولى، وكودك يبقى لك لباقيها بنفس الخصم{lastDayLong ? ` حتى ${lastDayLong}` : ""}.
           </p>
         )}
 
