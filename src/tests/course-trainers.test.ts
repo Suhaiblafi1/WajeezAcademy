@@ -90,8 +90,10 @@ describe('وجوه المدربين دوائر متراصة في بطاقات ا
 
   it('⚠️ شريطا الرئيسة يرسمانها', () => {
     const best = read('src/pages/home/Bestsellers.tsx').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
-    const paths = best.slice(best.indexOf('morePaths.map'), best.indexOf('moreCourses.length'))
-    const courses = best.slice(best.indexOf('moreCourses.map'))
+    /* كلُّ شريطٍ من `.map(` إلى أوّلِ `</Card>` بعده — لا بترتيبهما: صارت الدوراتُ أوّلا (١٣ نوفمبر ٢٠٢٦) */
+    const strip = (name: string) => { const at = best.indexOf(`${name}.map(`); return at < 0 ? '' : best.slice(at, best.indexOf('</Card>', at)) }
+    const paths = strip('morePaths')
+    const courses = strip('moreCourses')
     expect(paths, 'بطاقة المسار بلا وجوه مدربي دوراته').toMatch(/<TrainerFaces \{\.\.\.trainerFacesOf\(b\.item\.courseIds, cohorts\)\}/)
     expect(courses, 'بطاقة الدورة بلا وجوه مدربيها').toMatch(/<TrainerFaces \{\.\.\.trainerFacesOf\(\[b\.item\.id\], cohorts\)\}/)
   })

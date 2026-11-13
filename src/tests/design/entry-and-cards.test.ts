@@ -72,9 +72,11 @@ describe('٢ · أرقام الرئيسة تصغر', () => {
 describe('٣ · ذيل البطاقة يتنفّس', () => {
   const BEST = code('src/pages/home/Bestsellers.tsx')
   /* شريطُ المسارات وشريطُ الدورات — كلٌّ يُقاس في مداه هو، فلا يخضرّ
-     أحدُهما بما في الآخر. */
-  const PW = BEST.slice(BEST.indexOf('morePaths.map'), BEST.indexOf('moreCourses.length'))
-  const CR = BEST.slice(BEST.indexOf('moreCourses.map'))
+     أحدُهما بما في الآخر. والمدى من `.map(` إلى أوّلِ `</Card>` بعده، لا بترتيبهما:
+     صارت الدوراتُ أوّلا (١٣ نوفمبر ٢٠٢٦)، وكان المدى «من المسارات إلى الدورات» فيفرغ. */
+  const strip = (name: string) => { const at = BEST.indexOf(`${name}.map(`); return at < 0 ? '' : BEST.slice(at, BEST.indexOf('</Card>', at)) }
+  const PW = strip('morePaths')
+  const CR = strip('moreCourses')
 
   it('بطاقة المسار: الحجم في سطر، و«تفاصيل المسار» في سطر بعده', () => {
     const size = PW.indexOf('pathwaySizeAr(b.item)')
