@@ -403,7 +403,8 @@ describe('٥٦ · الرئيسة أقصر — جدارا الشعارات صار
          كاملة تدخل المنتقي، والمميّزة تستثنى بـ`exclude` فلا ترى مرّتين.
          فيحرس الأمران في موضعهما الجديد. */
       expect(best, 'الشريط لا يبنى من المختارات').toMatch(/editorial:\s*bestsellers/)
-      expect(best, 'البطاقة المميّزة لا تستثنى — فترى مرّتين').toMatch(/exclude:\s*spotlight/)
+      /* والبطاقةُ المميّزةُ ذهبت (١٣ نوفمبر ٢٠٢٦)، فلا يُستثنى من الشريط شيء: مسارُها فيه مع إخوته */
+      expect(best, 'ما زال الشريطُ يستثني مسارا لم يعد يُعرض في غيره').not.toMatch(/exclude:/)
       expect(best, 'الدورات لا تقرأ').toContain('bestsellerCourses')
       expect(best, 'لا شريط يصيّر').toMatch(/morePaths\.map\(/)
       expect(best).toMatch(/moreCourses\.map\(/)
@@ -411,18 +412,28 @@ describe('٥٦ · الرئيسة أقصر — جدارا الشعارات صار
 
     /* «ضع الدورات مكان المسارات في الصفحة الرئيسية.. ليبدأ الشخص تصفح الدورات وأسفل يتصفح المسارات»
        (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦). والترتيبُ يُقاس بموضع ما يُصيَّر بعد نزع التعاليق — لا بورود اسمٍ في تعليق */
-    it('⚠️ والدورات أولا ثمّ المسارات — المميّزة وشريطها تحت الدورات', () => {
+    it('⚠️ والدورات أولا ثمّ المسارات', () => {
       const code = best.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
       const courses = code.indexOf('moreCourses.map(')
       expect(courses, 'شريط الدورات مفقود').toBeGreaterThan(-1)
-      expect(courses, 'البطاقة المميّزة فوق الدورات').toBeLessThan(code.indexOf('<article'))
       expect(courses, 'شريط المسارات فوق الدورات').toBeLessThan(code.indexOf('morePaths.map('))
     })
 
-    it('ويبقى الدليل والبابان', () => {
-      expect(best, 'ذهبت البطاقة المميّزة معها').toContain('اختيار وجيز الأول')
-      /* «تتخرّج بـ» صار في إطاره (`PathOutput`، ٢٧ أكتوبر ٢٠٢٦) — فالمحروسُ أنّ البطاقةَ المميّزةَ تمرّر مخرَجَها إليه */
-      expect(best, 'ذهب مخرج البطاقة المميّزة').toMatch(/<PathOutput output=\{spotlight\.p\.output\}/)
+    /* «هل نضعها بين المسارات والدورات ونزيل المسار الرئيسي الموجود أعلى المسارات» — صاحب المنصّة (١٣ نوفمبر ٢٠٢٦).
+       فشريطُ «لا نقيس تعلّمك بما شاهدت» (`ProofBand`) بين شريط الدورات وشريط المسارات، والبطاقةُ المميّزة ذهبت */
+    it('⚠️ وشريط «لا نقيس تعلمك» بين الدورات والمسارات — والبطاقة المميّزة ذهبت', () => {
+      const code = best.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
+      const middle = code.indexOf('{middle}')
+      expect(middle, 'لا موضعَ بين الشريطين').toBeGreaterThan(-1)
+      expect(code.indexOf('moreCourses.map('), 'الشريطُ قبل الدورات').toBeLessThan(middle)
+      expect(middle, 'الشريطُ بعد المسارات').toBeLessThan(code.indexOf('morePaths.map('))
+      const homeCode = home.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
+      expect(homeCode, 'الرئيسةُ لا تضع الشريطَ بين الشريطين').toMatch(/<Bestsellers middle=\{<ProofBand \/>\} \/>/)
+      expect(homeCode.match(/<ProofBand\b/g) ?? [], 'الشريطُ مرّتين في الصفحة').toHaveLength(1)
+      expect(code, 'عادت البطاقةُ المميّزة').not.toMatch(/<article|spotlight/)
+    })
+
+    it('ويبقى البابان', () => {
       expect(best).toContain('to="/pathways"')
       expect(best).toContain('to="/courses"')
     })

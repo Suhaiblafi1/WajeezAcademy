@@ -56,7 +56,9 @@ interface PageSpec {
 
 /* صفحات مختارة تغطي الأدوار والأنماط: عامة · نموذج · بوابة متعلم · إدارة */
 const PAGES: PageSpec[] = [
-  { path: '/', labelAr: 'الرئيسية', readySel: 'article' },
+  /* وكان `article` — البطاقةَ المميّزةَ في «مختارات وجيز»، الوحيدةَ في الرئيسة. ذهبت بقرار صاحب المنصّة
+     (١٣ نوفمبر ٢٠٢٦)، فالمنتظَرُ بطاقاتُ المسارات في القسم نفسِه: محتوًى مُدارٌ بالبيانات كما كانت */
+  { path: '/', labelAr: 'الرئيسية', readySel: '#bestsellers a[href^="/pathways/"]' },
   { path: '/pathways', labelAr: 'المسارات', readySel: 'article' },
   { path: '/diagnostic', labelAr: 'التشخيص' },
   { path: '/auth', labelAr: 'الدخول والتسجيل' },

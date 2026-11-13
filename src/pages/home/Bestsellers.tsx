@@ -19,12 +19,17 @@
 
    وذهب معها: فلترا المجالات، وشريطا البطاقات، وأزرارُ تمريرهما، ومرساةُ
    `#top-courses` (لم تكن مقصودةً من رابطٍ واحدٍ في المشروع). وبقيت مرساةُ
-   `#bestsellers` — مرساةٌ لمن يربط القسمَ رأسا (كان يقصدها «اختر مسارك بنفسك» في الصدر حتّى ١٣ نوفمبر ٢٠٢٦). */
+   `#bestsellers` — مرساةٌ لمن يربط القسمَ رأسا (كان يقصدها «اختر مسارك بنفسك» في الصدر حتّى ١٣ نوفمبر ٢٠٢٦).
 
-import { useMemo, useState, useSyncExternalStore } from "react"
+   ─────────── ثمّ (١٣ نوفمبر ٢٠٢٦) ───────────
+
+   الدوراتُ أوّلا ثمّ المسارات، وبينهما شريطُ «لا نقيس تعلّمك بما شاهدت» تمرّره الرئيسة (`middle`). وذهبت البطاقةُ
+   المميّزةُ أعلى المسارات، فمسارُها في الشريط مع إخوته — بقرار صاحب المنصّة. */
+
+import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react"
 import { Link } from "react-router"
-import { ArrowLeft, ChevronDown, Compass, Flame, Route } from "lucide-react"
-import { bestsellers, pathwayById, pathwayDomain, pathways } from "@/data/pathways"
+import { ArrowLeft, ChevronDown, Compass, Flame } from "lucide-react"
+import { bestsellers, pathwayDomain, pathways } from "@/data/pathways"
 import { publicPathways, type PublicPathway } from "@/data/public-pathways"
 import { resolveCatalogRefsAr } from "@/application/catalog/visitor-text"
 import { ALL_AR, filterRows, shownFor, type PickSource } from "@/application/catalog/home-picks"
@@ -32,7 +37,6 @@ import { getCatalogVersion, onCoreCatalogInstalled } from "@/data/core-catalog-s
 import { bestsellerCourses, courses, pathwaySizeAr, type Course } from "@/data/courses"
 import CourseTitle from "@/components/CourseTitle"
 import { Card } from "@/components/ui/Surface"
-import FavoriteButton from "@/components/FavoriteButton"
 import SectionLabel from "./SectionLabel"
 import { useListedCourses } from "@/services/listed-courses"
 import { useCourseCohorts } from "@/services/cohort-prices"
@@ -152,7 +156,8 @@ function PickBadge({ note, fromDomain }: { note: string | null; fromDomain?: str
   )
 }
 
-export function Bestsellers() {
+/** `middle`: ما يُرسم بين شريط الدورات وشريط المسارات بعرض الصفحة — تمرّره الرئيسة */
+export function Bestsellers({ middle }: { middle?: ReactNode } = {}) {
   const catalogVersion = useSyncExternalStore(onCoreCatalogInstalled, getCatalogVersion)
 
   /* catalogVersion اعتمادٌ مقصود لا زائد: جسم الـmemo يقرأ من كتالوج مُثبَّت
@@ -169,11 +174,6 @@ export function Bestsellers() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- كما تحته: الكتالوجُ يُستبدل وقت التشغيل
     [listed, catalogVersion],
   )
-  const picks = useMemo(() => {
-    const shown = new Set(shownPathways.map((p) => p.id))
-    return bestsellers.filter((b) => shown.has(b.id)).map((b) => ({ ...b, p: pathwayById(b.id)! })).filter((b) => b.p)
-  }, [shownPathways])
-  const spotlight = picks[0]
   const [pwCat, setPwCat] = useState(ALL_AR)
   const [crCat, setCrCat] = useState(ALL_AR)
 
@@ -187,7 +187,7 @@ export function Bestsellers() {
   )
 
   /* ── شريطُ المسارات: مختاراتٌ يُتمّها الكتالوجُ إلى ثلاثة، وسقفُها أربعة ──
-     البطاقةُ المميّزةُ تُستثنى فلا تُرى مرّتين في قسمٍ واحد. */
+     وكانت البطاقةُ المميّزةُ تُستثنى منه فلا تُرى مرّتين — ذهبت (١٣ نوفمبر ٢٠٢٦)، فمسارُها فيه. */
   const pathSource: PickSource<PublicPathway> = useMemo(
     () => ({
       /* والمختارُ الذي لم يُعرض يسقط وحدَه: لا يُقرأ إلّا ما في `pool` (`home-picks.ts`) */
@@ -195,9 +195,8 @@ export function Bestsellers() {
       pool: shownPathways,
       idOf: (p) => p.id,
       domainOf: (p) => pathwayDomain(p.id),
-      exclude: spotlight ? [spotlight.id] : [],
     }),
-    [spotlight, shownPathways],
+    [shownPathways],
   )
   const pwRows = useMemo(() => filterRows(pathSource), [pathSource])
   const pwCounts = useMemo(
@@ -341,72 +340,19 @@ export function Bestsellers() {
           </div>
         )}
 
-        {(spotlight || morePaths.length > 0) && (
-          <h3 className="reveal mt-12 text-lg font-bold md:text-xl">مسارات كاملة</h3>
-        )}
+      </div>
 
-        {/* البطاقة المميزة — اختيار وجيز الأول */}
-        {/* ── ولماذا `article` لا `div` ──
+      {/* ── بين الشريطين: ما تمرّره الرئيسة — شريطُ «لا نقيس تعلّمك» (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦) ──
 
-            البطاقةُ عنصرٌ قائمٌ بذاته: عنوانٌ ووصفٌ ومدّةٌ ومخرَجٌ ورابط —
-            وهذا تعريفُ `article` في HTML، لا زخرفةٌ دلاليّة.
+          «هل نضعها بين المسارات والدورات ونزيل المسار الرئيسي الموجود أعلى المسارات». فالقسمُ يفتح «الصَّدفةَ»
+          (`shell`) للدورات ثمّ يغلقها، فيمتدّ الشريطُ بعرض الصفحة كما كان قسما قائما، ثمّ تُفتح للمسارات.
 
-            وله أثرٌ مقيس: فحصُ الإتاحة ينتظر `article` علامةً على أنّ
-            الرئيسةَ اكتملت (`scripts/a11y-audit.ts:59`). وحين حُذف الشريطان
-            في هذا البند ذهبت معهما **كلُّ** عناصر `article` من الصفحة، فوقف
-            الفحصُ ٢٥ ثانيةً ثمّ عدّها واقعةَ إتاحة: `landmark: 0 ← 1`.
-            وأمسكها CI لا أنا. */}
-        {/* ── ولماذا صغُرت (٨ سبتمبر ٢٠٢٦) ──
+          وذهبت البطاقةُ المميّزة («اختيار وجيز الأول») التي كانت أعلى المسارات: مسارُها صار في الشريط مع إخوته،
+          فلا يُستثنى منه شيء. وكانت `article` الوحيدَ في الرئيسة، وبه كان ينتظر فحصُ الإتاحة (`a11y-audit.ts`)
+          أن يُرسم المحتوى — فصار ينتظر بطاقاتِ المسارات نفسَها. */}
+      {middle && <div className="mt-12 md:mt-14">{middle}</div>}
 
-            كانت لوحةً من خمسة أعمدة: عمودان لأيقونةٍ وحدَها، وثلاثةٌ لحشوٍ
-            أربعين بكسلا وعنوانٍ من ثلاثين. ومعاملُ التكبير على اللابتوب يجعلها
-            ثلثَ الشاشة لمسارٍ واحد. فوصفها صاحبُ المنصّة بأنّها «كبيرةٌ جدّا»
-            واختار ضغطَها لا حذفَها: المحتوى نفسُه، في نصف الارتفاع — عمودٌ
-            رفيعٌ للأيقونة، وشارةُ «اختيار وجيز» في صفّ العنوان لا معلّقةً فوق
-            فراغ. */}
-        {spotlight && (
-          <article className="reveal relative mt-5">
-            <Link
-              to={`/pathways/${spotlight.id}`}
-              className="group grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-6"
-            >
-              <div className="relative flex min-h-[64px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-1 md:min-h-0">
-                <Route className="h-8 w-8 text-teal-light-ink/70 md:h-9 md:w-9" />
-              </div>
-              <div className="p-5 md:col-span-5 md:px-7 md:py-5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="kicker">اختيار وجيز الأول</span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-1 text-fine font-black text-on-gold">
-                    <Flame className="h-3 w-3" />
-                    {spotlight.note}
-                  </span>
-                </div>
-                <h3 className="mt-2.5 text-xl font-black leading-snug md:text-2xl">{spotlight.p.name}</h3>
-                <p className="mt-2 max-w-xl text-sm leading-7 text-muted-foreground">{spotlight.p.transformation}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
-                  <span>{spotlight.p.level}</span>
-                  <span className="text-muted-foreground/50">•</span>
-                  {/* الحجم كلّه في عبارةٍ واحدة: دوراتٌ وساعاتٌ وأسابيع. وكان
-                      «الأسابيع» يُكتب مرّتين حين أُضيفت العبارة فوق سطرٍ يحملها. */}
-                  <span>{pathwaySizeAr(spotlight.p)}</span>
-                  <span className="text-muted-foreground/50">•</span>
-                  <span>{spotlight.p.weeklyHours} أسبوعيا</span>
-                </div>
-                {/* المخرَج الملموس — لا اسمُ مدرّبٍ لم يُعيَّن بعد */}
-                <PathOutput output={spotlight.p.output} className="mt-3 w-fit max-w-xl text-read leading-6" />
-                <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-deep px-5 py-2 text-sm font-bold text-white transition group-hover:bg-teal-darker">
-                  افتح المسار
-                  <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
-                </span>
-              </div>
-            </Link>
-            {/* مفضلة البطاقة المميزة — فوق الرابط بزاوية حرة، والنقر لا يفتح المسار */}
-            <FavoriteButton refId={spotlight.id} title={spotlight.p.name}
-              className="absolute left-3 top-3 z-10 bg-paper/70 backdrop-blur md:left-5 md:top-5" />
-          </article>
-        )}
-
-
+      <div className="shell">
         {/* ── الشريطان: مساراتٌ ودوراتٌ تُرى، بلا فلترٍ يعيد الكتالوج ──
 
             أُعيدا بقرار صاحب المنصّة (٧ سبتمبر ٢٠٢٦) بعد أن رأى الرئيسةَ
@@ -421,8 +367,8 @@ export function Bestsellers() {
             ٢٠٢٦) ثلاثةً حدًّا أدنى وأربعةً حدًّا أعلى **لكلّ رقاقة** —
             والحسابُ كلُّه في `home-picks.ts` ومعه علّتُه. */}
         {morePaths.length > 0 && (
-          <div className="reveal mt-10">
-            <h3 className="text-lg font-bold md:text-xl">مسارات أخرى من اختيارنا</h3>
+          <div className="reveal mt-12">
+            <h3 className="text-lg font-bold md:text-xl">مسارات كاملة</h3>
             <CategoryFilter counts={pwCounts} allCount={pwAllCount} active={pwCat} onChange={setPwCat} label="تصفية المسارات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
               {morePaths.map((b) => (
