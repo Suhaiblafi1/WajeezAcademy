@@ -2,44 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─────────── خطّ ما يُقرأ قراءةً طويلة ───────────
+/* ─────────── خطُّ الموقع كلِّه: Tajawal (١٣ نوفمبر ٢٠٢٦) ───────────
 
-   متنُ الوحدة يُقرأ قراءةً طويلة لا يُمسح مسحَ واجهة، فأُفرد له خطّ بقرار
-   صاحب المنتج: Avenir Arabic. ومَن يقرأ قراءةً طويلةً في هذه المنصّة
-   اثنان لا واحد: متعلّمٌ في متن الوحدة، ومدرّبٌ في نصّ اتفاقيّته — فلهما
-   الخطُّ نفسُه، ولِما عداهما خطُّ الواجهة، واختلافُهما مقصود.
+   قرارُ صاحب المنصّة: «حوّل خطَّ الموقع كاملا». وكان الخطّان اثنين: IBM Plex Sans Arabic للواجهة، وAvenir Arabic
+   لما يُقرأ قراءةً طويلة (متنُ الوحدة ونصُّ الاتفاقيّة) — ولم تُرفع ملفّاتُ Avenir المرخّصةُ للويب قطّ، فكان المتنُ
+   يرتدّ إلى خطّ الواجهة. وخُيّر بين شراء ترخيصه وخطٍّ مجّانيٍّ قريبٍ منه، ورأى الصفحةَ بخطّين، فاختار **Tajawal**:
+   هندسيٌّ خفيفٌ قريبٌ من روح Avenir، وبكلّ الأوزان التي تستعملها المنصّة حتّى 900، ومرخّصٌ OFL.
 
-   والملفّات تُستضاف ذاتيّا في `public/fonts/` (انظر README هناك): ترخيص
-   Monotype للويب يُسلَّم woff2، وسياسة الأمان تسمح `font-src 'self'`.
+   ويُحمَّل من Google Fonts برابط رأس الصفحة (`index.html`) كما كان خطُّ الواجهة قبله، فسياسةُ الأمان لا تتغيّر.
+   والأوزانُ المطلوبةُ هناك ما تستعمله الشاشات: 300 و400 و500 و700 و800 و900 (ولا 600 فيه، فيقرأ `font-semibold` 700).
+   والارتدادُ بعده IBM Plex Sans Arabic لمن ثبّته، ثمّ خطُّ النظام — فالصفحةُ تُقرأ لو تعذّر التحميل. */
 
-   ولا شيء يُكسر قبل وضعها: المتصفّح يتخطّى ملفّا غير موجود بصمت، ويرتدّ
-   إلى خطّ المنصّة — فالصفحة تُقرأ في الحالين. */
-
-@font-face {
-  font-family: "Avenir Arabic";
-  src: url("/fonts/avenir-arabic-400.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Avenir Arabic";
-  src: url("/fonts/avenir-arabic-500.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Avenir Arabic";
-  src: url("/fonts/avenir-arabic-700.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/** يُوضع على حاوية المتن وحدها */
+/** يُوضع على حاوية المتن وحدها — والخطُّ خطُّ الموقع نفسُه، والصنفُ باقٍ لأنّ حارسَه يقيس موضعَه */
 .course-prose {
-  font-family: "Avenir Arabic", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;
+  font-family: "Tajawal", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;
 }
 
 /* ═══ ونصُّ الاتفاقية معه (٢١ سبتمبر ٢٠٢٦) ═══
@@ -65,7 +41,7 @@
    اللذان يعرضان المتنَ نفسَه — فلا تُراجَع وثيقةٌ بخطٍّ غيرِ الذي تُوقَّع
    به. الحارس: `src/tests/trainer/contract-typeface.test.ts` */
 .contract-prose {
-  font-family: "Avenir Arabic", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;
+  font-family: "Tajawal", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;
 }
 
 /* ═══ وثيقةُ العقد — لوحٌ لها وحدَها ═══
@@ -641,7 +617,7 @@
   body {
     zoom: var(--app-scale);
     @apply bg-background text-foreground antialiased;
-    font-family: "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;
+    font-family: "Tajawal", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;
     overflow-x: clip;
     /* لا ارتدادَ أفقيّ يكشف ما خلف الصفحة — والرأسيّ يبقى كما هو */
     overscroll-behavior-x: none;

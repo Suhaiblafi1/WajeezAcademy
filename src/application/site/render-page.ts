@@ -115,7 +115,7 @@ export function shell(parts: string[], currentPath: string): string {
      التطبيقُ نفسُه بعد أجزاءٍ من الثانية. فالمخفيُّ لا يُخفي شيئا عن أحد —
      إنّما يمنع رسمَ ما سيُمحى بعد لحظة. */
   return (
-    `${SEO_START}<div data-seo style="max-width:48rem;margin:0 auto;padding:2.5rem 1.25rem;font-family:'IBM Plex Sans Arabic',system-ui,sans-serif">` +
+    `${SEO_START}<div data-seo style="max-width:48rem;margin:0 auto;padding:2.5rem 1.25rem;font-family:'Tajawal','IBM Plex Sans Arabic',system-ui,sans-serif">` +
     `<img src="/logo-mark.png" alt="أكاديمية وجيز" width="56" height="56" style="display:block;margin-bottom:1.25rem" />` +
     parts.join('\n      ') +
     `</div>${SEO_END}`
