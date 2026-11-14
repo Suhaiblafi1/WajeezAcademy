@@ -382,7 +382,10 @@ describe('٥٦ · الرئيسة أقصر — جدارا الشعارات صار
          `{ ...bestseller, p }` و`{ ...bestseller, c }` — فالحقول هي هي
          والحامل واحد. والمحروس لم يتغيّر: أن تقرأ هذه الحقول في البطاقة. */
       expect(best, 'العنوان الكامل مكان القصير').toMatch(/b\.item\.shortName/)
-      expect(best, 'ذهب «ليس لك إن» — أصدق سطر في الكتالوج').toMatch(/b\.item\.notFor/)
+      /* و«لك إن كنت» مكانَ «ليس لك إن» — قرارُ صاحب المنصّة (١٤ نوفمبر ٢٠٢٦): «ألغِ جملةَ ليس لك.. بل يجب أن تكون لك إن كنت».
+         والحارسُ الأوسعُ للبطاقتين في `src/tests/catalog/path-intro.test.ts` */
+      expect(best, 'ذهب «لك إن كنت» — جمهور المسار').toMatch(/b\.item\.audience/)
+      expect(best, 'عاد «ليس لك إن» إلى البطاقة').not.toMatch(/b\.item\.notFor/)
       expect(best, 'ذهب المخرج').toMatch(/b\.item\.output/)
       expect(best, 'ذهب وعد الدورة').toMatch(/b\.item\.promise/)
       expect(best, 'ذهبت مهارة الدورة').toMatch(/b\.item\.skill/)
