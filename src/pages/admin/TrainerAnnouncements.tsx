@@ -32,6 +32,7 @@ import { zonedDay } from "@/application/trainer/cohort-period";
 import { addDays, dayLabelAr } from "@/application/trainer/axis-timeline";
 import {
   ANNOUNCEMENT_BODY_MAX, ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TITLE_MAX, LATE_JOINERS_MAX_DAYS, RECIPIENT_STATE_AR,
+  ANNOUNCEMENT_AUDIENCE_AR, announcementAudienceOf, type AnnouncementAudience,
   defaultLateUntil, lateUntilProblem, marketingDraft, recipientState, videoDraft,
 } from "@/application/trainer/announcement";
 
@@ -39,12 +40,17 @@ import {
    كان نصٌّ مقترحٌ واحد؛ وصار اثنين: «بدأنا التسويق» ويصل بالبريد أيضا، و«موعد بدء الشعب» كما كان. ثمّ ثالثٌ أوّلَها
    (١٠ نوفمبر): «فيديو تعريفي» — يلصق المدرّبُ رابطَه في «التسويق»، ويصل بالبريد أيضا (`videoDraft`). ويُملأ النموذجُ
    بأوّلِ ما لم يُرسَل منهما، ويُختار غيرُه بزرّ — وكلُّه يُعدَّل قبل الإرسال. */
-interface Draft { key: string; labelAr: string; titleAr: string; bodyAr: string; byEmail: boolean; lateUntil: (today: string) => string }
+/* ولمن يصل كلٌّ منها (١٤ نوفمبر ٢٠٢٦، «A»): نصّا التسويق لمن له دورةٌ منشورةٌ هذا الفصل وحدَه — وصل «بدأنا التسويق»
+   مدرّبةً لم توافق على دورةٍ بعد — و«موعد بدء الشعب» لكلّ مدرّب. والاختيارُ ظاهرٌ تحت النصّ ويُغيَّر قبل الإرسال. */
+interface Draft {
+  key: string; labelAr: string; titleAr: string; bodyAr: string; byEmail: boolean; audience: AnnouncementAudience
+  lateUntil: (today: string) => string
+}
 function draftsFor(origin: string): Draft[] {
   return [
-    { key: "video", labelAr: "فيديو تعريفي", ...videoDraft(origin), byEmail: true, lateUntil: (d) => defaultLateUntil(d, false) },
-    { key: "marketing", labelAr: "بدأنا التسويق", ...marketingDraft(origin), byEmail: true, lateUntil: (d) => defaultLateUntil(d, false) },
-    { key: "start", labelAr: "موعد بدء الشعب", ...ANNOUNCEMENT_DRAFT, byEmail: false, lateUntil: (d) => defaultLateUntil(d, true) },
+    { key: "video", labelAr: "فيديو تعريفي", ...videoDraft(origin), byEmail: true, audience: "live", lateUntil: (d) => defaultLateUntil(d, false) },
+    { key: "marketing", labelAr: "بدأنا التسويق", ...marketingDraft(origin), byEmail: true, audience: "live", lateUntil: (d) => defaultLateUntil(d, false) },
+    { key: "start", labelAr: "موعد بدء الشعب", ...ANNOUNCEMENT_DRAFT, byEmail: false, audience: "all", lateUntil: (d) => defaultLateUntil(d, true) },
   ];
 }
 
@@ -62,6 +68,8 @@ interface SentAnnouncement {
   /** ويصل بالبريد أيضا — وكم خرج بريدُه */
   byEmail?: boolean;
   emailed?: number;
+  /** لمن أُرسل — والقديمُ بلا قيمةٍ لكلّ المدرّبين */
+  audience?: string;
 }
 
 /** من يصله بعد الإرسال — كما يُقرأ تحت ما أُرسل */
@@ -125,6 +133,9 @@ function SentRow({ a }: { a: SentAnnouncement }) {
           <p className="mt-1 text-read text-muted-foreground">أرسل في {fmtDateTimeAr(a.sentAt)}، ووصل حتّى الآن {trainersAr(a.total)}.</p>
           <p className="mt-1 text-read text-muted-foreground">{lateLineAr(a.lateJoinersUntil)}</p>
           {a.byEmail && <p className="mt-1 text-read text-muted-foreground">وبالبريد أيضا: خرج بريده إلى {trainersAr(a.emailed ?? 0)}.</p>}
+          {announcementAudienceOf(a.audience) === "live" && (
+            <p className="mt-1 text-read text-muted-foreground">لمن له دورة منشورة هذا الفصل وحده.</p>
+          )}
         </div>
         <Button size="sm" tone="secondary" aria-expanded={open} onClick={() => void toggle()}
           icon={open ? ChevronUp : ChevronDown}>
@@ -173,13 +184,15 @@ function SentRow({ a }: { a: SentAnnouncement }) {
 export default function TrainerAnnouncements() {
   const { user } = useRealSession();
   const canAnnounce = user?.permissions.includes("staff.notify") ?? false;
-  const [data, setData] = useState<{ audience: number; items: SentAnnouncement[] } | null>(null);
+  const [data, setData] = useState<{ audience: number; audienceLive?: number; items: SentAnnouncement[] } | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const drafts = useMemo(() => draftsFor(window.location.origin), []);
   const [title, setTitle] = useState<string>(drafts[0].titleAr);
   const [body, setBody] = useState<string>(drafts[0].bodyAr);
   /* ويصل بالبريد أيضا — خياران بأثر كلٍّ، والنصُّ الجاهزُ يختار ما يناسبه */
   const [byEmail, setByEmail] = useState(drafts[0].byEmail);
+  /* ولمن — كلُّ مدرّب، أو من له دورةٌ منشورةٌ هذا الفصل؛ والنصُّ الجاهزُ يختار ما يناسبه */
+  const [reach, setReach] = useState<AnnouncementAudience>(drafts[0].audience);
   const [asking, setAsking] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -194,6 +207,7 @@ export default function TrainerAnnouncements() {
     setTitle(d?.titleAr ?? "");
     setBody(d?.bodyAr ?? "");
     setByEmail(d?.byEmail ?? false);
+    setReach(d?.audience ?? "all");
     setUntil(d ? d.lateUntil(day) : defaultLateUntil(day, false));
   }, []);
   /* ما في النموذج ساعةَ يعود الجلب — فلا يُبدَّل ما عدّله */
@@ -202,7 +216,7 @@ export default function TrainerAnnouncements() {
 
   const load = useCallback(async () => {
     try {
-      const r = await apiGet<{ audience: number; items: SentAnnouncement[] }>("/api/admin/trainer-announcements");
+      const r = await apiGet<{ audience: number; audienceLive?: number; items: SentAnnouncement[] }>("/api/admin/trainer-announcements");
       setData(r);
       setOffline(null);
       /* والنصُّ الجاهزُ لمرّةٍ واحدة: إن أُرسل بعنوانه فلا يُعرض ثانيةً كأنّه لم يُرسَل — ما لم يُمسّ منه حرفٌ في
@@ -226,7 +240,8 @@ export default function TrainerAnnouncements() {
   const untilProblem = late ? lateUntilProblem(until, today) : null;
   const ready = t.length >= 3 && b.length >= 10 && t.length <= ANNOUNCEMENT_TITLE_MAX && b.length <= ANNOUNCEMENT_BODY_MAX
     && !untilProblem;
-  const audience = data?.audience ?? null;
+  /* من يصله بما اختير — كلُّ مدرّب، أو من له دورةٌ منشورةٌ منهم */
+  const audience = data ? (reach === "live" ? data.audienceLive ?? 0 : data.audience) : null;
   const sameTitle = data?.items.find((a) => a.titleAr === t) ?? null;
 
   const send = async () => {
@@ -234,13 +249,14 @@ export default function TrainerAnnouncements() {
     setSendError(null);
     try {
       const r = await apiPost<{ id: string; recipients: number; emailed?: number }>("/api/admin/trainer-announcements", {
-        titleAr: t, bodyAr: b, lateJoinersUntil: late ? until : null, byEmail,
+        titleAr: t, bodyAr: b, lateJoinersUntil: late ? until : null, byEmail, audience: reach,
       });
       setSent({ title: t, recipients: r.recipients, emailed: byEmail ? r.emailed ?? 0 : null });
       setAsking(false);
       setTitle("");
       setBody("");
       setByEmail(false);
+      setReach("all");
       setLate(true);
       setUntil(defaultLateUntil(today, false));
       await load();
@@ -352,6 +368,24 @@ export default function TrainerAnnouncements() {
             <p className="ms-6 text-read leading-6 text-muted-foreground">نافذة وجرس في بوابته، بلا بريد.</p>
           </fieldset>
 
+          {/* ═══ ولمن — كلُّ مدرّب، أو من له دورةٌ منشورةٌ هذا الفصل (١٤ نوفمبر ٢٠٢٦، «A») ═══
+              وصل «بدأنا التسويق» مدرّبةً لم توافق على دورةٍ بعد. فرسائلُ التسويق لمن نُشرت دورتُه، وبجانب كلٍّ عددُ من يصله. */}
+          <fieldset className="mt-4 grid gap-2">
+            <legend className="mb-1 text-read font-bold text-foreground">لمن؟</legend>
+            <label className="flex items-center gap-2 text-read text-foreground">
+              <input type="radio" name="audience" className="accent-teal" checked={reach === "live"} onChange={() => setReach("live")} />
+              {ANNOUNCEMENT_AUDIENCE_AR.live}{data ? ` (${trainersAr(data.audienceLive ?? 0)})` : ""}
+            </label>
+            <p className="ms-6 text-read leading-6 text-muted-foreground">
+              لرسائل التسويق. من لم يوافق على دورة بعد أو لم تنشر دورته لا يصله.
+            </p>
+            <label className="flex items-center gap-2 text-read text-foreground">
+              <input type="radio" name="audience" className="accent-teal" checked={reach === "all"} onChange={() => setReach("all")} />
+              {ANNOUNCEMENT_AUDIENCE_AR.all}{data ? ` (${trainersAr(data.audience)})` : ""}
+            </label>
+            <p className="ms-6 text-read leading-6 text-muted-foreground">كل مدرّب نشط له بوّابة، ولو لم تنشر له دورة بعد.</p>
+          </fieldset>
+
           {/* ═══ ومن يصير مدرّبا بعد الإرسال — خياران بأثر كلٍّ (٤ أكتوبر ٢٠٢٦) ═══
               «اعرضه لمن ينضمّ بعدُ أيضا». والبابُ إلى يومٍ يُسمّى لا بلا حدّ: نصيحةُ موسمٍ
               مضى تُربك من انضمّ بعده (`defaultLateUntil`). */}
@@ -381,8 +415,8 @@ export default function TrainerAnnouncements() {
             </Button>
             <p className="text-read text-muted-foreground">
               {audience === null ? "يحسب من يصله…"
-                : audience === 0 ? "لا مدرّب نشطا يصله الآن."
-                : `يصله الآن ${trainersAr(audience)} — كلّ مدرّب نشط له بوّابة.`}
+                : audience === 0 ? (reach === "live" ? "لا مدرّب له دورة منشورة هذا الفصل الآن." : "لا مدرّب نشطا يصله الآن.")
+                : `يصله الآن ${trainersAr(audience)} — ${reach === "live" ? "من له دورة منشورة هذا الفصل" : "كلّ مدرّب نشط له بوّابة"}.`}
             </p>
           </div>
         </Panel>
@@ -405,6 +439,9 @@ export default function TrainerAnnouncements() {
         <Modal onClose={() => setAsking(false)} label="أترسل الإعلان الآن؟" panelClassName="w-full max-w-lg">
           <Inset dir="rtl" tone="solid" className="text-foreground sm:p-6">
             <h2 className="text-sm font-black">أترسل «{t}» الآن إلى {trainersAr(audience)}؟</h2>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              {reach === "live" ? "لمن له دورة منشورة هذا الفصل وحده." : "لكل مدرّب نشط، ولو لم تنشر له دورة بعد."}
+            </p>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               {late ? `ومن يصير مدرّبا حتّى ${dayLabelAr(until)} يصله حين يفتح بوّابته.` : "ومن ينضمّ بعد الإرسال لا يصله."}
             </p>

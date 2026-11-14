@@ -344,3 +344,57 @@ describe('⑧ صورة في البريد', () => {
     expect(doc.blocks).toContainEqual({ kind: 'cta', label: 'افتح الرابط', href: 'https://evil.example/a.jpg' })
   })
 })
+
+/* ═══ ⑨ ولمن له دورةٌ منشورةٌ هذا الفصل وحدَه — رسائلُ التسويق (١٤ نوفمبر ٢٠٢٦) ═══
+   وصل «بدأنا تسويق دوراتكم» بالبريد مدرّبةً لم توافق على دورةٍ بعد، فردّت معتذرةً عن «الفرصة». واختار صاحبُ المنصّة «A»:
+   رسائلُ التسويق لمن له دورةٌ منشورةٌ هذا الفصل وحدَه — بشرط الصفحات العامّة نفسِه (`liveTrainerWhere`) — وغيرُها لكلّ مدرّب. */
+describe('⑨ ولمن له دورة منشورة هذا الفصل وحده', () => {
+  const MKT = 'بدأنا تسويق دوراتكم — شاركوها الآن'
+  const DAY = 24 * 3600_000
+  let liveId = ''
+  /** شعبةٌ منشورةٌ (مفتوحةٌ للتسجيل) أصيلُها هذا المدرّب */
+  async function publish(who: string) {
+    const profile = await prisma.trainerProfile.findFirstOrThrow({ where: { userId: people[who].id } })
+    const c = await prisma.cohort.create({
+      data: { courseId: 'C-BIZ-101', title: `شعبة ${who}`, status: 'open', startsAt: new Date(Date.now() + 14 * DAY) },
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId: profile.id, role: 'lead' } })
+  }
+
+  it('⚠️ يصل من له شعبة منشورة — ولا يصل من لم تنشر له دورة', async () => {
+    await person('live', ['trainer'], { profile: 'active' })
+    await person('idle', ['trainer'], { profile: 'active' })
+    await publish('live')
+    const listed = (await get('super', '/api/admin/trainer-announcements')).json() as { audience: number; audienceLive: number }
+    expect(listed.audienceLive, 'عددُ من له دورة منشورة').toBeGreaterThanOrEqual(1)
+    expect(listed.audienceLive, 'عدّ من لم تنشر له دورة').toBeLessThan(listed.audience)
+
+    const r = await post('super', '/api/admin/trainer-announcements', { titleAr: MKT, bodyAr: BODY, byEmail: false, audience: 'live' })
+    expect(r.statusCode, r.body).toBe(201)
+    liveId = r.json().id
+    const to = new Set((await prisma.trainerAnnouncementRecipient.findMany({ where: { announcementId: liveId } })).map((x) => x.userId))
+    expect(r.json().recipients, 'العدد المردود غير المكتوب').toBe(to.size)
+    expect(to.has(people.live.id), 'لم يصل من له دورة منشورة').toBe(true)
+    for (const who of ['idle', 'a', 'b', 'susp', 'noprofile', 'learner']) {
+      expect(to.has(people[who].id), `وصل «${who}» ولا دورة منشورة له`).toBe(false)
+    }
+    expect((await prisma.trainerAnnouncement.findUniqueOrThrow({ where: { id: liveId } })).audience).toBe('live')
+  })
+
+  it('⚠️ ومن نشرت دورته بعد الإرسال يكتب حين يفتح بوابته — ومن لم تنشر لا يكتب', async () => {
+    await prisma.trainerAnnouncement.update({ where: { id: liveId }, data: { lateJoinersUntil: new Date(Date.now() + 5 * DAY) } })
+    const seen = async (who: string) => ((await get(who, '/api/trainer/announcements')).json() as { id: string }[]).map((x) => x.id)
+    expect(await seen('idle'), 'كتب من لم تنشر له دورة حين فتح بوابته').not.toContain(liveId)
+    await publish('idle')
+    expect(await seen('idle'), 'نشرت دورته في المدة ولم يصله').toContain(liveId)
+  })
+
+  it('⚠️ وما يرسل لكل المدربين يصل من لم تنشر له دورة كما كان — والباب لا يقبل غير القيمتين', async () => {
+    await person('idle2', ['trainer'], { profile: 'active' })
+    const r = await post('super', '/api/admin/trainer-announcements', { titleAr: 'موعد بدء الشعب — للجميع', bodyAr: BODY })
+    expect(r.statusCode, r.body).toBe(201)
+    expect(await prisma.trainerAnnouncementRecipient.count({ where: { announcementId: r.json().id, userId: people.idle2.id } })).toBe(1)
+    expect((await prisma.trainerAnnouncement.findUniqueOrThrow({ where: { id: r.json().id } })).audience).toBe('all')
+    expect((await post('super', '/api/admin/trainer-announcements', { titleAr: MKT, bodyAr: BODY, audience: 'everyone' })).statusCode).toBe(422)
+  })
+})

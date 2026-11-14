@@ -77,6 +77,24 @@ export function lateUntilInstant(day: string): Date {
   return zonedInstant(day, [23, 59, 59, 999])
 }
 
+/* ═══ ولمن يصل — كلُّ مدرّب، أو من له دورةٌ منشورةٌ هذا الفصل وحدَه (١٤ نوفمبر ٢٠٢٦) ═══
+
+   وصل «بدأنا تسويق دوراتكم» بالبريد مدرّبةً لم توافق على دورةٍ بعد — فدورُ المدرّب يُكتب لمن فعّل دعوتَه قبل أن
+   يقبل شيئا — فردّت معتذرةً عن «الفرصة». فخُيّر صاحبُ المنصّة بين ثلاثة، واختار «A»: رسائلُ التسويق لمن له دورةٌ
+   منشورةٌ هذا الفصل وحدَه، وغيرُها لكلّ المدرّبين كما كانت. فالنصّان الجاهزان للتسويق («بدأنا التسويق» و«فيديو
+   تعريفي») يختاران `live`، و«موعد بدء الشعب» `all` — والاختيارُ ظاهرٌ في النموذج بعدد من يصله، ويُغيَّر قبل الإرسال.
+   و«منشورة هذا الفصل» شرطُ الصفحات العامّة نفسُه (`liveTrainerWhere` في `server/services/trainer-visibility.ts`). */
+export const ANNOUNCEMENT_AUDIENCES = ['all', 'live'] as const
+export type AnnouncementAudience = (typeof ANNOUNCEMENT_AUDIENCES)[number]
+
+export const ANNOUNCEMENT_AUDIENCE_AR: Record<AnnouncementAudience, string> = {
+  all: 'كل المدربين',
+  live: 'من له دورة منشورة هذا الفصل',
+}
+
+/** ما يُقرأ في الصفّ — والقديمُ بلا قيمةٍ «كل المدربين» */
+export const announcementAudienceOf = (v: string | null | undefined): AnnouncementAudience => (v === 'live' ? 'live' : 'all')
+
 /** حالُ مدرّبٍ مع إعلان — كما تقرؤه قائمةُ «من قرأ» */
 export type RecipientState = 'read' | 'seen' | 'unseen'
 
