@@ -116,7 +116,7 @@ function Nav() {
       <div className="shell flex h-16 items-center justify-between">
         <a href="#top" className="flex items-center gap-2.5">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
-          <span className="whitespace-nowrap text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
+          <span className="brand-wordmark whitespace-nowrap text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
         </a>
         {/* المقاسُ نفسُه في `SiteShell` — رأسان لصفحةٍ واحدةٍ في المعنى،
             ويحرس تطابقَهما `src/tests/site-nav-size.test.ts`. */}

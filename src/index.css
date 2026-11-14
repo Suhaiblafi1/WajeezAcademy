@@ -13,6 +13,15 @@
    والأوزانُ المطلوبةُ هناك ما تستعمله الشاشات: 300 و400 و500 و700 و800 و900 (ولا 600 فيه، فيقرأ `font-semibold` 700).
    والارتدادُ بعده IBM Plex Sans Arabic لمن ثبّته، ثمّ خطُّ النظام — فالصفحةُ تُقرأ لو تعذّر التحميل. */
 
+/* ═══ واسمُ الأكاديميّة بجانب العلامة بخطّه القديم (١٤ نوفمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «أعِد الخطَّ كما كان سابقا للوقو فقط». فاسمُ «أكاديمية وجيز» بجانب العلامة — في رأس الصفحات
+   وتذييلها — بـIBM Plex Sans Arabic كما كان قبل Tajawal، وبقيّةُ الموقع على Tajawal. ويُحمَّل وزنُه الواحدُ 700 في رابط
+   `index.html` (وهو أثقلُ أوزانه، فـ`font-black` يُقرأ به كما كان يُقرأ). والحارس: `src/tests/design/brand-wordmark.test.ts`. */
+.brand-wordmark {
+  font-family: "IBM Plex Sans Arabic", "Tajawal", "Neo Sans Arabic", system-ui, sans-serif;
+}
+
 /** يُوضع على حاوية المتن وحدها — والخطُّ خطُّ الموقع نفسُه، والصنفُ باقٍ لأنّ حارسَه يقيس موضعَه */
 .course-prose {
   font-family: "Tajawal", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;

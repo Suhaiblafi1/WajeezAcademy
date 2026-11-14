@@ -433,7 +433,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           </Link>
           <div className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-            <span className="font-black">أكاديمية وجيز</span>
+            <span className="brand-wordmark font-black">أكاديمية وجيز</span>
           </div>
         </div>
       </header>
