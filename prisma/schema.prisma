@@ -4547,6 +4547,9 @@ model TrainerAnnouncement {
   lateJoinersUntil DateTime?
   /// ويصل بالبريد أيضا — خيارُ المرسِل عند الإرسال (٢٨ أكتوبر ٢٠٢٦). ومن كُتب بعده من المنضمّين يصله بريدُه كذلك
   byEmail          Boolean                        @default(false)
+  /// لمن يصل: `all` كلُّ مدرّبٍ تُفتح له بوّابتُه، أو `live` من له دورةٌ منشورةٌ هذا الفصل وحدَه — رسائلُ التسويق
+  /// (١٤ نوفمبر ٢٠٢٦). والبابُ يقبل القيمتين وحدَهما (`ANNOUNCEMENT_AUDIENCES`)
+  audience         String                         @default("all")
   recipients       TrainerAnnouncementRecipient[]
 
   @@index([sentAt])

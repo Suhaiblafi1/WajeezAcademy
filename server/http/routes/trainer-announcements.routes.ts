@@ -11,7 +11,7 @@ import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
 import { TrainerAnnouncementService } from '../../services/trainer-announcement.service'
 import {
-  ANNOUNCEMENT_BODY_MAX, ANNOUNCEMENT_TITLE_MAX, lateUntilInstant, lateUntilProblem,
+  ANNOUNCEMENT_AUDIENCES, ANNOUNCEMENT_BODY_MAX, ANNOUNCEMENT_TITLE_MAX, lateUntilInstant, lateUntilProblem,
 } from '../../../src/application/trainer/announcement'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 
@@ -37,6 +37,8 @@ export function registerTrainerAnnouncementRoutes(app: FastifyInstance, prisma: 
       lateJoinersUntil: z.string().nullable().optional(),
       /* ويصل بالبريد أيضا — خيارُ المرسِل، وبلا ذكرٍ في المنصّة وحدَها كما كان */
       byEmail: z.boolean().optional(),
+      /* ولمن: كلُّ مدرّب، أو من له دورةٌ منشورةٌ هذا الفصل وحدَه (١٤ نوفمبر ٢٠٢٦) — وبلا ذكرٍ كلُّ مدرّبٍ كما كان */
+      audience: z.enum(ANNOUNCEMENT_AUDIENCES).optional(),
     }).parse(req.body)
     const day = body.lateJoinersUntil ?? null
     if (day) {
@@ -45,6 +47,7 @@ export function registerTrainerAnnouncementRoutes(app: FastifyInstance, prisma: 
     }
     return reply.status(201).send(await svc.send(req.auth!.userId, {
       titleAr: body.titleAr, bodyAr: body.bodyAr, lateJoinersUntil: day ? lateUntilInstant(day) : null, byEmail: body.byEmail ?? false,
+      audience: body.audience ?? 'all',
     }))
   })
 

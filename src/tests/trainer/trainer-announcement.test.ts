@@ -19,7 +19,9 @@ import {
   ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TEMPLATE_KEY, LATE_JOINERS_DRAFT_UNTIL, announcementParts, announcementToShow, defaultLateUntil,
   marketingDraft, videoDraft, VIDEO_EXAMPLE_PATH, announcementImage,
   lateUntilInstant, lateUntilProblem, recipientState,
+  ANNOUNCEMENT_AUDIENCES, ANNOUNCEMENT_AUDIENCE_AR, announcementAudienceOf,
 } from '@/application/trainer/announcement'
+import { plainAr } from '@/application/text/plain-ar'
 import { categoryForTemplate } from '@/application/notifications/categories'
 import { notificationHref } from '@/application/notifications/destinations'
 import { allSections } from '@/pages/admin/nav-map'
@@ -290,5 +292,26 @@ describe('⑧ صورة في الرسالة', () => {
     expect(BODY).toMatch(/window\.location\.origin/)
     expect(BODY).toMatch(/src \? \(\s*<a key=\{i\} href=\{src\}[^>]*>\s*<img src=\{src\}/)
     expect(BODY).toMatch(/: \(\s*<LinkedText key=\{i\} text=\{para\}/)
+  })
+})
+
+/* ═══ ⑨ ولمن — رسائلُ التسويق لمن له دورةٌ منشورةٌ هذا الفصل (١٤ نوفمبر ٢٠٢٦، «A») ═══
+   وصل «بدأنا تسويق دوراتكم» مدرّبةً لم توافق على دورةٍ بعد. فنصّا التسويق يختاران `live`، و«موعد بدء الشعب» `all`،
+   والاختيارُ يُرسَل مع النصّ، وبجانبه عددُ من يصله. والخادمُ يحرسه في `server/tests/trainer/trainer-announcements.test.ts` ⑨. */
+describe('⑨ ولمن يصل', () => {
+  it('⚠️ نصا التسويق لمن له دورة منشورة — وموعد بدء الشعب لكل مدرب', () => {
+    expect(ADMIN).toMatch(/key: "video", labelAr: "فيديو تعريفي", \.\.\.videoDraft\(origin\), byEmail: true, audience: "live",/)
+    expect(ADMIN).toMatch(/key: "marketing", labelAr: "بدأنا التسويق", \.\.\.marketingDraft\(origin\), byEmail: true, audience: "live",/)
+    expect(ADMIN).toMatch(/key: "start", labelAr: "موعد بدء الشعب", \.\.\.ANNOUNCEMENT_DRAFT, byEmail: false, audience: "all",/)
+    expect(ADMIN, 'النص الجاهز لا يختار لمن').toMatch(/setReach\(d\?\.audience \?\? "all"\);/)
+  })
+
+  it('⚠️ والاختيار يرسل مع النص — وعدد من يصله بما اختير', () => {
+    expect(ADMIN).toMatch(/byEmail, audience: reach,\s*\}\);/)
+    expect(ADMIN).toMatch(/const audience = data \? \(reach === "live" \? data\.audienceLive \?\? 0 : data\.audience\) : null;/)
+    expect(ANNOUNCEMENT_AUDIENCES).toEqual(['all', 'live'])
+    expect(announcementAudienceOf(null), 'القديم بلا قيمة').toBe('all')
+    expect(announcementAudienceOf('live')).toBe('live')
+    for (const t of Object.values(ANNOUNCEMENT_AUDIENCE_AR)) expect(t).toBe(plainAr(t))
   })
 })

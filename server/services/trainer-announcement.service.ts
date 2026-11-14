@@ -39,11 +39,12 @@
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { liveTrainerWhere } from './trainer-visibility'
 import { recordAudit } from './audit'
 import { publicSiteUrl, safeNotify, sendDirectEmail } from './notification.service'
 import { renderMail, type MailBlock, type MailDoc } from './mail-template'
 import {
-  ANNOUNCEMENT_BELL_BODY_AR, ANNOUNCEMENT_TEMPLATE_KEY, announcementParts,
+  ANNOUNCEMENT_BELL_BODY_AR, ANNOUNCEMENT_TEMPLATE_KEY, announcementAudienceOf, announcementParts, type AnnouncementAudience,
 } from '../../src/application/trainer/announcement'
 import { categoryForTemplate } from '../../src/application/notifications/categories'
 
@@ -72,6 +73,17 @@ const AUDIENCE = {
   roles: { some: { roleId: 'trainer' } },
   trainerProfile: { is: { suspendedAt: null } },
 } satisfies Prisma.UserWhereInput
+
+/* ═══ ولمن يصل — كلُّ مدرّب، أو من له دورةٌ منشورةٌ هذا الفصل وحدَه (١٤ نوفمبر ٢٠٢٦) ═══
+
+   «بدأنا تسويق دوراتكم» وصل بالبريد من لا دورةَ له — دورُ المدرّب يُكتب لمن فعّل دعوتَه قبل أن يقبل شيئا — فاختار
+   صاحبُ المنصّة أن تصل رسائلُ التسويق من له دورةٌ منشورةٌ هذا الفصل وحدَه («A»). والشرطُ شرطُ الصفحات العامّة نفسُه
+   (`liveTrainerWhere`): أصيلُ شعبةٍ منشورة، أو إسنادٌ نشطٌ فيها، أو مسارٌ منشور. ومن صار كذلك بعد الإرسال يُكتب كما
+   يُكتب المنضمّون (`enrollLate`) — فمن نُشرت دورتُه في المدّة يصله. والعقدُ في `src/application/trainer/announcement.ts`. */
+function audienceWhere(audience: AnnouncementAudience, now = new Date()): Prisma.UserWhereInput {
+  if (audience === 'all') return AUDIENCE
+  return { ...AUDIENCE, trainerProfile: { is: { suspendedAt: null, AND: [liveTrainerWhere(now)] } } }
+}
 
 export class TrainerAnnouncementService {
   private prisma: PrismaClient
@@ -102,9 +114,9 @@ export class TrainerAnnouncementService {
     return ok
   }
 
-  /** من يصله الإعلانُ لو أُرسل الآن — من تُفتح له بوّابةُ المدرّب فعلا */
-  private async audienceNow(): Promise<string[]> {
-    const users = await this.prisma.user.findMany({ where: AUDIENCE, select: { id: true } })
+  /** من يصله الإعلانُ لو أُرسل الآن — من تُفتح له بوّابةُ المدرّب فعلا، وبدورةٍ منشورةٍ إن اختير ذلك */
+  private async audienceNow(audience: AnnouncementAudience = 'all'): Promise<string[]> {
+    const users = await this.prisma.user.findMany({ where: audienceWhere(audience), select: { id: true } })
     return users.map((u) => u.id)
   }
 
@@ -118,16 +130,22 @@ export class TrainerAnnouncementService {
     })
   }
 
-  async send(actorId: string, input: { titleAr: string; bodyAr: string; lateJoinersUntil?: Date | null; byEmail?: boolean }) {
-    const userIds = await this.audienceNow()
+  async send(actorId: string, input: {
+    titleAr: string; bodyAr: string; lateJoinersUntil?: Date | null; byEmail?: boolean; audience?: AnnouncementAudience
+  }) {
+    const audience = input.audience ?? 'all'
+    const userIds = await this.audienceNow(audience)
     if (userIds.length === 0) {
-      throw new AuthError('no_recipients', 'لا مدرّب نشطا يصله الإعلان الآن — لم يرسل شيء', 409)
+      throw new AuthError('no_recipients', audience === 'live'
+        ? 'لا مدرّب له دورة منشورة هذا الفصل الآن — لم يرسل شيء'
+        : 'لا مدرّب نشطا يصله الإعلان الآن — لم يرسل شيء', 409)
     }
     const a = await this.prisma.trainerAnnouncement.create({
       data: {
         titleAr: input.titleAr, bodyAr: input.bodyAr, sentBy: actorId,
         lateJoinersUntil: input.lateJoinersUntil ?? null,
         byEmail: input.byEmail ?? false,
+        audience,
         recipients: { createMany: { data: userIds.map((userId) => ({ userId })) } },
       },
     })
@@ -138,7 +156,7 @@ export class TrainerAnnouncementService {
       actorId, action: 'trainer.announcement.send', entityType: 'trainer_announcement', entityId: a.id,
       meta: {
         recipients: userIds.length, title: input.titleAr, lateJoinersUntil: a.lateJoinersUntil?.toISOString() ?? null,
-        byEmail: a.byEmail, emailed,
+        byEmail: a.byEmail, emailed, audience,
       },
     })
     return { id: a.id, recipients: userIds.length, emailed }
@@ -148,11 +166,17 @@ export class TrainerAnnouncementService {
   private async enrollLate(userId: string) {
     const open = await this.prisma.trainerAnnouncement.findMany({
       where: { lateJoinersUntil: { gte: new Date() }, recipients: { none: { userId } } },
-      select: { id: true, titleAr: true, bodyAr: true, byEmail: true },
+      select: { id: true, titleAr: true, bodyAr: true, byEmail: true, audience: true },
     })
     if (open.length === 0) return
-    if ((await this.prisma.user.count({ where: { id: userId, ...AUDIENCE } })) === 0) return
+    /* ومن يُكتب: من تُفتح له البوّابة — ولإعلانٍ لمن له دورةٌ منشورة، من نُشرت دورتُه وحدَه */
+    const fits = new Map<AnnouncementAudience, boolean>()
+    const reaches = async (aud: AnnouncementAudience) => {
+      if (!fits.has(aud)) fits.set(aud, (await this.prisma.user.count({ where: { id: userId, ...audienceWhere(aud) } })) > 0)
+      return fits.get(aud)!
+    }
     for (const a of open) {
+      if (!(await reaches(announcementAudienceOf(a.audience)))) continue
       try {
         await this.prisma.trainerAnnouncementRecipient.create({ data: { announcementId: a.id, userId } })
       } catch (e) {
@@ -167,15 +191,18 @@ export class TrainerAnnouncementService {
 
   /** ما أُرسل — وكم قرأ كلَّ إعلانٍ، وكم رآه ولم يؤكّد. ومعه من يصله لو أُرسل الآن */
   async list() {
-    const [rows, audience] = await Promise.all([
+    const [rows, audience, live] = await Promise.all([
       this.prisma.trainerAnnouncement.findMany({
         orderBy: { sentAt: 'desc' }, take: 50,
         include: { recipients: { select: { seenAt: true, readAt: true, emailedAt: true } } },
       }),
-      this.audienceNow(),
+      this.audienceNow('all'),
+      this.audienceNow('live'),
     ])
     return {
       audience: audience.length,
+      /** من له دورةٌ منشورةٌ هذا الفصل منهم — يصله ما يُرسل «لمن له دورة منشورة» */
+      audienceLive: live.length,
       items: rows.map(({ recipients, ...a }) => ({
         ...a,
         total: recipients.length,
