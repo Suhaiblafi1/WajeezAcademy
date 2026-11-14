@@ -22,6 +22,7 @@ import {
   courseSearchFields, courseSearchLayers, pathwaySearchFields, pathwaySearchLayers,
 } from '@/application/catalog/search-fields'
 import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
+import { PATH_FOR_YOU_AR } from '@/application/catalog/path-intro'
 import { sortKeyAr } from '@/application/catalog/course-title'
 import { useCourseCohorts } from '@/services/cohort-prices'
 import { trainerFacesOf } from '@/application/catalog/course-trainers'
@@ -338,17 +339,16 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.shortName}</h2>
               <span className="mt-1.5 w-fit rounded-full border border-white/10 px-2.5 py-0.5 text-fine text-muted-foreground">{p.level}</span>
               <p className="mt-2 line-clamp-3 text-read leading-6 text-muted-foreground">{p.transformation}</p>
-              {/* ── ولمن ليس ──
+              {/* ── ولمن ──
 
-                  «لمن؟» (`p.audience`) حُذفت من البطاقة (٩ سبتمبر ٢٠٢٦، قرارُ
-                  صاحب المنصّة): بطاقةٌ أهدأ وأقلّ ازدحاما، وتفصيلُ الجمهور
-                  موجودٌ في صفحة المسار نفسِها لمن أراده. أمّا «ليست لك
-                  إن…» فتبقى — أصدقُ سطرٍ في الكتالوج: يمنع شراءً خاطئا قبل
-                  وقوعه، **والمنعُ خدمةٌ لا خسارة**. */}
-              {p.notFor && (
-                <p className="mt-1.5 line-clamp-2 text-read leading-5 text-muted-foreground">
-                  <span className="font-bold text-gold-ink">ليس لك إن: </span>
-                  {resolveCatalogRefsAr(p.notFor, (id) => nameById.get(id))}
+                  «لك إن كنت» لا «ليس لك إن» — قرارُ صاحب المنصّة (١٤ نوفمبر ٢٠٢٦): «ألغِ جملةَ ليس لك.. بل يجب أن تكون لك إن
+                  كنت». وكالرئيسة (`Bestsellers.tsx`). وكان «لمن؟» (`p.audience`) قد حُذف (٩ سبتمبر ٢٠٢٦) وبقي «ليس لك إن»؛
+                  وصفحةُ المسار تبقى تفصّل الاثنين. وثلاثةُ أسطرٍ لا اثنان: الجمهورُ أطولُ من «ليس لك إن»، فكان يُقصّ في
+                  أوّل جملته الثانية («…ويريد طريقة») — وهي ما يقول له إنّه المقصود. */}
+              {p.audience && (
+                <p className="mt-1.5 line-clamp-3 text-read leading-5 text-muted-foreground">
+                  <span className="font-bold text-gold-ink">{PATH_FOR_YOU_AR} </span>
+                  {resolveCatalogRefsAr(p.audience, (id) => nameById.get(id))}
                 </p>
               )}
               {/* المخرَجُ الملموس مكانَ اسم مدرّبٍ لم يُعيَّن بعد — كان يظهر

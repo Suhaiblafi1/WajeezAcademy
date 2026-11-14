@@ -219,7 +219,9 @@ describe('٣٠ · البطاقةُ تعرض ما أُلِّف لها', () => {
 
   it('والبطاقةُ تعرضها — لا تحملها البياناتُ وحدَها', () => {
     expect(catalogPage).toContain('{p.shortName}')
-    expect(catalogPage).toContain('ليس لك إن')
+    /* و«لك إن كنت» (`p.audience`) مكانَ «ليس لك إن» — قرارُ صاحب المنصّة (١٤ نوفمبر ٢٠٢٦). على الحقل لا على الكلمة */
+    expect(catalogPage, 'ذهب «لك إن كنت» من البطاقة').toMatch(/resolveCatalogRefsAr\(p\.audience,/)
+    expect(catalogPage, 'عاد «ليس لك إن» إلى البطاقة').not.toMatch(/p\.notFor/)
   })
 
   it('ولا معرِّفَ داخليٌّ يُعرض لزائر — «PW-STU-002» ليست إرشادا', () => {

@@ -32,6 +32,7 @@ import { ArrowLeft, ChevronDown, Compass, Flame } from "lucide-react"
 import { bestsellers, pathwayDomain, pathways } from "@/data/pathways"
 import { publicPathways, type PublicPathway } from "@/data/public-pathways"
 import { resolveCatalogRefsAr } from "@/application/catalog/visitor-text"
+import { PATH_FOR_YOU_AR, PATHS_INTRO_AR } from "@/application/catalog/path-intro"
 import { ALL_AR, filterRows, shownFor, type PickSource } from "@/application/catalog/home-picks"
 import { getCatalogVersion, onCoreCatalogInstalled } from "@/data/core-catalog-source"
 import { bestsellerCourses, courses, pathwaySizeAr, type Course } from "@/data/courses"
@@ -177,7 +178,7 @@ export function Bestsellers({ middle }: { middle?: ReactNode } = {}) {
   const [pwCat, setPwCat] = useState(ALL_AR)
   const [crCat, setCrCat] = useState(ALL_AR)
 
-  /* أسماءُ المسارات لفكّ إحالات «ليس لك إن» — الحقلُ يشير إلى مساراتٍ بمعرّفها.
+  /* أسماءُ المسارات لفكّ إحالات سطر البطاقة («لك إن كنت») — الحقلُ قد يشير إلى مساراتٍ بمعرّفها.
      والخريطةُ من الكتالوج كلِّه لا من المختارات وحدَها: المقترَحُ يحمل الحقلَ
      نفسَه، وإحالتُه إلى مسارٍ غيرِ مختارٍ كانت تُحذف مع جملتها (`visitor-text`). */
   const nameById = useMemo(
@@ -369,6 +370,9 @@ export function Bestsellers({ middle }: { middle?: ReactNode } = {}) {
         {morePaths.length > 0 && (
           <div className="reveal mt-12">
             <h3 className="text-lg font-bold md:text-xl">مسارات كاملة</h3>
+            {/* ما المسار — بقرار صاحب المنصّة (١٤ نوفمبر ٢٠٢٦): «قل له: لأنّنا نهتمّ بالنتائج فقد جمعنا حزمةً من الدورات لكلّ هدفٍ
+                بحسب الفئة المستهدفة». والعددُ من الكتالوج نفسِه (`PATH_COURSES`): كلُّ مسارٍ منشورٍ أربعُ دورات */}
+            <p className="mt-1.5 max-w-2xl text-read leading-7 text-muted-foreground">{PATHS_INTRO_AR}</p>
             <CategoryFilter counts={pwCounts} allCount={pwAllCount} active={pwCat} onChange={setPwCat} label="تصفية المسارات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
               {morePaths.map((b) => (
@@ -401,14 +405,13 @@ export function Bestsellers({ middle }: { middle?: ReactNode } = {}) {
                   {/* الاسمُ **القصير** كبطاقة الكتالوج: الكاملُ متوسّطُه ٤٥ حرفا
                       وفيه نقطتان — يصلح لصفحةٍ لا لبطاقةٍ في شريط. */}
                   <h4 className="text-base font-black leading-snug">{b.item.shortName}</h4>
-                  {/* «لمن؟» حُذفت من البطاقة (٩ سبتمبر ٢٠٢٦، قرارُ صاحب المنصّة
-                      — عكسُ البند ٣٠): بطاقةٌ أهدأ وأقلّ ازدحاما. و«ليس لك
-                      إن» يبقى — أصدقُ سطرٍ في الكتالوج: يمنع شراءً خاطئا قبل
-                      وقوعه، والمنعُ خدمةٌ لا خسارة. */}
-                  {b.item.notFor && (
+                  {/* «لك إن كنت» لا «ليس لك إن» — قرارُ صاحب المنصّة (١٤ نوفمبر ٢٠٢٦): «ألغِ جملةَ ليس لك.. بل يجب أن تكون لك إن
+                      كنت». فالبطاقةُ تقول لمن المسار (`audience`) لا لمن ليس. وكان «لمن؟» قد حُذف (٩ سبتمبر ٢٠٢٦) وبقي «ليس لك إن»
+                      وحدَه؛ وصفحةُ المسار تبقى تفصّل الاثنين */}
+                  {b.item.audience && (
                     <p className="line-clamp-3 text-read leading-6 text-muted-foreground">
-                      <span className="font-bold text-gold-ink">ليس لك إن: </span>
-                      {resolveCatalogRefsAr(b.item.notFor, (id) => nameById.get(id))}
+                      <span className="font-bold text-gold-ink">{PATH_FOR_YOU_AR} </span>
+                      {resolveCatalogRefsAr(b.item.audience, (id) => nameById.get(id))}
                     </p>
                   )}
                   <PathOutput output={b.item.output} className="text-read leading-6" clamp="line-clamp-3" />
