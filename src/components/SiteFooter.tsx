@@ -81,7 +81,8 @@ export default function SiteFooter() {
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5">
               <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
-              <div className="font-bold">وجيز <span className="text-teal-light-ink">أكاديمي</span></div>
+              {/* «أكاديمية وجيز» كرأس الصفحة لا «وجيز أكاديمي» — «الاسم هنا خطأ» (صاحب المنصّة، ١٤ نوفمبر ٢٠٢٦) */}
+              <div className="brand-wordmark font-bold">أكاديمية <span className="text-teal-light-ink">وجيز</span></div>
             </div>
             <p className="mt-2.5 max-w-xs text-read leading-6 text-muted-foreground">
               منصة تفهم الإنسان قبل أن تقترح ما يتعلمه — من مجموعة وجيز wajeez.com

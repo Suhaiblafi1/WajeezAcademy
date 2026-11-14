@@ -22,7 +22,7 @@ export function PathwayTopBar({ user }: { user: string | null }) {
         </Link>
         <div className="flex min-w-0 items-center gap-2">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
-          <span className="whitespace-nowrap font-black">أكاديمية وجيز</span>
+          <span className="brand-wordmark whitespace-nowrap font-black">أكاديمية وجيز</span>
         </div>
         <div className="flex items-center gap-3">
           {user ? (

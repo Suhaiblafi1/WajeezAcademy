@@ -303,7 +303,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-5">
           <Link to="/" className="flex shrink-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
-            <span className="hidden font-black sm:block">أكاديمية وجيز</span>
+            <span className="brand-wordmark hidden font-black sm:block">أكاديمية وجيز</span>
           </Link>
           {/* ═══ الأقسامُ بشريط المدرّب — قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦) ═══
 
