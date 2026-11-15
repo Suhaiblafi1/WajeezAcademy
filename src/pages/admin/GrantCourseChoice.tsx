@@ -6,8 +6,12 @@
 
    فهنا خياران ظاهران — «تلقائي» و«أختار الدورات» — وقائمةٌ بعلامات، ثمّ الحفظُ بتأكيدٍ يقول ما يقع: ما يظهر في الصفحة،
    وأنّ الكودَ يعمل على أيّ دورةٍ حتى حدّه، وأنّ الدورةَ الجديدة لا تظهر حتى تُضاف. والعودةُ إلى التلقائيّ
-   خيارٌ لا يُخفى. ومن الدورات ما لا يظهر الآن (بلا شعبةٍ تُشترى) — يُقال بجانبه. والعلّةُ في
-   `server/services/grant-scope.service.ts`. */
+   خيارٌ لا يُخفى. والعلّةُ في `server/services/grant-scope.service.ts`.
+
+   ═══ وما لا شعبةَ له لا يُعرض (١٥ نوفمبر ٢٠٢٦) ═══
+
+   «اجعلني أرى الدورات التي لها شعب فقط، واجعلني أرى اسم المدرب ومتى تبدأ أول شعبة». فالقائمةُ ما له شعبةٌ تُشترى الآن،
+   وتحت كلّ دورةٍ مدرّبُ أقرب شعبةٍ ويومُ بدئها. وما اختير قبلُ ولا شعبةَ له الآن يبقى مختارا ولا يُعرض. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiGet, apiPut, ApiError } from "@/services/api";
@@ -17,13 +21,14 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { countAr } from "@/application/text/count-ar";
+import { fmtDateLong } from "@/application/text/format-ar";
 import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 
 interface Choice {
   auto: boolean;
   courseIds: string[];
-  courses: { courseId: string; titleAr: string; shown: boolean }[];
+  courses: { courseId: string; titleAr: string; shown: boolean; trainerName: string | null; startsAt: string | null }[];
 }
 
 /** «3 دورات» و«دورتان» — بصيغة العدد */
@@ -115,17 +120,22 @@ export default function GrantCourseChoice({ endpoint, forInfluencer = false, onS
       {!auto && (
         <div className="mt-3">
           {choice.courses.length === 0 ? (
-            <p className="text-read text-muted-foreground">{forInfluencer ? "لا دورة في منحة المؤثرين الآن." : "لا دورة منشورة بعد."}</p>
+            <p className="text-read text-muted-foreground">{forInfluencer ? "لا دورة لها شعبة في منحة المؤثرين الآن." : "لا دورة لها شعبة تشترى الآن."}</p>
           ) : (
             <>
               <ListToolbar q={q} onQ={setQ} onPage={setPage} view={shown} placeholder="ابحث باسم الدورة" unit="دورة" />
               <ul className="divide-y divide-border">
                 {shown.rows.map((c) => (
                   <li key={c.courseId} className="py-2 text-read">
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" checked={picked.has(c.courseId)} onChange={() => toggle(c.courseId)} />
-                      <span className="font-bold">{c.titleAr}</span>
-                      {!c.shown && <span className="text-muted-foreground">· لا شعبة تشترى الآن، فلا تظهر</span>}
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-1.5" checked={picked.has(c.courseId)} onChange={() => toggle(c.courseId)} />
+                      <span>
+                        <span className="block font-bold">{c.titleAr}</span>
+                        <span className="block text-muted-foreground">
+                          {c.trainerName ? `المدرب: ${c.trainerName}` : "بلا مدرب منشور"}
+                          {c.startsAt && ` · تبدأ أول شعبة ${fmtDateLong(c.startsAt)}`}
+                        </span>
+                      </span>
                     </label>
                   </li>
                 ))}

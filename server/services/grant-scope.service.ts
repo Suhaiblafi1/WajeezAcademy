@@ -58,8 +58,22 @@ export async function pageCourses(
 
 /* ═══ اختيارُ المدير ═══ */
 
-/** دورةٌ في قائمة الاختيار — و`shown`: تظهر في الصفحة الآن (لها شعبةٌ تُشترى بالشروط) */
-export interface ChoiceCourse { courseId: string; titleAr: string; shown: boolean }
+/** دورةٌ في قائمة الاختيار — و`shown`: تظهر في الصفحة الآن بالاختيار القائم.
+
+    ═══ وما لا شعبةَ له لا يُعرض (١٥ نوفمبر ٢٠٢٦) ═══
+
+    قرارُ صاحب المنصّة: «اجعلني أرى الدورات التي لها شعب فقط، واجعلني أرى اسم المدرب ومتى تبدأ أول شعبة». فالقائمةُ
+    ما له شعبةٌ تُشترى الآن بشروط لوح الدفع (`GrantCoursesService.pool` بلا نطاق) — ومع كلٍّ مدرّبُ تلك الشعبة الأصيلُ
+    المنشورُ ويومُ بدئها. وما اختير قبلُ ولا شعبةَ له الآن يبقى في الاختيار (`courseIds`) ولا يُعرض؛ يعود حين تُفتح شعبتُه. */
+export interface ChoiceCourse {
+  courseId: string
+  titleAr: string
+  shown: boolean
+  /** مدرّبُ أقرب شعبةٍ تُشترى — الأصيلُ المنشور، وإلّا `null` */
+  trainerName: string | null
+  /** يومُ بدء أقرب شعبةٍ تُشترى */
+  startsAt: Date | null
+}
 export interface CourseChoice {
   /** تلقائيّة: بلا اختيار */
   auto: boolean
@@ -88,6 +102,13 @@ export class GrantCourseChoiceService {
       .sort((a, b) => a.titleAr.localeCompare(b.titleAr, 'ar'))
   }
 
+  /** كلُّ دورةٍ لها شعبةٌ تُشترى الآن — بمدرّب أقرب شعبةٍ ويوم بدئها، مرتّبةً بأسمائها */
+  private async buyable(now: Date): Promise<Omit<ChoiceCourse, 'shown'>[]> {
+    return (await this.pool.openCourses(now, null)).courses.map((c) => ({
+      courseId: c.courseId, titleAr: c.courseTitleAr, trainerName: c.trainer?.name ?? null, startsAt: c.startsAt,
+    }))
+  }
+
   /** ما يظهر الآن في صفحةٍ بنطاقها */
   private async shownIds(scope: CourseScope, now: Date): Promise<Set<string>> {
     return new Set((await this.pool.openCourses(now, scope)).courses.map((c) => c.courseId))
@@ -107,10 +128,7 @@ export class GrantCourseChoiceService {
   /** دوراتُ حملة: ما اختاره منها، ويختار من كلّ دورةٍ منشورة (ومعها ما اختاره ولم يعد منشورا، ليُرفع) */
   async campaignChoice(slug: GrantSlug, now = new Date()): Promise<CourseChoice> {
     const c = await this.campaign(slug)
-    const [courses, shown] = await Promise.all([
-      this.titles({ OR: [{ status: 'published' }, { id: { in: c.courseIds } }] }),
-      this.shownIds(scopeOfIds(c.courseIds), now),
-    ])
+    const [courses, shown] = await Promise.all([this.buyable(now), this.shownIds(scopeOfIds(c.courseIds), now)])
     return { auto: c.courseIds.length === 0, courseIds: c.courseIds, courses: courses.map((x) => ({ ...x, shown: shown.has(x.courseId) })) }
   }
 
@@ -144,14 +162,15 @@ export class GrantCourseChoiceService {
   async influencerChoice(id: string, now = new Date()): Promise<CourseChoice> {
     const inf = await this.prisma.influencer.findUnique({ where: { id }, select: { courseIds: true } })
     if (!inf) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
-    const [candidates, shown] = await Promise.all([this.influencerCandidates(now), this.shownForInfluencer(id, now)])
+    const [candidates, open, shown] = await Promise.all([this.influencerCandidates(now), this.buyable(now), this.shownForInfluencer(id, now)])
     const offered = new Set(candidates.map((x) => x.courseId))
     /* وما خرج من قائمة الحملة لا يُعدّ — وإن لم يبقَ له شيءٌ فهو على قائمتها كلِّها، كما تعرضها صفحتُه */
     const kept = inf.courseIds.filter((x) => offered.has(x))
     return {
       auto: kept.length === 0,
       courseIds: kept,
-      courses: candidates.map((x) => ({ ...x, shown: shown.has(x.courseId) })),
+      /* ويُعرض منها ما له شعبةٌ تُشترى الآن وحدَه */
+      courses: open.filter((x) => offered.has(x.courseId)).map((x) => ({ ...x, shown: shown.has(x.courseId) })),
     }
   }
 
