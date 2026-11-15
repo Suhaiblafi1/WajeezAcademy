@@ -18,18 +18,19 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { GrantCoursesService, type BuyableCohort } from './grant-courses.service'
-import { GRANT_CAMPAIGNS, INFLUENCER_GRANT_SLUG, isInfluencerGrant, type GrantSlug } from '../../src/application/commerce/grant'
+import { GRANT_CAMPAIGNS, INFLUENCER_GRANT_SLUG, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
+import { isPartnerCampaign, PARTNER_NOT_FOUND_AR } from '../../src/application/commerce/partner-grant'
 import { liveGrantScope, scopeOfIds, type CourseScope } from '../../src/application/commerce/grant-scope'
 
 type Db = PrismaClient | Prisma.TransactionClient
 
 /** قائمةُ الحملة كما حُفظت — وبلا صفٍّ بعدُ تلقائيّة */
-async function campaignIds(db: Db, slug: GrantSlug): Promise<string[]> {
+async function campaignIds(db: Db, slug: CampaignSlug): Promise<string[]> {
   return (await db.grantCampaign.findUnique({ where: { slug }, select: { courseIds: true } }))?.courseIds ?? []
 }
 
 /** دوراتُ الحملة اليوم */
-export async function campaignScope(db: Db, slug: GrantSlug): Promise<CourseScope> {
+export async function campaignScope(db: Db, slug: CampaignSlug): Promise<CourseScope> {
   return scopeOfIds(await campaignIds(db, slug))
 }
 
@@ -46,9 +47,17 @@ export async function influencerScope(
 
 /** ما تعرضه صفحةُ حملةٍ اليوم — ومنحةُ المؤثّرين بمؤثّرها، وإن لم يبقَ له ما يُعرض فقائمةُ الحملة كلُّها */
 export async function pageCourses(
-  prisma: PrismaClient, slug: GrantSlug, influencerId: string | null | undefined, now = new Date(),
+  prisma: PrismaClient, slug: CampaignSlug, influencerId: string | null | undefined, now = new Date(),
 ): Promise<{ termAr: string | null; courses: BuyableCohort[] }> {
   const pool = new GrantCoursesService(prisma)
+  /* ═══ وصفحةُ الشريك بقائمته — وإن لم يبقَ منها ما يُشترى فكلُّ ما يُشترى (١٥ نوفمبر ٢٠٢٦) ═══
+     طلبُ صاحب المنصّة ألّا تكون صفحةُ الشريك فارغة. فإن أُغلقت شعبُ ما اختاره كلُّها عُرض ما يُشترى اليوم — كـ«Full grant
+     list» في صفحة المؤثّر — والكودُ يخصم على أيّ دورةٍ حتى حدّه في الحالين */
+  if (isPartnerCampaign(slug)) {
+    const scope = await campaignScope(prisma, slug)
+    const mine = await pool.openCourses(now, scope)
+    return mine.courses.length > 0 || scope === null ? mine : pool.openCourses(now, null)
+  }
   if (!isInfluencerGrant(slug)) return pool.openCourses(now, await campaignScope(prisma, slug))
   const [own, campaign] = await Promise.all([influencerScope(prisma, influencerId, slug), campaignScope(prisma, slug)])
   const mine = await pool.openCourses(now, own)
@@ -119,21 +128,26 @@ export class GrantCourseChoiceService {
     return new Set((await pageCourses(this.prisma, INFLUENCER_GRANT_SLUG, id, now)).courses.map((c) => c.courseId))
   }
 
-  /** صفُّ الحملة — يُنشأ موقوفا بإعداداته الافتراضيّة كما في `GrantService.campaign` */
-  private campaign(slug: GrantSlug) {
+  /** صفُّ الحملة — يُنشأ موقوفا بإعداداته الافتراضيّة كما في `GrantService.campaign`. والشريكُ لا يُنشأ هنا */
+  private async campaign(slug: CampaignSlug) {
+    if (isPartnerCampaign(slug)) {
+      const row = await this.prisma.grantCampaign.findUnique({ where: { slug } })
+      if (!row) throw new AuthError('not_found', PARTNER_NOT_FOUND_AR, 404)
+      return row
+    }
     const { nameAr, defaults } = GRANT_CAMPAIGNS[slug]
     return this.prisma.grantCampaign.upsert({ where: { slug }, create: { slug, nameAr, ...defaults, active: false }, update: {} })
   }
 
   /** دوراتُ حملة: ما اختاره منها، ويختار من كلّ دورةٍ منشورة (ومعها ما اختاره ولم يعد منشورا، ليُرفع) */
-  async campaignChoice(slug: GrantSlug, now = new Date()): Promise<CourseChoice> {
+  async campaignChoice(slug: CampaignSlug, now = new Date()): Promise<CourseChoice> {
     const c = await this.campaign(slug)
     const [courses, shown] = await Promise.all([this.buyable(now), this.shownIds(scopeOfIds(c.courseIds), now)])
     return { auto: c.courseIds.length === 0, courseIds: c.courseIds, courses: courses.map((x) => ({ ...x, shown: shown.has(x.courseId) })) }
   }
 
   /** يحفظ دوراتِ حملة — والفارغةُ تعيدها تلقائيّة */
-  async setCampaignCourses(slug: GrantSlug, ids: readonly string[], actorId: string, now = new Date()): Promise<CourseChoice> {
+  async setCampaignCourses(slug: CampaignSlug, ids: readonly string[], actorId: string, now = new Date()): Promise<CourseChoice> {
     const c = await this.campaign(slug)
     const want = [...new Set(ids)]
     if (want.length > 0) {

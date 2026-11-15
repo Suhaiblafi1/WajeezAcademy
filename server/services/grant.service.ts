@@ -42,8 +42,9 @@ import { cohortLeadTrainers } from './cohort-lead'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
   GRANT_CAMPAIGNS, GRANT_CLOSED_AR, GRANT_CODE_PREFIX, GRANT_ONCE_AR, GRANT_SOLD_OUT_AR,
-  MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, isInfluencerGrant, type GrantSlug,
+  MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, isInfluencerGrant, type CampaignSlug,
 } from '../../src/application/commerce/grant'
+import { isPartnerCampaign, PARTNER_NOT_FOUND_AR } from '../../src/application/commerce/partner-grant'
 import { influencerCommission, influencerPercentOff } from '../../src/application/commerce/influencer'
 
 /** ما يحسب منحةً مستعملة: طلبٌ ينتظر الدفعَ بها أو دُفع — والمردودُ كلُّه يُعيدها */
@@ -78,15 +79,21 @@ const isOpen = (c: { active: boolean; closesAt: Date | null }, now: Date) => c.a
 export class GrantService {
   private prisma: PrismaClient
   private earnings: EarningsService
-  readonly slug: GrantSlug
-  constructor(prisma: PrismaClient, slug: GrantSlug = MEMBER_GRANT_SLUG) {
+  readonly slug: CampaignSlug
+  constructor(prisma: PrismaClient, slug: CampaignSlug = MEMBER_GRANT_SLUG) {
     this.prisma = prisma
     this.earnings = new EarningsService(prisma)
     this.slug = slug
   }
 
-  /** صفُّ الحملة — يُنشأ أوّلَ مرّةٍ موقوفا بإعداداته الافتراضيّة، فلا يُعطى كودٌ قبل أن تُشغَّل */
-  campaign() {
+  /** صفُّ الحملة — يُنشأ أوّلَ مرّةٍ موقوفا بإعداداته الافتراضيّة، فلا يُعطى كودٌ قبل أن تُشغَّل.
+      ومنحةُ الشريك لا تُنشأ هنا: يُنشئها المديرُ من «الشركاء» (`partner-grant.service.ts`) — فشريكٌ لا صفَّ له غيرُ موجود */
+  async campaign() {
+    if (isPartnerCampaign(this.slug)) {
+      const row = await this.prisma.grantCampaign.findUnique({ where: { slug: this.slug } })
+      if (!row) throw new AuthError('not_found', PARTNER_NOT_FOUND_AR, 404)
+      return row
+    }
     const { nameAr, defaults } = GRANT_CAMPAIGNS[this.slug]
     return this.prisma.grantCampaign.upsert({
       where: { slug: this.slug },

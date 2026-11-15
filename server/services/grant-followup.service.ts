@@ -54,7 +54,7 @@ import { publicSiteUrl } from './site-url'
 import type { BuyableCohort } from './grant-courses.service'
 import { pageCourses } from './grant-scope.service'
 import { GrantService } from './grant.service'
-import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_CONTINUE_AR, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr, grantLeftLineAr, grantPagePath, isInfluencerGrant, type GrantSlug } from '../../src/application/commerce/grant'
+import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_CONTINUE_AR, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr, grantLeftLineAr, grantPagePath, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
 import { influencerLink } from '../../src/application/commerce/influencer'
 import { optedOut, unsubscribeLinks } from './mail-optout.service'
 import {
@@ -154,13 +154,22 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
      من اشترى يُتخطّى ولا تُفتح له حالة، فيبقى في أوّل الطابور أبدا. وكانت الدورةُ تقرأ أقدمَ مئتين وحدَهم: فإذا اشترى
      مئتان من الأوائل امتلأت بهم كلُّ دورة، ولم يُتّصل بعدهم بأحد. فالقراءةُ صفحةً بعد صفحةٍ حتّى تُفتح مئتا حالةٍ أو
      ينتهي الطابور. قرارُ صاحب المنصّة: «Look past buyers». والحارس: `server/tests/commerce/grant-followup-buyers.test.ts` */
+  /* ═══ ومن أكّد بريدَه في منحة شريكٍ ولم يشترِ يُتابَع كذلك (١٥ نوفمبر ٢٠٢٦) ═══
+     صاحبُ المنصّة يريد لطلاب الشريك تجربةً احترافيّة: فحالتُه تسمّي الشريك، ومكالمتُه بهاتفه إن كتبه وإلّا ببريده —
+     الهاتفُ اختياريٌّ في صفحة الشريك. والحملاتُ الأربعُ كما كانت حرفا بحرف */
+  const partners = new Map((await prisma.grantCampaign.findMany({
+    where: { kind: 'partner' }, select: { slug: true, nameAr: true },
+  })).map((p) => [p.slug, p.nameAr]))
   const page = (after: string | null) => prisma.lead.findMany({
-    where: { campaign: { in: [...GRANT_SLUGS] }, erasedAt: null, createdAt: { lte: cutoff }, cases: { none: {} } },
+    where: {
+      OR: [{ campaign: { in: [...GRANT_SLUGS] } }, ...(partners.size > 0 ? [{ campaign: { in: [...partners.keys()] } }] : [])],
+      erasedAt: null, createdAt: { lte: cutoff }, cases: { none: {} },
+    },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     take: FOLLOWUP_BATCH,
     ...(after ? { cursor: { id: after }, skip: 1 } : {}),
     select: {
-      id: true, email: true, workField: true, careerLevel: true, interests: true, createdAt: true, campaign: true,
+      id: true, email: true, phone: true, workField: true, careerLevel: true, interests: true, createdAt: true, campaign: true,
       grantPicks: true, influencer: { select: { code: true } },
       grantCode: { select: { coupon: { select: { orders: { where: { status: { in: [...BOUGHT, 'pending_payment'] } }, select: { id: true } } } } } },
     },
@@ -178,11 +187,14 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
       if ((lead.grantCode?.coupon.orders.length ?? 0) > 0) continue
       if (lead.email && paid.has(lead.email.toLowerCase())) continue
       const callAt = grantCallDueAt(lead.createdAt, now)
+      const partner = lead.campaign ? partners.get(lead.campaign) : undefined
       const kase = await prisma.advisorCase.create({
         data: {
           leadId: lead.id,
           nextAction: [
-            lead.campaign === INFLUENCER_GRANT_SLUG
+            partner !== undefined
+              ? `${lead.phone ? 'اتصل به' : 'راسله'} — أكد بريده في منحة ${partner} ولم يشتر بعد`
+              : lead.campaign === INFLUENCER_GRANT_SLUG
               ? `اتصل به — عبأ نموذج منحة المؤثرين${lead.influencer ? ` بكود ${lead.influencer.code}` : ''} ولم يشتر بعد`
               : lead.campaign === BLACK_FRIDAY_GRANT_SLUG
               ? `اتصل به — عبأ نموذج بلاك فرايدي وجيز${lead.influencer ? ` بكود ${lead.influencer.code}` : ''} ولم يشتر بعد`
@@ -192,7 +204,11 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
             leadProfileAr({ ...lead, picks: lead.grantPicks.map((id) => titles.get(id) ?? id) }),
           ].filter(Boolean).join(' · '),
           nextFollowUpAt: callAt,
-          followUps: { create: { scheduledAt: callAt, channel: 'phone', note: 'مكالمة المنحة — خلال ساعتين من النموذج' } },
+          followUps: {
+            create: partner !== undefined && !lead.phone
+              ? { scheduledAt: callAt, channel: 'email', note: `رسالة منحة ${partner} — خلال ساعتين من تأكيد بريده` }
+              : { scheduledAt: callAt, channel: 'phone', note: 'مكالمة المنحة — خلال ساعتين من النموذج' },
+          },
         },
       })
       await recordAudit(prisma, {
@@ -243,7 +259,7 @@ export function remindedFor(
 
 /** تذكيرُ من أخذ كودا ولم يشترِ قبل انتهاء المنحة — المرحلةُ الحالّةُ الأحدثُ، مرّةً لكلّ عميل. ولكلّ حملةٍ بنهايتها */
 export async function sendGrantReminders(
-  prisma: PrismaClient, now = new Date(), slug: GrantSlug = MEMBER_GRANT_SLUG,
+  prisma: PrismaClient, now = new Date(), slug: CampaignSlug = MEMBER_GRANT_SLUG,
 ): Promise<{ sent: number; stage: string | null; mailOff: boolean }> {
   const campaign = await prisma.grantCampaign.findUnique({
     where: { slug }, select: { id: true, active: true, closesAt: true, percentOff: true },
@@ -290,7 +306,8 @@ export async function sendGrantReminders(
     const coupon = lead.grantCode?.coupon
     if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase()) || off.has(lead.email.toLowerCase())) continue
     const pct = coupon.percentOff ?? campaign.percentOff
-    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug) : `${publicSiteUrl()}${grantPagePath(slug)}`
+    /* ومنحةُ الشريك بلا مؤثّر — تعود إلى صفحته (`grantPagePath`، ١٥ نوفمبر ٢٠٢٦) */
+    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug as GrantSlug) : `${publicSiteUrl()}${grantPagePath(slug)}`
     const lastDayRow = days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]
     /* ما اختاره هو ممّا يُشترى اليوم — بسعر كلٍّ بعد منحته، ومجموعِها وقيمةِ منحته، وزرٍّ يعيده إلى اختياره (٣١ أكتوبر ٢٠٢٦) */
     const pool = await poolOf(lead.grantCode?.influencerId ?? null)
@@ -358,7 +375,7 @@ export async function sendGrantReminders(
 export const GRANT_LEFT_STAGE = 'left'
 
 export async function sendGrantLeftReminders(
-  prisma: PrismaClient, now = new Date(), slug: GrantSlug = MEMBER_GRANT_SLUG,
+  prisma: PrismaClient, now = new Date(), slug: CampaignSlug = MEMBER_GRANT_SLUG,
 ): Promise<{ sent: number; mailOff: boolean }> {
   const campaign = await prisma.grantCampaign.findUnique({
     where: { slug }, select: { id: true, active: true, closesAt: true, percentOff: true, maxCourses: true },
@@ -657,7 +674,7 @@ export async function applyGrantCoursesFix(prisma: PrismaClient, fix: { from: nu
 }
 
 /** دوراتُ صفحة المنحة اليوم بسعرها لكلّ مؤثّر — تُحسب مرّةً لكلّ صفحةٍ في الجولة، لا لكلّ صاحب كود (`pageCourses`) */
-function scopedPools(prisma: PrismaClient, slug: GrantSlug, now: Date) {
+function scopedPools(prisma: PrismaClient, slug: CampaignSlug, now: Date) {
   const cache = new Map<string, Promise<Map<string, BuyableCohort>>>()
   return (influencerId: string | null): Promise<Map<string, BuyableCohort>> => {
     const key = influencerId ?? '*'
