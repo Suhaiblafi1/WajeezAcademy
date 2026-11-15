@@ -37,8 +37,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { GrantService } from './grant.service'
-import { GrantCoursesService } from './grant-courses.service'
-import { influencerScope } from './grant-scope.service'
+import { pageCourses } from './grant-scope.service'
 import { inviteLink, sendStaffInviteEmail } from './account-mail'
 import { renderMail, type MailBlock } from './mail-template'
 import { sendDirectEmail, type DirectMailStatus } from './notification.service'
@@ -442,8 +441,7 @@ export class InfluencerService {
       دورَ مدير النظام الأعلى لا يُعدّ في مدرّبي التصاميم — ولو تغيّر اسمُه أو صورتُه. والدوراتُ ومدرّبوها من صفحة
       المنحة نفسِها ببوّابة النشر (`grant-courses.service.ts`) — ودوراتُه هو إن اختارها المدير (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`). */
   async designMaterial(now = new Date(), influencerId: string | null = null) {
-    const scope = await influencerScope(this.prisma, influencerId)
-    const { termAr, courses } = await new GrantCoursesService(this.prisma).openCourses(now, scope)
+    const { termAr, courses } = await pageCourses(this.prisma, INFLUENCER_GRANT_SLUG, influencerId, now)
     const byId = new Map<string, { id: string; photoUrl: string | null }>()
     for (const c of courses) if (c.trainer && !byId.has(c.trainer.id)) byId.set(c.trainer.id, c.trainer)
     const owners = new Set((await this.prisma.trainerProfile.findMany({

@@ -107,7 +107,7 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
   })
 
   /* ═══ ودوراتُه من دورات حملته (١٥ نوفمبر ٢٠٢٦) ═══
-     بعضُ قائمة «منحة مؤثرين وجيز» تُعرض في صفحته ويخصم عليها كودُ من جاء به — والفارغةُ قائمتُها كلُّها (`grant-scope.service.ts`) */
+     بعضُ قائمة «منحة مؤثرين وجيز» تُعرض في صفحته — والفارغةُ قائمتُها كلُّها. وكودُ من جاء به يخصم على أيّ دورةٍ حتى حدّه (`grant-scope.service.ts`) */
   const choice = new GrantCourseChoiceService(prisma)
   app.get('/api/admin/influencers/:id/courses', {
     preHandler: canManage,

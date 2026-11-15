@@ -147,7 +147,7 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
   })
 
   /* ═══ واختيارُ دورات كلّ حملة (١٥ نوفمبر ٢٠٢٦) ═══
-     قرارُ صاحب المنصّة: يختار المديرُ دوراتِ كلّ منحة، فلا تُعرض ولا يخصم كودُها إلّا عليها. والفارغةُ تلقائيّة.
+     قرارُ صاحب المنصّة: يختار المديرُ دوراتِ كلّ منحة، فلا تُعرض في صفحتها إلّا هي، والكودُ يخصم على أيّ دورةٍ حتى حدّه. والفارغةُ تلقائيّة.
      بصلاحيّة إعدادات المنحة نفسِها، والأثرُ يقول من غيّر وما كان وما صار (`grant-scope.service.ts`) */
   const choice = new GrantCourseChoiceService(prisma)
   app.get('/api/admin/grant-courses/:grant', {

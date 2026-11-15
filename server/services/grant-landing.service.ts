@@ -32,8 +32,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { AdvisorService } from './advisor.service'
 import { GRANT_HOLDS, GrantService } from './grant.service'
-import { GrantCoursesService } from './grant-courses.service'
-import { pageScope } from './grant-scope.service'
+import { pageCourses } from './grant-scope.service'
 import { enqueueMail } from './outbox.service'
 import { renderMail } from './mail-template'
 import { mintShortLink } from './short-link.service'
@@ -79,14 +78,12 @@ const GRANT_SHARE_PURPOSE = 'grant.share'
 export class GrantLandingService {
   private prisma: PrismaClient
   private grants: GrantService
-  private courses: GrantCoursesService
   private advisors: AdvisorService
   readonly slug: GrantSlug
   constructor(prisma: PrismaClient, slug: GrantSlug = MEMBER_GRANT_SLUG) {
     this.prisma = prisma
     this.slug = slug
     this.grants = new GrantService(prisma, slug)
-    this.courses = new GrantCoursesService(prisma)
     this.advisors = new AdvisorService(prisma)
   }
 
@@ -124,10 +121,11 @@ export class GrantLandingService {
   }
 
   /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين.
-      ودوراتُها ما اختاره المديرُ للحملة، ولمؤثّرها في منحة المؤثّرين — وبلا اختيارٍ تلقائيّة (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`) */
+      ودوراتُها ما اختاره المديرُ للحملة، ولمؤثّرها في منحة المؤثّرين — وبلا اختيارٍ تلقائيّة (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`).
+      والقائمةُ للصفحة وحدَها: الكودُ يخصم على أيّ دورةٍ حتى حدّه */
   async view(now = new Date(), influencerId: string | null = null) {
     const [s, open] = await Promise.all([
-      this.grants.settings(now), pageScope(this.prisma, this.slug, influencerId).then((scope) => this.courses.openCourses(now, scope)),
+      this.grants.settings(now), pageCourses(this.prisma, this.slug, influencerId, now),
     ])
     const [summaries, sessions] = await Promise.all([
       this.summaries(open.courses.map((c) => c.courseId)), this.sessions(open.courses.map((c) => c.cohortId)),

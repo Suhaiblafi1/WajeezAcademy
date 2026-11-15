@@ -1,11 +1,10 @@
 /* دوراتُ كلّ منحةٍ يختارها المدير (١٥ نوفمبر ٢٠٢٦) — والعلّةُ في رأس `src/application/commerce/grant-scope.ts`.
 
    ① **حملةٌ بلا اختيارٍ كما كانت** — تُعرض كلُّ دورةٍ متاحة، ويخصم الكودُ على السلّة كلِّها.
-   ② **وباختيارٍ: لا يُعرض ولا يُخصم إلّا عليها** — دورةٌ مختارةٌ ودورةٌ غيرُها في سلّةٍ واحدة: الخصمُ على الأولى وحدَها،
-      والثانيةُ بسعرها كاملا، ولا تُعدّ من حدّ الكود. وسلّةٌ بلا دورةٍ منها يُقال سببُها.
-   ③ **والمؤثّرُ بعضُ قائمة حملته** — صفحتُه وكودُ من جاء به على دوراته، والتقاطعُ إن ضاقت قائمةُ الحملة، ولا يُختار له
-      ما ليس فيها.
-   ④ **والكودُ الذي دُفع به يثبت على دوراته يومَ أوّل شراء** — والذي لم يُدفع به يتبع القائمةَ الجديدة، والتلقائيُّ يثبت تلقائيّا.
+   ② **وباختيارٍ: لا يُعرض إلّا ما اختير** — مختارةٌ بلا شعبةٍ لا تظهر، ولا تظهر دورةٌ جديدةٌ وحدَها. **والكودُ يخصم على
+      أيّ دورةٍ حتى حدّه** — قرارُ صاحب المنصّة: «Discount all courses».
+   ③ **والمؤثّرُ بعضُ قائمة حملته** — صفحتُه بدوراته، والتقاطعُ إن ضاقت قائمةُ الحملة، ولا يُختار له ما ليس فيها.
+      **وإن لم يبقَ له شيءٌ منها فقائمةُ الحملة كلُّها** — قرارُه: «Full grant list».
    ⑤ **وكلُّ تغييرٍ أثرُه بمن غيّر وما كان وما صار** — وبابُه بصلاحيّة إعدادات المنحة، يردّ غيرَ المدير. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -116,8 +115,8 @@ describe('① حملة بلا اختيار كما كانت', () => {
   })
 })
 
-describe('② وباختيار: لا يعرض ولا يخصم إلا عليها', () => {
-  it('⚠️ الصفحة تعرض المختارة وحدها — والخصم على المختارة وحدها، والأخرى بسعرها كاملا ولا تعد من حد الكود', async () => {
+describe('② وباختيار: لا يعرض إلا ما اختير، والكود يخصم على أي دورة', () => {
+  it('⚠️ الصفحة تعرض المختارة وحدها — والكود يخصم المختارة وغيرها حتى حده', async () => {
     const [a, b] = [await course(100), await course(200)]
     await choice.setCampaignCourses(MEMBER_GRANT_SLUG, [a.courseId], ownerId)
     try {
@@ -125,23 +124,17 @@ describe('② وباختيار: لا يعرض ولا يخصم إلا عليها'
       expect(ids).toContain(a.courseId)
       expect(ids, 'عرضت دورة لم تختر').not.toContain(b.courseId)
 
+      /* «Discount all courses»: القائمةُ للصفحة وحدَها، والكودُ على السلّة كلِّها حتى حدّه */
       const code = await codeOf(MEMBER_GRANT_SLUG)
       const userId = await learner()
       const q = await commerce.quote(userId, [a.cohortId, b.cohortId], code)
-      expect(q.items.find((i) => i.cohortId === a.cohortId)?.couponApplies).toBe(true)
-      expect(q.items.find((i) => i.cohortId === b.cohortId)?.couponApplies, 'خصمت دورة لم تختر').toBe(false)
+      expect(q.items.every((i) => i.couponApplies), 'لم يخصم الكود دورة لم تختر').toBe(true)
       const out = await pay(userId, [a.cohortId, b.cohortId], code)
-      expect(out.couponDiscount, 'خصم المنحة على غير دوراتها').toBe(60)
-      /* والمنحةُ بدلُ الباقة: لا سلّمَ على ما خرج عنها */
-      expect(out.bundleDiscount).toBe(0)
-      expect(out.total).toBe(240)
-      const items = await prisma.orderItem.findMany({ where: { orderId: out.orderId } })
-      expect(items.find((i) => i.refId === b.cohortId)?.outsideGrant).toBe(true)
-      expect(items.find((i) => i.refId === a.cohortId)?.outsideGrant).toBe(false)
-      expect(await coursesLeft(code), 'عدت الدورة التي دفعت كاملة من حد الكود').toBe(3)
-
-      /* وسلّةٌ بلا دورةٍ من دوراتها يُقال سببُها — لا تُسعَّر صامتةً بلا خصم */
-      await expect(commerce.quote(await learner(), [b.cohortId], code)).rejects.toMatchObject({ code: 'grant_not_applicable' })
+      expect(out.couponDiscount, 'لم يخصم الكود دورة لم تختر').toBe(180)
+      expect(out.total).toBe(120)
+      expect(await coursesLeft(code)).toBe(2)
+      /* وسلّةٌ ليس فيها إلّا ما لم يُختر تُخصم كذلك، بلا خطأ */
+      expect((await commerce.quote(await learner(), [b.cohortId], code)).couponDiscount).toBe(120)
     } finally {
       await choice.setCampaignCourses(MEMBER_GRANT_SLUG, [], ownerId)
     }
@@ -169,7 +162,7 @@ describe('② وباختيار: لا يعرض ولا يخصم إلا عليها'
 })
 
 describe('③ والمؤثر بعض قائمة حملته', () => {
-  it('⚠️ صفحته وكود من جاء به على دوراته — والتقاطع إن ضاقت قائمة الحملة، ولا يختار له ما ليس فيها', async () => {
+  it('⚠️ صفحته ومادة تصاميمه بدوراته — والتقاطع إن ضاقت قائمة الحملة، ولا يختار له ما ليس فيها، وكوده يخصم أي دورة', async () => {
     const [a, b, c, d] = [await course(100), await course(100), await course(100), await course(100)]
     const influencers = new InfluencerService(prisma)
     const inf = await influencers.create({ nameAr: 'مؤثر الدورات', code: 'PICKS', commissionPercent: 15, email: `picks-${STAMP}@test.local` }, ownerId)
@@ -181,63 +174,38 @@ describe('③ والمؤثر بعض قائمة حملته', () => {
       const landing = new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG)
       const page = (await landing.influencerView('PICKS')).openCourses.map((x) => x.courseId).sort()
       expect(page, 'صفحة المؤثر بغير دوراته').toEqual([a.courseId, c.courseId].sort())
+      expect((await influencers.designMaterial(new Date(), inf.id)).courses).toHaveLength(2)
       /* وصفحةُ الحملة بلا مؤثّرٍ قائمتُها كلُّها */
       expect((await landing.view()).openCourses.map((x) => x.courseId).sort()).toEqual([a.courseId, b.courseId, c.courseId].sort())
 
       const code = await codeOf(INFLUENCER_GRANT_SLUG, { id: inf.id, commissionPercent: 15 })
-      await expect(commerce.quote(await learner(), [b.cohortId], code), 'خصم كود المؤثر على غير دوراته')
-        .rejects.toMatchObject({ code: 'grant_not_applicable' })
+      expect((await commerce.quote(await learner(), [b.cohortId], code)).couponDiscount, 'لم يخصم كود المؤثر غير دوراته').toBe(60)
 
       /* والحملةُ تُسقط ج — فلا يبقى له إلّا أ */
       await choice.setCampaignCourses(INFLUENCER_GRANT_SLUG, [a.courseId, b.courseId], ownerId)
       expect((await landing.influencerView('PICKS')).openCourses.map((x) => x.courseId), 'زاد المؤثر على قائمة حملته').toEqual([a.courseId])
-      const q = await commerce.quote(await learner(), [a.cohortId, c.cohortId], code)
-      expect(q.items.find((i) => i.cohortId === c.cohortId)?.couponApplies, 'خصم كود المؤثر دورة أسقطتها الحملة').toBe(false)
-      expect(q.couponDiscount).toBe(60)
       expect((await choice.influencerChoice(inf.id)).courseIds).toEqual([a.courseId])
     } finally {
       await choice.setInfluencerCourses(inf.id, [], ownerId)
       await choice.setCampaignCourses(INFLUENCER_GRANT_SLUG, [], ownerId)
     }
   })
-})
 
-describe('④ والكود الذي دفع به يثبت على دوراته', () => {
-  it('⚠️ اشتري به قبل التضييق: يبقى بقائمته يومها — ولم يشتر به: يتبع القائمة الجديدة', async () => {
-    const [a, b] = [await course(100), await course(100)]
-    await choice.setCampaignCourses(MEMBER_GRANT_SLUG, [a.courseId, b.courseId], ownerId)
+  it('⚠️ وإن أسقطت الحملة دوراته كلها فقائمة الحملة كلها — لا صفحة فارغة', async () => {
+    const [a, b, c] = [await course(100), await course(100), await course(100)]
+    const influencers = new InfluencerService(prisma)
+    const inf = await influencers.create({ nameAr: 'مؤثر سقطت دوراته', code: 'FALLBACK', commissionPercent: 15, email: `fallback-${STAMP}@test.local` }, ownerId)
+    await choice.setCampaignCourses(INFLUENCER_GRANT_SLUG, [a.courseId, b.courseId, c.courseId], ownerId)
     try {
-      const used = await codeOf(MEMBER_GRANT_SLUG)
-      const fresh = await codeOf(MEMBER_GRANT_SLUG)
-      const buyer = await learner()
-      await pay(buyer, [a.cohortId], used)
-      const row = await prisma.grantCode.findFirstOrThrow({ where: { coupon: { code: used } } })
-      expect(row.firstPaidAt, 'لم يثبت الكود مع أول دفع').not.toBeNull()
-      expect(row).toMatchObject({ allCoursesAtFirstPaid: false })
-      expect([...row.courseIdsAtFirstPaid].sort()).toEqual([a.courseId, b.courseId].sort())
-
-      await choice.setCampaignCourses(MEMBER_GRANT_SLUG, [a.courseId], ownerId)
-      const later = await commerce.quote(buyer, [b.cohortId], used)
-      expect(later.couponDiscount, 'ضاق كود اشتري به قبل التضييق').toBe(60)
-      await expect(commerce.quote(await learner(), [b.cohortId], fresh), 'كود لم يستعمل لم يتبع القائمة الجديدة')
-        .rejects.toMatchObject({ code: 'grant_not_applicable' })
-      expect((await prisma.grantCode.findFirstOrThrow({ where: { coupon: { code: fresh } } })).firstPaidAt).toBeNull()
+      await choice.setInfluencerCourses(inf.id, [c.courseId], ownerId)
+      await choice.setCampaignCourses(INFLUENCER_GRANT_SLUG, [a.courseId, b.courseId], ownerId)
+      const page = (await new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG).influencerView('FALLBACK')).openCourses.map((x) => x.courseId).sort()
+      expect(page, 'صفحة المؤثر فارغة بعد أن أسقطت الحملة دوراته').toEqual([a.courseId, b.courseId].sort())
+      expect((await influencers.designMaterial(new Date(), inf.id)).courses).toHaveLength(2)
     } finally {
-      await choice.setCampaignCourses(MEMBER_GRANT_SLUG, [], ownerId)
-    }
-  })
-
-  it('⚠️ والتلقائي يثبت تلقائيا — فلا يضيق بعد أول شراء', async () => {
-    const [a, b] = [await course(100), await course(100)]
-    const code = await codeOf(OPEN_GRANT_SLUG)
-    const buyer = await learner()
-    await pay(buyer, [a.cohortId], code)
-    expect(await prisma.grantCode.findFirstOrThrow({ where: { coupon: { code } } })).toMatchObject({ allCoursesAtFirstPaid: true })
-    await choice.setCampaignCourses(OPEN_GRANT_SLUG, [a.courseId], ownerId)
-    try {
-      expect((await commerce.quote(buyer, [b.cohortId], code)).couponDiscount, 'ضاق كود تلقائي اشتري به').toBe(60)
-    } finally {
-      await choice.setCampaignCourses(OPEN_GRANT_SLUG, [], ownerId)
+      await choice.setInfluencerCourses(inf.id, [], ownerId).catch(() => undefined)
+      await prisma.influencer.update({ where: { id: inf.id }, data: { courseIds: [] } })
+      await choice.setCampaignCourses(INFLUENCER_GRANT_SLUG, [], ownerId)
     }
   })
 })

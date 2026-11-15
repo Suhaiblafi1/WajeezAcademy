@@ -1,46 +1,24 @@
-/* دوراتُ كلّ منحةٍ على الخادم — قراءتُها وتثبيتُها واختيارُ المدير لها (١٥ نوفمبر ٢٠٢٦).
+/* دوراتُ صفحة كلّ منحةٍ على الخادم — قراءتُها واختيارُ المدير لها (١٥ نوفمبر ٢٠٢٦).
 
    القاعدةُ نفسُها في `src/application/commerce/grant-scope.ts` بقراراتها، وهنا تحميلُ الصفوف لها، فلا يكتبها موضعٌ
-   ثانٍ: صفحةُ كلّ حملة (`grant-landing.service.ts#view`)، وصفحةُ المؤثّر ومادّةُ تصاميمه، والدفعُ (`cart.service.ts#priceFor`)،
-   وتذكيرُ البريد، كلُّها تنادي ما هنا.
+   ثانٍ: صفحةُ كلّ حملة (`grant-landing.service.ts#view`)، وصفحةُ المؤثّر ومادّةُ تصاميمه، وتذكيرُ البريد — كلُّها تنادي
+   `pageCourses`. ولا شيءَ هنا يمسّ الدفع: الكودُ يخصم على أيّ دورةٍ حتى حدّه («Discount all courses»).
 
    ═══ وما يقع هنا ═══
 
-   ١) **النطاقُ الحيّ**: حملةٌ بقائمتها، ومؤثّرٌ بقائمته داخلَ قائمة حملته (`influencerScope`).
-   ٢) **ونطاقُ الكود** (`couponGrantScope`): الثابتُ إن دُفع به، وإلّا الحيُّ لحملته ومؤثّره.
-   ٣) **والتثبيتُ مع أوّل دفع** (`freezeGrantScopeOnPaid`): في معاملة صيرورة الطلب مدفوعا نفسِها، ومرّةً واحدة — الكتابةُ
-      بشرط أن لم يثبت، فدفعتان متزامنتان لا تكتبان مرّتين.
-   ٤) **واختيارُ المدير** (`GrantCourseChoiceService`): لكلّ حملةٍ من دوراتها المنشورة، ولكلّ مؤثّرٍ من قائمة حملته وحدَها.
+   ١) **دوراتُ الصفحة** (`pageCourses`): حملةٌ بقائمتها، ومؤثّرٌ بقائمته داخلَ قائمة حملته. وإن لم يبقَ له ما يُعرض
+      بقائمته فقائمةُ الحملة كلُّها — «Full grant list»: ولو كانت الحملةُ تلقائيّةً وما اختير له لا شعبةَ له تُشترى.
+   ٢) **واختيارُ المدير** (`GrantCourseChoiceService`): لكلّ حملةٍ من دوراتها المنشورة، ولكلّ مؤثّرٍ من قائمة حملته وحدَها.
       وكلُّ تغييرٍ يُكتب أثرُه بمن غيّره وما كان وما صار — كإعدادات المنحة (`coupon.grant_settings`). */
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { GrantCoursesService } from './grant-courses.service'
+import { GrantCoursesService, type BuyableCohort } from './grant-courses.service'
 import { GRANT_CAMPAIGNS, INFLUENCER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
-import {
-  frozenScopeData, grantCodeScope, inScope, liveGrantScope, scopeOfIds, type CourseScope,
-} from '../../src/application/commerce/grant-scope'
+import { liveGrantScope, scopeOfIds, type CourseScope } from '../../src/application/commerce/grant-scope'
 
 type Db = PrismaClient | Prisma.TransactionClient
-
-/** ما يُقرأ من الكود لمعرفة دوراته — مع حملته ومؤثّره */
-export const GRANT_SCOPE_SELECT = {
-  firstPaidAt: true, allCoursesAtFirstPaid: true, courseIdsAtFirstPaid: true,
-  campaign: { select: { courseIds: true } },
-  influencer: { select: { courseIds: true } },
-} as const
-
-/** دوراتُ كودٍ من صفّه المحمَّل بـ`GRANT_SCOPE_SELECT` */
-export function scopeOfGrantRow(row: {
-  firstPaidAt: Date | null; allCoursesAtFirstPaid: boolean; courseIdsAtFirstPaid: string[]
-  campaign: { courseIds: string[] }; influencer: { courseIds: string[] } | null
-}): CourseScope {
-  return grantCodeScope({
-    campaignCourseIds: row.campaign.courseIds, influencerCourseIds: row.influencer?.courseIds ?? null,
-    firstPaidAt: row.firstPaidAt, allCoursesAtFirstPaid: row.allCoursesAtFirstPaid, courseIdsAtFirstPaid: row.courseIdsAtFirstPaid,
-  })
-}
 
 /** قائمةُ الحملة كما حُفظت — وبلا صفٍّ بعدُ تلقائيّة */
 async function campaignIds(db: Db, slug: GrantSlug): Promise<string[]> {
@@ -61,25 +39,16 @@ export async function influencerScope(db: Db, influencerId: string | null | unde
   return liveGrantScope(camp, inf?.courseIds ?? null)
 }
 
-/** دوراتُ صفحة حملةٍ — ومنحةُ المؤثّرين بمؤثّرها */
-export function pageScope(db: Db, slug: GrantSlug, influencerId: string | null | undefined): Promise<CourseScope> {
-  return slug === INFLUENCER_GRANT_SLUG ? influencerScope(db, influencerId) : campaignScope(db, slug)
-}
-
-/** دوراتُ كود منحةٍ بكوبونه — و`undefined` إن لم يكن الكوبونُ كودَ منحة */
-export async function couponGrantScope(db: Db, couponId: string): Promise<CourseScope | undefined> {
-  const row = await db.grantCode.findUnique({ where: { couponId }, select: GRANT_SCOPE_SELECT })
-  return row ? scopeOfGrantRow(row) : undefined
-}
-
-/** يثبت دوراتِ كود الطلب مع أوّل شراءٍ مدفوعٍ به — يُنادى في معاملة صيرورة الطلب مدفوعا (`settleOrder`) */
-export async function freezeGrantScopeOnPaid(tx: Prisma.TransactionClient, orderId: string, now = new Date()): Promise<void> {
-  const order = await tx.order.findUnique({ where: { id: orderId }, select: { couponId: true } })
-  if (!order?.couponId) return
-  const row = await tx.grantCode.findUnique({ where: { couponId: order.couponId }, select: { id: true, ...GRANT_SCOPE_SELECT } })
-  if (!row || row.firstPaidAt) return
-  const live = liveGrantScope(row.campaign.courseIds, row.influencer?.courseIds ?? null)
-  await tx.grantCode.updateMany({ where: { id: row.id, firstPaidAt: null }, data: { firstPaidAt: now, ...frozenScopeData(live) } })
+/** ما تعرضه صفحةُ حملةٍ اليوم — ومنحةُ المؤثّرين بمؤثّرها، وإن لم يبقَ له ما يُعرض فقائمةُ الحملة كلُّها */
+export async function pageCourses(
+  prisma: PrismaClient, slug: GrantSlug, influencerId: string | null | undefined, now = new Date(),
+): Promise<{ termAr: string | null; courses: BuyableCohort[] }> {
+  const pool = new GrantCoursesService(prisma)
+  if (slug !== INFLUENCER_GRANT_SLUG) return pool.openCourses(now, await campaignScope(prisma, slug))
+  const [own, campaign] = await Promise.all([influencerScope(prisma, influencerId), campaignScope(prisma, slug)])
+  const mine = await pool.openCourses(now, own)
+  if (mine.courses.length > 0 || own === campaign) return mine
+  return pool.openCourses(now, campaign)
 }
 
 /* ═══ اختيارُ المدير ═══ */
@@ -117,6 +86,11 @@ export class GrantCourseChoiceService {
   /** ما يظهر الآن في صفحةٍ بنطاقها */
   private async shownIds(scope: CourseScope, now: Date): Promise<Set<string>> {
     return new Set((await this.pool.openCourses(now, scope)).courses.map((c) => c.courseId))
+  }
+
+  /** ما يظهر الآن في صفحة مؤثّر — بالرجوع إلى قائمة الحملة كما تعرضها صفحتُه (`pageCourses`) */
+  private async shownForInfluencer(id: string, now: Date): Promise<Set<string>> {
+    return new Set((await pageCourses(this.prisma, INFLUENCER_GRANT_SLUG, id, now)).courses.map((c) => c.courseId))
   }
 
   /** صفُّ الحملة — يُنشأ موقوفا بإعداداته الافتراضيّة كما في `GrantService.campaign` */
@@ -165,12 +139,13 @@ export class GrantCourseChoiceService {
   async influencerChoice(id: string, now = new Date()): Promise<CourseChoice> {
     const inf = await this.prisma.influencer.findUnique({ where: { id }, select: { courseIds: true } })
     if (!inf) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
-    const [candidates, scope] = await Promise.all([this.influencerCandidates(now), influencerScope(this.prisma, id)])
-    const shown = await this.shownIds(scope, now)
+    const [candidates, shown] = await Promise.all([this.influencerCandidates(now), this.shownForInfluencer(id, now)])
     const offered = new Set(candidates.map((x) => x.courseId))
+    /* وما خرج من قائمة الحملة لا يُعدّ — وإن لم يبقَ له شيءٌ فهو على قائمتها كلِّها، كما تعرضها صفحتُه */
+    const kept = inf.courseIds.filter((x) => offered.has(x))
     return {
-      auto: inf.courseIds.length === 0,
-      courseIds: inf.courseIds.filter((x) => offered.has(x) && inScope(scope, x)),
+      auto: kept.length === 0,
+      courseIds: kept,
       courses: candidates.map((x) => ({ ...x, shown: shown.has(x.courseId) })),
     }
   }

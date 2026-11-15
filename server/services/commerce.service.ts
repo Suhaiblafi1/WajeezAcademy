@@ -21,7 +21,6 @@ import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
 import { TrainerDiscountService } from './trainer-discount.service'
 import { grantLeftForCoupon } from './grant.service'
-import { freezeGrantScopeOnPaid } from './grant-scope.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
 import { assertFirstPurchase } from './commerce/first-purchase'
 import { payByOf, teamHeldOrderIds } from './commerce/seat-hold'
@@ -493,8 +492,6 @@ export class CommerceService {
                التي تبقى من الوعد، فحذفُها منها يُخفي ما استحقّه المشتري. */
             create: pricing.lines.map((l) => ({
               kind: 'cohort', refId: l.cohortId, titleAr: l.titleAr, unitPrice: l.unitPrice,
-              /* وما خرج عن دورات كود المنحة يُعلَّم — دُفع بسعره ولا يُعدّ من حدّه (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`) */
-              outsideGrant: grantMaxCourses !== null && !l.isGift && !l.couponApplies,
             })),
           },
         },
@@ -508,7 +505,7 @@ export class CommerceService {
       })
       /* وكودُ المنحة يُفحص ثانيةً هنا — بعد قفل رقم الفاتورة، فيرى طلبَ شراءٍ متزامنٍ سبقه (`GrantService.assertHeld`) */
       if (couponId && grantMaxCourses !== null) {
-        await this.cart.grants.assertHeld(tx, { couponId, orderId: o.id, userId, maxCourses: grantMaxCourses, paidCount: pricing.couponLines })
+        await this.cart.grants.assertHeld(tx, { couponId, orderId: o.id, userId, maxCourses: grantMaxCourses, paidCount: pricing.paidCount })
       }
       /* والكوبونُ يُحجز استعمالُه مع الطلب — ولكود المدرّب صفٌّ بما مُنح منه،
          يصير دَينا عليه حين يُدفع لا الآن (`coupon-ledger.ts`) */
@@ -1108,8 +1105,6 @@ export class CommerceService {
       const moved = await tx.invoice.updateMany({ where: { orderId, status: { not: 'paid' } }, data: { status: 'paid', paidAt: new Date() } })
       if (moved.count === 0) return false
       await tx.order.update({ where: { id: orderId }, data: { status: 'paid', paidAt: new Date() } })
-      /* وكودُ المنحة يثبت على دوراته مع أوّل شراءٍ مدفوعٍ به — في المعاملة نفسِها (١٥ نوفمبر ٢٠٢٦، `grant-scope.service.ts`) */
-      await freezeGrantScopeOnPaid(tx, orderId)
       return true
     })
     if (!claimed) return

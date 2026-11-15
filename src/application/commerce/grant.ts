@@ -83,11 +83,9 @@ export const grantMaxCoursesAr = (n: number) => `المنحة لـ${n} دورا�
 export const grantCoursesLeftAr = (left: number) =>
   `بقي لك بهذا الكود ${left === 1 ? 'دورة واحدة' : left === 2 ? 'دورتان' : `${left} دورات`}. احذف دورة من سلتك.`
 export const GRANT_CHECKOUT_ONLY_AR = 'كود المنحة يستعمل عند الشراء المباشر فقط، لا في موافقة الطلبات'
-/** ليس في السلّة شيءٌ من دورات المنحة — حين يختار المديرُ دوراتها (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`) */
-export const GRANT_NOT_APPLICABLE_AR = 'ليس في سلتك دورة من دورات هذه المنحة.'
 
 /** أسبابُ ردّ كود المنحة — يُقال سببُها تحت خانة الكود ويُسعَّر الطلبُ بلا كود (`BuyPanel`) */
-export const GRANT_ERROR_CODES = ['grant_closed', 'grant_used', 'grant_once', 'grant_not_better', 'grant_max_courses', 'grant_not_applicable'] as const
+export const GRANT_ERROR_CODES = ['grant_closed', 'grant_used', 'grant_once', 'grant_not_better', 'grant_max_courses'] as const
 
 /** «آخر يوم» من خانة تاريخ → أوّلُ اليوم الذي بعده بتوقيت عمّان، فيبقى الكودُ صالحا يومَه كلَّه.
     وكان بتوقيت الجهاز: من حفظ أيَّ إعدادٍ من جهازٍ بتوقيتٍ غيره (الخليج مثلا) نقل النهايةَ ساعاتٍ — فالحفظُ يرسلها

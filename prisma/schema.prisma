@@ -4238,8 +4238,8 @@ model GrantCampaign {
   /// أوّلُ لحظةٍ لا يُعطى فيها كودٌ ولا يُستعمل — تُقرأ عند الاستعمال، فتمديدُها يمدّ كلَّ كود
   closesAt    DateTime?
   active      Boolean     @default(false)
-  /// دوراتُ الحملة التي اختارها المدير (١٥ نوفمبر ٢٠٢٦) — فارغةٌ: تلقائيّة (كلُّ دورةٍ تُعرض بشروط `grant-courses.service.ts`،
-  /// والكودُ يخصم على أيّ دورة). وبها: لا يُعرض ولا يُخصم إلّا عليها. والقاعدةُ كلُّها في `grant-scope.ts`
+  /// دوراتُ الحملة التي اختارها المدير لصفحتها (١٥ نوفمبر ٢٠٢٦) — فارغةٌ: تلقائيّة (كلُّ دورةٍ تُعرض بشروط
+  /// `grant-courses.service.ts`). وبها: لا تُعرض إلّا هي. والكودُ يخصم على أيّ دورةٍ حتى حدّه في الحالين. والقاعدةُ في `grant-scope.ts`
   courseIds   String[]    @default([])
   updatedBy   String?     @db.Uuid
   createdAt   DateTime    @default(now())
@@ -4261,13 +4261,6 @@ model GrantCode {
   influencerId      String?     @db.Uuid
   /// عمولتُه على هذا الكود يومَ أُعطي — نسبةٌ من سعر الدورات قبل المنحة، فتغييرُها بعده لا يمسّه
   commissionPercent Int?
-  /// ═══ دوراتُه يومَ أوّلِ شراءٍ دُفع به (١٥ نوفمبر ٢٠٢٦) ═══
-  /// فارغٌ `firstPaidAt`: لم يُدفع به شيء، فيتبع قائمةَ حملته (ومؤثّره) كما هي اليوم.
-  /// وبه: تثبت دوراتُه على ما كانت يومها — `allCoursesAtFirstPaid` صادقٌ: كانت تلقائيّةً فيخصم على أيّ دورة،
-  /// وإلّا فـ`courseIdsAtFirstPaid` قائمتُه بعينها. والقاعدةُ في `grant-scope.ts`
-  firstPaidAt           DateTime?
-  allCoursesAtFirstPaid Boolean   @default(false)
-  courseIdsAtFirstPaid  String[]  @default([])
   campaign   GrantCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   coupon     Coupon        @relation(fields: [couponId], references: [id], onDelete: Cascade)
   lead       Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
@@ -4292,8 +4285,8 @@ model Influencer {
   /// حسابُه الذي يرى فيه مستحقّاته
   userId            String?  @unique @db.Uuid
   active            Boolean  @default(true)
-  /// دوراتُه من دورات «منحة مؤثرين وجيز» (١٥ نوفمبر ٢٠٢٦) — فارغةٌ: دوراتُ الحملة كلُّها. وبها: ما يقع منها في قائمة
-  /// الحملة وحدَه (التقاطع) — فلا تزيد على قائمتها أبدا. والقاعدةُ في `grant-scope.ts`
+  /// دوراتُ صفحته من دورات «منحة مؤثرين وجيز» (١٥ نوفمبر ٢٠٢٦) — فارغةٌ: دوراتُ الحملة كلُّها. وبها: ما يقع منها في
+  /// قائمة الحملة (التقاطع)، فلا تزيد عليها — وإن لم يبقَ منها شيءٌ فقائمةُ الحملة كلُّها. والقاعدةُ في `grant-scope.ts`
   courseIds         String[] @default([])
   createdBy         String?  @db.Uuid
   createdAt         DateTime @default(now())
@@ -4435,8 +4428,6 @@ model OrderItem {
   titleAr   String // لقطة وقت الشراء
   unitPrice Decimal @db.Decimal(10, 2)
   quantity  Int     @default(1)
-  /// دورةٌ خارجَ دورات كود المنحة في طلبٍ بكوده (١٥ نوفمبر ٢٠٢٦): دُفعت بسعرها كاملا، ولا تُعدّ من حدّ دوراته
-  outsideGrant Boolean @default(false)
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 

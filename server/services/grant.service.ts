@@ -220,7 +220,7 @@ export class GrantService {
       فما بعده يرى طلبَ من سبقه: يُعدّ هنا ما على الكود سوى هذا الطلب، وتُردّ المعاملةُ كلُّها إن تجاوز. */
   async assertHeld(tx: Prisma.TransactionClient, input: { couponId: string; orderId: string; userId: string; maxCourses: number; paidCount: number }) {
     const others = await tx.orderItem.count({
-      where: { unitPrice: { gt: 0 }, outsideGrant: false, order: { id: { not: input.orderId }, couponId: input.couponId, status: { in: GRANT_HOLDS } } },
+      where: { unitPrice: { gt: 0 }, order: { id: { not: input.orderId }, couponId: input.couponId, status: { in: GRANT_HOLDS } } },
     })
     const left = input.maxCourses - others
     if (left <= 0) throw new AuthError('grant_used', grantUsedUpAr(input.maxCourses), 409)
@@ -238,13 +238,12 @@ export class GrantService {
   }
 
   /** كم دورةً بقيت على هذا الكود — حدُّ حملته ناقصا دوراتِ طلباته المحجوزة والمدفوعة بثمن. والمعلَّقُ يُعدّ حتى
-      يُدفع أو يُلغى (من لوح الشراء نفسِه) — فلا يُشترى بالكود فوق حدّه بطلبين. ولا تُعدّ دورةٌ خارجَ دوراته دُفعت معها
-      بسعرها كاملا (`outsideGrant`، ١٥ نوفمبر ٢٠٢٦) */
+      يُدفع أو يُلغى (من لوح الشراء نفسِه) — فلا يُشترى بالكود فوق حدّه بطلبين */
   async coursesLeft(coupon: GrantCoupon): Promise<number> {
     const max = coupon.grantCode?.campaign.maxCourses ?? 0
     const used = await this.prisma.orderItem.count({
       where: {
-        unitPrice: { gt: 0 }, outsideGrant: false,
+        unitPrice: { gt: 0 },
         order: { couponId: coupon.id, status: { in: GRANT_HOLDS } },
       },
     })
