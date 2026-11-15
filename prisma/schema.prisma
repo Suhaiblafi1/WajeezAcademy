@@ -4287,6 +4287,8 @@ model Influencer {
   commissionPercent Int      @default(15)
   /// خصمُ متابعيه في حملات المؤثّرين — وفارغٌ بنسبة الحملة. على ما يُعطى من أكوادٍ بعد اليوم كالعمولة (١٥ نوفمبر ٢٠٢٦)
   percentOff        Int?
+  /// رقمُه بشكله (مفتاحُ الدولة ومسافات) — يغيّره المدير كاسمه وبريده (١٥ نوفمبر ٢٠٢٦، `cleanInfluencerPhone`)
+  phone             String?
   /// حسابُه الذي يرى فيه مستحقّاته
   userId            String?  @unique @db.Uuid
   active            Boolean  @default(true)

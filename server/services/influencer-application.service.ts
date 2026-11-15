@@ -30,7 +30,7 @@ import { notifyRole, sendDirectEmail, type DirectMailStatus } from './notificati
 import { InfluencerService, assertCodeFree, influencerDeal, notifyInfluencerWelcome } from './influencer.service'
 import { ROLE_PERMISSIONS } from '../auth/permissions'
 import {
-  INFLUENCER_CODE_FORMAT_AR, normalizeInfluencerCode,
+  INFLUENCER_CODE_FORMAT_AR, cleanInfluencerPhone, normalizeInfluencerCode,
 } from '../../src/application/commerce/influencer'
 import {
   INFLUENCER_PLATFORMS, influencerReach, influencerTermsAr, type InfluencerAccount, type InfluencerDealView,
@@ -209,7 +209,12 @@ export class InfluencerApplicationService {
     try {
       /* والإضافةُ نفسُها التي في الشاشة (١٥ نوفمبر ٢٠٢٦): حسابُه، ودعوةٌ جديدةٌ لحسابٍ قائمٍ لم يُفعَّل */
       made = await new InfluencerService(this.prisma).addWithAccount(
-        { nameAr: app.fullName, code, commissionPercent: input.commissionPercent, email: app.email }, actorId,
+        {
+          nameAr: app.fullName, code, commissionPercent: input.commissionPercent, email: app.email,
+          /* ورقمُه من طلبه — وما لا يشبه رقما لا يُسقط القبول: يبقى بلا رقمٍ ويُكتب من الشاشة (١٥ نوفمبر ٢٠٢٦) */
+          phone: cleanInfluencerPhone([app.phoneCountryCode, app.phone].filter(Boolean).join(' ')) ?? null,
+        },
+        actorId,
       )
       influencerId = made.id
       await this.prisma.influencerApplication.update({ where: { id }, data: { influencerId } })

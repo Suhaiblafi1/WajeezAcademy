@@ -13,6 +13,12 @@
    وفوقها طلباتُ الانضمام من «انضم كمؤثر» (`InfluencerApplications.tsx`، ٣١ أكتوبر ٢٠٢٦): يُقبَل منها بكوده وعمولته
    فيصير صفّا هنا. والدفعةُ الزائدةُ على رصيده تُعرض بخيارَيها — «سجلها سلفة» أو «عدل المبلغ» — لا تُمنع (`recordPayout`).
 
+   ═══ وتفاصيلُه كلُّها تتغيّر (١٥ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «منحني فرصة تغيير اسم صاحب المنحة المؤثر وتغيير كل التفاصيل، إيميله، رقمه». فاسمُه ورقمُه يُحفظان
+   بتأكيدٍ كالعمولة، وبريدُه يُغيَّر بتأكيدٍ يقول ما يقع: ملفُّه إلى حساب البريد الجديد، والقديمُ لا يرى صفحتَه بعدُ، ويصل الجديدَ
+   بريدُ الترحيب بكوده وطريقِ دخوله. ومن لم يفعّل حسابَه تُعاد له الدعوة. والعلّةُ في `influencer.service.ts` (١ب).
+
    ودوراتُه في تفاصيله (١٥ نوفمبر ٢٠٢٦، `GrantCourseChoice`): بعضُ دورات «منحة مؤثرين وجيز» تظهر في صفحته — والافتراضيُّ
    دوراتُها كلُّها. وكودُ من جاء به يخصم على أيّ دورةٍ حتى حدّه. */
 
@@ -24,7 +30,7 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
-import { INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_KEEPS_AR, INFLUENCER_DISCOUNT_BAD_AR, normalizeInfluencerCode } from "@/application/commerce/influencer";
+import { INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_KEEPS_AR, INFLUENCER_DISCOUNT_BAD_AR, INFLUENCER_PHONE_BAD_AR, cleanInfluencerPhone, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import { BLACK_FRIDAY_GRANT_NAME_AR, INFLUENCER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { staffControlCls } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
@@ -42,6 +48,8 @@ interface Influencer {
   formerCodes: string[];
   /** رابطاه في حملتَي المؤثّرين */
   links: { influencer: string; blackFriday: string };
+  /** رقمُه بشكله — أو بلا رقم */
+  phone: string | null;
   email: string | null; accountStatus: string | null; createdAt: string; totals: Totals; currency: string;
 }
 interface Statement {
@@ -52,6 +60,15 @@ interface Statement {
 
 const errAr = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 
+/** ما يصل المؤثّرَ حين يُربط حسابُه أو يتغيّر بريدُه — كما يقال في الإضافة */
+type Connected = { account: { created: boolean; inviteSent: boolean | null }; emailDelivery: string };
+const welcomeAr = (delivery: string) => (delivery === "sent" ? "، ووصلته رسالة بكوده" : "، ولم ترسل رسالة كوده");
+function connectedAr(out: Connected): string {
+  return out.account.created
+    ? (out.account.inviteSent ? `أنشئ حسابه، ووصلته دعوة حسابه${welcomeAr(out.emailDelivery)}` : "أنشئ حسابه ولم ترسل الدعوة. اطلب منه «نسيت كلمة المرور»")
+    : `ربط بحسابه${welcomeAr(out.emailDelivery)}`;
+}
+
 /** خانةُ الخصم → رقمُه، أو `null` فارغةً (نسبةُ الحملة)، أو `undefined` إن لم تصحّ */
 function discountOf(raw: string): number | null | undefined {
   if (raw.trim() === "") return null;
@@ -61,7 +78,7 @@ function discountOf(raw: string): number | null | undefined {
 
 export default function InfluencersPanel() {
   const [list, setList] = useState<Influencer[] | null>(null);
-  const [form, setForm] = useState({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), discount: "", email: "" });
+  const [form, setForm] = useState({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), discount: "", email: "", phone: "" });
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -78,20 +95,22 @@ export default function InfluencersPanel() {
   const discount = discountOf(form.discount);
   /* والبريدُ لازم — لكلّ مؤثّرٍ حسابٌ وصفحة، ويصله بريدُ ترحيبٍ كمن قُبل طلبُه (١٥ نوفمبر ٢٠٢٦) */
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
-  const canAdd = form.nameAr.trim().length >= 2 && code !== null && commissionOk && discount !== undefined && emailOk;
+  /* ورقمُه اختياريّ — بشكل الرقم إن كُتب (١٥ نوفمبر ٢٠٢٦) */
+  const phone = cleanInfluencerPhone(form.phone);
+  const canAdd = form.nameAr.trim().length >= 2 && code !== null && commissionOk && discount !== undefined && emailOk && phone !== undefined;
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
       const out = await apiPost<{ account: { created: boolean; inviteSent: boolean | null }; emailDelivery: string }>("/api/admin/influencers", {
-        nameAr: form.nameAr.trim(), code, commissionPercent: commission, percentOff: discount, email: form.email.trim(),
+        nameAr: form.nameAr.trim(), code, commissionPercent: commission, percentOff: discount, email: form.email.trim(), phone,
       });
       const welcome = out.emailDelivery === "sent" ? "، ووصلته رسالة بكوده" : "، ولم ترسل رسالة كوده";
       toast(out.account.created
         ? (out.account.inviteSent ? `أضيف المؤثر، ووصلته دعوة حسابه${welcome}` : "أضيف المؤثر وأنشئ حسابه، ولم ترسل الدعوة. اطلب منه «نسيت كلمة المرور»")
         : `أضيف المؤثر وربط بحسابه${welcome}`);
-      setForm({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), discount: "", email: "" });
+      setForm({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), discount: "", email: "", phone: "" });
       await load();
     } catch (err) { toastError(errAr(err, "تعذر إضافة المؤثر")); }
     finally { setBusy(false); }
@@ -122,9 +141,13 @@ export default function InfluencersPanel() {
         <label className="grid gap-1 text-read">بريده (لحسابه)
           <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr" className={staffControlCls} />
         </label>
+        <label className="grid gap-1 text-read">رقمه
+          <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} dir="ltr" placeholder="اختياري" className={staffControlCls} />
+        </label>
         <Button type="submit" disabled={busy || !canAdd}>أضف المؤثر</Button>
         {form.code.trim() !== "" && code === null && <p className="w-full text-read text-danger-ink">{INFLUENCER_CODE_FORMAT_AR}</p>}
         {discount === undefined && <p className="w-full text-read text-danger-ink">{INFLUENCER_DISCOUNT_BAD_AR}</p>}
+        {phone === undefined && <p className="w-full text-read text-danger-ink">{INFLUENCER_PHONE_BAD_AR}</p>}
       </Card>
 
       {list === null ? null : list.length === 0 ? (
@@ -152,10 +175,12 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
   const [commission, setCommission] = useState(String(x.commissionPercent));
   const [discount, setDiscount] = useState(x.percentOff === null ? "" : String(x.percentOff));
   const [newCode, setNewCode] = useState(x.code);
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(x.nameAr);
+  const [phone, setPhone] = useState(x.phone ?? "");
+  const [email, setEmail] = useState(x.email ?? "");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [confirm, setConfirm] = useState<null | "commission" | "discount" | "code" | "active" | "payout">(null);
+  const [confirm, setConfirm] = useState<null | "name" | "phone" | "email" | "commission" | "discount" | "code" | "active" | "payout">(null);
   /* ما قاله الخادمُ حين زاد المبلغُ على رصيده — وتحته الخياران: سلفةٌ أو تعديلُ المبلغ */
   const [over, setOver] = useState<string | null>(null);
   const amountRef = useRef<HTMLInputElement>(null);
@@ -170,6 +195,10 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
   const commissionOk = Number.isInteger(commissionNum) && commissionNum >= 0 && commissionNum <= 100;
   const discountNum = discountOf(discount);
   const codeNorm = normalizeInfluencerCode(newCode);
+  const nameNew = name.trim();
+  const phoneNew = cleanInfluencerPhone(phone);
+  const emailNew = email.trim().toLowerCase();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNew) && emailNew !== (x.email ?? "").toLowerCase();
   const amountNum = Number(amount);
 
   /* الدفعةُ — وما زاد على رصيده يعود بـ`payout_exceeds_balance` فيُعرض خياراه، لا يُسجَّل ولا يُمنع (`recordPayout`) */
@@ -187,9 +216,10 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
     } finally { setBusy(false); }
   };
 
-  const run = async (fn: () => Promise<unknown>, doneAr: string, failAr: string) => {
+  /* وما يقال بعده قد يتبع جوابَ الخادم — ما وصل المؤثّرَ من رسائل */
+  const run = async <T,>(fn: () => Promise<T>, doneAr: string | ((out: T) => string), failAr: string) => {
     setBusy(true);
-    try { await fn(); toast(doneAr); setConfirm(null); await onChanged(); await loadStatement(); }
+    try { const out = await fn(); toast(typeof doneAr === "string" ? doneAr : doneAr(out)); setConfirm(null); await onChanged(); await loadStatement(); }
     catch (e) { toastError(errAr(e, failAr)); }
     finally { setBusy(false); }
   };
@@ -206,6 +236,7 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
           <p className="mt-0.5 truncate text-read text-muted-foreground">{INFLUENCER_GRANT_NAME_AR}: <bdi dir="ltr">{x.links.influencer}</bdi></p>
           <p className="mt-0.5 truncate text-read text-muted-foreground">{BLACK_FRIDAY_GRANT_NAME_AR}: <bdi dir="ltr">{x.links.blackFriday}</bdi></p>
           <p className="mt-0.5 text-read text-muted-foreground">
+            {x.phone && <>رقمه <bdi dir="ltr">{x.phone}</bdi> · </>}
             عمولته {x.commissionPercent}% · خصم متابعيه {x.percentOff === null ? "نسبة المنحة" : `${x.percentOff}%`} · {x.email ? `حسابه ${x.email}${x.accountStatus === "invited" ? " (لم يفعله بعد)" : ""}` : "بلا حساب"}
             {x.formerCodes.length > 0 && <> · كان كوده <bdi dir="ltr">{x.formerCodes.join("، ")}</bdi></>}
           </p>
@@ -218,6 +249,35 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
 
       {open && (
         <div className="mt-4 space-y-4 border-t border-border pt-4">
+          {/* اسمُه ورقمُه وبريدُه — كلُّها تتغيّر (١٥ نوفمبر ٢٠٢٦) */}
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1 text-read">الاسم
+              <input value={name} onChange={(e) => setName(e.target.value)} className={staffControlCls} />
+            </label>
+            <Button size="sm" disabled={busy || nameNew.length < 2 || nameNew === x.nameAr} onClick={() => setConfirm("name")}>احفظ الاسم</Button>
+            <label className="grid gap-1 text-read">رقمه
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" placeholder="بلا رقم" className={staffControlCls} />
+            </label>
+            <Button size="sm" disabled={busy || phoneNew === undefined || phoneNew === x.phone} onClick={() => setConfirm("phone")}>احفظ الرقم</Button>
+            {phoneNew === undefined && <p className="w-full text-read text-danger-ink">{INFLUENCER_PHONE_BAD_AR}</p>}
+          </div>
+
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1 text-read">{x.email ? "بريده" : "بريده لحسابه"}
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className={staffControlCls} />
+            </label>
+            <Button size="sm" disabled={busy || !emailOk} onClick={() => setConfirm("email")}>{x.email ? "غير البريد" : "أنشئ حسابه أو اربطه"}</Button>
+            {x.accountStatus === "invited" && (
+              <Button size="sm" disabled={busy}
+                onClick={() => void run(() => apiPost<{ emailDelivery: string }>(`/api/admin/influencers/${x.id}/resend-invite`, {}),
+                  (out) => (out.emailDelivery === "sent" ? "وصلته دعوة جديدة في رسالة بكوده، والقديمة أبطلت" : "لم ترسل الدعوة. قناة البريد غير موصولة"),
+                  "تعذر إرسال الدعوة")}>
+                أعد إرسال الدعوة
+              </Button>
+            )}
+            {x.accountStatus === "invited" && <p className="w-full text-read text-muted-foreground">لم يفعل حسابه بعد. الدعوة الجديدة تصله مع كوده، وتبطل القديمة.</p>}
+          </div>
+
           <div className="flex flex-wrap items-end gap-3">
             <label className="grid gap-1 text-read">العمولة %
               <input type="number" min={0} max={100} value={commission} onChange={(e) => setCommission(e.target.value)} className={staffControlCls} />
@@ -245,18 +305,6 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
           </div>
 
           <GrantCourseChoice endpoint={`/api/admin/influencers/${x.id}/courses`} forInfluencer />
-
-          {!x.email && (
-            <div className="flex flex-wrap items-end gap-3">
-              <label className="grid gap-1 text-read">بريده لحسابه
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className={staffControlCls} />
-              </label>
-              <Button size="sm" disabled={busy || !/\S+@\S+\.\S+/.test(email)}
-                onClick={() => void run(() => apiPost(`/api/admin/influencers/${x.id}/account`, { email }), "ربط الحساب، وإن كان جديدا وصلته دعوة", "تعذر ربط الحساب")}>
-                أنشئ حسابه أو اربطه
-              </Button>
-            </div>
-          )}
 
           <div className="flex flex-wrap items-end gap-3">
             <label className="grid gap-1 text-read">دفعة دفعت له
@@ -324,6 +372,32 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
         <ConfirmAction tone="default" titleAr="تغيير عمولة المؤثر" confirmLabelAr="احفظ" busy={busy} onCancel={() => setConfirm(null)}
           onConfirm={() => void run(() => apiPatch(`/api/admin/influencers/${x.id}`, { commissionPercent: commissionNum }), "حفظت العمولة", "تعذر حفظ العمولة")}>
           <p>العمولة الجديدة {commissionNum}% على أكواد المنحة التي تعطى بكوده بعد الحفظ. وما أعطي قبله يبقى بعمولته {x.commissionPercent}%.</p>
+        </ConfirmAction>
+      )}
+      {confirm === "name" && (
+        <ConfirmAction tone="default" titleAr="تغيير اسم المؤثر" confirmLabelAr="احفظ" busy={busy} onCancel={() => setConfirm(null)}
+          onConfirm={() => void run(() => apiPatch(`/api/admin/influencers/${x.id}`, { nameAr: nameNew }), "حفظ الاسم", "تعذر حفظ الاسم")}>
+          <p>يصير اسمه {nameNew}. ويظهر في صفحته وفي رسائله القادمة.</p>
+        </ConfirmAction>
+      )}
+      {confirm === "phone" && (
+        <ConfirmAction tone="default" titleAr="تغيير رقم المؤثر" confirmLabelAr="احفظ" busy={busy} onCancel={() => setConfirm(null)}
+          onConfirm={() => void run(() => apiPatch(`/api/admin/influencers/${x.id}`, { phone: phoneNew ?? null }), "حفظ الرقم", "تعذر حفظ الرقم")}>
+          <p>{phoneNew ? <>يصير رقمه <bdi dir="ltr">{phoneNew}</bdi>.</> : "يمحى رقمه."}</p>
+        </ConfirmAction>
+      )}
+      {confirm === "email" && (
+        <ConfirmAction tone="default" titleAr={x.email ? "تغيير بريد المؤثر" : "ربط حساب المؤثر"} confirmLabelAr={x.email ? "غير" : "اربط"} busy={busy}
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => void run(() => apiPost<Connected>(`/api/admin/influencers/${x.id}/account`, { email: emailNew }), connectedAr, "تعذر ربط الحساب")}>
+          {x.email ? (
+            <>
+              <p>ينتقل ملفه بكوده ومتابعيه وعمولاته إلى حساب <bdi dir="ltr">{emailNew}</bdi>. وحسابه القديم <bdi dir="ltr">{x.email}</bdi> لا يرى صفحة المؤثر بعد.</p>
+              <p className="mt-2">ويصل البريد الجديد رسالة بكوده: دعوة لتفعيل حسابه إن كان جديدا، أو دخول بحسابه إن كان له حساب.</p>
+            </>
+          ) : (
+            <p>ينشأ له حساب بهذا البريد، أو يربط بحسابه إن كان له حساب. وتصله رسالة بكوده وطريقة الدخول.</p>
+          )}
         </ConfirmAction>
       )}
       {confirm === "discount" && (

@@ -66,5 +66,19 @@ export const INFLUENCER_CODE_BAD_AR = 'كود المؤثر غير صحيح. اك
 export const INFLUENCER_CODE_TAKEN_AR = 'هذا الكود لمؤثر آخر. اختر كودا غيره'
 export const INFLUENCER_CODE_FORMAT_AR = 'الكود حروف إنجليزية وأرقام فقط، من 3 إلى 20'
 export const INFLUENCER_DISCOUNT_BAD_AR = 'الخصم عدد صحيح من 0 إلى 100، أو اتركه فارغا'
+
+/* ═══ رقمُ المؤثّر (١٥ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «تغيير كل التفاصيل، إيميله، رقمه وإلى آخره». فالرقمُ حرٌّ بشكله — مفتاحُ الدولة ومسافاتٌ وشرطات —
+   يُقرأ ويُتّصل به، لا يُطبَّع: أرقامٌ و+ ومسافاتٌ و- فقط، ومن ٦ أرقامٍ إلى ٢٠. */
+export const INFLUENCER_PHONE_BAD_AR = 'الرقم أرقام فقط، ويمكن أن يبدأ بـ+ وفيه مسافات، من 6 إلى 20 رقما'
+const PHONE_CHARS_RE = /^\+?[\d\s-]+$/
+
+/** رقمُه بعد التنظيف: الفارغُ `null` (بلا رقم)، وما لا يشبه رقما `undefined` */
+export function cleanInfluencerPhone(raw: string | null | undefined): string | null | undefined {
+  const v = (raw ?? '').replace(/\s+/g, ' ').trim()
+  if (v === '') return null
+  const digits = v.replace(/\D/g, '').length
+  return PHONE_CHARS_RE.test(v) && digits >= 6 && digits <= 20 ? v : undefined
+}
 /** تحت خانة تغيير الكود — الرابطُ القديمُ يبقى يعمل (`formerCodes`) */
 export const INFLUENCER_CODE_KEEPS_AR = 'الرابط القديم يبقى يعمل ويوصل إلى الكود الجديد.'

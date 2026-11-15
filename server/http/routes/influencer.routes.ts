@@ -72,6 +72,8 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
       commissionPercent: z.number().int().min(0).max(100),
       percentOff: z.number().int().min(0).max(100).nullable().optional(),
       email: z.string().trim().max(200).nullable().optional(),
+      /* ورقمُه اختياريّ — يُفحص بشكله في الخدمة (`cleanInfluencerPhone`) */
+      phone: z.string().trim().max(40).nullable().optional(),
     }).parse(req.body)
     return reply.status(201).send(await influencers.create({ ...body, email: body.email ?? '' }, req.auth!.userId))
   })
@@ -86,6 +88,8 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
       /* خصمُ متابعيه — و`null` يعيده إلى نسبة الحملة (١٥ نوفمبر ٢٠٢٦) */
       percentOff: z.number().int().min(0).max(100).nullable().optional(),
       code: z.string().trim().min(3).max(40).optional(),
+      /* ورقمُه — والفارغُ يمحوه (١٥ نوفمبر ٢٠٢٦) */
+      phone: z.string().trim().max(40).nullable().optional(),
       active: z.boolean().optional(),
     }).parse(req.body ?? {})
     return influencers.update(id.parse(req.params).id, body, req.auth!.userId)
@@ -93,11 +97,17 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.post('/api/admin/influencers/:id/account', {
     preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'ربط المؤثر بحساب ببريده، أو إنشاء حساب له بدعوة' },
+    schema: { tags: ['admin-commerce'], summary: 'ربط المؤثر بحساب ببريده أو تغيير بريده — وبريد ترحيب بكوده وتفعيله' },
   }, async (req) => {
+    /* وبريدٌ غيرُ بريده الآن ينقل ملفَّه إلى حسابه، ويُنزع دورُ المؤثّر من القديم (`connectAccount`، ١٥ نوفمبر ٢٠٢٦) */
     const { email } = z.object({ email: z.string().trim().max(200) }).parse(req.body)
-    return influencers.attachAccount(id.parse(req.params).id, email, req.auth!.userId)
+    return influencers.connectAccount(id.parse(req.params).id, email, req.auth!.userId)
   })
+
+  app.post('/api/admin/influencers/:id/resend-invite', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'دعوة جديدة لمؤثر لم يفعل حسابه — في بريد الترحيب بكوده، والقديمة تبطل' },
+  }, async (req) => influencers.resendInvite(id.parse(req.params).id, req.auth!.userId))
 
   app.get('/api/admin/influencers/:id/statement', {
     preHandler: canManage,
