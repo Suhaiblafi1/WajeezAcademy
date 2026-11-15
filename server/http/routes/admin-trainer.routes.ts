@@ -896,23 +896,14 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return offers.withdraw(offerId, req.auth!.userId, reasonAr)
   })
 
-  app.post('/api/admin/trainer-applications/:id/contracts', {
-    preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: '⚠️ مهجور — الباب القديم بلا متن. يحذف في المرحلة الثانية' },
-  }, async (req, reply) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const body = z.object({ title: z.string().min(3), terms: z.record(z.string(), z.unknown()).optional() }).parse(req.body)
-    return reply.status(201).send(await review.createContract(id, req.auth!.userId, body))
-  })
-
-  app.post('/api/admin/trainer-contracts/:contractId/sign', {
-    preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'تسجيل توقيع العقد — ينقل الطلب إلى onboarding' },
-  }, async (req) => {
-    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
-    await review.signContract(contractId, req.auth!.userId)
-    return { ok: true }
-  })
+  /* ═══ وسقط البابان القديمان: «عقدٌ بلا متن» و«سجّلْ توقيعَه» (١٥ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Remove both») ═══
+     `POST /api/admin/trainer-applications/:id/contracts` كان يُنشئ عقدا «مُرسَلا» بلا متن، و
+     `POST /api/admin/trainer-contracts/:contractId/sign` يكتبه «موقَّعا» بيد موظّفٍ بلا توقيع صاحبه — بلا اسمٍ قانونيّ
+     ولا وثيقةٍ ولا بصمةِ نصّ — وينقل طلبَه. وحارسُهما `trainer.compensation.manage`، وهي عند الماليّة: فكانت تسجّل
+     توقيعَ مدرّبٍ عنه، وقرارُ صاحب المنصّة أنّ الماليّةَ لا تعتمد توقيعا ولا تردّه. ولا شاشةَ تناديهما.
+     فالعقدُ يُركَّب من `contracts/compose` وحدَه، ويوقّعه صاحبُه من رابطه وحدَه (`contract-sign.routes.ts`).
+     والدالّتان (`createContract`، `signContract`) باقيتان للاختبارات. والحارس:
+     `server/tests/trainer/legacy-contract-routes.test.ts` */
 
   app.post('/api/admin/trainer-applications/:id/invitations', {
     preHandler: requirePermission('trainer.invite'),
