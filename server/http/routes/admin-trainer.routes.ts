@@ -697,10 +697,19 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   /* وثيقةُ الهويّة تُفتَح قبل الاعتماد — فالاعتمادُ مطابقةٌ بها.
      والرابطُ موقَّتٌ لعشر دقائق كوثائق الطلب، وكلُّ فتحةٍ تُكتب في الأثر. */
+  /* ═══ ووثيقةُ الهويّة لمن يعتمد التوقيع وحدَه (١٥ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «No — managers only») ═══
+     `trainer.contract.manage` عند الماليّة أيضا: تركّب العقدَ وتضبط أجرَه. وقرارُ صاحب المنصّة أنّها تفتح «الاتفاقية»
+     وحدَها ولا تقرأ وثائقَ المدرّب. والهويّةُ تُقرأ لمطابقة الاسم قبل الاعتماد — وذاك عملُ من يعتمد
+     (`trainer.applications.decide`). والحارس: `server/tests/trainer/legacy-contract-routes.test.ts` */
   app.get('/api/admin/trainer-contracts/:contractId/documents/:documentId/url', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'رابط قراءة موقّت لوثيقة هويّة مع عقد' },
-  }, async (req) => {
+    schema: { tags: ['admin-trainers'], summary: 'رابط قراءة موقّت لوثيقة هويّة مع عقد — لمن يعتمد التوقيع' },
+  }, async (req, reply) => {
+    if (!req.auth!.permissions.includes('trainer.applications.decide')) {
+      return reply.status(403).send({
+        error: { code: 'forbidden', message_ar: 'وثيقة الهوية يفتحها من يعتمد التوقيع' },
+      })
+    }
     const { contractId, documentId } = z.object({
       contractId: z.string().uuid(), documentId: z.string().uuid(),
     }).parse(req.params)
