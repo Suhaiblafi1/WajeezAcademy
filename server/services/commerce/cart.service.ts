@@ -31,7 +31,9 @@ import { TrainerCodeBudgetService, type PurchaseLine } from '../trainer-code-bud
 import { budgetCovers, CODE_UNAVAILABLE_AR, MAX_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from '../registration-window'
 import { GrantService } from '../grant.service'
-import { GRANT_NOT_BETTER_AR, grantCoursesLeftAr, grantMaxCoursesAr, grantUsedUpAr } from '../../../src/application/commerce/grant'
+import { GRANT_NOT_APPLICABLE_AR, GRANT_NOT_BETTER_AR, grantCoursesLeftAr, grantMaxCoursesAr, grantUsedUpAr } from '../../../src/application/commerce/grant'
+import { couponGrantScope } from '../grant-scope.service'
+import { inScope } from '../../../src/application/commerce/grant-scope'
 
 export class CartService {
   private prisma: PrismaClient
@@ -359,6 +361,8 @@ export class CartService {
        كودُه على شعبةٍ يقبض غيرُه أتعابَها، ولا يمتنع عن شعبةٍ يقبضها هو.
        والنسبةُ من صفّ الكود لا من الكوبون: قيدُ السقف (٣٠) على ذاك العمود. */
     let scope: string[] | null = null
+    /* شعبُ السلّة التي تقع عليها المنحة — وبلا قيمةٍ كلُّها */
+    let grantCohorts: string[] | null = null
     const cartCurrency = currency ?? this.cartCurrency(cohorts, cohorts)
     if (trainerCode) {
       const leads = await cohortLeadTrainers(this.prisma, cohorts.map((c) => c.id))
@@ -372,6 +376,12 @@ export class CartService {
     } else if (shareCode) {
       const leads = await cohortLeadTrainers(this.prisma, cohorts.map((c) => c.id))
       scope = cohorts.filter((c) => leads.get(c.id) === shareCode.profileId).map((c) => c.id)
+    } else if (coupon?.grantCode) {
+      /* ═══ وكودُ المنحة على دوراتها وحدَها (١٥ نوفمبر ٢٠٢٦) ═══
+         ما اختاره المديرُ لحملته ومؤثّره — أو ما ثبت على الكود يومَ أوّلِ شراءٍ به. وما سواها في السلّة بسعره كاملا،
+         وبلا اختيارٍ يعمّ كما كان (`grant-scope.ts`) */
+      const courses = await couponGrantScope(this.prisma, coupon.id)
+      if (courses) grantCohorts = cohorts.filter((c) => inScope(courses, c.courseId)).map((c) => c.id)
     }
     const pricing = priceCart(
       cohorts.map((c) => ({
@@ -392,8 +402,9 @@ export class CartService {
             ? { percentOff: coupon.percentOff, amountOff: null, cohortIds: scope }
             : {
               percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff),
-              /* وكودُ المنحة بدلُ الباقة لا فوقها — قرارُ صاحب المنصّة («A») */
+              /* وكودُ المنحة بدلُ الباقة لا فوقها — قرارُ صاحب المنصّة («A»)، وعلى دوراتها إن اختيرت */
               replacesBundle: coupon.grantCode !== null,
+              cohortIds: grantCohorts,
               /* وكودُ أوّل شراء على الدورة الأعلى سعرا وحدَها — قرارُه (٢٦ أكتوبر ٢٠٢٦) */
               topLineOnly: coupon.code === FIRST_TIME_PROMO.code,
             }
@@ -409,14 +420,19 @@ export class CartService {
     }
     /* وكودُ منحةٍ سعرُ الباقة أقلُّ منه يُقال لصاحبه ولا يُحرق — فيحتفظ به أو يعطيه غيرَه */
     if (pricing.grantBeaten) throw new AuthError('grant_not_better', GRANT_NOT_BETTER_AR, 409)
+    /* وكودُ منحةٍ ليس في السلّة شيءٌ من دوراتها يُقال لصاحبه ولا يُكتب على طلب — فلا يُعدّ شراءً بالمنحة ولا يُحرق منه شيء */
+    if (coupon?.grantCode && pricing.paidCount > 0 && pricing.couponLines === 0) {
+      throw new AuthError('grant_not_applicable', GRANT_NOT_APPLICABLE_AR, 409)
+    }
     /* وعلى عددٍ بحدٍّ للكود كلِّه — «يحقّ لك فقط ٤ دورات»، ثمّ «٥ دورات على هذا الكود نفسِه» (٢٨ أكتوبر ٢٠٢٦):
-       ما بقي منه بعد مشترياته السابقة به (`coursesLeft`). والهديّةُ لا تُعدّ: سعرُها صفرٌ لا تقع عليه المنحة */
+       ما بقي منه بعد مشترياته السابقة به (`coursesLeft`). والهديّةُ لا تُعدّ: سعرُها صفرٌ لا تقع عليه المنحة.
+       ولا ما خرج عن دوراتها: يُدفع بسعره كاملا (`couponLines` لا `paidCount`، ١٥ نوفمبر ٢٠٢٦) */
     if (coupon?.grantCode) {
       const max = coupon.grantCode.campaign.maxCourses
       const left = await this.grants.coursesLeft(coupon)
       /* وما نفد بين الفحصين (شراءٌ متزامنٌ سبقه) يُقال «استعملت كل دوراته» لا «بقي لك 0 دورات» */
       if (left <= 0) throw new AuthError('grant_used', grantUsedUpAr(max), 409)
-      if (pricing.paidCount > left) {
+      if (pricing.couponLines > left) {
         throw new AuthError('grant_max_courses', left < max ? grantCoursesLeftAr(left) : grantMaxCoursesAr(max), 409)
       }
     }

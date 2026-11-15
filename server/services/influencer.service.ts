@@ -34,6 +34,7 @@ import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { GrantService } from './grant.service'
 import { GrantCoursesService } from './grant-courses.service'
+import { influencerScope } from './grant-scope.service'
 import { sendStaffInviteEmail } from './account-mail'
 import { publicSiteUrl } from './site-url'
 import { photoStorageKey } from './storage.service'
@@ -317,7 +318,7 @@ export class InfluencerService {
       this.statement(inf.id),
       new GrantService(this.prisma, INFLUENCER_GRANT_SLUG).settings(),
       this.prisma.learnerProfile.findUnique({ where: { userId }, select: { avatarUrl: true } }),
-      this.designMaterial(),
+      this.designMaterial(new Date(), inf.id),
     ])
     /* صورةُ حسابه لـ«تصميمك الخاص» — المرفوعةُ عندنا وحدَها. ورابطٌ خارجيٌّ كتبه قديما في حسابه لا يُعطى: المتصفّحُ
        لا يرسمه في لوحةٍ تُنزَّل إلّا بإذن موقعه، فيرى صاحبُه تصميمه بـ«صورتك هنا» ولوحةَ التنزيل معه. وبلا صورةٍ يُطلب
@@ -339,9 +340,10 @@ export class InfluencerService {
 
       قال صاحبُ المنصّة: «لا تضع صهيبَ من ضمنهم ولا داعيَ لأسمائهم». فالحكمُ بالدور لا بالاسم: من يحمل حسابُه
       دورَ مدير النظام الأعلى لا يُعدّ في مدرّبي التصاميم — ولو تغيّر اسمُه أو صورتُه. والدوراتُ ومدرّبوها من صفحة
-      المنحة نفسِها ببوّابة النشر (`grant-courses.service.ts`). */
-  async designMaterial(now = new Date()) {
-    const { termAr, courses } = await new GrantCoursesService(this.prisma).openCourses(now)
+      المنحة نفسِها ببوّابة النشر (`grant-courses.service.ts`) — ودوراتُه هو إن اختارها المدير (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`). */
+  async designMaterial(now = new Date(), influencerId: string | null = null) {
+    const scope = await influencerScope(this.prisma, influencerId)
+    const { termAr, courses } = await new GrantCoursesService(this.prisma).openCourses(now, scope)
     const byId = new Map<string, { id: string; photoUrl: string | null }>()
     for (const c of courses) if (c.trainer && !byId.has(c.trainer.id)) byId.set(c.trainer.id, c.trainer)
     const owners = new Set((await this.prisma.trainerProfile.findMany({

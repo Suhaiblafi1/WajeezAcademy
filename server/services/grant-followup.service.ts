@@ -47,7 +47,9 @@ import { liveChannels } from './notification.service'
 import { enqueueMail } from './outbox.service'
 import { renderMail, type MailBlock } from './mail-template'
 import { publicSiteUrl } from './site-url'
-import { GrantCoursesService } from './grant-courses.service'
+import { GrantCoursesService, type BuyableCohort } from './grant-courses.service'
+import { GRANT_SCOPE_SELECT, scopeOfGrantRow } from './grant-scope.service'
+import type { CourseScope } from '../../src/application/commerce/grant-scope'
 import { GrantService } from './grant.service'
 import { GRANT_CAMPAIGNS, GRANT_CONTINUE_AR, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr, grantLeftLineAr, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
 import { influencerLink } from '../../src/application/commerce/influencer'
@@ -262,7 +264,7 @@ export async function sendGrantReminders(
     select: {
       id: true, fullName: true, email: true, grantPicks: true,
       influencer: { select: { code: true } },
-      grantCode: { select: { coupon: { select: {
+      grantCode: { select: { ...GRANT_SCOPE_SELECT, coupon: { select: {
         code: true, percentOff: true,
         orders: { where: { status: { in: [...BOUGHT, 'pending_payment'] } }, select: { id: true } },
       } } } },
@@ -272,8 +274,9 @@ export async function sendGrantReminders(
   /* ومن ألغى اشتراكَه في رسائل التسويق لا يُذكَّر (١١ نوفمبر ٢٠٢٦، `mail-optout.service.ts`) */
   const off = await optedOut(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
 
-  /* ودوراتُ المنحة اليوم بسعرها — فما اختاره يُسمّى بما يُشترى منه الآن، وما أُغلقت شعبتُه لا يُذكر */
-  const pool = new Map((await new GrantCoursesService(prisma).openCourses(now)).courses.map((c) => [c.courseId, c]))
+  /* ودوراتُ المنحة اليوم بسعرها — فما اختاره يُسمّى بما يُشترى منه الآن، وما أُغلقت شعبتُه لا يُذكر.
+     وبدورات كوده هو: ما اختاره المديرُ لحملته ومؤثّره (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`) */
+  const poolOf = scopedPools(prisma, now)
   const lastDay = new Date(closesAt.getTime() - 1)
   const days = Math.round((Date.parse(zonedDay(lastDay)) - Date.parse(zonedDay(now))) / DAY) + 1
   const subject = grantDaysLeftAr(days)
@@ -285,6 +288,7 @@ export async function sendGrantReminders(
     const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}${grantPagePath(slug)}`
     const lastDayRow = days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]
     /* ما اختاره هو ممّا يُشترى اليوم — بسعر كلٍّ بعد منحته، ومجموعِها وقيمةِ منحته، وزرٍّ يعيده إلى اختياره (٣١ أكتوبر ٢٠٢٦) */
+    const pool = await poolOf(lead.grantCode ? scopeOfGrantRow(lead.grantCode) : null)
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
     const listTotal = mine.reduce((sum, c) => sum + c.price, 0)
     const payTotal = grantPrice(listTotal, pct)
@@ -568,7 +572,7 @@ export async function sendGrantExtendedNotice(
     select: {
       id: true, fullName: true, email: true, grantPicks: true,
       influencer: { select: { code: true } },
-      grantCode: { select: { coupon: { select: {
+      grantCode: { select: { ...GRANT_SCOPE_SELECT, coupon: { select: {
         code: true, percentOff: true,
         orders: { where: { status: { in: [...BOUGHT, 'pending_payment'] } }, select: { id: true } },
       } } } },
@@ -579,7 +583,7 @@ export async function sendGrantExtendedNotice(
   const paid = await paidEmails(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
   const off = await optedOut(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
 
-  const pool = new Map((await new GrantCoursesService(prisma).openCourses(now)).courses.map((c) => [c.courseId, c]))
+  const poolOf = scopedPools(prisma, now)
   const lastDay = fmtDateLong(new Date(closesAt.getTime() - 1))
   const subject = grantExtendedSubjectAr(lastDay)
   let sent = 0
@@ -588,6 +592,7 @@ export async function sendGrantExtendedNotice(
     if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase()) || off.has(lead.email.toLowerCase())) continue
     const pct = coupon.percentOff ?? campaign.percentOff
     const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant`
+    const pool = await poolOf(lead.grantCode ? scopeOfGrantRow(lead.grantCode) : null)
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
     const blocks: MailBlock[] = [
       { kind: 'p', text: `منحتك ما زالت قائمة، وتصل إلى ${pct}% من سعر الدورات.` },
@@ -644,4 +649,18 @@ export async function applyGrantCoursesFix(prisma: PrismaClient, fix: { from: nu
     })
   })
   return true
+}
+
+/** دوراتُ المنحة اليوم بسعرها لكلّ نطاق — تُحسب مرّةً لكلّ قائمةٍ في الجولة، لا لكلّ صاحب كود */
+function scopedPools(prisma: PrismaClient, now: Date) {
+  const cache = new Map<string, Promise<Map<string, BuyableCohort>>>()
+  return (scope: CourseScope): Promise<Map<string, BuyableCohort>> => {
+    const key = scope === null ? '*' : [...scope].sort().join(',')
+    let hit = cache.get(key)
+    if (!hit) {
+      hit = new GrantCoursesService(prisma).openCourses(now, scope).then((o) => new Map(o.courses.map((c) => [c.courseId, c])))
+      cache.set(key, hit)
+    }
+    return hit
+  }
 }

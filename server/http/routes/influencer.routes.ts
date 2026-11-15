@@ -10,6 +10,7 @@ import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { InfluencerService } from '../../services/influencer.service'
 import { GrantService } from '../../services/grant.service'
+import { GrantCourseChoiceService } from '../../services/grant-scope.service'
 import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 import { INFLUENCER_COMMISSION_DEFAULT } from '../../../src/application/commerce/influencer'
 
@@ -102,6 +103,22 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
       amount: z.number().positive().max(1_000_000), noteAr: z.string().max(300).nullable().optional(), advance: z.boolean().optional(),
     }).parse(req.body)
     return reply.status(201).send(await influencers.recordPayout(id.parse(req.params).id, body, req.auth!.userId))
+  })
+
+  /* ═══ ودوراتُه من دورات حملته (١٥ نوفمبر ٢٠٢٦) ═══
+     بعضُ قائمة «منحة مؤثرين وجيز» تُعرض في صفحته ويخصم عليها كودُ من جاء به — والفارغةُ قائمتُها كلُّها (`grant-scope.service.ts`) */
+  const choice = new GrantCourseChoiceService(prisma)
+  app.get('/api/admin/influencers/:id/courses', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'دورات المؤثر: ما اختير له من دورات منحة المؤثرين، وما يختار منه' },
+  }, async (req) => choice.influencerChoice(id.parse(req.params).id))
+
+  app.put('/api/admin/influencers/:id/courses', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'اختيار دورات المؤثر من دورات منحة المؤثرين — والفارغة تعيده إليها كلها' },
+  }, async (req) => {
+    const { courseIds } = z.object({ courseIds: z.array(z.string().trim().min(1).max(64)).max(500) }).parse(req.body ?? {})
+    return choice.setInfluencerCourses(id.parse(req.params).id, courseIds, req.auth!.userId)
   })
 
   /* ═══ حسابُ المؤثّر ═══ */

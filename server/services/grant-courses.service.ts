@@ -9,6 +9,10 @@
      مدرّبٌ ومنشور». فالشعبةُ لا تُحسب إلّا ودورتُها منشورةٌ ومدرّبُها (أصيلُها أو إسنادُه النشط) معتمَدُ النشر
      بالبوّابة نفسِها التي تعرض المدرّبين للعامّة (`PUBLIC_TRAINER_WHERE`). ومنه: «إذا أضفتُ دورةً جديدةً ومدرّبا
      جديدا يظهر تلقائيّا» — فكلُّ ما هنا يُقرأ ساعةَ الطلب، لا قائمةٌ تُحفظ: شعبةٌ تُفتح تظهر، وشعبةٌ تُغلق تختفي.
+   · **وللمدير أن يختار دوراتِ كلّ حملة** (١٥ نوفمبر ٢٠٢٦) — فلا يُعرض إلّا ما اختاره، والشروطُ أعلاه فوقه: مختارةٌ بلا
+     شعبةٍ تُشترى لا تظهر. وبلا اختيارٍ تلقائيّةٌ كما كانت. فالنطاقُ (`CourseScope`) يُمرَّر إلى `pool`، ويُطبَّق قبل حساب
+     الفصل: يُحسب الفصلُ القريبُ من شعب الدورات المختارة نفسِها، فلا تختفي مختارةٌ لأنّ دورةً لم تُختر تبدأ قبلها.
+     والقاعدةُ في `src/application/commerce/grant-scope.ts`.
    · **ومن الفصل القادم القريب وحدَه** — قرارُه: «اجعل الافتراضيَّ كلَّ الدورات المفعّلة ولها مدرّبٌ ولها شعبةٌ
      مفتوحةٌ للفصل القادم القريب». وكانت القائمةُ تخلط شعبا تبدأ من أكتوبر ٢٠٢٦ إلى نوفمبر ٢٠٢٧. فالفصلُ فصلُ
      أقرب شعبةٍ تُشترى ولم تبدأ بعد، ويُحسب **من يوم بدئها في عمّان** لا من `termId` — فشعبُ الإنتاج كلُّها بلا
@@ -28,6 +32,7 @@ import { photoPublicUrl } from './storage.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { termOf, termTitleAr } from '../../src/application/terms/season'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
+import type { CourseScope } from '../../src/application/commerce/grant-scope'
 
 /** أقربُ شعبةٍ تُشترى اليوم لدورة */
 export interface BuyableCohort {
@@ -64,11 +69,13 @@ export class GrantCoursesService {
   /** ما يُعرض في المنحة — كلُّ دورةٍ منشورةٍ لها شعبةٌ تُشترى في الفصل القادم القريب، بالشروط التي يشتري
       بها لوحُ الدفع: مفتوحةٌ للتسجيل (`cohortAcceptsRegistration`)، بسعرٍ بعملة الدفتر، ومدرّبُها منشور، وفيها
       مقعد. ويُقرأ كلُّه ساعةَ الطلب: شعبةٌ تُفتح تظهر، وشعبةٌ تُغلق تختفي. */
-  async pool(now = new Date()): Promise<GrantPool> {
+  async pool(now = new Date(), scope: CourseScope = null): Promise<GrantPool> {
     const cohorts = await this.prisma.cohort.findMany({
       where: {
         status: { in: ['open', 'active'] }, price: { gt: 0 }, currency: LEDGER_CURRENCY,
         course: { status: 'published' },
+        /* ودوراتُ الحملة إن اختارها المدير — وبلا اختيارٍ كلُّها */
+        ...(scope === null ? {} : { courseId: { in: [...scope] } }),
         /* ومدرّبُها منشور: أصيلُها، أو إسنادُه النشطُ فيها (قاعدةُ `cohort-lead.ts`) */
         OR: [
           { trainers: { some: { role: 'lead', profile: PUBLIC_TRAINER_WHERE } } },
@@ -115,9 +122,9 @@ export class GrantCoursesService {
     return { termAr: term?.titleAr ?? null, byCourse }
   }
 
-  /** دوراتُ المنحة وفصلُها — مرتّبةً بأسمائها */
-  async openCourses(now = new Date()): Promise<{ termAr: string | null; courses: BuyableCohort[] }> {
-    const { termAr, byCourse } = await this.pool(now)
+  /** دوراتُ المنحة وفصلُها — مرتّبةً بأسمائها. وبنطاقٍ: ما اختير منها وحدَه (`grant-scope.service.ts`) */
+  async openCourses(now = new Date(), scope: CourseScope = null): Promise<{ termAr: string | null; courses: BuyableCohort[] }> {
+    const { termAr, byCourse } = await this.pool(now, scope)
     return { termAr, courses: [...byCourse.values()].sort((a, b) => a.courseTitleAr.localeCompare(b.courseTitleAr, 'ar')) }
   }
 }

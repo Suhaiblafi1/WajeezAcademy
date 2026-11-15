@@ -13,7 +13,8 @@ import { eraseRegistrant, messageRegistrants, registrantsFull, registrantsXlsx, 
 import { GRANT_MESSAGE_BODY_MAX, GRANT_MESSAGE_MAX_TO, GRANT_MESSAGE_SUBJECT_MAX } from '../../../src/application/commerce/grant-registrants'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { signedUpXlsx } from '../../services/signed-up-export'
-import { OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { GRANT_KINDS, GRANT_KIND_SLUG, OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { GrantCourseChoiceService, campaignScope } from '../../services/grant-scope.service'
 
 const settingsBody = z.object({
   percentOff: z.number().int().min(1).max(100).optional(),
@@ -134,9 +135,31 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     return open.margins(percentOff)
   })
 
-  /* ═══ دوراتُ المنحة — ما يختار منه صاحبُ المنحة (`grant-courses.service.ts`) ═══ */
+  /* ═══ دوراتُ المنحة — ما يختار منه صاحبُ المنحة (`grant-courses.service.ts`) ═══
+     ولكلّ حملةٍ دوراتُها إن اختارها المدير (`?grant=`، ١٥ نوفمبر ٢٠٢٦) — وبلا حملةٍ «منحة وجيز» كما كان */
+  const grantKind = z.object({ grant: z.enum(GRANT_KINDS).default('member') })
   app.get('/api/admin/member-grant/open-courses', {
     preHandler: canManage,
     schema: { tags: ['admin-commerce'], summary: 'دورات المنحة: ما له شعبة تشترى في الفصل القادم القريب، وفصله' },
-  }, async () => courses.openCourses())
+  }, async (req) => {
+    const { grant } = grantKind.parse(req.query ?? {})
+    return courses.openCourses(new Date(), await campaignScope(prisma, GRANT_KIND_SLUG[grant]))
+  })
+
+  /* ═══ واختيارُ دورات كلّ حملة (١٥ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: يختار المديرُ دوراتِ كلّ منحة، فلا تُعرض ولا يخصم كودُها إلّا عليها. والفارغةُ تلقائيّة.
+     بصلاحيّة إعدادات المنحة نفسِها، والأثرُ يقول من غيّر وما كان وما صار (`grant-scope.service.ts`) */
+  const choice = new GrantCourseChoiceService(prisma)
+  app.get('/api/admin/grant-courses/:grant', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'دورات حملة منحة: ما اختاره المدير، وما يختار منه' },
+  }, async (req) => choice.campaignChoice(GRANT_KIND_SLUG[grantKind.parse(req.params).grant]))
+
+  app.put('/api/admin/grant-courses/:grant', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'اختيار دورات حملة منحة — والقائمة الفارغة تعيدها تلقائية' },
+  }, async (req) => {
+    const { courseIds } = z.object({ courseIds: z.array(z.string().trim().min(1).max(64)).max(500) }).parse(req.body ?? {})
+    return choice.setCampaignCourses(GRANT_KIND_SLUG[grantKind.parse(req.params).grant], courseIds, req.auth!.userId)
+  })
 }
