@@ -5,7 +5,10 @@
    ما دُفع له. والكودُ لا يتغيّر بعد إضافته — هو في رابطه المنشور. والعلّةُ في `server/services/influencer.service.ts`.
 
    وفوقها طلباتُ الانضمام من «انضم كمؤثر» (`InfluencerApplications.tsx`، ٣١ أكتوبر ٢٠٢٦): يُقبَل منها بكوده وعمولته
-   فيصير صفّا هنا. والدفعةُ الزائدةُ على رصيده تُعرض بخيارَيها — «سجلها سلفة» أو «عدل المبلغ» — لا تُمنع (`recordPayout`). */
+   فيصير صفّا هنا. والدفعةُ الزائدةُ على رصيده تُعرض بخيارَيها — «سجلها سلفة» أو «عدل المبلغ» — لا تُمنع (`recordPayout`).
+
+   ودوراتُه في تفاصيله (١٥ نوفمبر ٢٠٢٦، `GrantCourseChoice`): بعضُ دورات «منحة مؤثرين وجيز» تظهر في صفحته ويخصم عليها
+   كودُ من جاء به — والافتراضيُّ دوراتُها كلُّها. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
@@ -21,6 +24,7 @@ import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import InfluencerApplications from "./InfluencerApplications";
+import GrantCourseChoice from "./GrantCourseChoice";
 
 interface Totals { signups: number; codes: number; buyers: number; sales: number; earned: number; paid: number; balance: number }
 interface Influencer {
@@ -186,6 +190,8 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
             <Button size="sm" disabled={busy || !commissionOk || commissionNum === x.commissionPercent} onClick={() => setConfirm("commission")}>احفظ العمولة</Button>
             <Button size="sm" disabled={busy} onClick={() => setConfirm("active")}>{x.active ? "أوقف الكود" : "شغل الكود"}</Button>
           </div>
+
+          <GrantCourseChoice endpoint={`/api/admin/influencers/${x.id}/courses`} forInfluencer />
 
           {!x.email && (
             <div className="flex flex-wrap items-end gap-3">
