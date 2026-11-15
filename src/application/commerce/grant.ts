@@ -7,6 +7,7 @@
 import { money } from './discount-policy'
 import { ACADEMY_ZONE, zonedDay, zonedInstant } from '../trainer/cohort-period'
 import { fmtDateLong } from '../text/format-ar'
+import { isPartnerCampaign, partnerPagePath, partnerSlugOf, type PartnerCampaignSlug } from './partner-grant'
 
 /** الحملةُ الأولى — وبها يُقرأ صفُّها، ويُنشأ أوّلَ مرّة بإعداداتٍ افتراضيّة. واسمُها «منحة وجيز» بقرار صاحب
     المنصّة (٢٦ أكتوبر ٢٠٢٦)، وكان «منحة أعضاء وجيز» — والمعرّفُ باقٍ: به حُفظ كلُّ من عبّأ نموذجها */
@@ -51,6 +52,9 @@ export const BLACK_FRIDAY_GRANT_PATH = '/grant/bf'
 
 export type GrantSlug = typeof MEMBER_GRANT_SLUG | typeof INFLUENCER_GRANT_SLUG | typeof OPEN_GRANT_SLUG | typeof BLACK_FRIDAY_GRANT_SLUG
 
+/** صفُّ منحةٍ أيًّا كان: إحدى الحملات الأربع، أو منحةُ شريكٍ (`partner-<رابطه>`، ١٥ نوفمبر ٢٠٢٦، `partner-grant.ts`) */
+export type CampaignSlug = GrantSlug | PartnerCampaignSlug
+
 /** الحملاتُ بأسمائها وما تبدأ به كلٌّ منها */
 export const GRANT_CAMPAIGNS: Record<GrantSlug, { nameAr: string; defaults: { percentOff: number; maxCodes: number; maxCourses: number } }> = {
   [MEMBER_GRANT_SLUG]: { nameAr: MEMBER_GRANT_NAME_AR, defaults: GRANT_DEFAULTS },
@@ -80,7 +84,9 @@ export function grantKindOf(slug: string | null | undefined): GrantKind {
 }
 
 /** صفحةُ الحملة التي يعود إليها صاحبُ الكود من بريده — وحملتا المؤثّرين برابط مؤثّرها (`influencerLink`) */
-export function grantPagePath(slug: GrantSlug): string {
+export function grantPagePath(slug: CampaignSlug): string {
+  /* ومنحةُ الشريك بصفحته — `/grant/p/<رابطه>` (١٥ نوفمبر ٢٠٢٦) */
+  if (isPartnerCampaign(slug)) return partnerPagePath(partnerSlugOf(slug))
   return slug === OPEN_GRANT_SLUG ? OPEN_GRANT_PATH : slug === BLACK_FRIDAY_GRANT_SLUG ? BLACK_FRIDAY_GRANT_PATH : '/grant'
 }
 

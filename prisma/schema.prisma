@@ -4241,10 +4241,47 @@ model GrantCampaign {
   /// دوراتُ الحملة التي اختارها المدير لصفحتها (١٥ نوفمبر ٢٠٢٦) — فارغةٌ: تلقائيّة (كلُّ دورةٍ تُعرض بشروط
   /// `grant-courses.service.ts`). وبها: لا تُعرض إلّا هي. والكودُ يخصم على أيّ دورةٍ حتى حدّه في الحالين. والقاعدةُ في `grant-scope.ts`
   courseIds   String[]    @default([])
+  /// حملةٌ من المنح الأربع، أو منحةُ شريكٍ (جامعةٌ أو شركة) — والشريكُ معرّفُه `partner-<رابطه>` (`partner-grant.ts`)
+  kind        String      @default("campaign") // campaign | partner
+  /// والشريكُ: جامعةٌ أو شركة — به يُقال «لطلاب الجامعة» أو «لموظفي الشركة»
+  partnerType String? // university | company
+  /// اسمُ الشريك بالإنجليزيّة — والعربيُّ `nameAr`
+  partnerNameEn String?
+  /// النطاقاتُ التي يُقبل بريدُها — النطاقُ نفسُه وكلُّ ما تحته (`emailMatchesDomains`)
+  emailDomains String[]   @default([])
+  /// شعارُه في المخزن — يُخدَم للعامّة ما دام الشريكُ مشغَّلا (`/api/v1/partner-logos/:key`)
+  logoKey        String?  @unique
+  /// شعارٌ يُرفع ولم يُعتمد بعد — يصير `logoKey` حين يكتمل رفعُه
+  logoPendingKey String?  @unique
   updatedBy   String?     @db.Uuid
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   codes       GrantCode[]
+  emailLinks  PartnerEmailLink[]
+
+  @@index([kind])
+}
+
+/// رابطُ تأكيد البريد في منحة الشريك (١٥ نوفمبر ٢٠٢٦) — يُرسَل إلى بريد الجامعة، ويُستعمل مرّةً في مهلة الروابط
+/// (`MAIL_LINK_TTL_MS`). ويُحفظ رمزُه مجزّأً لا كما هو. والعلّةُ في `server/services/partner-grant.service.ts`.
+model PartnerEmailLink {
+  id         String        @id @default(uuid()) @db.Uuid
+  campaignId String        @db.Uuid
+  /// البريدُ بحروفٍ صغيرة — على نطاقات الشريك
+  email      String
+  fullName   String
+  phone      String?
+  channel    String?
+  wave       String?
+  tokenHash  String        @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  /// من أكّد بريدَه بهذا الرابط
+  leadId     String?       @db.Uuid
+  createdAt  DateTime      @default(now())
+  campaign   GrantCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, email, createdAt])
 }
 
 
