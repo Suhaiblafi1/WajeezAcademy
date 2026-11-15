@@ -42,7 +42,7 @@ describe('البابان القديمان للعقد', () => {
     const application = await prisma.trainerApplication.create({
       data: {
         reference: `TR-LCR-${STAMP}`, fullName: 'مدرب العقد', email: `lcr-trainer-${STAMP}@test.local`,
-        status: 'approved', motivation: 'اختبار', privacyConsentAt: new Date(),
+        status: 'conditionally_approved', motivation: 'اختبار', privacyConsentAt: new Date(),
       },
     })
     await prisma.trainerProfile.create({ data: { applicationId: application.id } })
