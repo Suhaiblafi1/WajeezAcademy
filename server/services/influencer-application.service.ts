@@ -29,12 +29,12 @@ import { renderMail, type MailBlock } from './mail-template'
 import { notifyRole, publicSiteUrl, sendDirectEmail, type DirectMailStatus } from './notification.service'
 import { inviteLink } from './account-mail'
 import { GrantService } from './grant.service'
-import { InfluencerService } from './influencer.service'
+import { InfluencerService, assertCodeFree } from './influencer.service'
 import { ROLE_PERMISSIONS } from '../auth/permissions'
 import { MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { INFLUENCER_GRANT_SLUG } from '../../src/application/commerce/grant'
 import {
-  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, influencerLink, normalizeInfluencerCode,
+  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_COMMISSION_DEFAULT, influencerLink, normalizeInfluencerCode,
 } from '../../src/application/commerce/influencer'
 import {
   INFLUENCER_PLATFORMS, influencerReach, influencerTermsAr, type InfluencerAccount, type InfluencerDealView,
@@ -192,9 +192,8 @@ export class InfluencerApplicationService {
     if (app.status !== 'submitted') throw new AuthError('decided', 'حسم هذا الطلب من قبل', 409)
     const code = normalizeInfluencerCode(input.code)
     if (!code) throw new AuthError('bad_code', INFLUENCER_CODE_FORMAT_AR, 400)
-    if (await this.prisma.influencer.findUnique({ where: { code }, select: { id: true } })) {
-      throw new AuthError('code_taken', INFLUENCER_CODE_TAKEN_AR, 409)
-    }
+    /* ولا كودا كان لمؤثّرٍ قبله — رابطُه القديمُ ما زال يوصل إليه (١٥ نوفمبر ٢٠٢٦، `assertCodeFree`) */
+    await assertCodeFree(this.prisma, code)
     const existing = await this.prisma.user.findUnique({
       where: { email: app.email }, select: { id: true, status: true, influencer: { select: { id: true } } },
     })

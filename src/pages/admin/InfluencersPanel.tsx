@@ -2,7 +2,13 @@
 
    قرارُ صاحب المنصّة: «كيف أضيف اسمَ المؤثّر… لكلّ مؤثّرٍ كودٌ خاصٌّ فيه». فهنا: يُضاف باسمه وكوده وعمولته وبريده
    (فيُنشأ له حسابٌ بدعوة، أو يُربط بحسابه إن كان له)، ثمّ لكلٍّ صفٌّ بأرقامه، ويُفتح فيرى من اشترى بكوده، ويُسجَّل
-   ما دُفع له. والكودُ لا يتغيّر بعد إضافته — هو في رابطه المنشور. والعلّةُ في `server/services/influencer.service.ts`.
+   ما دُفع له. والعلّةُ في `server/services/influencer.service.ts`.
+
+   ═══ وكودُه يتغيّر، ولكلٍّ خصمُه ورابطاه (١٥ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «اسمح لي تغيير الكود هناك وقيمة الخصم للمؤثر كلا على حدا». فلكلّ مؤثّرٍ هنا: كودُه يُغيَّر بسطرٍ يقول
+   إنّ الرابطَ القديمَ يبقى يعمل، وخصمُ متابعيه (فارغٌ بنسبة الحملة) على ما يُعطى بعد الحفظ، ورابطاه في منحة المؤثّرين و«بلاك
+   فرايدي وجيز».
 
    وفوقها طلباتُ الانضمام من «انضم كمؤثر» (`InfluencerApplications.tsx`، ٣١ أكتوبر ٢٠٢٦): يُقبَل منها بكوده وعمولته
    فيصير صفّا هنا. والدفعةُ الزائدةُ على رصيده تُعرض بخيارَيها — «سجلها سلفة» أو «عدل المبلغ» — لا تُمنع (`recordPayout`). */
@@ -15,7 +21,8 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
-import { INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_CODE_FORMAT_AR, normalizeInfluencerCode } from "@/application/commerce/influencer";
+import { INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_KEEPS_AR, INFLUENCER_DISCOUNT_BAD_AR, normalizeInfluencerCode } from "@/application/commerce/influencer";
+import { BLACK_FRIDAY_GRANT_NAME_AR, INFLUENCER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { staffControlCls } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -25,6 +32,12 @@ import InfluencerApplications from "./InfluencerApplications";
 interface Totals { signups: number; codes: number; buyers: number; sales: number; earned: number; paid: number; balance: number }
 interface Influencer {
   id: string; nameAr: string; code: string; commissionPercent: number; active: boolean; link: string;
+  /** خصمُ متابعيه — وفارغٌ بنسبة الحملة */
+  percentOff: number | null;
+  /** أكوادُه السابقة — روابطُها تعمل */
+  formerCodes: string[];
+  /** رابطاه في حملتَي المؤثّرين */
+  links: { influencer: string; blackFriday: string };
   email: string | null; accountStatus: string | null; createdAt: string; totals: Totals; currency: string;
 }
 interface Statement {
@@ -35,9 +48,16 @@ interface Statement {
 
 const errAr = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 
+/** خانةُ الخصم → رقمُه، أو `null` فارغةً (نسبةُ الحملة)، أو `undefined` إن لم تصحّ */
+function discountOf(raw: string): number | null | undefined {
+  if (raw.trim() === "") return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 0 && n <= 100 ? n : undefined;
+}
+
 export default function InfluencersPanel() {
   const [list, setList] = useState<Influencer[] | null>(null);
-  const [form, setForm] = useState({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), email: "" });
+  const [form, setForm] = useState({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), discount: "", email: "" });
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -51,19 +71,20 @@ export default function InfluencersPanel() {
   const code = normalizeInfluencerCode(form.code);
   const commission = Number(form.commission);
   const commissionOk = Number.isInteger(commission) && commission >= 0 && commission <= 100;
-  const canAdd = form.nameAr.trim().length >= 2 && code !== null && commissionOk;
+  const discount = discountOf(form.discount);
+  const canAdd = form.nameAr.trim().length >= 2 && code !== null && commissionOk && discount !== undefined;
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
       const out = await apiPost<{ account: { created: boolean; inviteSent: boolean | null } | null }>("/api/admin/influencers", {
-        nameAr: form.nameAr.trim(), code, commissionPercent: commission, email: form.email.trim() || null,
+        nameAr: form.nameAr.trim(), code, commissionPercent: commission, percentOff: discount, email: form.email.trim() || null,
       });
       toast(!out.account ? "أضيف المؤثر" : out.account.created
         ? (out.account.inviteSent ? "أضيف المؤثر، ووصلته دعوة حسابه" : "أضيف المؤثر وأنشئ حسابه، ولم ترسل الدعوة. اطلب منه «نسيت كلمة المرور»")
         : "أضيف المؤثر وربط بحسابه");
-      setForm({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), email: "" });
+      setForm({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), discount: "", email: "" });
       await load();
     } catch (err) { toastError(errAr(err, "تعذر إضافة المؤثر")); }
     finally { setBusy(false); }
@@ -88,11 +109,15 @@ export default function InfluencersPanel() {
         <label className="grid gap-1 text-read">العمولة %
           <input type="number" min={0} max={100} value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} className={staffControlCls} />
         </label>
+        <label className="grid gap-1 text-read">خصم متابعيه %
+          <input type="number" min={0} max={100} value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} placeholder="نسبة المنحة" className={staffControlCls} />
+        </label>
         <label className="grid gap-1 text-read">بريده (لحسابه)
           <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr" placeholder="اختياري" className={staffControlCls} />
         </label>
         <Button type="submit" disabled={busy || !canAdd}>أضف المؤثر</Button>
         {form.code.trim() !== "" && code === null && <p className="w-full text-read text-danger-ink">{INFLUENCER_CODE_FORMAT_AR}</p>}
+        {discount === undefined && <p className="w-full text-read text-danger-ink">{INFLUENCER_DISCOUNT_BAD_AR}</p>}
       </Card>
 
       {list === null ? null : list.length === 0 ? (
@@ -118,10 +143,12 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
   const money = (n: number) => fmtMoney(n, x.currency);
   const [st, setSt] = useState<Statement | null>(null);
   const [commission, setCommission] = useState(String(x.commissionPercent));
+  const [discount, setDiscount] = useState(x.percentOff === null ? "" : String(x.percentOff));
+  const [newCode, setNewCode] = useState(x.code);
   const [email, setEmail] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [confirm, setConfirm] = useState<null | "commission" | "active" | "payout">(null);
+  const [confirm, setConfirm] = useState<null | "commission" | "discount" | "code" | "active" | "payout">(null);
   /* ما قاله الخادمُ حين زاد المبلغُ على رصيده — وتحته الخياران: سلفةٌ أو تعديلُ المبلغ */
   const [over, setOver] = useState<string | null>(null);
   const amountRef = useRef<HTMLInputElement>(null);
@@ -134,6 +161,8 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
 
   const commissionNum = Number(commission);
   const commissionOk = Number.isInteger(commissionNum) && commissionNum >= 0 && commissionNum <= 100;
+  const discountNum = discountOf(discount);
+  const codeNorm = normalizeInfluencerCode(newCode);
   const amountNum = Number(amount);
 
   /* الدفعةُ — وما زاد على رصيده يعود بـ`payout_exceeds_balance` فيُعرض خياراه، لا يُسجَّل ولا يُمنع (`recordPayout`) */
@@ -166,9 +195,12 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
             {x.nameAr} <bdi dir="ltr" className="text-muted-foreground">{x.code}</bdi>{" "}
             {!x.active && <Chip tone="warn">موقوف</Chip>}
           </p>
-          <p className="mt-0.5 truncate text-read text-muted-foreground" dir="ltr">{x.link}</p>
+          {/* رابطاه في حملتَي المؤثّرين (١٥ نوفمبر ٢٠٢٦) */}
+          <p className="mt-0.5 truncate text-read text-muted-foreground">{INFLUENCER_GRANT_NAME_AR}: <bdi dir="ltr">{x.links.influencer}</bdi></p>
+          <p className="mt-0.5 truncate text-read text-muted-foreground">{BLACK_FRIDAY_GRANT_NAME_AR}: <bdi dir="ltr">{x.links.blackFriday}</bdi></p>
           <p className="mt-0.5 text-read text-muted-foreground">
-            عمولته {x.commissionPercent}% · {x.email ? `حسابه ${x.email}${x.accountStatus === "invited" ? " (لم يفعله بعد)" : ""}` : "بلا حساب"}
+            عمولته {x.commissionPercent}% · خصم متابعيه {x.percentOff === null ? "نسبة المنحة" : `${x.percentOff}%`} · {x.email ? `حسابه ${x.email}${x.accountStatus === "invited" ? " (لم يفعله بعد)" : ""}` : "بلا حساب"}
+            {x.formerCodes.length > 0 && <> · كان كوده <bdi dir="ltr">{x.formerCodes.join("، ")}</bdi></>}
           </p>
         </div>
         <p className="text-read font-bold">
@@ -185,6 +217,24 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
             </label>
             <Button size="sm" disabled={busy || !commissionOk || commissionNum === x.commissionPercent} onClick={() => setConfirm("commission")}>احفظ العمولة</Button>
             <Button size="sm" disabled={busy} onClick={() => setConfirm("active")}>{x.active ? "أوقف الكود" : "شغل الكود"}</Button>
+          </div>
+
+          {/* خصمُ متابعيه — فارغٌ بنسبة المنحة، وعلى ما يُعطى بعد الحفظ */}
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1 text-read">خصم متابعيه %
+              <input type="number" min={0} max={100} value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="نسبة المنحة" className={staffControlCls} />
+            </label>
+            <Button size="sm" disabled={busy || discountNum === undefined || discountNum === x.percentOff} onClick={() => setConfirm("discount")}>احفظ الخصم</Button>
+            <p className="w-full text-read text-muted-foreground">فارغ يعني نسبة المنحة. والخصم الجديد على من يأخذ كودا بعد الحفظ فقط.</p>
+          </div>
+
+          {/* وكودُه — والرابطُ القديمُ يبقى يعمل */}
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1 text-read">الكود
+              <input value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} dir="ltr" className={staffControlCls} />
+            </label>
+            <Button size="sm" disabled={busy || codeNorm === null || codeNorm === x.code} onClick={() => setConfirm("code")}>غير الكود</Button>
+            <p className="w-full text-read text-muted-foreground">{codeNorm === null && newCode.trim() !== "" ? INFLUENCER_CODE_FORMAT_AR : INFLUENCER_CODE_KEEPS_AR}</p>
           </div>
 
           {!x.email && (
@@ -265,6 +315,18 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
         <ConfirmAction tone="default" titleAr="تغيير عمولة المؤثر" confirmLabelAr="احفظ" busy={busy} onCancel={() => setConfirm(null)}
           onConfirm={() => void run(() => apiPatch(`/api/admin/influencers/${x.id}`, { commissionPercent: commissionNum }), "حفظت العمولة", "تعذر حفظ العمولة")}>
           <p>العمولة الجديدة {commissionNum}% على أكواد المنحة التي تعطى بكوده بعد الحفظ. وما أعطي قبله يبقى بعمولته {x.commissionPercent}%.</p>
+        </ConfirmAction>
+      )}
+      {confirm === "discount" && (
+        <ConfirmAction tone="default" titleAr="تغيير خصم متابعي المؤثر" confirmLabelAr="احفظ" busy={busy} onCancel={() => setConfirm(null)}
+          onConfirm={() => void run(() => apiPatch(`/api/admin/influencers/${x.id}`, { percentOff: discountNum ?? null }), "حفظ الخصم", "تعذر حفظ الخصم")}>
+          <p>{discountNum === null || discountNum === undefined ? "يأخذ متابعوه نسبة المنحة" : `يأخذ متابعوه ${discountNum}%`} على أكواد المنحة التي تعطى بكوده بعد الحفظ. وما أعطي قبله يبقى بخصمه.</p>
+        </ConfirmAction>
+      )}
+      {confirm === "code" && (
+        <ConfirmAction tone="default" titleAr="تغيير كود المؤثر" confirmLabelAr="غير" busy={busy} onCancel={() => setConfirm(null)}
+          onConfirm={() => void run(() => apiPatch(`/api/admin/influencers/${x.id}`, { code: codeNorm }), "تغير الكود", "تعذر تغيير الكود")}>
+          <p>يصير كوده <bdi dir="ltr">{codeNorm}</bdi> ورابطه به. والرابط القديم بكود <bdi dir="ltr">{x.code}</bdi> يبقى يعمل.</p>
         </ConfirmAction>
       )}
       {confirm === "active" && (

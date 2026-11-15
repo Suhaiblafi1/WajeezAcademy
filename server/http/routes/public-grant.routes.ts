@@ -10,7 +10,7 @@ import type { PrismaClient } from '@prisma/client'
 import { assertNotBot } from '../honeypot'
 import { GrantLandingService } from '../../services/grant-landing.service'
 import { learnerGrant } from '../../services/grant.service'
-import { GRANT_KIND_SLUG, GRANT_KINDS, INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { BLACK_FRIDAY_GRANT_SLUG, GRANT_KIND_SLUG, GRANT_KINDS, INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
 import { recordGrantVisit } from '../../services/grant-visit.service'
 import { requireAuth } from '../auth-plugin'
 
@@ -42,7 +42,10 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
   const influencers = new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG)
   /* «منحة وجيز العامة» — قواعدُ الأولى نفسُها، وصفحتُها `/grant/open` (١ نوفمبر ٢٠٢٦) */
   const open = new GrantLandingService(prisma, OPEN_GRANT_SLUG)
-  const byKind = { member: landing, influencer: influencers, open } as const
+  /* «بلاك فرايدي وجيز» — حملةُ مؤثّرين بصفّها هي، وصفحتُها `/grant/bf/<كود المؤثّر>` (١٥ نوفمبر ٢٠٢٦) */
+  const blackfriday = new GrantLandingService(prisma, BLACK_FRIDAY_GRANT_SLUG)
+  const byKind = { member: landing, influencer: influencers, open, blackfriday } as const
+  const influencerBody = applyBody.extend({ influencerCode: z.string().trim().min(1, 'اكتب كود المؤثر').max(40) })
 
   /* كودُ منحته لصاحب الحساب ببريد النموذج — فيفتح لوحُ الدفع بمنحته ولو عبّأ النموذجَ من جهازٍ آخر (`myCode`) */
   app.get('/api/learner/grant-code', {
@@ -85,8 +88,25 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     schema: { tags: ['public'], summary: 'نموذج منحة المؤثرين: كود المؤثر لازم، وعميل محتمل وكوده' },
   }, async (req, reply) => {
     assertNotBot(req.body)
-    const body = applyBody.extend({ influencerCode: z.string().trim().min(1, 'اكتب كود المؤثر').max(40) }).parse(req.body)
+    const body = influencerBody.parse(req.body)
     return reply.status(201).send(await influencers.apply(body, req.ip))
+  })
+
+  /* ═══ «بلاك فرايدي وجيز» — نموذجُ منحة المؤثّرين بصفّها هي، وكودُ المؤثّر لازم ═══ */
+  app.get('/api/public/grant/bf', {
+    schema: { tags: ['public'], summary: 'حال منحة بلاك فرايدي ودوراتها، واسم المؤثر وخصمه إن كان كوده صحيحا' },
+  }, async (req) => {
+    const { code } = z.object({ code: z.string().max(40).optional() }).parse(req.query)
+    return blackfriday.influencerView(code)
+  })
+
+  app.post('/api/public/grant/bf', {
+    config: { rateLimit: { max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' } },
+    schema: { tags: ['public'], summary: 'نموذج بلاك فرايدي وجيز: كود المؤثر لازم، وعميل محتمل وكوده' },
+  }, async (req, reply) => {
+    assertNotBot(req.body)
+    const body = influencerBody.parse(req.body)
+    return reply.status(201).send(await blackfriday.apply(body, req.ip))
   })
 
   /* ═══ «منحة وجيز العامة» — نموذجُ الأولى بلا كود مؤثّر، بصفّها هي ═══ */

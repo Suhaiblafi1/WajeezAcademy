@@ -220,6 +220,10 @@ export default function App() {
           {/* «منحة وجيز العامة» — للجميع بصفّها هي، غيرُ `/grant` (١ نوفمبر ٢٠٢٦) */}
           <Route path="/grant/open" element={<MemberGrantPage variant="open" />} />
           <Route path="/grant/open/build" element={<MemberGrantPage variant="open" />} />
+          {/* «بلاك فرايدي وجيز» — حملةُ مؤثّرين بصفّها هي، وصفحتُها برابط المؤثّر (١٥ نوفمبر ٢٠٢٦) */}
+          <Route path="/grant/bf" element={<MemberGrantPage variant="blackfriday" />} />
+          <Route path="/grant/bf/:code" element={<MemberGrantPage variant="blackfriday" />} />
+          <Route path="/grant/bf/:code/build" element={<MemberGrantPage variant="blackfriday" />} />
           {/* مسار يبدأ بدورة واحدة — «تفاصيل الدورة» تفتح هذه لا صفحة المسار كاملا */}
           <Route path="/build/:courseId" element={<CoursePathPage />} />
           <Route path="/stories" element={<StoriesPage />} />
@@ -425,6 +429,7 @@ export default function App() {
             <Route path="/admin/member-grant" element={<AdminMemberGrant />} />
             <Route path="/admin/influencer-grant" element={<AdminMemberGrant variant="influencer" />} />
             <Route path="/admin/open-grant" element={<AdminMemberGrant variant="open" />} />
+            <Route path="/admin/black-friday-grant" element={<AdminMemberGrant variant="blackfriday" />} />
             <Route path="/admin/audit" element={<AdminAuditLog />} />
             <Route path="/admin/system-health" element={<AdminSystemHealth />} />
             <Route path="/admin/reports" element={<AdminReports />} />

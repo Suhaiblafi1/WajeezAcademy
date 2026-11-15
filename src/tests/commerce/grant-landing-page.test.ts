@@ -14,7 +14,7 @@ import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, blackFridayLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_DIAG_PATH, GRANT_HUMAN_DIAG_AR, GRANT_SELF_DIAG_AR,
@@ -53,7 +53,12 @@ describe('الطريق والأبواب', () => {
     expect(APP).toMatch(/<Route path="\/grant\/open" element=\{<MemberGrantPage variant="open" \/>\} \/>/)
     expect(APP).toMatch(/<Route path="\/grant\/open\/build" element=\{<MemberGrantPage variant="open" \/>\} \/>/)
     expect(PAGE).toMatch(/const OPEN_PICK_PATH = `\$\{OPEN_GRANT_PATH\}\/build`;/)
-    expect((ROUTES.match(/assertNotBot\(req\.body\)/g) ?? []).length, 'باب بلا مصيدة').toBe(4)
+    /* وباب «بلاك فرايدي وجيز» خامسُها، بالسقف نفسِه — وصفحتُها برابط المؤثّر وطريقُ عودتها (١٥ نوفمبر ٢٠٢٦) */
+    expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/bf', \{\s*config: \{ rateLimit: \{ max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' \} \}/)
+    for (const path of ['/grant/bf', '/grant/bf/:code', '/grant/bf/:code/build']) {
+      expect(APP).toContain(`<Route path="${path}" element={<MemberGrantPage variant="blackfriday" />} />`)
+    }
+    expect((ROUTES.match(/assertNotBot\(req\.body\)/g) ?? []).length, 'باب بلا مصيدة').toBe(5)
   })
 })
 
@@ -196,6 +201,10 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/\{forOpen\s*\? openGrantLineAr\(c\.percentOff\)/)
     expect(openGrantLineAr(50)).toBe('منحة من أكاديمية وجيز لكل من يريد أن يتعلم، تصل إلى 50% من سعر دوراتك.')
     expect(openGrantLineAr(50), 'شكر قراء وجيز في المنحة العامة').not.toMatch(/قرّ?ائه|حصرية/)
+    /* و«بلاك فرايدي وجيز» بسطرها: بلاك فرايدي ونسبةُ متابع المؤثّر، وباسمه إن جاء برابطه (١٥ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/: forBlackFriday\s*\? blackFridayLineAr\(c\.percentOff, view\.influencer\?\.nameAr\)/)
+    expect(blackFridayLineAr(70)).toBe('بلاك فرايدي في أكاديمية وجيز: خصم يصل إلى 70% من سعر دوراتك.')
+    expect(blackFridayLineAr(70, 'صهيب')).toBe('بلاك فرايدي في أكاديمية وجيز بدعوة من صهيب: خصم يصل إلى 70% من سعر دوراتك.')
     expect(grantThanksAr(60)).toBe('تطبيق وجيز يشكرك لأنك من قرّائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى 60% لتستفيد من منتجنا الجديد: أكاديمية وجيز.')
     /* وفي منحة المؤثّرين باسم المؤثّر إن جاء برابطه (٢٦ أكتوبر ٢٠٢٦) */
     expect(PAGE).toContain('`بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
@@ -333,7 +342,7 @@ describe('بعد النموذج', () => {
     /* وحين يفتح لوحُ الدفع أيضا — من أنشأ حسابه في نافذة الدفع لا تعرفه الصفحةُ بعدُ (بلاغُ ٢٧ أكتوبر ٢٠٢٦) */
     expect(PAGE).toMatch(/const claimFor = \(authed \|\| buyOpen\) && stored && !stored\.code \? `\$\{session\?\.email \?\? "buy"\}\|\$\{stored\.ref\}` : null;/)
     expect(PAGE).toMatch(/apiGet<\{ code: string \| null; percentOff\?: number \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{kind\}`\)/)
-    expect(PAGE).toMatch(/const kind: GrantKind = forInfluencer \? "influencer" : forOpen \? "open" : "member";/)
+    expect(PAGE).toMatch(/const kind: GrantKind = forBlackFriday \? "blackfriday" : forInfluencer \? "influencer" : forOpen \? "open" : "member";/)
     expect(PAGE, 'لا يحفظ الكود على الجهاز').toMatch(/if \(kept && !kept\.code\) saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null, percentOff: percentOff \?\? kept\.percentOff \}, storeKey\);/)
     expect(PAGE).toMatch(/setStored\(\(s\) => \(s && !s\.code \? \{ \.\.\.s, code, sentTo: null, percentOff: percentOff \?\? s\.percentOff \} : s\)\);/)
     /* ولوحُ الدفع يُبنى من جديدٍ حين يصل الكود — فلا يبقى على أوّل حالٍ بلا منحة */
@@ -385,7 +394,7 @@ describe('بعد النموذج', () => {
        ولمنحه الثلاث (الصفحةُ واحدةٌ لها) */
     expect(payAt, 'لوح الدفع غائب').toBeGreaterThan(-1)
     expect(PAGE, 'عاد لوح الدفع عالقا').not.toMatch(/className=\{?["`][^"`]*\b(sticky|fixed)\b/)
-    for (const v of ['"influencer"', '"open"']) expect(APP, `منحة ${v} في صفحة أخرى`).toContain(`element={<MemberGrantPage variant=${v} />}`)
+    for (const v of ['"influencer"', '"open"', '"blackfriday"']) expect(APP, `منحة ${v} في صفحة أخرى`).toContain(`element={<MemberGrantPage variant=${v} />}`)
     /* ومنذ ١ نوفمبر ٢٠٢٦ («لا تكرار»): أسماؤها وحدَها هنا — ووعدُ كلٍّ تحت اسمها في صفّها */
     expect(PAGE).toMatch(/<span className="min-w-0 font-bold leading-6">\{grantShortTitleAr\(x\.titleAr\)\}<\/span>/)
     expect(PAGE).toMatch(/chosenMeetings > 0 \? grantSessionsAr\(chosenMeetings\) : null,\s*chosenTrainers > 0 \? grantTrainersAr\(chosenTrainers\) : null,/)
@@ -585,7 +594,9 @@ describe('بعد النموذج', () => {
     expect(GRANT_GIFT_MAX).toBe(3)
     expect(GRANT_GIFT_AR).toEqual({ title: 'يحق لك أن تهدي هذه المنحة لأصدقائك', limit: 'بحد أعلى 3 أصدقاء' })
     /* الرابطُ القصيرُ من الخادم إن صنعه، والطويلُ بوسمه إن لم يصنع — ومنحةُ المؤثّرين برابط مؤثّرها */
-    expect(PAGE).toMatch(/const sharePath = forInfluencer && creditedCode \? `\$\{INFLUENCER_GRANT_PATH\}\/\$\{creditedCode\}` : forOpen \? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;/)
+    /* وحملتا المؤثّرين برابط المؤثّر في حملته: `/grant/i` أو `/grant/bf` (١٥ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const sharePath = forInfluencer && creditedCode \? `\$\{influencerBase\}\/\$\{creditedCode\}` : forOpen \? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;/)
+    expect(PAGE).toMatch(/const influencerBase = influencerGrantPath\(forBlackFriday \? BLACK_FRIDAY_GRANT_SLUG : INFLUENCER_GRANT_SLUG\);/)
     expect(OPEN_GRANT_SHARE_PATH).toBe('/grant/open?ch=share')
     expect(PAGE).toMatch(/const shareLink = view\.sharePath \? `https:\/\/\$\{BARE_HOST\}\$\{view\.sharePath\}` : `\$\{window\.location\.origin\}\$\{sharePath\}`;/)
     /* بنسبة الحملة اليوم لا بنسبة كوده: الصديقُ يأخذ كودا جديدا بنسبة يومه (٢٨ أكتوبر ٢٠٢٦) */
@@ -809,6 +820,11 @@ describe('بعد النموذج', () => {
     expect(parseStoredGrant(JSON.stringify({ ...ok, at: Date.now() - 61 * 86_400_000 }))).toBeNull()
     const pending = { path: '/grant/11111111-1111-4111-8111-111111111111', intent: { title: 'مسار', amount: 1, kind: 'courses', courseIds: ['C-1'] }, cohortByCourse: {}, at: Date.now() }
     expect(parsePendingCheckout(JSON.stringify(pending), Date.now())?.path).toBe(pending.path)
+    /* وطريقُ العودة لحملتَي المؤثّرين و«منحة وجيز العامة» — كان `/grant/open/build` يُردّ فلا يعود من خرج ليوثّق بريده */
+    for (const path of ['/grant/i/SARA/build', '/grant/bf/SUHAIB/build', '/grant/open/build']) {
+      expect(parsePendingCheckout(JSON.stringify({ ...pending, path }), Date.now())?.path, path).toBe(path)
+    }
+    expect(parsePendingCheckout(JSON.stringify({ ...pending, path: '/grant/bf/x y/build' }), Date.now())).toBeNull()
   })
 })
 
@@ -817,6 +833,7 @@ describe('النصوص', () => {
     const data = [
       GRANT_CONSENT_AR, GRANT_ACADEMY_LINE_AR, ...WORK_FIELDS, ...CAREER_LEVELS, ...GRANT_GAINS_AR.map((g) => g.title),
       GRANT_GIFT_AR.title, GRANT_GIFT_AR.limit, grantLimitAr(4), grantAdvisorTextAr({ name: 'سارة', email: 'a@b.c', code: 'WG-ABCD2345', courses: ['دورة'], recordLink: 'u' }), grantThanksAr(60), grantShareAr('u', 60, '30 أكتوبر'),
+      blackFridayLineAr(70), blackFridayLineAr(70, 'صهيب'),
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',

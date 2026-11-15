@@ -238,6 +238,12 @@ export const grantThanksAr = (percentOff: number) =>
 export const openGrantLineAr = (percentOff: number) =>
   `منحة من أكاديمية وجيز لكل من يريد أن يتعلم، تصل إلى ${percentOff}% من سعر دوراتك.`
 
+/** وسطرُ «بلاك فرايدي وجيز» — باسم المؤثّر إن جاء برابطه، وبالنسبة التي يأخذها متابعُه (١٥ نوفمبر ٢٠٢٦) */
+export const blackFridayLineAr = (percentOff: number, influencerNameAr?: string | null) =>
+  influencerNameAr
+    ? `بلاك فرايدي في أكاديمية وجيز بدعوة من ${influencerNameAr}: خصم يصل إلى ${percentOff}% من سعر دوراتك.`
+    : `بلاك فرايدي في أكاديمية وجيز: خصم يصل إلى ${percentOff}% من سعر دوراتك.`
+
 /** المستوى الوظيفيّ — سؤالٌ اختياريّ */
 export const CAREER_LEVELS: readonly string[] = [
   'طالب أو حديث تخرج', 'موظف في بداية مسيرتي', 'موظف بخبرة', 'مشرف أو قائد فريق', 'مدير', 'صاحب عمل',

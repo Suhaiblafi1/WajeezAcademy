@@ -116,7 +116,7 @@ describe('تبديل الجهاز أثناء الجلسة', () => {
    قرارُ صاحب المنصّة: «دائما اجعل المنحَ باللون النهاريّ إلّا إذا هو اختار تحويلها لليليّ» (`isDayPage` في `theme.ts`) */
 describe('المنح نهارية إلا إن اختار الزائر الليلي', () => {
   it('⚠️ جهاز داكن على /grant وأخواتها — نهاري', async () => {
-    for (const path of ['/grant', '/grant/i/SARA', '/grant/i', '/grant/open']) {
+    for (const path of ['/grant', '/grant/i/SARA', '/grant/i', '/grant/open', '/grant/bf/SUHAIB']) {
       const { mod } = await boot({ deviceDark: true, path })
       expect(mod.getTheme(), path).toBe('light')
     }

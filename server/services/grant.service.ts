@@ -42,9 +42,9 @@ import { cohortLeadTrainers } from './cohort-lead'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
   GRANT_CAMPAIGNS, GRANT_CLOSED_AR, GRANT_CODE_PREFIX, GRANT_ONCE_AR, GRANT_SOLD_OUT_AR,
-  MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, type GrantSlug,
+  MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, isInfluencerGrant, type GrantSlug,
 } from '../../src/application/commerce/grant'
-import { influencerCommission } from '../../src/application/commerce/influencer'
+import { influencerCommission, influencerPercentOff } from '../../src/application/commerce/influencer'
 
 /** ما يحسب منحةً مستعملة: طلبٌ ينتظر الدفعَ بها أو دُفع — والمردودُ كلُّه يُعيدها */
 export const GRANT_HOLDS = ['pending_payment', 'paid', 'partially_refunded']
@@ -141,9 +141,14 @@ export class GrantService {
     return this.settings(now)
   }
 
-  /** كودُ من عبّأ النموذج — وكودُه نفسُه إن عبّأه من قبل. ومعه مؤثّرُه وعمولتُه إن جاء بكود مؤثّر */
+  /** كودُ من عبّأ النموذج — وكودُه نفسُه إن عبّأه من قبل. ومعه مؤثّرُه وعمولتُه إن جاء بكود مؤثّر.
+
+      ═══ وخصمُ المؤثّر إن كُتب له (١٥ نوفمبر ٢٠٢٦) ═══
+      قرارُ صاحب المنصّة: «قيمة الخصم للمؤثر كلا على حدا». فكودٌ يُعطى في حملة مؤثّرين بكود مؤثّرٍ له خصمُه
+      (`Influencer.percentOff`) يحمل خصمَه لا نسبةَ الحملة — ويُكتب في كوبونه يومَ يُعطى كالعمولة، فتغييرُه يقع على ما بعده.
+      وفي غير حملات المؤثّرين لا يُقرأ. */
   async issue(
-    input: { leadId?: string | null; influencer?: { id: string; commissionPercent: number } | null } = {},
+    input: { leadId?: string | null; influencer?: { id: string; commissionPercent: number; percentOff?: number | null } | null } = {},
     now = new Date(),
   ): Promise<{ code: string; percentOff: number; closesAt: Date | null; reused: boolean }> {
     const c = await this.campaign()
@@ -172,7 +177,8 @@ export class GrantService {
               ? new AuthError('grant_sold_out', GRANT_SOLD_OUT_AR, 409)
               : new AuthError('grant_closed', GRANT_CLOSED_AR, 409)
           }
-          const percentOff = rows[0].percentOff
+          const own = isInfluencerGrant(this.slug) ? input.influencer?.percentOff ?? null : null
+          const percentOff = influencerPercentOff(rows[0].percentOff, own)
           const code = `${GRANT_CODE_PREFIX}${randomUnambiguousCode(8)}`
           /* بلا حدّ استعمال — حدُّه عددُ دوراته (`coursesLeft`) */
           const coupon = await tx.coupon.create({ data: { code, percentOff, maxUses: null, active: true } })
@@ -184,7 +190,10 @@ export class GrantService {
           })
           await recordAudit(tx, {
             actorId: null, action: 'coupon.grant_issue', entityType: 'grant_campaign', entityId: c.id,
-            meta: { grantCodeId: row.id, code, percentOff, leadId: input.leadId ?? null, influencerId: input.influencer?.id ?? null },
+            meta: {
+              grantCodeId: row.id, code, percentOff, leadId: input.leadId ?? null, influencerId: input.influencer?.id ?? null,
+              ...(own !== null ? { campaignPercentOff: rows[0].percentOff } : {}),
+            },
           })
           return { code, percentOff, closesAt: c.closesAt, reused: false }
         })

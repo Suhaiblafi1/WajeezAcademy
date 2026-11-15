@@ -12,6 +12,7 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import { allSections } from '@/pages/admin/nav-map'
 import * as GRANT from '@/application/commerce/grant'
+import * as INFLUENCER from '@/application/commerce/influencer'
 import { grantFollowupAr } from '@/application/commerce/grant-landing'
 import { waToPerson } from '@/application/site/whatsapp'
 
@@ -42,7 +43,7 @@ describe('شاشة صاحب المنصة', () => {
     expect(PAGE).toMatch(/onClick=\{\(\) => setConfirm\(true\)\}>احفظ<\/Button>/)
     expect(PAGE).toMatch(/\{confirm && \(\s*<ConfirmAction[\s\S]*?onConfirm=\{\(\) => void save\(\)\}/)
     /* والشاشةُ نفسُها لمنحة المؤثّرين ببابها (٢٦ أكتوبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/const api = forInfluencer \? "\/api\/admin\/influencer-grant" : forOpen \? "\/api\/admin\/open-grant" : "\/api\/admin\/member-grant";/)
+    expect(PAGE).toMatch(/const api = forInfluencer \? "\/api\/admin\/influencer-grant" : forOpen \? "\/api\/admin\/open-grant" : forBlackFriday \? "\/api\/admin\/black-friday-grant" : "\/api\/admin\/member-grant";/)
     /* و«منحة وجيز العامة» ببابها هي — إعداداتُها ونتائجُها (١ نوفمبر ٢٠٢٦) */
     expect(ROUTES).toMatch(/app\.put\('\/api\/admin\/open-grant', \{\s*preHandler: canManage/)
     expect(PAGE).toMatch(/apiGet<\{ rows: MarginRow\[\]; commissionPercent\?: number \}>\(`\$\{api\}\/margins\?percentOff=\$\{pctNum\}`\)/)
@@ -80,7 +81,7 @@ describe('دورات المنحة', () => {
 describe('نتائج الحملة', () => {
   it('⚠️ في إحصاءات من عبأ — بالقناة والدفعة والمبلغ، وتفتح على منحة الشاشة، ونصوصها بلا تشكيل', () => {
     /* صارت «نتائج الحملة» في الإحصاءات فوق القائمة (٢ نوفمبر ٢٠٢٦) — والجدولُ القديمُ وبابُه ذهبا */
-    expect(PAGE).toMatch(/<GrantRegistrants grant=\{forInfluencer \? "influencer" : forOpen \? "open" : "member"\} \/>/)
+    expect(PAGE).toMatch(/<GrantRegistrants grant=\{forInfluencer \? "influencer" : forOpen \? "open" : forBlackFriday \? "blackfriday" : "member"\} \/>/)
     expect(PAGE).not.toMatch(/GrantResults/)
     expect(ROUTES).not.toMatch(/grant\/results'/)
     expect(REG).toMatch(/useState<"" \| keyof typeof GRANT_AR>\(fromLink \? "" : pageGrant\)/)
@@ -117,7 +118,8 @@ describe('من عبأ النموذج', () => {
     expect(PAGE).toMatch(/<GrantRegistrants grant=/)
     expect(REG).toMatch(/apiGet<List>\("\/api\/admin\/member-grant\/registrants"\)/)
     expect(REG).toMatch(/<ListToolbar q=\{q\}/)
-    expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.influencer \? INFLUENCER_GRANT_NAME_AR : r\.grant === "open" \? OPEN_GRANT_NAME_AR : undefined\)\)/)
+    /* وباسم منحته كلّها — «بلاك فرايدي وجيز» رابعتُها (١٥ نوفمبر ٢٠٢٦) */
+    expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.grant === "member" \? undefined : GRANT_CAMPAIGNS\[GRANT_KIND_SLUG\[r\.grant\]\]\.nameAr\)\)/)
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/registrants', \{\s*preHandler: canManage/)
     /* ومتابعُ المؤثّر قناتُه كودُ مؤثّره نفسُه — فلا يُعاد في «المصدر» بعد «كود …» (٢٨ أكتوبر ٢٠٢٦). وصار العمودُ «المصدر»
        (٣١ أكتوبر ٢٠٢٦)، وحارسُه على السلوك في `grant-registrants.test.ts` */
@@ -195,5 +197,40 @@ describe('النصوص', () => {
     const src = readFileSync(join(root, 'src/application/commerce/grant.ts'), 'utf8')
     const fns = src.slice(src.indexOf('export function grantClosesAt'))
     expect(fns.slice(0, fns.indexOf('\n}\n', fns.indexOf('export function grantLastDay'))), 'عاد توقيت الجهاز').not.toMatch(/getDate\(|getFullYear\(|getMonth\(|T00:00:00`/)
+  })
+})
+
+/* ═══ «بلاك فرايدي وجيز» وخصمُ كلّ مؤثّرٍ وكودُه (١٥ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «اسمح لي تغيير الكود هناك وقيمة الخصم للمؤثر كلا على حدا». فشاشتُها بطريقها وبندها وبابها، والمؤثّرون
+   تحتها بخصمِ كلٍّ وكودِه ورابطَيه. والسلوكُ في `server/tests/commerce/black-friday-grant.test.ts`. */
+describe('بلاك فرايدي وجيز ومؤثروها', () => {
+  const INF_ROUTES = code('server/http/routes/influencer.routes.ts')
+  const PANEL = code('src/pages/admin/InfluencersPanel.tsx')
+
+  it('⚠️ لها طريق وبند وباب بصلاحية الكوبونات — وإعداداتها كأخواتها والمؤثرون تحتها', () => {
+    expect(APP).toMatch(/<Route path="\/admin\/black-friday-grant" element=\{<AdminMemberGrant variant="blackfriday" \/>\} \/>/)
+    const item = allSections.flatMap((s) => s.items).find((i) => i.to === '/admin/black-friday-grant')
+    expect(item?.need).toBe('commerce.manage')
+    expect(INF_ROUTES).toMatch(/\['\/api\/admin\/black-friday-grant', new GrantService\(prisma, BLACK_FRIDAY_GRANT_SLUG\), 'بلاك فرايدي وجيز'\]/)
+    expect(INF_ROUTES).toMatch(/app\.put\(path, \{\s*preHandler: canManage/)
+    expect(INF_ROUTES).toMatch(/const canManage = requirePermission\('commerce\.manage'\)/)
+    expect(PAGE).toMatch(/\{\(forInfluencer \|\| forBlackFriday\) && <InfluencersPanel \/>\}/)
+    expect(GRANT.BLACK_FRIDAY_GRANT_DEFAULTS).toEqual({ percentOff: 70, maxCodes: 1000, maxCourses: 4 })
+  })
+
+  it('⚠️ لكل مؤثر رابطاه وخصمه وكوده — والكود بسطر يقول إن الرابط القديم يعمل، والخصم على ما بعد الحفظ', () => {
+    expect(PANEL).toMatch(/<bdi dir="ltr">\{x\.links\.influencer\}<\/bdi>/)
+    expect(PANEL).toMatch(/<bdi dir="ltr">\{x\.links\.blackFriday\}<\/bdi>/)
+    expect(PANEL).toMatch(/apiPatch\(`\/api\/admin\/influencers\/\$\{x\.id\}`, \{ percentOff: discountNum \?\? null \}\)/)
+    expect(PANEL).toMatch(/apiPatch\(`\/api\/admin\/influencers\/\$\{x\.id\}`, \{ code: codeNorm \}\)/)
+    expect(PANEL).toMatch(/: INFLUENCER_CODE_KEEPS_AR\}<\/p>/)
+    expect(INF_ROUTES).toMatch(/percentOff: z\.number\(\)\.int\(\)\.min\(0\)\.max\(100\)\.nullable\(\)\.optional\(\),\s*code: z\.string\(\)/)
+    const texts = [
+      INFLUENCER.INFLUENCER_CODE_KEEPS_AR, INFLUENCER.INFLUENCER_DISCOUNT_BAD_AR, 'خصم متابعيه %', 'احفظ الخصم', 'غير الكود',
+      'فارغ يعني نسبة المنحة. والخصم الجديد على من يأخذ كودا بعد الحفظ فقط.', 'نسبة المنحة',
+    ]
+    for (const t of texts.slice(2)) expect(PANEL).toContain(t)
+    for (const t of texts) expect(t).toBe(plainAr(t))
+    for (const k of ['influencer.discount.set', 'influencer.code.change']) expect(auditActionAr(k), `«${k}» بلا عنوان`).not.toBe(k)
   })
 })

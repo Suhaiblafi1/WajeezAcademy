@@ -12,10 +12,11 @@ import { GRANT_SCREENS } from '@/pages/admin/grant-screens'
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const MONEY = allSections.find((s) => s.title === 'المال')!
-const GRANTS = ['/admin/member-grant', '/admin/influencer-grant', '/admin/open-grant']
+/* و«بلاك فرايدي وجيز» رابعتُها (١٥ نوفمبر ٢٠٢٦) */
+const GRANTS = ['/admin/member-grant', '/admin/influencer-grant', '/admin/open-grant', '/admin/black-friday-grant']
 
 describe('المنح لسان واحد في «المال»', () => {
-  it('⚠️ لسان واحد للمنح الثلاث — لا ثلاثة', () => {
+  it('⚠️ لسان واحد للمنح كلها — لا لسان لكل منحة', () => {
     const tabs = sectionTabs(MONEY).map((t) => t.to)
     expect(tabs.filter((t) => GRANTS.includes(t)), 'عادت المنح ألسنة في الشريط').toEqual(['/admin/member-grant'])
     expect(sectionTabs(MONEY).find((t) => t.to === '/admin/member-grant')?.tab).toBe('المنح')
@@ -39,11 +40,12 @@ describe('المنح لسان واحد في «المال»', () => {
     const tabs = sectionTabs(without).map((t) => t.to)
     expect(tabs).toContain('/admin/influencer-grant')
     expect(tabs).toContain('/admin/open-grant')
+    expect(tabs).toContain('/admin/black-friday-grant')
   })
 })
 
 describe('روابط المنح في رأس صفحتها', () => {
-  it('⚠️ الثلاث في المبدّل، وكلّ مسار فيه بند في القسم', () => {
+  it('⚠️ كلها في المبدّل، وكلّ مسار فيه بند في القسم', () => {
     expect(GRANT_SCREENS.map((g) => g.to)).toEqual(GRANTS)
   })
 

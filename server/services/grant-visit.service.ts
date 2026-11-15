@@ -18,7 +18,8 @@
 import type { PrismaClient } from '@prisma/client'
 import { cleanTouch, type FirstTouch } from '../../src/application/marketing/signup-source'
 import { normalizeInfluencerCode } from '../../src/application/commerce/influencer'
-import { GRANT_KINDS, INFLUENCER_GRANT_SLUG, grantKindOf, type GrantKind, type GrantSlug } from '../../src/application/commerce/grant'
+import { GRANT_KINDS, grantKindOf, isInfluencerGrant, type GrantKind, type GrantSlug } from '../../src/application/commerce/grant'
+import { influencerCodeWhere } from './influencer.service'
 import { grantFunnel, registrantSource, type GrantFunnel, type RegistrantState } from '../../src/application/commerce/grant-registrants'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
 
@@ -31,12 +32,12 @@ export interface GrantVisitInput {
 
 const json = (t: FirstTouch | null) => (t ? { ...t } : undefined)
 
-/** كودُ المؤثّر إن طابق مؤثّرا نشطا — وما سواه لا يُحفظ */
+/** كودُ المؤثّر إن طابق مؤثّرا نشطا في حملتَي المؤثّرين — بكوده اليوم ولو جاء برابطه القديم (١٥ نوفمبر ٢٠٢٦). وما سواه لا يُحفظ */
 async function activeInfluencer(prisma: PrismaClient, slug: GrantSlug, raw: string | null | undefined): Promise<string | null> {
-  if (slug !== INFLUENCER_GRANT_SLUG) return null
+  if (!isInfluencerGrant(slug)) return null
   const code = normalizeInfluencerCode(raw)
   if (!code) return null
-  const found = await prisma.influencer.findFirst({ where: { code, active: true }, select: { code: true } })
+  const found = await prisma.influencer.findFirst({ where: { ...influencerCodeWhere(code), active: true }, select: { code: true } })
   return found?.code ?? null
 }
 
@@ -87,7 +88,7 @@ export async function grantVisitFunnels(
       firstAt: v.firstAt,
       visit: {
         group: registrantSource({
-          influencer: v.campaign === INFLUENCER_GRANT_SLUG, influencerCode: v.influencerCode,
+          influencer: isInfluencerGrant(v.campaign), influencerCode: v.influencerCode,
           channel: page?.channel ?? null, wave: page?.wave ?? null, pageTouch: page, firstTouch: cleanTouch(v.firstTouch),
         }).group,
         day: zonedDay(v.firstAt),

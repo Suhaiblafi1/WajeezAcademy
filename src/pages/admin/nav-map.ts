@@ -242,6 +242,10 @@ export const allSections: AdminNavSection[] = [
       { to: "/admin/open-grant", label: "منحة وجيز العامة", tab: "المنحة العامة", icon: Gift, need: "commerce.manage",
         inTab: "/admin/member-grant",
         descAr: "نسبة المنحة العامة وعددها وآخر يوم لها، ونتائجها" },
+      /* «بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦): حملةُ مؤثّرين بنسبتها وآخر يومٍ لها، ورابطُ كلّ مؤثّرٍ فيها */
+      { to: "/admin/black-friday-grant", label: "بلاك فرايدي وجيز", tab: "بلاك فرايدي", icon: Megaphone, need: "commerce.manage",
+        inTab: "/admin/member-grant",
+        descAr: "نسبة بلاك فرايدي وعددها وآخر يوم لها، وروابط المؤثرين فيها" },
       { to: "/admin/reports", label: "التقارير والتصدير", tab: "التقارير", icon: BarChart3, need: "reports.view",
         descAr: "أرقامُ المنصّة مفصَّلةً، وتصديرُها إلى ملفّ" },
     ],
