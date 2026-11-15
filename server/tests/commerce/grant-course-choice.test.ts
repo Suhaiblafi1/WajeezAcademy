@@ -5,6 +5,8 @@
       أيّ دورةٍ حتى حدّه** — قرارُ صاحب المنصّة: «Discount all courses».
    ③ **والمؤثّرُ بعضُ قائمة حملته** — صفحتُه بدوراته، والتقاطعُ إن ضاقت قائمةُ الحملة، ولا يُختار له ما ليس فيها.
       **وإن لم يبقَ له شيءٌ منها فقائمةُ الحملة كلُّها** — قرارُه: «Full grant list».
+   ④ **والقائمةُ ما له شعبةٌ تُشترى وحدَه، بمدرّبه ويوم بدء أوّل شعبة** — قرارُه: «اجعلني أرى الدورات التي لها شعب
+      فقط، واجعلني أرى اسم المدرب ومتى تبدأ أول شعبة».
    ⑤ **وكلُّ تغييرٍ أثرُه بمن غيّر وما كان وما صار** — وبابُه بصلاحيّة إعدادات المنحة، يردّ غيرَ المدير. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -152,12 +154,32 @@ describe('② وباختيار: لا يعرض إلا ما اختير، والك�
       expect(ids, 'ظهرت دورة جديدة لم تضف').not.toContain(fresh.courseId)
       const c = await choice.campaignChoice(OPEN_GRANT_SLUG)
       expect(c.auto).toBe(false)
-      expect(c.courses.find((x) => x.courseId === bare)?.shown).toBe(false)
+      /* وما لا شعبةَ له لا يُعرض في القائمة — ويبقى مختارا (١٥ نوفمبر ٢٠٢٦: «اجعلني أرى الدورات التي لها شعب فقط») */
+      expect(c.courses.map((x) => x.courseId), 'عرضت دورة بلا شعبة').not.toContain(bare)
+      expect(c.courseIds).toContain(bare)
       /* ولا تمسّ الحملتين الأخريين */
       expect(await shown(MEMBER_GRANT_SLUG)).toContain(fresh.courseId)
     } finally {
       await choice.setCampaignCourses(OPEN_GRANT_SLUG, [], ownerId)
     }
+  })
+})
+
+describe('④ القائمة ما له شعبة وحده — بمدربه ويوم بدء أول شعبة', () => {
+  it('⚠️ دورة بلا شعبة لا تعرض، وذات الشعبة بمدربها ويوم بدء أقرب شعبة', async () => {
+    const a = await course(100)
+    const bare = nextCourse()
+    const c = await choice.campaignChoice(MEMBER_GRANT_SLUG)
+    expect(c.courses.map((x) => x.courseId), 'عرضت دورة بلا شعبة').not.toContain(bare)
+    const row = c.courses.find((x) => x.courseId === a.courseId)
+    expect(row?.trainerName).toBe('مدرب المنحة')
+    const cohort = await prisma.cohort.findUniqueOrThrow({ where: { id: a.cohortId }, select: { startsAt: true } })
+    expect(row?.startsAt?.getTime()).toBe(cohort.startsAt!.getTime())
+    /* وللمؤثّر كذلك: من قائمة حملته ما له شعبةٌ وحدَه */
+    const inf = await prisma.influencer.create({ data: { nameAr: 'مؤثر القائمة', code: `GCCL${STAMP % 100000}` } })
+    const ic = await choice.influencerChoice(inf.id)
+    expect(ic.courses.map((x) => x.courseId)).not.toContain(bare)
+    expect(ic.courses.find((x) => x.courseId === a.courseId)?.trainerName).toBe('مدرب المنحة')
   })
 })
 
