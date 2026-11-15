@@ -27,7 +27,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { renderMail, type MailBlock } from './mail-template'
 import { notifyRole, sendDirectEmail, type DirectMailStatus } from './notification.service'
-import { InfluencerService, influencerDeal } from './influencer.service'
+import { InfluencerService, influencerDeal, notifyInfluencerWelcome } from './influencer.service'
 import { ROLE_PERMISSIONS } from '../auth/permissions'
 import {
   INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, normalizeInfluencerCode,
@@ -206,13 +206,11 @@ export class InfluencerApplicationService {
     if (claimed.count === 0) throw new AuthError('decided', 'حسم هذا الطلب من قبل', 409)
 
     let influencerId: string | null = null
-    let made: Awaited<ReturnType<InfluencerService['create']>>
+    let made: Awaited<ReturnType<InfluencerService['addWithAccount']>>
     try {
-      /* والإضافةُ نفسُها التي في الشاشة (١٥ نوفمبر ٢٠٢٦): حسابُه، ودعوةٌ جديدةٌ لحسابٍ قائمٍ لم يُفعَّل، وبريدُ الترحيب
-         بعنوان القبول ورقم طلبه (`sendInfluencerWelcome`) */
-      made = await new InfluencerService(this.prisma).create(
+      /* والإضافةُ نفسُها التي في الشاشة (١٥ نوفمبر ٢٠٢٦): حسابُه، ودعوةٌ جديدةٌ لحسابٍ قائمٍ لم يُفعَّل */
+      made = await new InfluencerService(this.prisma).addWithAccount(
         { nameAr: app.fullName, code, commissionPercent: input.commissionPercent, email: app.email }, actorId,
-        { subjectAr: 'قبلناك مؤثرا في منحة مؤثرين وجيز', reference: app.reference },
       )
       influencerId = made.id
       await this.prisma.influencerApplication.update({ where: { id }, data: { influencerId } })
@@ -233,7 +231,12 @@ export class InfluencerApplicationService {
       actorId, action: 'influencer.application.approve', entityType: 'influencer_application', entityId: id,
       meta: { reference: app.reference, influencerId, userId: made.account.userId, code, commissionPercent: input.commissionPercent, newAccount: made.account.created },
     })
-    return { influencerId, userId: made.account.userId, newAccount: made.account.created, inviteSent: made.account.inviteSent, emailDelivery: made.emailDelivery }
+    /* وبريدُ الترحيب نفسُه الذي يصل من يُضاف من الشاشة — بعنوان القبول ورقم طلبه */
+    const emailDelivery = await notifyInfluencerWelcome(this.prisma, {
+      to: app.email, nameAr: app.fullName, code, commissionPercent: input.commissionPercent, account: made.welcome,
+      subjectAr: 'قبلناك مؤثرا في منحة مؤثرين وجيز', reference: app.reference,
+    })
+    return { influencerId, userId: made.account.userId, newAccount: made.account.created, inviteSent: made.account.inviteSent, emailDelivery }
   }
 
   /** الاعتذار — وسببُه إن كُتب يصله في رسالته */

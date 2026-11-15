@@ -14,7 +14,7 @@
       **والإضافةُ كقبول طلب الانضمام والبريدُ لازم** — قرارُ صاحب المنصّة (١٥ نوفمبر ٢٠٢٦): «Same + email required».
       فلكلّ مؤثّرٍ حسابٌ وصفحة: لا يُضاف بلا بريد، ولا ببريدِ حسابٍ مؤرشفٍ أو حسابِ مؤثّرٍ آخر (يُردّ قبل أن يُكتب شيء)،
       وحسابٌ قائمٌ لم يُفعَّل قطّ تصله دعوةٌ جديدة، ويصله بريدُ الترحيب نفسُه الذي يصل من قُبل طلبُه — بكوده ورابطه
-      وعمولته وشروط الاتّفاق (`sendInfluencerWelcome`، يناديها القبولُ أيضا عبر `create`).
+      وعمولته وشروط الاتّفاق (`notifyInfluencerWelcome`، يناديها القبولُ أيضا بعنوانه ورقم طلبه).
    ٢) **والكودُ لا يتغيّر** بعد إضافته: هو في رابطه المنشور، وتغييرُه يضيع ما نُشر. وإيقافُه يمنع أن يُعطى به كودُ
       منحةٍ جديد، وما أُعطي قبله يبقى له.
    ٣) **وعمولتُه تُكتب في كود المنحة يومَ يُعطى** (`grant.service.ts#issue`) — فتغييرُها يقع على ما بعده، كنسبة المنحة.
@@ -73,12 +73,6 @@ export interface InfluencerInput {
   email: string
 }
 
-/** ما يُقال في بريد الترحيب: عنوانُه، ورقمُ طلبه إن جاء من «انضم كمؤثر» */
-export interface WelcomeOptions {
-  subjectAr?: string
-  reference?: string | null
-}
-
 const ADMIN_WELCOME_SUBJECT_AR = 'أضفناك مؤثرا في منحة مؤثرين وجيز'
 
 /** أرقامُ الاتّفاق ساعتَها — من إعدادات منحة المؤثّرين، والعمولةُ المقترحة. يقرؤها الاتّفاقُ العامّ وبريدُ الترحيب */
@@ -92,7 +86,7 @@ export type WelcomeAccount = { kind: 'created' } | { kind: 'invited'; inviteToke
 
 /** ═══ بريدُ الترحيب — واحدٌ للإضافة من الشاشة ولقبول طلب الانضمام (١٥ نوفمبر ٢٠٢٦) ═══
     كودُه ورابطُه وعمولتُه ورقمُ طلبه إن كان، ثمّ ما يفعل بحسابه على وجوهه الثلاثة، ثمّ شروطُ الاتّفاق بعمولته. */
-export async function sendInfluencerWelcome(prisma: PrismaClient, input: {
+export async function notifyInfluencerWelcome(prisma: PrismaClient, input: {
   to: string; nameAr: string; code: string; commissionPercent: number; account: WelcomeAccount
   subjectAr: string; reference?: string | null
 }): Promise<DirectMailStatus> {
@@ -163,11 +157,22 @@ export class InfluencerService {
     }))
   }
 
-  /** يُضيفه المدير، أو يُقبَل طلبُه (`influencer-application.service.ts#approve`) — بحسابه ببريده، وبريدِ ترحيب.
+  /** يُضيفه المدير — بحسابه ببريده، وبريدِ ترحيبٍ كبريد من قُبل طلبُه (١٥ نوفمبر ٢٠٢٦) */
+  async create(input: InfluencerInput, actorId: string) {
+    const made = await this.addWithAccount(input, actorId)
+    const emailDelivery = await notifyInfluencerWelcome(this.prisma, {
+      to: made.email, nameAr: made.nameAr, code: made.code, commissionPercent: made.commissionPercent,
+      account: made.welcome, subjectAr: ADMIN_WELCOME_SUBJECT_AR,
+    })
+    return { id: made.id, code: made.code, account: made.account, emailDelivery }
+  }
+
+  /** المؤثّرُ وحسابُه، بلا بريد ترحيب — تناديه الإضافةُ (`create`) وقبولُ الطلب (`influencer-application.service.ts#approve`)،
+      وكلٌّ يرسل ترحيبَه بعنوانه. ولا يُردّ إلى باب: فيه رمزُ الدعوة.
 
       كقبول الطلب (١٥ نوفمبر ٢٠٢٦): البريدُ لازم، والمؤرشفُ وحسابُ مؤثّرٍ آخر يُردّان قبل أن يُكتب شيء، والحسابُ القائمُ
       الذي لم يُفعَّل تصله دعوةٌ جديدة. وما سقط بعد كتابة المؤثّر — قبل أن يُربط حسابُه — يرفعه، فلا يبقى مؤثّرٌ بلا حساب. */
-  async create(input: InfluencerInput, actorId: string, welcome: WelcomeOptions = {}) {
+  async addWithAccount(input: InfluencerInput, actorId: string) {
     const nameAr = input.nameAr.trim()
     if (nameAr.length < 2) throw new AuthError('bad_name', 'اكتب اسم المؤثر', 400)
     const code = normalizeInfluencerCode(input.code)
@@ -205,12 +210,8 @@ export class InfluencerService {
       actorId, action: 'influencer.create', entityType: 'influencer', entityId: row.id,
       after: { nameAr, code, commissionPercent: row.commissionPercent },
     })
-    const emailDelivery = await sendInfluencerWelcome(this.prisma, {
-      to: email, nameAr, code, commissionPercent: row.commissionPercent,
-      account: account.created ? { kind: 'created' } : inviteToken ? { kind: 'invited', inviteToken } : { kind: 'active' },
-      subjectAr: welcome.subjectAr ?? ADMIN_WELCOME_SUBJECT_AR, reference: welcome.reference ?? null,
-    })
-    return { id: row.id, code, account, emailDelivery }
+    const welcome: WelcomeAccount = account.created ? { kind: 'created' } : inviteToken ? { kind: 'invited', inviteToken } : { kind: 'active' }
+    return { id: row.id, code, nameAr, email, commissionPercent: row.commissionPercent, account, welcome }
   }
 
   /** اسمُه وعمولتُه وإيقافُه — والكودُ لا يُغيَّر */
