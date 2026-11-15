@@ -35,6 +35,8 @@ interface Me {
   /** مادّةُ التصاميم — الدوراتُ وصورُ المدرّبين بلا أسماء (`designMaterial`) */
   designs: { termAr: string | null; courses: { title: string; startsAt: string | null }[]; photos: string[]; trainerTotal: number };
   grant: { nameAr: string; open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
+  /** «بلاك فرايدي وجيز» برابطه هو — يظهر له حين تُشغَّل (١٥ نوفمبر ٢٠٢٦) */
+  blackFriday?: { nameAr: string; open: boolean; percentOff: number; link: string } | null;
   totals: { signups: number; codes: number; buyers: number; sales: number; earned: number; paid: number; balance: number };
   rows: Row[];
   payouts: { id: string; amount: number; currency: string; noteAr: string | null; paidAt: string }[];
@@ -229,6 +231,17 @@ export default function InfluencerHome() {
               </div>
             </div>
           </Card>
+
+          {me.blackFriday?.open && (
+            <Card className="mt-3 min-w-0" data-testid="influencer-bf-link">
+              <p className="text-read text-muted-foreground">{me.blackFriday.nameAr}: متابعوك يحصلون على {me.blackFriday.percentOff}%</p>
+              <p className="mt-1 truncate font-bold" dir="ltr">{me.blackFriday.link}</p>
+              <div className="mt-2 flex gap-2">
+                <Button size="sm" icon={Copy} onClick={() => void copy(me.blackFriday!.link, "نسخ الرابط")}>انسخ الرابط</Button>
+                <Button size="sm" as="a" href={waShare(`${me.blackFriday.nameAr}: دورات مباشرة على Zoom بخصم ${me.blackFriday.percentOff}%.\n${me.blackFriday.link}`)} target="_blank" rel="noreferrer" icon={Share2}>واتساب</Button>
+              </div>
+            </Card>
+          )}
 
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
             {[

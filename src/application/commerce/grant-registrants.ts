@@ -138,7 +138,7 @@ export interface StatRow {
   state: RegistrantState
   influencer: boolean
   /** أيُّ منحةٍ عبّأ — وبلا قيمةٍ يُقرأ من `influencer` كما كان قبل الثالثة */
-  grant?: 'member' | 'influencer' | 'open'
+  grant?: 'member' | 'influencer' | 'open' | 'blackfriday'
   code: string | null
   advisor: string | null
   workField: string | null
@@ -170,6 +170,8 @@ export interface RegistrantStats {
   influencer: number
   /** «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
   open: number
+  /** «بلاك فرايدي وجيز» — حملةُ مؤثّرين بعمودها (١٥ نوفمبر ٢٠٢٦) */
+  blackfriday: number
   bySource: Count[]
   /** ما دُفع بأكواد من في القائمة، وكم طلبا — كما كانت «نتائج الحملة» (٢ نوفمبر ٢٠٢٦) */
   revenue: number
@@ -257,8 +259,10 @@ export function registrantStats(rows: StatRow[]): RegistrantStats {
     boughtPct: pct(bought, rows.length),
     withAdvisor: count((r) => !!r.advisor),
     member: count((r) => (r.grant ?? (r.influencer ? 'influencer' : 'member')) === 'member'),
-    influencer: count((r) => r.influencer),
+    /* ومنحةُ المؤثّرين وحدَها — «بلاك فرايدي وجيز» حملةُ مؤثّرين أيضا، فتُعدّ بعمودها (١٥ نوفمبر ٢٠٢٦) */
+    influencer: count((r) => (r.grant ?? (r.influencer ? 'influencer' : 'member')) === 'influencer'),
     open: count((r) => r.grant === 'open'),
+    blackfriday: count((r) => r.grant === 'blackfriday'),
     bySource,
     revenue: Math.round(rows.reduce((sum, r) => sum + (r.revenue ?? 0), 0) * 100) / 100,
     orders: rows.reduce((sum, r) => sum + (r.orders ?? 0), 0),

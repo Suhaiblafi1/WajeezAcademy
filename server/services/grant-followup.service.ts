@@ -38,7 +38,11 @@
    (`grantRegistrants`) للحملتين معا (٢٧ أكتوبر ٢٠٢٦): كانت للأولى وحدَها، فرابطُ ملفّه (`/g/<كوده>`) في رسالة «راسل
    مستشارك» من صفحة المؤثّر كان يفتح قائمةً ليس هو فيها. وكلُّ صفٍّ يقول من أيّ منحةٍ جاء وبكود أيّ مؤثّر.
 
-   والحارس: `server/tests/commerce/grant-followup.test.ts` و`influencer-grant.test.ts` و`grant-reminder-deadline.test.ts`. */
+   و«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) حملةُ مؤثّرين كالثانية: حالتُها تسمّيها وكودَ مؤثّره، وتذكيرُها بنهايتها هي يعيد
+   إلى رابط مؤثّره فيها (`/grant/bf/<كوده>`) لا إلى منحة المؤثّرين.
+
+   والحارس: `server/tests/commerce/grant-followup.test.ts` و`influencer-grant.test.ts` و`grant-reminder-deadline.test.ts`
+   و`black-friday-grant.test.ts`. */
 
 import type { PrismaClient } from '@prisma/client'
 import { recordAudit } from './audit'
@@ -50,7 +54,7 @@ import { publicSiteUrl } from './site-url'
 import type { BuyableCohort } from './grant-courses.service'
 import { pageCourses } from './grant-scope.service'
 import { GrantService } from './grant.service'
-import { GRANT_CAMPAIGNS, GRANT_CONTINUE_AR, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr, grantLeftLineAr, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
+import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_CONTINUE_AR, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr, grantLeftLineAr, grantPagePath, isInfluencerGrant, type GrantSlug } from '../../src/application/commerce/grant'
 import { influencerLink } from '../../src/application/commerce/influencer'
 import { optedOut, unsubscribeLinks } from './mail-optout.service'
 import {
@@ -128,7 +132,7 @@ export async function grantRegistrants(prisma: PrismaClient) {
       id: l.id, fullName: l.fullName, phone: l.phone, email: l.email, workField: l.workField,
       careerLevel: l.careerLevel, interests: l.interests,
       channel: l.channel, wave: l.wave, createdAt: l.createdAt,
-      influencer: l.campaign === INFLUENCER_GRANT_SLUG, influencerCode: l.influencer?.code ?? null,
+      influencer: isInfluencerGrant(l.campaign), influencerCode: l.influencer?.code ?? null,
       code: l.grantCode?.coupon.code ?? null, state,
       picks: l.grantPicks.map((id) => titles.get(id) ?? id),
       advisor: l.cases[0] ? (l.cases[0].assignments[0]?.advisor.displayName ?? 'بلا مستشار بعد') : null,
@@ -180,6 +184,8 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
           nextAction: [
             lead.campaign === INFLUENCER_GRANT_SLUG
               ? `اتصل به — عبأ نموذج منحة المؤثرين${lead.influencer ? ` بكود ${lead.influencer.code}` : ''} ولم يشتر بعد`
+              : lead.campaign === BLACK_FRIDAY_GRANT_SLUG
+              ? `اتصل به — عبأ نموذج بلاك فرايدي وجيز${lead.influencer ? ` بكود ${lead.influencer.code}` : ''} ولم يشتر بعد`
               : lead.campaign === OPEN_GRANT_SLUG
                 ? 'اتصل به — عبأ نموذج منحة وجيز العامة ولم يشتر بعد'
                 : 'اتصل به — عبأ نموذج المنحة ولم يشتر بعد',
@@ -284,7 +290,7 @@ export async function sendGrantReminders(
     const coupon = lead.grantCode?.coupon
     if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase()) || off.has(lead.email.toLowerCase())) continue
     const pct = coupon.percentOff ?? campaign.percentOff
-    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}${grantPagePath(slug)}`
+    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug) : `${publicSiteUrl()}${grantPagePath(slug)}`
     const lastDayRow = days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]
     /* ما اختاره هو ممّا يُشترى اليوم — بسعر كلٍّ بعد منحته، ومجموعِها وقيمةِ منحته، وزرٍّ يعيده إلى اختياره (٣١ أكتوبر ٢٠٢٦) */
     const pool = await poolOf(lead.grantCode?.influencerId ?? null)
@@ -590,7 +596,7 @@ export async function sendGrantExtendedNotice(
     const coupon = lead.grantCode?.coupon
     if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase()) || off.has(lead.email.toLowerCase())) continue
     const pct = coupon.percentOff ?? campaign.percentOff
-    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code) : `${publicSiteUrl()}/grant`
+    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug) : `${publicSiteUrl()}${grantPagePath(slug)}`
     const pool = await poolOf(lead.grantCode?.influencerId ?? null)
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
     const blocks: MailBlock[] = [

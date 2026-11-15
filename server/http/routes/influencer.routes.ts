@@ -1,4 +1,5 @@
 /* المؤثّرون — بابُ صاحب المنصّة إليهم، وبابُ المؤثّر إلى كشفه (٢٦ أكتوبر ٢٠٢٦). والعلّةُ في `influencer.service.ts`.
+   وإعداداتُ حملتَي المؤثّرين هنا: «منحة مؤثرين وجيز» و«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦).
 
    الإدارةُ بصلاحيّة الكوبونات (`commerce.manage`) كإعدادات المنحة: منحةُ المؤثّرين كوبونٌ بحملة، ومن يملك نسبتَها
    يملك من ينشرها وعمولتَه. ويملكها المديرُ والماليّة — والماليّةُ تسجّل ما دُفع له. والمؤثّرُ يرى كشفَه وحدَه:
@@ -11,7 +12,7 @@ import { requirePermission } from '../auth-plugin'
 import { InfluencerService } from '../../services/influencer.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantCourseChoiceService } from '../../services/grant-scope.service'
-import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 import { INFLUENCER_COMMISSION_DEFAULT } from '../../../src/application/commerce/influencer'
 
 export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -20,35 +21,39 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
   const canManage = requirePermission('commerce.manage')
   const id = z.object({ id: z.string().uuid() })
 
-  /* ═══ إعداداتُ «منحة مؤثرين وجيز» — كإعدادات الأولى بصفّها هي ═══ */
-  app.get('/api/admin/influencer-grant', {
-    preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'إعدادات منحة المؤثرين وما جرى بها' },
-  }, async () => grant.settings())
-
-  app.put('/api/admin/influencer-grant', {
-    preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'تغيير نسبة منحة المؤثرين أو عددها أو نهايتها أو تشغيلها' },
-  }, async (req) => {
-    const body = z.object({
-      percentOff: z.number().int().min(1).max(100).optional(),
-      maxCodes: z.number().int().min(1).nullable().optional(),
-      maxCourses: z.number().int().min(1).max(20).optional(),
-      closesAt: z.coerce.date().nullable().optional(),
-      active: z.boolean().optional(),
-    }).parse(req.body ?? {})
-    return grant.update(body, req.auth!.userId)
+  const settingsBody = z.object({
+    percentOff: z.number().int().min(1).max(100).optional(),
+    maxCodes: z.number().int().min(1).nullable().optional(),
+    maxCourses: z.number().int().min(1).max(20).optional(),
+    closesAt: z.coerce.date().nullable().optional(),
+    active: z.boolean().optional(),
   })
 
-  /* والهامشُ بعد عمولة المؤثّر — بأعلى عمولةٍ لمؤثّرٍ نشط، فلا يُرى هامشٌ أحسنُ ممّا يقع */
-  app.get('/api/admin/influencer-grant/margins', {
-    preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'سعر كل شعبة بعد منحة المؤثرين مقابل أجر مقعدها وعمولة المؤثر' },
-  }, async (req) => {
-    const { percentOff } = z.object({ percentOff: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query)
-    const top = await prisma.influencer.aggregate({ where: { active: true }, _max: { commissionPercent: true } })
-    return grant.margins(percentOff, top._max.commissionPercent ?? INFLUENCER_COMMISSION_DEFAULT)
-  })
+  /* ═══ إعداداتُ حملتَي المؤثّرين — «منحة مؤثرين وجيز» و«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦)، كلٌّ بصفّه هو ═══ */
+  for (const [path, svc, nameAr] of [
+    ['/api/admin/influencer-grant', grant, 'منحة المؤثرين'],
+    ['/api/admin/black-friday-grant', new GrantService(prisma, BLACK_FRIDAY_GRANT_SLUG), 'بلاك فرايدي وجيز'],
+  ] as const) {
+    app.get(path, {
+      preHandler: canManage,
+      schema: { tags: ['admin-commerce'], summary: `إعدادات ${nameAr} وما جرى بها` },
+    }, async () => svc.settings())
+
+    app.put(path, {
+      preHandler: canManage,
+      schema: { tags: ['admin-commerce'], summary: `تغيير نسبة ${nameAr} أو عددها أو نهايتها أو تشغيلها` },
+    }, async (req) => svc.update(settingsBody.parse(req.body ?? {}), req.auth!.userId))
+
+    /* والهامشُ بعد عمولة المؤثّر — بأعلى عمولةٍ لمؤثّرٍ نشط، فلا يُرى هامشٌ أحسنُ ممّا يقع */
+    app.get(`${path}/margins`, {
+      preHandler: canManage,
+      schema: { tags: ['admin-commerce'], summary: `سعر كل شعبة بعد ${nameAr} مقابل أجر مقعدها وعمولة المؤثر` },
+    }, async (req) => {
+      const { percentOff } = z.object({ percentOff: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query)
+      const top = await prisma.influencer.aggregate({ where: { active: true }, _max: { commissionPercent: true } })
+      return svc.margins(percentOff, top._max.commissionPercent ?? INFLUENCER_COMMISSION_DEFAULT)
+    })
+  }
 
   /* ═══ المؤثّرون ═══ */
   app.get('/api/admin/influencers', {
@@ -65,6 +70,7 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
       nameAr: z.string().trim().min(2).max(120),
       code: z.string().trim().min(3).max(40),
       commissionPercent: z.number().int().min(0).max(100),
+      percentOff: z.number().int().min(0).max(100).nullable().optional(),
       email: z.string().trim().max(200).nullable().optional(),
     }).parse(req.body)
     return reply.status(201).send(await influencers.create({ ...body, email: body.email ?? '' }, req.auth!.userId))
@@ -72,11 +78,14 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.patch('/api/admin/influencers/:id', {
     preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'اسم المؤثر وعمولته وإيقافه — والكود لا يتغير' },
+    schema: { tags: ['admin-commerce'], summary: 'اسم المؤثر وعمولته وخصم متابعيه وكوده وإيقافه — والرابط القديم يبقى يعمل' },
   }, async (req) => {
     const body = z.object({
       nameAr: z.string().trim().min(2).max(120).optional(),
       commissionPercent: z.number().int().min(0).max(100).optional(),
+      /* خصمُ متابعيه — و`null` يعيده إلى نسبة الحملة (١٥ نوفمبر ٢٠٢٦) */
+      percentOff: z.number().int().min(0).max(100).nullable().optional(),
+      code: z.string().trim().min(3).max(40).optional(),
       active: z.boolean().optional(),
     }).parse(req.body ?? {})
     return influencers.update(id.parse(req.params).id, body, req.auth!.userId)

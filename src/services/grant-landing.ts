@@ -14,6 +14,8 @@ export const GRANT_STORE_KEY = 'wajeez_grant'
 export const INFLUENCER_GRANT_STORE_KEY = 'wajeez_grant_influencer'
 /** و«منحة وجيز العامة» في مفتاحها هي كذلك (١ نوفمبر ٢٠٢٦) */
 export const OPEN_GRANT_STORE_KEY = 'wajeez_grant_open'
+/** و«بلاك فرايدي وجيز» في مفتاحها هي (١٥ نوفمبر ٢٠٢٦) */
+export const BLACK_FRIDAY_GRANT_STORE_KEY = 'wajeez_grant_bf'
 const TTL_MS = 60 * 86_400_000
 /** سقفُ ما يُقرأ من اختياره — فوق حدّ المنحة بكثير، والصفحةُ تقصّه على حدّها */
 const STORED_PICKS_MAX = 20

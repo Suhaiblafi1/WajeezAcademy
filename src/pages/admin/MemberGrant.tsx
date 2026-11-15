@@ -15,7 +15,12 @@
 
    `variant="open"`: منحةُ الأولى نفسُها للجميع بصفّها هي — إعداداتُها ونتائجُها، ومن عبّأ نموذجَها في القائمة نفسِها.
 
-   ═══ والثلاثُ لسانٌ واحدٌ «المنح»، والتنقّلُ بينها في رأس الصفحة (٣ نوفمبر ٢٠٢٦، `GrantSwitcher`) ═══ */
+   ═══ و«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) ═══
+
+   `variant="blackfriday"`: حملةُ مؤثّرين بصفّها هي — إعداداتُها كأخواتها، والمؤثّرون تحتها بروابطهم فيها وخصمِ كلٍّ وكودِه
+   (`InfluencersPanel`)، والهامشُ يطرح عمولةَ المؤثّر كمنحة المؤثّرين.
+
+   ═══ وكلُّها لسانٌ واحدٌ «المنح»، والتنقّلُ بينها في رأس الصفحة (٣ نوفمبر ٢٠٢٦، `GrantSwitcher`) ═══ */
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
@@ -29,7 +34,7 @@ import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
-import { grantClosesAt, grantLastDay, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH } from "@/application/commerce/grant";
+import { BLACK_FRIDAY_GRANT_NAME_AR, grantClosesAt, grantLastDay, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
 import { staffControlCls } from "@/components/FormKit";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -55,8 +60,11 @@ const RULE_AR: Record<string, string> = {
 export default function AdminMemberGrant({ variant = "members" }: { variant?: GrantVariant }) {
   const forInfluencer = variant === "influencer";
   const forOpen = variant === "open";
-  const api = forInfluencer ? "/api/admin/influencer-grant" : forOpen ? "/api/admin/open-grant" : "/api/admin/member-grant";
-  const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : forOpen ? OPEN_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  const forBlackFriday = variant === "blackfriday";
+  const api = forInfluencer ? "/api/admin/influencer-grant" : forOpen ? "/api/admin/open-grant" : forBlackFriday ? "/api/admin/black-friday-grant" : "/api/admin/member-grant";
+  const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : forOpen ? OPEN_GRANT_NAME_AR : forBlackFriday ? BLACK_FRIDAY_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  /* اسمُ الحملة القصير — لمن عبّأ نموذجَها ولدوراتها (`GrantKind`) */
+  const grantKind: GrantKind = forInfluencer ? "influencer" : forOpen ? "open" : forBlackFriday ? "blackfriday" : "member";
   const [commissionPct, setCommissionPct] = useState(0);
   const [s, setS] = useState<Settings | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
@@ -153,6 +161,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
         </p>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
           {forInfluencer && "صفحتها برابط كل مؤثر، وكوده لازم في نموذجها. "}
+          {forBlackFriday && "صفحتها برابط كل مؤثر، وكوده لازم في نموذجها. ولكل مؤثر خصمه إن كتبته له، وإلا فنسبتها. "}
           {forOpen && `للجميع، وصفحتها ${OPEN_GRANT_PATH}. وقواعدها قواعد منحة وجيز، ومنحة واحدة لكل متعلم على المنح كلها. `}
           من يعبئ نموذج الحملة يأخذ كودا شخصيا، ويمكن أن يعطيه لغيره. ويستعمل في أكثر من شراء حتى {s.maxCourses} دورات على الكود كله، ومنحة واحدة لكل متعلم. وصاحبه يدفع نسبة ثابتة من سعر الدورات بدل خصم الباقة، أو سعر الباقة إن كان أقل. ونسبة كل كود هي نسبة يوم إعطائه.
         </p>
@@ -180,10 +189,10 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
       </Card>
 
       {/* ومنحةُ المؤثرين لها إحصاءاتُها ومن عبّأ نموذجَها أيضا، تحت مؤثّريها (٣ نوفمبر ٢٠٢٦) */}
-      {forInfluencer && <InfluencersPanel />}
-      <GrantRegistrants grant={forInfluencer ? "influencer" : forOpen ? "open" : "member"} />
+      {(forInfluencer || forBlackFriday) && <InfluencersPanel />}
+      <GrantRegistrants grant={grantKind} />
 
-      <GrantCourses grant={forInfluencer ? "influencer" : forOpen ? "open" : "member"} percentOff={pctOk ? pctNum : null} />
+      <GrantCourses grant={grantKind} percentOff={pctOk ? pctNum : null} />
 
       <h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة {pctOk ? `${pctNum}%` : "—"}</h2>
       <p className="mt-1 text-read text-muted-foreground">

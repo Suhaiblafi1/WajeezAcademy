@@ -25,7 +25,12 @@
    وعمولتَه يومَ أُعطي (`grant.service.ts#issue`). **والأوّلُ يبقى**: من عبّأها بكود مؤثّرٍ ثمّ بكود غيره يُحسب للأوّل —
    كما يأخذ كودَه الأوّل نفسَه. والقناةُ كودُ المؤثّر بحروفٍ صغيرة، فتُقرأ نتائجُها بالقناة كما تُقرأ نتائجُ الأولى.
 
-   والحارس: `server/tests/commerce/grant-landing.test.ts` و`influencer-grant.test.ts`. */
+   ═══ و«بلاك فرايدي وجيز» حملةُ مؤثّرين ثانية (١٥ نوفمبر ٢٠٢٦) ═══
+
+   بالقاعدة نفسِها (`isInfluencerGrant`): كودُ المؤثّر لازم، وصفحتُها برابطه `/grant/bf/<كوده>`. وكودُ المؤثّر يُقرأ بما كان له
+   أيضا (`influencerCodeWhere`)، فرابطُه القديمُ يعمل بعد أن يتغيّر. ونسبةُ الصفحة ما يأخذه متابعُه هو: خصمُ مؤثّره إن كُتب له.
+
+   والحارس: `server/tests/commerce/grant-landing.test.ts` و`influencer-grant.test.ts` و`black-friday-grant.test.ts`. */
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
@@ -46,8 +51,9 @@ import {
   type GrantCourseSummary,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
-import { GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, type GrantSlug } from '../../src/application/commerce/grant'
-import { INFLUENCER_CODE_BAD_AR, INFLUENCER_GRANT_PATH, influencerLink, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
+import { GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, isInfluencerGrant, type GrantSlug } from '../../src/application/commerce/grant'
+import { INFLUENCER_CODE_BAD_AR, influencerGrantPath, influencerLink, influencerPercentOff, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
+import { influencerCodeWhere } from './influencer.service'
 import { shortLinkPath } from '../../src/application/links/short-link'
 import { fmtDate } from '../../src/application/text/format-ar'
 
@@ -74,6 +80,8 @@ const OPEN_CASE = { notIn: ['closed', 'enrolled', 'not_interested'] }
 const SHARE_PATH: Partial<Record<GrantSlug, string>> = { [MEMBER_GRANT_SLUG]: GRANT_SHARE_PATH, [OPEN_GRANT_SLUG]: OPEN_GRANT_SHARE_PATH }
 /** غرضُ رابط الهديّة القصير — به يُعرف صفُّه فيُعاد ولا يُصنع ثانية */
 const GRANT_SHARE_PURPOSE = 'grant.share'
+/** ما يُقرأ من المؤثّر في النموذج — وخصمُه يُكتب في كوده (`grant.service.ts#issue`) */
+const INFLUENCER_SELECT = { id: true, nameAr: true, code: true, commissionPercent: true, percentOff: true } as const
 
 export class GrantLandingService {
   private prisma: PrismaClient
@@ -87,22 +95,25 @@ export class GrantLandingService {
     this.advisors = new AdvisorService(prisma)
   }
 
-  /** المؤثّرُ النشطُ بكوده — أو لا أحد */
+  /** المؤثّرُ النشطُ بكوده — أو بكودٍ كان له، فرابطُه القديمُ يعمل ويُقال كودُه اليوم (١٥ نوفمبر ٢٠٢٦) — أو لا أحد */
   async influencerByCode(raw: string | null | undefined) {
     const code = normalizeInfluencerCode(raw)
     if (!code) return null
     return this.prisma.influencer.findFirst({
-      where: { code, active: true }, select: { id: true, nameAr: true, code: true, commissionPercent: true },
+      where: { ...influencerCodeWhere(code), active: true }, select: INFLUENCER_SELECT,
     })
   }
 
-  /** صفحةُ منحة المؤثّرين: حالُها ودوراتُها، واسمُ المؤثّر إن كان كودُه في الرابط صحيحا — ودوراتُه هو إن اختيرت له */
+  /** صفحةُ حملة المؤثّرين: حالُها ودوراتُها، واسمُ المؤثّر إن كان كودُه في الرابط صحيحا — ودوراتُه هو إن اختيرت له،
+      ونسبتُها ما يأخذه متابعُه هو */
   async influencerView(raw: string | null | undefined, now = new Date()) {
     const found = await this.influencerByCode(raw)
+    const v = await this.view(now, found?.id ?? null)
     return {
-      influencer: found ? { nameAr: found.nameAr, code: found.code } : null, ...(await this.view(now, found?.id ?? null)),
-      /* وهديّتُها برابط مؤثّرها — قصيرا كهديّة «منحة وجيز» */
-      sharePath: found ? await this.shareLink(`${INFLUENCER_GRANT_PATH}/${found.code}`) : null,
+      influencer: found ? { nameAr: found.nameAr, code: found.code } : null, ...v,
+      campaign: { ...v.campaign, percentOff: influencerPercentOff(v.campaign.percentOff, found?.percentOff) },
+      /* وهديّتُها برابط مؤثّرها في حملتها — قصيرا كهديّة «منحة وجيز» */
+      sharePath: found ? await this.shareLink(`${influencerGrantPath(this.slug)}/${found.code}`) : null,
     }
   }
 
@@ -199,7 +210,8 @@ export class GrantLandingService {
     const interests = [...new Set((input.interests ?? []).map((x) => x.trim()))]
     if (interests.length > GRANT_MAX_INTERESTS) throw new AuthError('bad_interests', `اختر حتى ${GRANT_MAX_INTERESTS} مجالات`, 400)
     if (interests.some((x) => !GRANT_INTEREST_DOMAINS.has(x))) throw new AuthError('bad_interests', 'اختر ما تريد تطويره من القائمة', 400)
-    const forInfluencer = this.slug === INFLUENCER_GRANT_SLUG
+    /* وحملتا المؤثّرين بقاعدةٍ واحدة: منحةُ المؤثّرين و«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) */
+    const forInfluencer = isInfluencerGrant(this.slug)
     const named = forInfluencer ? await this.influencerByCode(input.influencerCode) : null
     if (forInfluencer && !named) throw new AuthError('bad_influencer_code', INFLUENCER_CODE_BAD_AR, 400)
 
@@ -235,13 +247,13 @@ export class GrantLandingService {
        — وعمولتُه لغيره. فيُقال له مؤثّرُ كوده. */
     const coded = forInfluencer
       ? (await this.prisma.grantCode.findUnique({
-          where: { leadId: lead.id }, select: { influencer: { select: { id: true, nameAr: true, code: true, commissionPercent: true } } },
+          where: { leadId: lead.id }, select: { influencer: { select: INFLUENCER_SELECT } },
         }))?.influencer ?? null
       : null
     const credited = !forInfluencer ? null
       : coded ?? (!lead.influencerId || lead.influencerId === named!.id ? named
         /* والأوّلُ إن كان ما زال نشطا — من أُوقف لا يُكتب له كودٌ جديد ولا عمولتُه، فيُحسب لمن جاء بكوده الآن (٣١ أكتوبر ٢٠٢٦) */
-        : await this.prisma.influencer.findFirst({ where: { id: lead.influencerId, active: true }, select: { id: true, nameAr: true, code: true, commissionPercent: true } }) ?? named)
+        : await this.prisma.influencer.findFirst({ where: { id: lead.influencerId, active: true }, select: INFLUENCER_SELECT }) ?? named)
 
     let grant: { code: string | null; sentTo: string | null; percentOff: number; closesAt: Date | null } | null = null
     let reasonAr: string | null = null
@@ -258,7 +270,10 @@ export class GrantLandingService {
     })
     if (usedOther) reasonAr = GRANT_ONCE_AR
     else try {
-      const g = await this.grants.issue({ leadId: lead.id, influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent } : null }, now)
+      const g = await this.grants.issue({
+        leadId: lead.id,
+        influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent, percentOff: credited.percentOff } : null,
+      }, now)
       const to = lead.email ?? email
       await this.mailCode(to, lead.fullName, g.code, g.percentOff, g.closesAt, credited?.code ?? null)
       grant = g.reused
@@ -268,10 +283,13 @@ export class GrantLandingService {
       if (!(e instanceof AuthError) || !['grant_closed', 'grant_sold_out'].includes(e.code)) throw e
       reasonAr = e.message
     }
+    const v = await this.view(now, credited?.id ?? null)
     return {
       ref: lead.id, grant, reasonAr,
       ...(forInfluencer ? { influencer: credited ? { nameAr: credited.nameAr, code: credited.code } : null } : {}),
-      ...(await this.view(now, credited?.id ?? null)),
+      ...v,
+      /* ونسبةُ الصفحة ما يأخذه متابعُ مؤثّره — فهديّتُه برابط مؤثّره تقول ما يأخذه صديقُه (١٥ نوفمبر ٢٠٢٦) */
+      ...(forInfluencer ? { campaign: { ...v.campaign, percentOff: influencerPercentOff(v.campaign.percentOff, credited?.percentOff) } } : {}),
     }
   }
 
@@ -367,7 +385,7 @@ export class GrantLandingService {
      ولا «عضو» ولا «مستخدم»: «قرّاءُ وجيز» (قرارُه في اليوم نفسِه). ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
   private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
     /* وصاحبُ «منحة وجيز العامة» يعود إلى صفحتها هي — فيها نسبتُها ودوراتُها (`grantPagePath`) */
-    const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode) : `${publicSiteUrl()}${grantPagePath(this.slug)}`
+    const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode, this.slug) : `${publicSiteUrl()}${grantPagePath(this.slug)}`
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
     const member = this.slug === MEMBER_GRANT_SLUG
     const { nameAr } = GRANT_CAMPAIGNS[this.slug]

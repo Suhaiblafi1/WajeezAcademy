@@ -5,6 +5,7 @@
    والعلّةُ في `server/services/influencer.service.ts`، والحارس: `server/tests/commerce/influencer-grant.test.ts`. */
 
 import { money } from './discount-policy'
+import { BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, type GrantSlug } from './grant'
 
 /** عمولةُ المؤثّر حين يُضاف — ويغيّرها صاحبُ المنصّة لكلّ مؤثّرٍ على ما يُعطى بعدها */
 export const INFLUENCER_COMMISSION_DEFAULT = 15
@@ -20,7 +21,16 @@ export function normalizeInfluencerCode(raw: string | null | undefined): string 
 
 /** صفحةُ منحة المؤثّرين — وبكوده رابطُه الذي ينشره */
 export const INFLUENCER_GRANT_PATH = '/grant/i'
-export const influencerLink = (siteUrl: string, code: string): string => `${siteUrl}${INFLUENCER_GRANT_PATH}/${encodeURIComponent(code)}`
+/** صفحةُ حملة المؤثّرين بلا كود — `/grant/i` لمنحة المؤثّرين و`/grant/bf` لـ«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) */
+export const influencerGrantPath = (slug: GrantSlug = INFLUENCER_GRANT_SLUG): string =>
+  slug === BLACK_FRIDAY_GRANT_SLUG ? BLACK_FRIDAY_GRANT_PATH : INFLUENCER_GRANT_PATH
+/** رابطُ المؤثّر في حملته — والحملةُ منحةُ المؤثّرين ما لم تُسمَّ */
+export const influencerLink = (siteUrl: string, code: string, slug: GrantSlug = INFLUENCER_GRANT_SLUG): string =>
+  `${siteUrl}${influencerGrantPath(slug)}/${encodeURIComponent(code)}`
+
+/** ما يأخذه متابعُه: خصمُه هو إن كُتب له، وإلّا نسبةُ الحملة — قرارُ صاحب المنصّة (١٥ نوفمبر ٢٠٢٦): «قيمة الخصم للمؤثر
+    كلا على حدا». ويُكتب في كوبون كلّ كودٍ يومَ يُعطى، فتغييرُه يقع على ما بعده كالعمولة (`grant.service.ts#issue`) */
+export const influencerPercentOff = (campaignPercent: number, own: number | null | undefined): number => own ?? campaignPercent
 
 /** عمولتُه على طلب: نسبتُه من سعر الدورات قبل المنحة، ناقصا ما رُدّ من الثمن بنسبته */
 export function influencerCommission(listTotal: number, percent: number, refundedShare = 0): number {
@@ -55,3 +65,6 @@ export function influencerCodeLabelAr(nameAr: string | null | undefined): string
 export const INFLUENCER_CODE_BAD_AR = 'كود المؤثر غير صحيح. اكتبه كما وصلك'
 export const INFLUENCER_CODE_TAKEN_AR = 'هذا الكود لمؤثر آخر. اختر كودا غيره'
 export const INFLUENCER_CODE_FORMAT_AR = 'الكود حروف إنجليزية وأرقام فقط، من 3 إلى 20'
+export const INFLUENCER_DISCOUNT_BAD_AR = 'الخصم عدد صحيح من 0 إلى 100، أو اتركه فارغا'
+/** تحت خانة تغيير الكود — الرابطُ القديمُ يبقى يعمل (`formerCodes`) */
+export const INFLUENCER_CODE_KEEPS_AR = 'الرابط القديم يبقى يعمل ويوصل إلى الكود الجديد.'

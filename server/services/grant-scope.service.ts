@@ -9,13 +9,16 @@
    ١) **دوراتُ الصفحة** (`pageCourses`): حملةٌ بقائمتها، ومؤثّرٌ بقائمته داخلَ قائمة حملته. وإن لم يبقَ له ما يُعرض
       بقائمته فقائمةُ الحملة كلُّها — «Full grant list»: ولو كانت الحملةُ تلقائيّةً وما اختير له لا شعبةَ له تُشترى.
    ٢) **واختيارُ المدير** (`GrantCourseChoiceService`): لكلّ حملةٍ من دوراتها المنشورة، ولكلّ مؤثّرٍ من قائمة حملته وحدَها.
-      وكلُّ تغييرٍ يُكتب أثرُه بمن غيّره وما كان وما صار — كإعدادات المنحة (`coupon.grant_settings`). */
+      وكلُّ تغييرٍ يُكتب أثرُه بمن غيّره وما كان وما صار — كإعدادات المنحة (`coupon.grant_settings`).
+   ٣) **و«بلاك فرايدي وجيز» حملةُ مؤثّرين كالثانية** (١٥ نوفمبر ٢٠٢٦، `isInfluencerGrant`): دوراتُها قائمتُها هي، ودوراتُ
+      المؤثّر فيها قائمتُه نفسُها داخلَ قائمتها — وإن لم يقع منها فيها شيءٌ فقائمتُها كلُّها، كمنحة المؤثّرين. وقائمتُه
+      تُختار من دورات منحة المؤثّرين كما كانت: هي قائمتُه الواحدة في الحملتين. */
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { GrantCoursesService, type BuyableCohort } from './grant-courses.service'
-import { GRANT_CAMPAIGNS, INFLUENCER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
+import { GRANT_CAMPAIGNS, INFLUENCER_GRANT_SLUG, isInfluencerGrant, type GrantSlug } from '../../src/application/commerce/grant'
 import { liveGrantScope, scopeOfIds, type CourseScope } from '../../src/application/commerce/grant-scope'
 
 type Db = PrismaClient | Prisma.TransactionClient
@@ -30,10 +33,12 @@ export async function campaignScope(db: Db, slug: GrantSlug): Promise<CourseScop
   return scopeOfIds(await campaignIds(db, slug))
 }
 
-/** دوراتُ مؤثّرٍ اليوم — قائمتُه داخلَ قائمة «منحة مؤثرين وجيز». وبلا مؤثّرٍ قائمةُ الحملة */
-export async function influencerScope(db: Db, influencerId: string | null | undefined): Promise<CourseScope> {
+/** دوراتُ مؤثّرٍ اليوم — قائمتُه داخلَ قائمة حملته («منحة مؤثرين وجيز» ما لم تُسمَّ). وبلا مؤثّرٍ قائمةُ الحملة */
+export async function influencerScope(
+  db: Db, influencerId: string | null | undefined, slug: GrantSlug = INFLUENCER_GRANT_SLUG,
+): Promise<CourseScope> {
   const [camp, inf] = await Promise.all([
-    campaignIds(db, INFLUENCER_GRANT_SLUG),
+    campaignIds(db, slug),
     influencerId ? db.influencer.findUnique({ where: { id: influencerId }, select: { courseIds: true } }) : null,
   ])
   return liveGrantScope(camp, inf?.courseIds ?? null)
@@ -44,8 +49,8 @@ export async function pageCourses(
   prisma: PrismaClient, slug: GrantSlug, influencerId: string | null | undefined, now = new Date(),
 ): Promise<{ termAr: string | null; courses: BuyableCohort[] }> {
   const pool = new GrantCoursesService(prisma)
-  if (slug !== INFLUENCER_GRANT_SLUG) return pool.openCourses(now, await campaignScope(prisma, slug))
-  const [own, campaign] = await Promise.all([influencerScope(prisma, influencerId), campaignScope(prisma, slug)])
+  if (!isInfluencerGrant(slug)) return pool.openCourses(now, await campaignScope(prisma, slug))
+  const [own, campaign] = await Promise.all([influencerScope(prisma, influencerId, slug), campaignScope(prisma, slug)])
   const mine = await pool.openCourses(now, own)
   if (mine.courses.length > 0 || own === campaign) return mine
   return pool.openCourses(now, campaign)

@@ -184,6 +184,8 @@ const PHRASES: Record<string, string> = {
   'coupon.grant_claim': 'أخذ صاحب حساب كود منحته ببريد النموذج',
   'influencer.create': 'إضافة مؤثر لمنحة المؤثرين',
   'influencer.update': 'تعديل مؤثر أو عمولته أو إيقافه',
+  'influencer.discount.set': 'تغيير خصم متابعي مؤثر',
+  'influencer.code.change': 'تغيير كود مؤثر — والرابط القديم يعمل',
   'influencer.account': 'ربط مؤثر بحساب أو إنشاء حساب له',
   'influencer.payout': 'تسجيل دفعة لمؤثر من عمولته',
   'influencer.courses': 'تغيير دورات مؤثر في منحة المؤثرين',

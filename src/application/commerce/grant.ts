@@ -1,4 +1,4 @@
-/* «منحة وجيز» و«منحة مؤثرين وجيز» — ما تشترك فيه الشاشةُ والخادم (٢٠ أكتوبر ٢٠٢٦).
+/* «منحة وجيز» وأخواتُها — ما تشترك فيه الشاشةُ والخادم (٢٠ أكتوبر ٢٠٢٦).
 
    قرارُ صاحب المنصّة: خصمٌ بالنسبة لأعضاء وجيز، محدودُ العدد، يُنقل لغيره، و«يحقّ لي تغيير
    الـ٦٠٪ كما أشاء» — وهو بدلُ خصم الباقة لا فوقه («A»). والعلّةُ في `server/services/grant.service.ts`،
@@ -36,33 +36,52 @@ export const OPEN_GRANT_NAME_AR = 'منحة وجيز العامة'
 export const OPEN_GRANT_DEFAULTS = { percentOff: 50, maxCodes: 1000, maxCourses: 4 } as const
 export const OPEN_GRANT_PATH = '/grant/open'
 
-export type GrantSlug = typeof MEMBER_GRANT_SLUG | typeof INFLUENCER_GRANT_SLUG | typeof OPEN_GRANT_SLUG
+/* ═══ والرابعة: «بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «create link for such grant "black friday" … use my link as مؤثر في الموقع واسمح لي تغيير الكود هناك
+   وقيمه الخصم للمؤثر كلا على حدا»، بسبعين بالمئة. وخُيّر بين أن تكون منحةَ المؤثّرين نفسَها بنسبةٍ أعلى وبين منحةٍ وحدَها،
+   فاختار **منحةً وحدَها** بصفحتها وأيّامها. فهي منحةُ مؤثّرين: نموذجُها يطلب كودَ المؤثّر، وصفحتُها برابطه `/grant/bf/<كوده>`،
+   وعمولتُه كعمولة منحة المؤثّرين. ولكلّ مؤثّرٍ خصمُه إن كُتب له (`Influencer.percentOff`)، وإلّا فنسبتُها. وتبدأ موقوفة —
+   يشغّلها صاحبُ المنصّة ويكتب آخرَ يومٍ لها من «بلاك فرايدي وجيز» في الإدارة (`/admin/black-friday-grant`).
+   و«منحةٌ واحدةٌ لكلّ متعلّم» على الحملات الأربع. والعلّةُ في `server/services/influencer.service.ts`. */
+export const BLACK_FRIDAY_GRANT_SLUG = 'wajeez-black-friday'
+export const BLACK_FRIDAY_GRANT_NAME_AR = 'بلاك فرايدي وجيز'
+export const BLACK_FRIDAY_GRANT_DEFAULTS = { percentOff: 70, maxCodes: 1000, maxCourses: 4 } as const
+export const BLACK_FRIDAY_GRANT_PATH = '/grant/bf'
+
+export type GrantSlug = typeof MEMBER_GRANT_SLUG | typeof INFLUENCER_GRANT_SLUG | typeof OPEN_GRANT_SLUG | typeof BLACK_FRIDAY_GRANT_SLUG
 
 /** الحملاتُ بأسمائها وما تبدأ به كلٌّ منها */
 export const GRANT_CAMPAIGNS: Record<GrantSlug, { nameAr: string; defaults: { percentOff: number; maxCodes: number; maxCourses: number } }> = {
   [MEMBER_GRANT_SLUG]: { nameAr: MEMBER_GRANT_NAME_AR, defaults: GRANT_DEFAULTS },
   [INFLUENCER_GRANT_SLUG]: { nameAr: INFLUENCER_GRANT_NAME_AR, defaults: INFLUENCER_GRANT_DEFAULTS },
   [OPEN_GRANT_SLUG]: { nameAr: OPEN_GRANT_NAME_AR, defaults: OPEN_GRANT_DEFAULTS },
+  [BLACK_FRIDAY_GRANT_SLUG]: { nameAr: BLACK_FRIDAY_GRANT_NAME_AR, defaults: BLACK_FRIDAY_GRANT_DEFAULTS },
 }
 
 /** الحملاتُ كلُّها — بها يُتابَع من عبّأ أيَّها، ويُقبل منه طلبُ المستشار، ويُعدّ في قائمة من عبّأ */
-export const GRANT_SLUGS: readonly GrantSlug[] = [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG]
+export const GRANT_SLUGS: readonly GrantSlug[] = [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG]
+
+/** حملاتُ المؤثّرين — نموذجُها يطلب كودَ المؤثّر، وصفحتُها برابطه، وكودُ منحتها يحمل مؤثّرَه وعمولتَه وخصمَه */
+export const INFLUENCER_GRANT_SLUGS: readonly GrantSlug[] = [INFLUENCER_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG]
+export const isInfluencerGrant = (slug: string | null | undefined): boolean =>
+  (INFLUENCER_GRANT_SLUGS as readonly (string | null | undefined)[]).includes(slug)
 
 /** اسمُ الحملة القصيرُ في أبواب الصفحة والخادم — `?campaign=open` لا المعرّفُ المحفوظ */
-export type GrantKind = 'member' | 'influencer' | 'open'
+export type GrantKind = 'member' | 'influencer' | 'open' | 'blackfriday'
 export const GRANT_KIND_SLUG: Record<GrantKind, GrantSlug> = {
-  member: MEMBER_GRANT_SLUG, influencer: INFLUENCER_GRANT_SLUG, open: OPEN_GRANT_SLUG,
+  member: MEMBER_GRANT_SLUG, influencer: INFLUENCER_GRANT_SLUG, open: OPEN_GRANT_SLUG, blackfriday: BLACK_FRIDAY_GRANT_SLUG,
 }
 export const GRANT_KINDS = Object.keys(GRANT_KIND_SLUG) as [GrantKind, ...GrantKind[]]
 
 /** الحملةُ بمعرّفها المحفوظ — وما لا يُعرف يُقرأ «منحة وجيز»، كما كان كلُّ عميلٍ قبل الثانية */
 export function grantKindOf(slug: string | null | undefined): GrantKind {
-  return slug === INFLUENCER_GRANT_SLUG ? 'influencer' : slug === OPEN_GRANT_SLUG ? 'open' : 'member'
+  return (Object.keys(GRANT_KIND_SLUG) as GrantKind[]).find((k) => GRANT_KIND_SLUG[k] === slug) ?? 'member'
 }
 
-/** صفحةُ الحملة التي يعود إليها صاحبُ الكود من بريده — ومنحةُ المؤثّرين برابط مؤثّرها (`influencerLink`) */
+/** صفحةُ الحملة التي يعود إليها صاحبُ الكود من بريده — وحملتا المؤثّرين برابط مؤثّرها (`influencerLink`) */
 export function grantPagePath(slug: GrantSlug): string {
-  return slug === OPEN_GRANT_SLUG ? OPEN_GRANT_PATH : '/grant'
+  return slug === OPEN_GRANT_SLUG ? OPEN_GRANT_PATH : slug === BLACK_FRIDAY_GRANT_SLUG ? BLACK_FRIDAY_GRANT_PATH : '/grant'
 }
 
 /** بادئةُ الكود — تميّزه عن رمز الدعوة (WJ) وكود المدرّب (WD) */

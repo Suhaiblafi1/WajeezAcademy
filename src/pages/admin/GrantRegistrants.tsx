@@ -26,7 +26,7 @@ import {
   type GrantFunnel, type MailState, type RegistrantSource, type SourceGroup, type Upcoming,
 } from "@/application/commerce/grant-registrants";
 import { shortCourseTitleAr } from "@/application/text/course-lines";
-import { INFLUENCER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, type GrantKind } from "@/application/commerce/grant";
+import { GRANT_CAMPAIGNS, GRANT_KIND_SLUG, type GrantKind } from "@/application/commerce/grant";
 import { waToPerson } from "@/application/site/whatsapp";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { staffAreaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
@@ -69,7 +69,7 @@ const STATE_AR: Record<State, string> = { bought: "اشترى", pending: "ينت
 /** زرُّ «قال توقف» وما يُقال بعده — بلا تشكيل (١١ نوفمبر ٢٠٢٦) */
 export const WA_STOP_AR = "قال توقف";
 export const WA_STOPPED_AR = "لا يريد رسائل واتساب";
-const GRANT_AR: Record<GrantKind, string> = { member: "منحة وجيز", influencer: "منحة المؤثرين", open: "المنحة العامة" };
+const GRANT_AR: Record<GrantKind, string> = { member: "منحة وجيز", influencer: "منحة المؤثرين", open: "المنحة العامة", blackfriday: "بلاك فرايدي" };
 
 /** كم بين لحظتين — «بعد ٥ د» */
 function gapAr(from: string, to: string): string | null {
@@ -200,8 +200,9 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
           <select value={grant} onChange={(e) => { setGrant(e.target.value as "" | keyof typeof GRANT_AR); reset(); }} aria-label="المنحة" className={staffSelectCls}>
             <option value="">كل المنح</option>
             <option value="member">{GRANT_AR.member} ({rows.filter((r) => r.grant === "member").length})</option>
-            <option value="influencer">{GRANT_AR.influencer} ({rows.filter((r) => r.influencer).length})</option>
+            <option value="influencer">{GRANT_AR.influencer} ({rows.filter((r) => r.grant === "influencer").length})</option>
             <option value="open">{GRANT_AR.open} ({rows.filter((r) => r.grant === "open").length})</option>
+            <option value="blackfriday">{GRANT_AR.blackfriday} ({rows.filter((r) => r.grant === "blackfriday").length})</option>
           </select>
         </div>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} placeholder="ابحث بالاسم أو الرقم أو البريد أو الكود" unit="شخصا" />
@@ -230,7 +231,7 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
               </thead>
               <tbody>
                 {view.rows.map((r) => {
-                  const wa = waToPerson(r.phone, grantFollowupAr(r.fullName, r.influencer ? INFLUENCER_GRANT_NAME_AR : r.grant === "open" ? OPEN_GRANT_NAME_AR : undefined));
+                  const wa = waToPerson(r.phone, grantFollowupAr(r.fullName, r.grant === "member" ? undefined : GRANT_CAMPAIGNS[GRANT_KIND_SLUG[r.grant]].nameAr));
                   const isOpen = openId === r.id;
                   const next = r.upcoming[0];
                   return (

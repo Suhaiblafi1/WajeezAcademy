@@ -5,7 +5,8 @@
    الفواتير والتقارير. فصارت لسانا واحدا «المنح» (`inTab` في `nav-map.ts`)، والتنقّلُ بينها هنا في رأس الصفحة.
 
    ولكلّ منحةٍ بطاقةٌ فيها بابان لا يختلطان: اسمُها يفتح إعداداتِها في اللوحة، ورابطُ صفحتها العامّة يُفتح
-   ويُنسخ لمن ينشره. ومنحةُ المؤثرين بلا رابطٍ واحد: لكلّ مؤثرٍ رابطُه، وهو في قائمتهم تحتها. */
+   ويُنسخ لمن ينشره. ومنحةُ المؤثرين بلا رابطٍ واحد: لكلّ مؤثرٍ رابطُه، وهو في قائمتهم تحتها — وكذلك «بلاك فرايدي وجيز»
+   رابعتُها (١٥ نوفمبر ٢٠٢٦). */
 
 import { Link } from "react-router";
 import { Copy, ExternalLink } from "lucide-react";
@@ -22,7 +23,7 @@ function copy(url: string) {
 export default function GrantSwitcher({ current }: { current: GrantVariant }) {
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   return (
-    <nav aria-label="المنح" className="mb-6 grid gap-3 md:grid-cols-3">
+    <nav aria-label="المنح" className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       {GRANT_SCREENS.map((g) => {
         const on = g.variant === current;
         const url = g.publicPath && `${origin}${g.publicPath}`;

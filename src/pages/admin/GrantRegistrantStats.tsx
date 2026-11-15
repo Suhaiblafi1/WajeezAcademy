@@ -118,7 +118,7 @@ export default function GrantRegistrantStats({ s, scopeAr, allGrants, filtered, 
             <Tile label="له مستشار" value={s.withAdvisor} />
             <Tile label="المبلغ" value={fmtMoney(s.revenue, "USD")} note={`${s.orders} طلب مدفوع`} />
             {/* وتوزيعُها على المنح حين تكون للمنح كلّها — وفي منحةٍ واحدةٍ رقمٌ يكرّر «عبأ النموذج» */}
-            {allGrants && <Tile label="منحة وجيز" value={s.member} note={`ومؤثرين ${s.influencer} · والعامة ${s.open}`} />}
+            {allGrants && <Tile label="منحة وجيز" value={s.member} note={`ومؤثرين ${s.influencer} · والعامة ${s.open} · وبلاك فرايدي ${s.blackfriday}`} />}
             <Tile
               label="من فتح الرابط إلى التعبئة"
               value={s.openToFormMedianMin === null ? "—" : `${s.openToFormMedianMin} د`}

@@ -272,6 +272,7 @@ export async function registrantsXlsx(prisma: PrismaClient, now = new Date()): P
   stats.addRow({ k: 'منحة وجيز', n: s.member })
   stats.addRow({ k: 'منحة مؤثرين وجيز', n: s.influencer })
   stats.addRow({ k: 'منحة وجيز العامة', n: s.open })
+  stats.addRow({ k: 'بلاك فرايدي وجيز', n: s.blackfriday })
   if (s.openToFormMedianMin !== null) stats.addRow({ k: 'من فتح الصفحة إلى التعبئة (وسيط بالدقائق)', n: s.openToFormMedianMin })
   const block = (title: string, list: { labelAr: string; n: number; bought: number }[]) => {
     section(title)

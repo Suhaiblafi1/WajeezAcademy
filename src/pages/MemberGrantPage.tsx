@@ -30,7 +30,12 @@
 
    `/grant/i/<كود المؤثّر>` — قرارُ صاحب المنصّة («A»): صفحتُها غيرُ `/grant`، برابط المؤثّر وكودُه مكتوبٌ في النموذج،
    ونسبتُها نسبتُها. والفرقُ خانةُ كود المؤثّر (لازمة)، وسطرُ المنحة باسمه («بدعوة من …»)، وما يُحفظ على الجهاز في
-   مفتاحٍ وحدَه، والإهداءُ برابط المؤثّر نفسِه — فالصديقُ يأخذ منحتَها ويُحسب لمن جاء به. */
+   مفتاحٍ وحدَه، والإهداءُ برابط المؤثّر نفسِه — فالصديقُ يأخذ منحتَها ويُحسب لمن جاء به.
+
+   ═══ و«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) ═══
+
+   `/grant/bf/<كود المؤثّر>` — حملةُ مؤثّرين بصفّها هي: الصفحةُ صفحةُ منحة المؤثّرين بخانة كوده وإهدائه برابطه، وسطرُها
+   يقول بلاك فرايدي ونسبتَه — والنسبةُ ما يأخذه متابعُ هذا المؤثّر (خصمُه إن كُتب له) كما يقولها الخادم. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
@@ -54,15 +59,15 @@ import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import type { TimedSession } from "@/application/learning/cohort-overlap";
-import { GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
-import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
+import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
+import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_DIAG_PATH, GRANT_HUMAN_DIAG_AR, GRANT_SELF_DIAG_AR,
 } from "@/application/commerce/grant-landing";
-import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
+import { BLACK_FRIDAY_GRANT_STORE_KEY, GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
 import { BARE_HOST } from "@/application/site/origin";
 import { waHref, waShare } from "@/application/site/whatsapp";
@@ -101,7 +106,7 @@ const USD = "USD";
 /** طريقُ العودة بعد توثيق البريد — اختيارُه محفوظٌ على الجهاز، والصفحةُ تعيده (`pending-checkout.ts`) */
 const PICK_PATH = "/grant/build";
 const OPEN_PICK_PATH = `${OPEN_GRANT_PATH}/build`;
-const influencerPickPath = (code: string) => `${INFLUENCER_GRANT_PATH}/${code}/build`;
+const influencerPickPath = (base: string, code: string) => `${base}/${code}/build`;
 const BUY_TITLE_AR = "دورات منحتك";
 /** حيث يُحفظ ما اختاره، وكم يُنتظر بعد آخر نقرةٍ قبل حفظه */
 const GRANT_PICKS_PATH = "/api/public/grant/picks";
@@ -210,18 +215,23 @@ function GrantSelfDiagnosis() {
   );
 }
 
-export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" | "open" }) {
-  const forInfluencer = variant === "influencer";
+export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" | "open" | "blackfriday" }) {
+  /* «بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) حملةُ مؤثّرين كالثانية — `forInfluencer` لهما معا، و`forBlackFriday` لما يخصّها */
+  const forBlackFriday = variant === "blackfriday";
+  const forInfluencer = variant === "influencer" || forBlackFriday;
   /* «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦): صفحةُ الأولى نفسُها بصفّها هي — بلا كود مؤثّر، وبلا شكرٍ لقرّاء وجيز */
   const forOpen = variant === "open";
-  const kind: GrantKind = forInfluencer ? "influencer" : forOpen ? "open" : "member";
-  const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : forOpen ? OPEN_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  const kind: GrantKind = forBlackFriday ? "blackfriday" : forInfluencer ? "influencer" : forOpen ? "open" : "member";
+  const nameAr = forBlackFriday ? BLACK_FRIDAY_GRANT_NAME_AR : forInfluencer ? INFLUENCER_GRANT_NAME_AR : forOpen ? OPEN_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  /* صفحةُ حملة المؤثّرين بلا كود — `/grant/i` أو `/grant/bf`، وبابُها في الخادم */
+  const influencerBase = influencerGrantPath(forBlackFriday ? BLACK_FRIDAY_GRANT_SLUG : INFLUENCER_GRANT_SLUG);
+  const influencerApi = forBlackFriday ? "/api/public/grant/bf" : "/api/public/grant/influencer";
   /* المنحُ نهاريّة ما لم يختر الليليَّ بيده — ومن جاءها بتنقّلٍ داخل التطبيق أو خرج منها يُعاد مظهرُه (`syncPageTheme`) */
   useEffect(() => {
     syncPageTheme();
     return () => { setTimeout(syncPageTheme, 0); };
   }, []);
-  const storeKey = forInfluencer ? INFLUENCER_GRANT_STORE_KEY : forOpen ? OPEN_GRANT_STORE_KEY : GRANT_STORE_KEY;
+  const storeKey = forBlackFriday ? BLACK_FRIDAY_GRANT_STORE_KEY : forInfluencer ? INFLUENCER_GRANT_STORE_KEY : forOpen ? OPEN_GRANT_STORE_KEY : GRANT_STORE_KEY;
   const params = useParams();
   const urlCode = forInfluencer ? normalizeInfluencerCode(params.code) : null;
   const { user: session } = useRealSession();
@@ -243,9 +253,11 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [influencerCode, setInfluencerCode] = useState(urlCode ?? "");
   /* ومن حُسب له: مؤثّرُ ما حُفظ إن أخذ كودا، وإلّا مؤثّرُ الرابط */
   const creditedCode = stored?.influencer ?? urlCode;
-  const pickPath = forInfluencer ? (creditedCode ? influencerPickPath(creditedCode) : null) : forOpen ? OPEN_PICK_PATH : PICK_PATH;
+  const pickPath = forInfluencer ? (creditedCode ? influencerPickPath(influencerBase, creditedCode) : null) : forOpen ? OPEN_PICK_PATH : PICK_PATH;
   const shell = forInfluencer
-    ? { title: nameAr, path: `${INFLUENCER_GRANT_PATH}${urlCode ? `/${urlCode}` : ""}`, description: "منحة من أكاديمية وجيز: دورات مباشرة تختارها بخصم كبير، والعدد محدود." }
+    ? { title: nameAr, path: `${influencerBase}${urlCode ? `/${urlCode}` : ""}`, description: forBlackFriday
+        ? "بلاك فرايدي في أكاديمية وجيز: دورات مباشرة على Zoom بخصم كبير، والعدد محدود."
+        : "منحة من أكاديمية وجيز: دورات مباشرة تختارها بخصم كبير، والعدد محدود." }
     : forOpen
       ? { title: nameAr, path: OPEN_GRANT_PATH, description: "منحة من أكاديمية وجيز للجميع: دورات مباشرة على Zoom بخصم كبير، والعدد محدود." }
       : {};
@@ -275,11 +287,11 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 
   const load = useCallback(async () => {
     const url = forInfluencer
-      ? `/api/public/grant/influencer${urlCode ? `?code=${encodeURIComponent(urlCode)}` : ""}`
+      ? `${influencerApi}${urlCode ? `?code=${encodeURIComponent(urlCode)}` : ""}`
       : forOpen ? "/api/public/grant/open" : "/api/public/grant";
     try { setView(await apiGet<View>(url)); }
     catch (e) { setFailed(e instanceof ApiError ? e.message : "تعذر تحميل الصفحة"); }
-  }, [forInfluencer, forOpen, urlCode]);
+  }, [forInfluencer, forOpen, influencerApi, urlCode]);
   useEffect(() => { void load(); }, [load]);
 
   const [resumed] = useState(() => (pickPath ? resumedCheckoutFor(pickPath) : null));
@@ -344,7 +356,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     e.preventDefault();
     setBusy(true);
     try {
-      const out = await apiPost<ApplyResult>(forInfluencer ? "/api/public/grant/influencer" : forOpen ? "/api/public/grant/open" : "/api/public/grant", {
+      const out = await apiPost<ApplyResult>(forInfluencer ? influencerApi : forOpen ? "/api/public/grant/open" : "/api/public/grant", {
         ...form, careerLevel: form.careerLevel || null, interests, ...campaignParams(window.location.search), website: hp.value,
         source: { page: opened, first: firstTouch() }, visitorId: visitor,
         ...(forInfluencer ? { influencerCode: influencerCode.trim() } : {}),
@@ -412,7 +424,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   /* آخرُ يومٍ بتاريخه الطويل — في رسالة الهديّة («30 أكتوبر 2026») */
   const lastDayLong = c.closesAt ? fmtDateLong(new Date(new Date(c.closesAt).getTime() - 1)) : null;
   /* ومنحةُ المؤثّرين تُهدى برابط مؤثّرها — فالصديقُ يأخذ منحتَها، ويُحسب للمؤثّر */
-  const sharePath = forInfluencer && creditedCode ? `${INFLUENCER_GRANT_PATH}/${creditedCode}` : forOpen ? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;
+  const sharePath = forInfluencer && creditedCode ? `${influencerBase}/${creditedCode}` : forOpen ? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;
   /* والرابطُ قصيرٌ من الخادم إن صنعه — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «الرابط يجب أن يكون قصيرا جدّا» */
   const shareLink = view.sharePath ? `https://${BARE_HOST}${view.sharePath}` : `${window.location.origin}${sharePath}`;
   /* والهديّةُ بنسبة الحملة اليوم لا بنسبة كوده: الصديقُ يأخذ كودا جديدا بنسبة يومه */
@@ -758,6 +770,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               <p className="mt-3 text-lg font-bold">
                 {forOpen
                   ? openGrantLineAr(c.percentOff)
+                  : forBlackFriday
+                  ? blackFridayLineAr(c.percentOff, view.influencer?.nameAr)
                   : !forInfluencer
                   ? grantThanksAr(c.percentOff)
                   : view.influencer

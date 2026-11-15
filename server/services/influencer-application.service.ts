@@ -27,10 +27,10 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { renderMail, type MailBlock } from './mail-template'
 import { notifyRole, sendDirectEmail, type DirectMailStatus } from './notification.service'
-import { InfluencerService, influencerDeal, notifyInfluencerWelcome } from './influencer.service'
+import { InfluencerService, assertCodeFree, influencerDeal, notifyInfluencerWelcome } from './influencer.service'
 import { ROLE_PERMISSIONS } from '../auth/permissions'
 import {
-  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, normalizeInfluencerCode,
+  INFLUENCER_CODE_FORMAT_AR, normalizeInfluencerCode,
 } from '../../src/application/commerce/influencer'
 import {
   INFLUENCER_PLATFORMS, influencerReach, influencerTermsAr, type InfluencerAccount, type InfluencerDealView,
@@ -187,9 +187,8 @@ export class InfluencerApplicationService {
     if (app.status !== 'submitted') throw new AuthError('decided', 'حسم هذا الطلب من قبل', 409)
     const code = normalizeInfluencerCode(input.code)
     if (!code) throw new AuthError('bad_code', INFLUENCER_CODE_FORMAT_AR, 400)
-    if (await this.prisma.influencer.findUnique({ where: { code }, select: { id: true } })) {
-      throw new AuthError('code_taken', INFLUENCER_CODE_TAKEN_AR, 409)
-    }
+    /* ولا كودا كان لمؤثّرٍ قبله — رابطُه القديمُ ما زال يوصل إليه (١٥ نوفمبر ٢٠٢٦، `assertCodeFree`) */
+    await assertCodeFree(this.prisma, code)
     const existing = await this.prisma.user.findUnique({
       where: { email: app.email }, select: { id: true, status: true, influencer: { select: { id: true } } },
     })
