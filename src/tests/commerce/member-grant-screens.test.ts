@@ -52,7 +52,10 @@ describe('شاشة صاحب المنصة', () => {
 
 describe('دورات المنحة', () => {
   it('⚠️ في شاشة المنحة بالنسبة التي في الخانة — وبابها بصلاحية الكوبونات، ولا اقتراحات', () => {
-    expect(PAGE).toMatch(/<GrantCourses percentOff=\{pctOk \? pctNum : null\} \/>/)
+    /* ولكلّ حملةٍ دوراتُها يختارها المدير (١٥ نوفمبر ٢٠٢٦) — فالقائمةُ بحملتها */
+    expect(PAGE).toMatch(/<GrantCourses grant=\{forInfluencer \? "influencer" : forOpen \? "open" : "member"\} percentOff=\{pctOk \? pctNum : null\} \/>/)
+    expect(COURSES).toMatch(/<GrantCourseChoice endpoint=\{`\/api\/admin\/grant-courses\/\$\{grant\}`\}/)
+    for (const verb of ['get', 'put']) expect(ROUTES).toMatch(new RegExp(`app\\.${verb}\\('\\/api\\/admin\\/grant-courses\\/:grant', \\{\\s*preHandler: canManage`))
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/open-courses', \{\s*preHandler: canManage/)
     expect(ROUTES, 'عادت أبواب الاقتراحات').not.toMatch(/member-grant\/pathways/)
   })
@@ -72,6 +75,16 @@ describe('دورات المنحة', () => {
       expect(COURSES).toContain(t)
       expect(t).toBe(plainAr(t))
     }
+    /* واختيارُ الدورات (١٥ نوفمبر ٢٠٢٦): «تلقائي» ظاهرٌ والعودةُ إليه خيار، والتأكيدُ يقول ما يقع — بلا تشكيل */
+    const CHOICE = code('src/pages/admin/GrantCourseChoice.tsx')
+    for (const t of ['تلقائي: كل الدورات المتاحة', 'أختار الدورات', 'احفظ الدورات', 'الدورة الجديدة لا تظهر حتى تضيفها.',
+      'هذه القائمة تختار الدورات التي تظهر في صفحة المنحة. والكود يعمل على أي دورة حتى حده.',
+      'والكود يعمل على أي دورة حتى حده، ظهرت في الصفحة أو لم تظهر.', 'اختر دورة واحدة على الأقل، أو اختر التلقائي.']) {
+      expect(CHOICE).toContain(t)
+      expect(t).toBe(plainAr(t))
+    }
+    expect(CHOICE).toMatch(/\{confirm && \(\s*<ConfirmAction[\s\S]*?onConfirm=\{\(\) => void save\(\)\}/)
+    for (const k of ['coupon.grant_courses', 'influencer.courses']) expect(auditActionAr(k)).not.toBe(k)
     /* وأفعالُ أثر الاقتراحات باقيةٌ في المعجم: ما كُتب منها قبل الحذف يُقرأ باسمه */
     for (const k of ['coupon.grant_pathway_save', 'coupon.grant_pathway_remove']) expect(auditActionAr(k)).not.toBe(k)
   })

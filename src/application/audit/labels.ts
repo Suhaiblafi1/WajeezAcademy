@@ -176,6 +176,8 @@ const PHRASES: Record<string, string> = {
   'coupon.delete': 'حذف كوبون لم يستعمل',
   'coupon.grant_settings': 'تغيير إعدادات منحة وجيز أو منحة المؤثرين',
   'coupon.grant_issue': 'إعطاء كود منحة لمن عبأ نموذج الحملة',
+  /* ودوراتُ كلّ منحةٍ يختارها المدير، ودوراتُ كلّ مؤثّرٍ منها (١٥ نوفمبر ٢٠٢٦، `grant-scope.service.ts`) */
+  'coupon.grant_courses': 'تغيير دورات حملة منحة',
   'coupon.grant_pathway_save': 'حفظ مسار منحة',
   'coupon.grant_pathway_remove': 'حذف مسار منحة',
   'coupon.grant_apply': 'تعبئة زائر نموذج المنحة',
@@ -184,6 +186,7 @@ const PHRASES: Record<string, string> = {
   'influencer.update': 'تعديل مؤثر أو عمولته أو إيقافه',
   'influencer.account': 'ربط مؤثر بحساب أو إنشاء حساب له',
   'influencer.payout': 'تسجيل دفعة لمؤثر من عمولته',
+  'influencer.courses': 'تغيير دورات مؤثر في منحة المؤثرين',
   /* وطلبُ الانضمام مؤثّرا (٣١ أكتوبر ٢٠٢٦) — القبولُ يكتب كودَه وعمولتَه وينشئ حسابَه بدعوة */
   'influencer.application.approve': 'قبول طلب انضمام مؤثر وإنشاء كوده وحسابه',
   'influencer.application.reject': 'الاعتذار عن طلب انضمام مؤثر',

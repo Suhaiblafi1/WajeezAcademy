@@ -183,7 +183,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
       {forInfluencer && <InfluencersPanel />}
       <GrantRegistrants grant={forInfluencer ? "influencer" : forOpen ? "open" : "member"} />
 
-      <GrantCourses percentOff={pctOk ? pctNum : null} />
+      <GrantCourses grant={forInfluencer ? "influencer" : forOpen ? "open" : "member"} percentOff={pctOk ? pctNum : null} />
 
       <h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة {pctOk ? `${pctNum}%` : "—"}</h2>
       <p className="mt-1 text-read text-muted-foreground">

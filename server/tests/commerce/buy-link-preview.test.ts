@@ -120,7 +120,7 @@ describe('① المعاينة هي الفاتورة — لكل نوع', () => {
   it('⚠️ منحة المؤثرين ٤٥٪ والمنحة العامة ٥٠٪ والكوبون العادي فوق خصم البناء', async () => {
     await influencerGrant.update({ percentOff: 45, maxCourses: 4 }, ownerId)
     await openGrant.update({ percentOff: 50, maxCourses: 4 }, ownerId)
-    const inf = await influencers.create({ nameAr: `مؤثر خفي ${STAMP}`, code: `HID${STAMP % 100000}`, commissionPercent: 15 }, ownerId)
+    const inf = await influencers.create({ nameAr: `مؤثر خفي ${STAMP}`, code: `HID${STAMP % 100000}`, commissionPercent: 15, email: `hid-inf-${STAMP}@test.local` }, ownerId)
     const infCode = (await influencerGrant.issue({ leadId: await lead(), influencer: { id: inf.id, commissionPercent: 15 } })).code
     const openCode = (await openGrant.issue({ leadId: await lead() })).code
     await prisma.coupon.create({ data: { code: `TEN${STAMP}`, percentOff: 10, active: true } })
@@ -249,7 +249,7 @@ describe('⑥ ما في الرابط لا يصدق', () => {
 
 describe('⑦ ولا اسم لصاحب الكود', () => {
   it('⚠️ اسم المؤثر وصاحب النموذج لا يردان في المعاينة', async () => {
-    const inf = await influencers.create({ nameAr: `سرية ${STAMP}`, code: `SEC${STAMP % 100000}`, commissionPercent: 15 }, ownerId)
+    const inf = await influencers.create({ nameAr: `سرية ${STAMP}`, code: `SEC${STAMP % 100000}`, commissionPercent: 15, email: `sec-inf-${STAMP}@test.local` }, ownerId)
     const { code } = await influencerGrant.issue({ leadId: await lead(`صاحب نموذج ${STAMP}`), influencer: { id: inf.id, commissionPercent: 15 } })
     const json = JSON.stringify(await commerce.preview(null, [await cohort(170)], code))
     expect(json).not.toContain(`سرية ${STAMP}`)

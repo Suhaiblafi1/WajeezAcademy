@@ -10,6 +10,7 @@ import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { InfluencerService } from '../../services/influencer.service'
 import { GrantService } from '../../services/grant.service'
+import { GrantCourseChoiceService } from '../../services/grant-scope.service'
 import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 import { INFLUENCER_COMMISSION_DEFAULT } from '../../../src/application/commerce/influencer'
 
@@ -57,15 +58,16 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.post('/api/admin/influencers', {
     preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'إضافة مؤثر باسمه وكوده وعمولته — وببريده حسابه' },
+    schema: { tags: ['admin-commerce'], summary: 'إضافة مؤثر باسمه وكوده وعمولته وبريده — حسابه وبريد ترحيبه كقبول طلبه' },
   }, async (req, reply) => {
+    /* والبريدُ لازم — لكلّ مؤثّرٍ حسابٌ وصفحة (١٥ نوفمبر ٢٠٢٦). والخدمةُ تردّه بسببه (`email_required`، ٤٠٠) */
     const body = z.object({
       nameAr: z.string().trim().min(2).max(120),
       code: z.string().trim().min(3).max(40),
       commissionPercent: z.number().int().min(0).max(100),
       email: z.string().trim().max(200).nullable().optional(),
     }).parse(req.body)
-    return reply.status(201).send(await influencers.create(body, req.auth!.userId))
+    return reply.status(201).send(await influencers.create({ ...body, email: body.email ?? '' }, req.auth!.userId))
   })
 
   app.patch('/api/admin/influencers/:id', {
@@ -102,6 +104,22 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
       amount: z.number().positive().max(1_000_000), noteAr: z.string().max(300).nullable().optional(), advance: z.boolean().optional(),
     }).parse(req.body)
     return reply.status(201).send(await influencers.recordPayout(id.parse(req.params).id, body, req.auth!.userId))
+  })
+
+  /* ═══ ودوراتُه من دورات حملته (١٥ نوفمبر ٢٠٢٦) ═══
+     بعضُ قائمة «منحة مؤثرين وجيز» تُعرض في صفحته — والفارغةُ قائمتُها كلُّها. وكودُ من جاء به يخصم على أيّ دورةٍ حتى حدّه (`grant-scope.service.ts`) */
+  const choice = new GrantCourseChoiceService(prisma)
+  app.get('/api/admin/influencers/:id/courses', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'دورات المؤثر: ما اختير له من دورات منحة المؤثرين، وما يختار منه' },
+  }, async (req) => choice.influencerChoice(id.parse(req.params).id))
+
+  app.put('/api/admin/influencers/:id/courses', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'اختيار دورات المؤثر من دورات منحة المؤثرين — والفارغة تعيده إليها كلها' },
+  }, async (req) => {
+    const { courseIds } = z.object({ courseIds: z.array(z.string().trim().min(1).max(64)).max(500) }).parse(req.body ?? {})
+    return choice.setInfluencerCourses(id.parse(req.params).id, courseIds, req.auth!.userId)
   })
 
   /* ═══ حسابُ المؤثّر ═══ */

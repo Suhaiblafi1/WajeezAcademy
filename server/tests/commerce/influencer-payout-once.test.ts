@@ -54,7 +54,7 @@ async function pay(userId: string, cohortIds: string[], code: string) {
   return out.orderId
 }
 async function addInfluencer(code: string, commissionPercent = 15) {
-  return (await influencers.create({ nameAr: `مؤثر ${code}`, code, commissionPercent }, ownerId)).id
+  return (await influencers.create({ nameAr: `مؤثر ${code}`, code, commissionPercent, email: `${code.toLowerCase()}-inf-${STAMP}@test.local` }, ownerId)).id
 }
 
 beforeAll(async () => {

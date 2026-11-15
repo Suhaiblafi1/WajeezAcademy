@@ -9,8 +9,12 @@
 
    ═══ ما يقع ═══
 
-   ١) **يُضيفه المدير** باسمه وكوده وعمولته، وببريده إن أراد له حسابا: بريدٌ له حسابٌ يُربط به ويُضاف له دورُ
-      المؤثّر، وبريدٌ جديدٌ يُنشأ له حسابٌ بدعوةٍ يعيّن منها كلمتَه — كدعوة الموظّفين، بلا كلمةٍ تمرّ في بريد.
+   ١) **يُضيفه المدير** باسمه وكوده وعمولته وبريده: بريدٌ له حسابٌ يُربط به ويُضاف له دورُ المؤثّر، وبريدٌ جديدٌ
+      يُنشأ له حسابٌ بدعوةٍ يعيّن منها كلمتَه — كدعوة الموظّفين، بلا كلمةٍ تمرّ في بريد.
+      **والإضافةُ كقبول طلب الانضمام والبريدُ لازم** — قرارُ صاحب المنصّة (١٥ نوفمبر ٢٠٢٦): «Same + email required».
+      فلكلّ مؤثّرٍ حسابٌ وصفحة: لا يُضاف بلا بريد، ولا ببريدِ حسابٍ مؤرشفٍ أو حسابِ مؤثّرٍ آخر (يُردّ قبل أن يُكتب شيء)،
+      وحسابٌ قائمٌ لم يُفعَّل قطّ تصله دعوةٌ جديدة، ويصله بريدُ الترحيب نفسُه الذي يصل من قُبل طلبُه — بكوده ورابطه
+      وعمولته وشروط الاتّفاق (`notifyInfluencerWelcome`، يناديها القبولُ أيضا بعنوانه ورقم طلبه).
    ٢) **والكودُ لا يتغيّر** بعد إضافته: هو في رابطه المنشور، وتغييرُه يضيع ما نُشر. وإيقافُه يمنع أن يُعطى به كودُ
       منحةٍ جديد، وما أُعطي قبله يبقى له.
    ٣) **وعمولتُه تُكتب في كود المنحة يومَ يُعطى** (`grant.service.ts#issue`) — فتغييرُها يقع على ما بعده، كنسبة المنحة.
@@ -33,8 +37,12 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { GrantService } from './grant.service'
-import { GrantCoursesService } from './grant-courses.service'
-import { sendStaffInviteEmail } from './account-mail'
+import { pageCourses } from './grant-scope.service'
+import { inviteLink, sendStaffInviteEmail } from './account-mail'
+import { renderMail, type MailBlock } from './mail-template'
+import { sendDirectEmail, type DirectMailStatus } from './notification.service'
+import { MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
+import { influencerTermsAr, type InfluencerDealView } from '../../src/application/commerce/influencer-application'
 import { publicSiteUrl } from './site-url'
 import { photoStorageKey } from './storage.service'
 import { enqueueMail } from './outbox.service'
@@ -42,7 +50,7 @@ import { fmtMoney } from '../../src/application/text/format-ar'
 import { PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS } from '../auth/permissions'
 import { INFLUENCER_GRANT_SLUG } from '../../src/application/commerce/grant'
 import {
-  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, OWN_PURCHASE_AR, buyerNameAr, commissionStateAr, influencerCommission,
+  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, OWN_PURCHASE_AR, buyerNameAr, commissionStateAr, influencerCommission,
   influencerLink, normalizeInfluencerCode,
 } from '../../src/application/commerce/influencer'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
@@ -60,8 +68,64 @@ export interface InfluencerInput {
   nameAr: string
   code: string
   commissionPercent: number
-  email?: string | null
+  /** لازمٌ — لكلّ مؤثّرٍ حسابٌ وصفحة (١٥ نوفمبر ٢٠٢٦) */
+  email: string
 }
+
+const ADMIN_WELCOME_SUBJECT_AR = 'أضفناك مؤثرا في منحة مؤثرين وجيز'
+
+/** أرقامُ الاتّفاق ساعتَها — من إعدادات منحة المؤثّرين، والعمولةُ المقترحة. يقرؤها الاتّفاقُ العامّ وبريدُ الترحيب */
+export async function influencerDeal(prisma: PrismaClient): Promise<InfluencerDealView> {
+  const s = await new GrantService(prisma, INFLUENCER_GRANT_SLUG).settings()
+  return { percentOff: s.percentOff, maxCourses: s.maxCourses, commissionPercent: INFLUENCER_COMMISSION_DEFAULT, open: s.open }
+}
+
+/** حسابُه يومَ يُرحَّب به: أُنشئ الآن (ودعوتُه في بريدٍ آخر)، أو قائمٌ لم يُفعَّل (فدعوةٌ جديدة)، أو قائمٌ يدخله */
+export type WelcomeAccount = { kind: 'created' } | { kind: 'invited'; inviteToken: string } | { kind: 'active' }
+
+/** ═══ بريدُ الترحيب — واحدٌ للإضافة من الشاشة ولقبول طلب الانضمام (١٥ نوفمبر ٢٠٢٦) ═══
+    كودُه ورابطُه وعمولتُه ورقمُ طلبه إن كان، ثمّ ما يفعل بحسابه على وجوهه الثلاثة، ثمّ شروطُ الاتّفاق بعمولته. */
+export async function notifyInfluencerWelcome(prisma: PrismaClient, input: {
+  to: string; nameAr: string; code: string; commissionPercent: number; account: WelcomeAccount
+  subjectAr: string; reference?: string | null
+}): Promise<DirectMailStatus> {
+  const terms = await influencerDeal(prisma)
+  const accountBlocks: MailBlock[] = input.account.kind === 'created'
+    ? [{ kind: 'p', text: 'وصلك بريد آخر فيه رابط تفعيل حسابك. فعله واختر كلمة مرورك، ثم يفتح حسابك على صفحة المؤثر.' }]
+    : input.account.kind === 'invited'
+      ? [
+          { kind: 'p', text: 'حسابك جاهز بدور المؤثر. فعله واختر كلمة مرورك من الرابط.' },
+          { kind: 'cta', label: 'فعّل حسابك', href: inviteLink(input.account.inviteToken) },
+          { kind: 'callout', text: `الرابط صالح ${MAIL_LINK_WINDOW_AR}. فإن انتهى فاستعمل «نسيت كلمة المرور» ببريدك هذا.` },
+        ]
+      : [
+          { kind: 'p', text: 'أضفنا دور المؤثر إلى حسابك. ادخل بحسابك المعتاد تجد صفحة المؤثر.' },
+          { kind: 'cta', label: 'افتح صفحتك', href: `${publicSiteUrl()}/influencer` },
+        ]
+  const mail = await sendDirectEmail(prisma, {
+    to: input.to,
+    subject: input.subjectAr,
+    ...renderMail({
+      greetingName: input.nameAr,
+      heading: 'أهلا بك في منحة مؤثرين وجيز',
+      preheader: `كودك ${input.code}`,
+      blocks: [
+        { kind: 'facts', rows: [
+          { label: 'كودك', value: input.code },
+          { label: 'رابطك', value: influencerLink(publicSiteUrl(), input.code) },
+          { label: 'عمولتك', value: `${input.commissionPercent}% من سعر الدورات قبل الخصم` },
+          ...(input.reference ? [{ label: 'رقم طلبك', value: input.reference }] : []),
+        ] },
+        ...accountBlocks,
+        { kind: 'h', text: 'تذكير بالاتفاق' },
+        { kind: 'list', items: influencerTermsAr({ ...terms, commissionPercent: input.commissionPercent }) },
+      ],
+    }),
+  })
+  return mail.status
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function assertPercent(n: number) {
   if (!(Number.isInteger(n) && n >= 0 && n <= 100)) throw new AuthError('bad_percent', 'العمولة عدد صحيح من 0 إلى 100', 400)
@@ -92,8 +156,22 @@ export class InfluencerService {
     }))
   }
 
-  /** يُضيفه المدير — وببريده حسابُه */
+  /** يُضيفه المدير — بحسابه ببريده، وبريدِ ترحيبٍ كبريد من قُبل طلبُه (١٥ نوفمبر ٢٠٢٦) */
   async create(input: InfluencerInput, actorId: string) {
+    const made = await this.addWithAccount(input, actorId)
+    const emailDelivery = await notifyInfluencerWelcome(this.prisma, {
+      to: made.email, nameAr: made.nameAr, code: made.code, commissionPercent: made.commissionPercent,
+      account: made.welcome, subjectAr: ADMIN_WELCOME_SUBJECT_AR,
+    })
+    return { id: made.id, code: made.code, account: made.account, emailDelivery }
+  }
+
+  /** المؤثّرُ وحسابُه، بلا بريد ترحيب — تناديه الإضافةُ (`create`) وقبولُ الطلب (`influencer-application.service.ts#approve`)،
+      وكلٌّ يرسل ترحيبَه بعنوانه. ولا يُردّ إلى باب: فيه رمزُ الدعوة.
+
+      كقبول الطلب (١٥ نوفمبر ٢٠٢٦): البريدُ لازم، والمؤرشفُ وحسابُ مؤثّرٍ آخر يُردّان قبل أن يُكتب شيء، والحسابُ القائمُ
+      الذي لم يُفعَّل تصله دعوةٌ جديدة. وما سقط بعد كتابة المؤثّر — قبل أن يُربط حسابُه — يرفعه، فلا يبقى مؤثّرٌ بلا حساب. */
+  async addWithAccount(input: InfluencerInput, actorId: string) {
     const nameAr = input.nameAr.trim()
     if (nameAr.length < 2) throw new AuthError('bad_name', 'اكتب اسم المؤثر', 400)
     const code = normalizeInfluencerCode(input.code)
@@ -102,15 +180,37 @@ export class InfluencerService {
     if (await this.prisma.influencer.findUnique({ where: { code }, select: { id: true } })) {
       throw new AuthError('code_taken', INFLUENCER_CODE_TAKEN_AR, 409)
     }
+    const email = (input.email ?? '').trim().toLowerCase()
+    if (!email) throw new AuthError('email_required', 'اكتب بريد المؤثر، فله حساب وصفحة', 400)
+    if (!EMAIL_RE.test(email)) throw new AuthError('invalid_email', 'صيغة البريد غير صحيحة', 400)
+    const existing = await this.prisma.user.findUnique({
+      where: { email }, select: { id: true, status: true, influencer: { select: { id: true } } },
+    })
+    if (existing?.status === 'archived') {
+      throw new AuthError('archived', 'لهذا البريد حساب مؤرشف — أعد تنشيطه من «المستخدمون» ثم أضف المؤثر', 409)
+    }
+    if (existing?.influencer) throw new AuthError('account_taken', 'هذا الحساب لمؤثر آخر', 409)
+
     const row = await this.prisma.influencer.create({
       data: { nameAr, code, commissionPercent: input.commissionPercent, createdBy: actorId },
     })
+    let account: { userId: string; created: boolean; inviteSent: boolean | null }
+    let inviteToken: string | null = null
+    try {
+      account = await this.attachAccount(row.id, email, actorId)
+      /* حسابٌ قائمٌ لم يدخله صاحبُه قطّ لا يُدَلّ على صفحته — لا كلمةَ له يدخل بها، فتصله دعوةٌ جديدة */
+      if (!account.created && existing?.status === 'invited') inviteToken = (await this.auth.issueInvite(account.userId)).token
+    } catch (e) {
+      /* ولا يبقى مؤثّرٌ بكودٍ بلا حساب — ولا كودَ منحةٍ أُعطي به بعدُ. والحسابُ إن أُنشئ يبقى مدعوّا، فالإضافةُ الثانيةُ تجده */
+      await this.prisma.influencer.deleteMany({ where: { id: row.id, grantCodes: { none: {} }, leads: { none: {} } } })
+      throw e
+    }
     await recordAudit(this.prisma, {
       actorId, action: 'influencer.create', entityType: 'influencer', entityId: row.id,
       after: { nameAr, code, commissionPercent: row.commissionPercent },
     })
-    const account = input.email?.trim() ? await this.attachAccount(row.id, input.email, actorId) : null
-    return { id: row.id, code, account }
+    const welcome: WelcomeAccount = account.created ? { kind: 'created' } : inviteToken ? { kind: 'invited', inviteToken } : { kind: 'active' }
+    return { id: row.id, code, nameAr, email, commissionPercent: row.commissionPercent, account, welcome }
   }
 
   /** اسمُه وعمولتُه وإيقافُه — والكودُ لا يُغيَّر */
@@ -147,7 +247,7 @@ export class InfluencerService {
   /** حسابُه: يُربط بحسابٍ قائمٍ ببريده ويُضاف له دورُ المؤثّر، أو يُنشأ له حسابٌ بدعوة */
   async attachAccount(id: string, rawEmail: string, actorId: string): Promise<{ userId: string; created: boolean; inviteSent: boolean | null }> {
     const email = rawEmail.trim().toLowerCase()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new AuthError('invalid_email', 'صيغة البريد غير صحيحة', 400)
+    if (!EMAIL_RE.test(email)) throw new AuthError('invalid_email', 'صيغة البريد غير صحيحة', 400)
     const inf = await this.prisma.influencer.findUnique({ where: { id } })
     if (!inf) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
     const existing = await this.prisma.user.findUnique({ where: { email }, select: { id: true } })
@@ -317,7 +417,7 @@ export class InfluencerService {
       this.statement(inf.id),
       new GrantService(this.prisma, INFLUENCER_GRANT_SLUG).settings(),
       this.prisma.learnerProfile.findUnique({ where: { userId }, select: { avatarUrl: true } }),
-      this.designMaterial(),
+      this.designMaterial(new Date(), inf.id),
     ])
     /* صورةُ حسابه لـ«تصميمك الخاص» — المرفوعةُ عندنا وحدَها. ورابطٌ خارجيٌّ كتبه قديما في حسابه لا يُعطى: المتصفّحُ
        لا يرسمه في لوحةٍ تُنزَّل إلّا بإذن موقعه، فيرى صاحبُه تصميمه بـ«صورتك هنا» ولوحةَ التنزيل معه. وبلا صورةٍ يُطلب
@@ -339,9 +439,9 @@ export class InfluencerService {
 
       قال صاحبُ المنصّة: «لا تضع صهيبَ من ضمنهم ولا داعيَ لأسمائهم». فالحكمُ بالدور لا بالاسم: من يحمل حسابُه
       دورَ مدير النظام الأعلى لا يُعدّ في مدرّبي التصاميم — ولو تغيّر اسمُه أو صورتُه. والدوراتُ ومدرّبوها من صفحة
-      المنحة نفسِها ببوّابة النشر (`grant-courses.service.ts`). */
-  async designMaterial(now = new Date()) {
-    const { termAr, courses } = await new GrantCoursesService(this.prisma).openCourses(now)
+      المنحة نفسِها ببوّابة النشر (`grant-courses.service.ts`) — ودوراتُه هو إن اختارها المدير (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`). */
+  async designMaterial(now = new Date(), influencerId: string | null = null) {
+    const { termAr, courses } = await pageCourses(this.prisma, INFLUENCER_GRANT_SLUG, influencerId, now)
     const byId = new Map<string, { id: string; photoUrl: string | null }>()
     for (const c of courses) if (c.trainer && !byId.has(c.trainer.id)) byId.set(c.trainer.id, c.trainer)
     const owners = new Set((await this.prisma.trainerProfile.findMany({
