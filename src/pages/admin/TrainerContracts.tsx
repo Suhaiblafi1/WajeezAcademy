@@ -37,6 +37,7 @@ import {
   DEFAULT_AMENDMENT_ACCEPT_SUBJECT_AR, defaultAmendmentAcceptBodyAr, hasAmendmentPlaceholder, versionReadByRequester,
 } from "@/application/trainer/contract-resign";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
+import { useRealSession } from "@/services/session";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 import { agreementHref } from "@/application/trainer/record-links";
@@ -404,6 +405,10 @@ const COMPOSE_ERR = "__compose__";
 
 export default function TrainerContracts() {
   const [contracts, setContracts] = useState<ContractRow[]>([]);
+  /* وثيقةُ الهويّة لمن يعتمد التوقيع وحدَه — لا للماليّة (١٥ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «No — managers only»).
+     والخادمُ يردّ غيرَه (`documents/:documentId/url`)؛ وهذا كي لا يُعرض زرٌّ يُردّ. */
+  const { user: sessionUser } = useRealSession();
+  const canViewIdentity = sessionUser?.permissions.includes("trainer.applications.decide") ?? false;
   /* الصفوفُ المفتوحة — والمطويُّ سطرٌ: الاسمُ وما يلي (٣ أكتوبر ٢٠٢٦) */
   const [openRows, setOpenRows] = useState<Set<string>>(new Set());
   const toggleRow = (id: string) => setOpenRows((prev) => {
@@ -1755,7 +1760,9 @@ c.gatesActivation
                             {rowErr.text}
                           </Panel>
                         )}
-                        {c.documents.length > 0 ? (
+                        {c.documents.length > 0 && !canViewIdentity ? (
+                          <p className="mt-2 text-read opacity-70">رفع وثيقة هويته — يفتحها من يعتمد التوقيع.</p>
+                        ) : c.documents.length > 0 ? (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {c.documents.map((d) => (
                               <Button key={d.id} size="sm" icon={IdCard}

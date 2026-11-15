@@ -697,10 +697,19 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   /* وثيقةُ الهويّة تُفتَح قبل الاعتماد — فالاعتمادُ مطابقةٌ بها.
      والرابطُ موقَّتٌ لعشر دقائق كوثائق الطلب، وكلُّ فتحةٍ تُكتب في الأثر. */
+  /* ═══ ووثيقةُ الهويّة لمن يعتمد التوقيع وحدَه (١٥ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «No — managers only») ═══
+     `trainer.contract.manage` عند الماليّة أيضا: تركّب العقدَ وتضبط أجرَه. وقرارُ صاحب المنصّة أنّها تفتح «الاتفاقية»
+     وحدَها ولا تقرأ وثائقَ المدرّب. والهويّةُ تُقرأ لمطابقة الاسم قبل الاعتماد — وذاك عملُ من يعتمد
+     (`trainer.applications.decide`). والحارس: `server/tests/trainer/legacy-contract-routes.test.ts` */
   app.get('/api/admin/trainer-contracts/:contractId/documents/:documentId/url', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'رابط قراءة موقّت لوثيقة هويّة مع عقد' },
-  }, async (req) => {
+    schema: { tags: ['admin-trainers'], summary: 'رابط قراءة موقّت لوثيقة هويّة مع عقد — لمن يعتمد التوقيع' },
+  }, async (req, reply) => {
+    if (!req.auth!.permissions.includes('trainer.applications.decide')) {
+      return reply.status(403).send({
+        error: { code: 'forbidden', message_ar: 'وثيقة الهوية يفتحها من يعتمد التوقيع' },
+      })
+    }
     const { contractId, documentId } = z.object({
       contractId: z.string().uuid(), documentId: z.string().uuid(),
     }).parse(req.params)
@@ -896,23 +905,14 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return offers.withdraw(offerId, req.auth!.userId, reasonAr)
   })
 
-  app.post('/api/admin/trainer-applications/:id/contracts', {
-    preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: '⚠️ مهجور — الباب القديم بلا متن. يحذف في المرحلة الثانية' },
-  }, async (req, reply) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const body = z.object({ title: z.string().min(3), terms: z.record(z.string(), z.unknown()).optional() }).parse(req.body)
-    return reply.status(201).send(await review.createContract(id, req.auth!.userId, body))
-  })
-
-  app.post('/api/admin/trainer-contracts/:contractId/sign', {
-    preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'تسجيل توقيع العقد — ينقل الطلب إلى onboarding' },
-  }, async (req) => {
-    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
-    await review.signContract(contractId, req.auth!.userId)
-    return { ok: true }
-  })
+  /* ═══ وسقط البابان القديمان: «عقدٌ بلا متن» و«سجّلْ توقيعَه» (١٥ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Remove both») ═══
+     `POST /api/admin/trainer-applications/:id/contracts` كان يُنشئ عقدا «مُرسَلا» بلا متن، و
+     `POST /api/admin/trainer-contracts/:contractId/sign` يكتبه «موقَّعا» بيد موظّفٍ بلا توقيع صاحبه — بلا اسمٍ قانونيّ
+     ولا وثيقةٍ ولا بصمةِ نصّ — وينقل طلبَه. وحارسُهما `trainer.compensation.manage`، وهي عند الماليّة: فكانت تسجّل
+     توقيعَ مدرّبٍ عنه، وقرارُ صاحب المنصّة أنّ الماليّةَ لا تعتمد توقيعا ولا تردّه. ولا شاشةَ تناديهما.
+     فالعقدُ يُركَّب من `contracts/compose` وحدَه، ويوقّعه صاحبُه من رابطه وحدَه (`contract-sign.routes.ts`).
+     والدالّتان (`createContract`، `signContract`) باقيتان للاختبارات. والحارس:
+     `server/tests/trainer/legacy-contract-routes.test.ts` */
 
   app.post('/api/admin/trainer-applications/:id/invitations', {
     preHandler: requirePermission('trainer.invite'),

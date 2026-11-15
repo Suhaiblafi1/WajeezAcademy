@@ -52,6 +52,8 @@ export class RatingService {
     const now = new Date()
     const enrollments = await this.prisma.enrollment.findMany({
       where: { userId, status: { in: ['enrolled', 'completed'] } },
+      /* ترتيبٌ ثابت — فأوّلُ تسجيلٍ يُعلَّق به تقييمُ المستشار لا يتبدّل بين نداءٍ ونداء */
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       include: {
         cohort: {
           include: {
@@ -88,7 +90,8 @@ export class RatingService {
        فلا يُعرض هدفٌ لا وجود له. ويُعلَّق بأوّل تسجيل: التقييم يخصّ الشخص لا الشعبة. */
     const advisor = await this.activeAdvisorFor(userId)
     if (advisor && started[0]) {
-      const prev = byKey.get(key('advisor', advisor.id, started[0].id))
+      /* وتقييمُه السابقُ يُقرأ بصاحبه لا بتسجيله: واحدٌ لكلّ متعلّمٍ ومستشار (`submit`) */
+      const prev = mine.find((r) => r.subjectType === 'advisor' && r.subjectId === advisor.id)
       out.push({
         subjectType: 'advisor', subjectId: advisor.id, nameAr: advisor.displayName,
         enrollmentId: started[0].id, myScore: prev?.score ?? null, myComment: prev?.commentAr ?? null,
@@ -131,6 +134,30 @@ export class RatingService {
     const data = {
       score: input.score, commentAr: comment,
       publishStatus: 'pending', moderatedBy: null, moderatedAt: null, moderationReason: null,
+    }
+    /* ═══ والمستشارُ يُقيَّم مرّةً لكلّ متعلّم (١٥ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «One per learner») ═══
+       كان تقييمُه يُعلَّق بأوّل تسجيلٍ في قائمةٍ بلا ترتيب، والمفتاحُ الفريدُ بالتسجيل. فمن له أكثرُ من تسجيلٍ — أو انسحب
+       من أحدها — تبدّل تسجيلُه فقيّم المستشارَ ثانيةً وثالثة، وكلٌّ يُعدّ في معدّله. فالتقييمُ السابقُ يُوجد بصاحبه
+       ويُحدَّث، وفهرسٌ فريدٌ في القاعدة يمنع الثاني (`20261115150000_advisor_rating_one_per_learner`). والحارس:
+       `server/tests/rating/advisor-rating-once.test.ts` */
+    if (input.subjectType === 'advisor') {
+      const write = async () => {
+        const prev = await this.prisma.rating.findFirst({
+          where: { raterId: userId, subjectType: 'advisor', subjectId: input.subjectId }, select: { id: true },
+        })
+        return prev
+          ? this.prisma.rating.update({ where: { id: prev.id }, data: { ...data, enrollmentId: input.enrollmentId } })
+          : this.prisma.rating.create({
+              data: { enrollmentId: input.enrollmentId, raterId: userId, subjectType: 'advisor', subjectId: input.subjectId, ...data },
+            })
+      }
+      /* ونقرتان معا: الثانيةُ يردّها الفهرسُ فتُحدِّث ما كتبته الأولى */
+      const row = await write().catch((e: { code?: string }) => { if (e.code === 'P2002') return write(); throw e })
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'rating.submit', entityType: 'rating', entityId: row.id,
+        meta: { subjectType: input.subjectType, subjectId: input.subjectId },
+      })
+      return { id: row.id, subjectAr: SUBJECT_AR[input.subjectType] }
     }
     const row = await this.prisma.rating.upsert({
       where: {
