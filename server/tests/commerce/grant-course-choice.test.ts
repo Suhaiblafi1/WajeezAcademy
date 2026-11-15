@@ -172,7 +172,7 @@ describe('③ والمؤثر بعض قائمة حملته', () => {
   it('⚠️ صفحته وكود من جاء به على دوراته — والتقاطع إن ضاقت قائمة الحملة، ولا يختار له ما ليس فيها', async () => {
     const [a, b, c, d] = [await course(100), await course(100), await course(100), await course(100)]
     const influencers = new InfluencerService(prisma)
-    const inf = await influencers.create({ nameAr: 'مؤثر الدورات', code: 'PICKS', commissionPercent: 15 }, ownerId)
+    const inf = await influencers.create({ nameAr: 'مؤثر الدورات', code: 'PICKS', commissionPercent: 15, email: `picks-${STAMP}@test.local` }, ownerId)
     await choice.setCampaignCourses(INFLUENCER_GRANT_SLUG, [a.courseId, b.courseId, c.courseId], ownerId)
     try {
       await expect(choice.setInfluencerCourses(inf.id, [a.courseId, d.courseId], ownerId), 'اختير للمؤثر ما ليس في حملته')
@@ -257,7 +257,7 @@ describe('⑤ الأثر والصلاحية', () => {
     expect(rows[0]).toMatchObject({ actorId: ownerId, entityType: 'grant_campaign', before: { courseIds: [] }, after: { courseIds: [a.courseId] } })
     expect(rows[1]).toMatchObject({ before: { courseIds: [a.courseId] }, after: { courseIds: [] } })
 
-    const inf = await new InfluencerService(prisma).create({ nameAr: 'مؤثر الأثر', code: 'TRAIL', commissionPercent: 15 }, ownerId)
+    const inf = await new InfluencerService(prisma).create({ nameAr: 'مؤثر الأثر', code: 'TRAIL', commissionPercent: 15, email: `trail-${STAMP}@test.local` }, ownerId)
     await choice.setInfluencerCourses(inf.id, [a.courseId], ownerId)
     expect(await prisma.auditEvent.findFirst({ where: { action: 'influencer.courses', entityId: inf.id } }))
       .toMatchObject({ actorId: ownerId, entityType: 'influencer', before: { courseIds: [] }, after: { courseIds: [a.courseId] } })
@@ -265,7 +265,7 @@ describe('⑤ الأثر والصلاحية', () => {
 
   it('⚠️ بابها بصلاحية إعدادات المنحة — يرد غير المدير', async () => {
     const a = await course(100)
-    const inf = await new InfluencerService(prisma).create({ nameAr: 'مؤثر الباب', code: 'GATE', commissionPercent: 15 }, ownerId)
+    const inf = await new InfluencerService(prisma).create({ nameAr: 'مؤثر الباب', code: 'GATE', commissionPercent: 15, email: `gate-${STAMP}@test.local` }, ownerId)
     for (const [method, url] of [
       ['GET', '/api/admin/grant-courses/member'], ['PUT', '/api/admin/grant-courses/open'],
       ['GET', `/api/admin/influencers/${inf.id}/courses`], ['PUT', `/api/admin/influencers/${inf.id}/courses`],

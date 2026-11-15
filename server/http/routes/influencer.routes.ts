@@ -58,15 +58,16 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.post('/api/admin/influencers', {
     preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'إضافة مؤثر باسمه وكوده وعمولته — وببريده حسابه' },
+    schema: { tags: ['admin-commerce'], summary: 'إضافة مؤثر باسمه وكوده وعمولته وبريده — حسابه وبريد ترحيبه كقبول طلبه' },
   }, async (req, reply) => {
+    /* والبريدُ لازم — لكلّ مؤثّرٍ حسابٌ وصفحة (١٥ نوفمبر ٢٠٢٦). والخدمةُ تردّه بسببه (`email_required`، ٤٠٠) */
     const body = z.object({
       nameAr: z.string().trim().min(2).max(120),
       code: z.string().trim().min(3).max(40),
       commissionPercent: z.number().int().min(0).max(100),
       email: z.string().trim().max(200).nullable().optional(),
     }).parse(req.body)
-    return reply.status(201).send(await influencers.create(body, req.auth!.userId))
+    return reply.status(201).send(await influencers.create({ ...body, email: body.email ?? '' }, req.auth!.userId))
   })
 
   app.patch('/api/admin/influencers/:id', {

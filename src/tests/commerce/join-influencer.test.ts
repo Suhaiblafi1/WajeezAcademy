@@ -59,8 +59,10 @@ describe('② الأرقام من الخادم', () => {
     const routes = code('server/http/routes/influencer-applications.routes.ts')
     expect(routes).toContain(`app.get('${INFLUENCER_DEAL_PATH}'`)
     expect(routes).toMatch(/async \(\) => svc\.deal\(\)\)/)
-    expect(code('server/services/influencer-application.service.ts'))
-      .toMatch(/new GrantService\(this\.prisma, INFLUENCER_GRANT_SLUG\)\.settings\(\)[\s\S]{0,200}percentOff: s\.percentOff, maxCourses: s\.maxCourses, commissionPercent: INFLUENCER_COMMISSION_DEFAULT/)
+    /* والأرقامُ في `influencerDeal` — يقرؤها الاتّفاقُ وبريدُ الترحيب معا (١٥ نوفمبر ٢٠٢٦) */
+    expect(code('server/services/influencer-application.service.ts')).toMatch(/async deal\(\): Promise<InfluencerDealView> \{\s*return influencerDeal\(this\.prisma\)/)
+    expect(code('server/services/influencer.service.ts'))
+      .toMatch(/new GrantService\(prisma, INFLUENCER_GRANT_SLUG\)\.settings\(\)[\s\S]{0,200}percentOff: s\.percentOff, maxCourses: s\.maxCourses, commissionPercent: INFLUENCER_COMMISSION_DEFAULT/)
   })
 
   it('⚠️ والنصوص تبنى من الأرقام التي تصلها — والصفحة تمرر ما وصلها', () => {

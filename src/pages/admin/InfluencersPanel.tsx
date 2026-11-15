@@ -55,18 +55,21 @@ export default function InfluencersPanel() {
   const code = normalizeInfluencerCode(form.code);
   const commission = Number(form.commission);
   const commissionOk = Number.isInteger(commission) && commission >= 0 && commission <= 100;
-  const canAdd = form.nameAr.trim().length >= 2 && code !== null && commissionOk;
+  /* والبريدُ لازم — لكلّ مؤثّرٍ حسابٌ وصفحة، ويصله بريدُ ترحيبٍ كمن قُبل طلبُه (١٥ نوفمبر ٢٠٢٦) */
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const canAdd = form.nameAr.trim().length >= 2 && code !== null && commissionOk && emailOk;
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const out = await apiPost<{ account: { created: boolean; inviteSent: boolean | null } | null }>("/api/admin/influencers", {
-        nameAr: form.nameAr.trim(), code, commissionPercent: commission, email: form.email.trim() || null,
+      const out = await apiPost<{ account: { created: boolean; inviteSent: boolean | null }; emailDelivery: string }>("/api/admin/influencers", {
+        nameAr: form.nameAr.trim(), code, commissionPercent: commission, email: form.email.trim(),
       });
-      toast(!out.account ? "أضيف المؤثر" : out.account.created
-        ? (out.account.inviteSent ? "أضيف المؤثر، ووصلته دعوة حسابه" : "أضيف المؤثر وأنشئ حسابه، ولم ترسل الدعوة. اطلب منه «نسيت كلمة المرور»")
-        : "أضيف المؤثر وربط بحسابه");
+      const welcome = out.emailDelivery === "sent" ? "، ووصلته رسالة بكوده" : "، ولم ترسل رسالة كوده";
+      toast(out.account.created
+        ? (out.account.inviteSent ? `أضيف المؤثر، ووصلته دعوة حسابه${welcome}` : "أضيف المؤثر وأنشئ حسابه، ولم ترسل الدعوة. اطلب منه «نسيت كلمة المرور»")
+        : `أضيف المؤثر وربط بحسابه${welcome}`);
       setForm({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), email: "" });
       await load();
     } catch (err) { toastError(errAr(err, "تعذر إضافة المؤثر")); }
@@ -93,7 +96,7 @@ export default function InfluencersPanel() {
           <input type="number" min={0} max={100} value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} className={staffControlCls} />
         </label>
         <label className="grid gap-1 text-read">بريده (لحسابه)
-          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr" placeholder="اختياري" className={staffControlCls} />
+          <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr" className={staffControlCls} />
         </label>
         <Button type="submit" disabled={busy || !canAdd}>أضف المؤثر</Button>
         {form.code.trim() !== "" && code === null && <p className="w-full text-read text-danger-ink">{INFLUENCER_CODE_FORMAT_AR}</p>}
