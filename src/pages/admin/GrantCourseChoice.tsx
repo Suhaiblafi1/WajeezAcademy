@@ -21,7 +21,7 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { countAr } from "@/application/text/count-ar";
-import { fmtDateLong } from "@/application/text/format-ar";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 
@@ -133,7 +133,7 @@ export default function GrantCourseChoice({ endpoint, forInfluencer = false, onS
                         <span className="block font-bold">{c.titleAr}</span>
                         <span className="block text-muted-foreground">
                           {c.trainerName ? `المدرب: ${c.trainerName}` : "بلا مدرب منشور"}
-                          {c.startsAt && ` · تبدأ أول شعبة ${fmtDateLong(c.startsAt)}`}
+                          {c.startsAt && ` · تبدأ أول شعبة ${cohortDayAr(c.startsAt)}`}
                         </span>
                       </span>
                     </label>

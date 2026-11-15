@@ -89,7 +89,7 @@ describe('دورات المنحة', () => {
     expect(CHOICE).toMatch(/\{confirm && \(\s*<ConfirmAction[\s\S]*?onConfirm=\{\(\) => void save\(\)\}/)
     /* وتحت كلّ دورةٍ مدرّبُ أقرب شعبةٍ ويومُ بدئها (١٥ نوفمبر ٢٠٢٦: «اجعلني أرى اسم المدرب ومتى تبدأ أول شعبة») */
     expect(CHOICE).toMatch(/c\.trainerName \? `المدرب: \$\{c\.trainerName\}`/)
-    expect(CHOICE).toMatch(/c\.startsAt && ` · تبدأ أول شعبة \$\{fmtDateLong\(c\.startsAt\)\}`/)
+    expect(CHOICE).toMatch(/c\.startsAt && ` · تبدأ أول شعبة \$\{cohortDayAr\(c\.startsAt\)\}`/)
     expect(CHOICE, 'عاد سطر «لا شعبة» — والقائمة ما له شعبة وحده').not.toContain('لا شعبة تشترى الآن، فلا تظهر')
     for (const k of ['coupon.grant_courses', 'influencer.courses']) expect(auditActionAr(k)).not.toBe(k)
     /* وأفعالُ أثر الاقتراحات باقيةٌ في المعجم: ما كُتب منها قبل الحذف يُقرأ باسمه */
