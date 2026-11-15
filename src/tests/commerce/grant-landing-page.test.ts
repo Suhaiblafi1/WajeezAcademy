@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { plainAr } from '@/application/text/plain-ar'
 import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { auditActionAr } from '@/application/audit/labels'
-import {
+import { grantWelcomeAr, grantWhyHereAr,
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, blackFridayLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
@@ -112,7 +112,8 @@ describe('بعد النموذج', () => {
     /* ما يدفعه كبيرا وأصلُه مشطوبا بعده — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «فقط السعرُ قبل وبعد كقيم» */
     /* والمشطوبُ لمن له منحةٌ يستعملها وحدَه — بلا منحةٍ سعرٌ واحد (٢٨ أكتوبر ٢٠٢٦) */
     expect(PAGE).toMatch(/const pay = grantPrice\(x\.price, pct\);/)
-    expect(PAGE).toMatch(/<bdi dir="ltr" className="text-lg font-black">\{money\(pay\)\}<\/bdi>\s*\{pct > 0 && <bdi dir="ltr" className="text-read text-muted-foreground line-through">\{money\(x\.price\)\}<\/bdi>\}/)
+    /* والأصليُّ مشطوبا أوّلا على اليمين ثمّ ما يدفعه — قرارُ صاحب المنصّة (١٥ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/\{pct > 0 && <bdi dir="ltr" className="text-read text-muted-foreground line-through">\{money\(x\.price\)\}<\/bdi>\}\s*<bdi dir="ltr" className="text-lg font-black">\{money\(pay\)\}<\/bdi>/)
     expect(PAGE, 'عادت «قبل المنحة/بعد المنحة»').not.toMatch(/قبل المنحة|بعد المنحة/)
   })
 
@@ -123,8 +124,14 @@ describe('بعد النموذج', () => {
       'اختر حتى 4 دورات، ويمكنك استبدالها لاحقا مع مستشارك.',
     ])
     const card = PAGE.slice(PAGE.indexOf(TOP_CARD), PAGE.indexOf('<h2 className="mt-6'))
-    expect(card).toMatch(/<GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}\s*\{grantOn && <p className="mt-0\.5 text-read text-muted-foreground">\{grantLimitAr\(max\)\}<\/p>\}/)
-    expect(PAGE.match(/grantLimitAr\(/g)?.length, 'الحد يقال مرتين').toBe(1)
+    /* ثمّ (١٥ نوفمبر ٢٠٢٦): «ابدأ بمقدّمةٍ ترحيبيّة ولماذا هو هنا» — الحدُّ في سطر الترحيب لا سطرا وحدَه */
+    expect(card).toMatch(/\{grantOn && \([\s\S]*?<h1[^>]*>\{grantWelcomeAr\(stored\.name\)\}<\/h1>[\s\S]*?grantWhyHereAr\(\{ grantNameAr: nameAr, percentOff: pct, max, lastDay: lastDayShort \}\)/)
+    expect(card.indexOf('grantWelcomeAr'), 'الترحيب ليس أول الصندوق').toBeLessThan(card.indexOf('stored.code ?'))
+    expect(PAGE, 'عاد سطر الحد وحده').not.toMatch(/grantLimitAr\(/)
+    expect(grantWelcomeAr('صهيب الخوالدة')).toBe('أهلا صهيب، منحتك جاهزة')
+    expect(grantWelcomeAr('')).toBe('أهلا بك، منحتك جاهزة')
+    expect(grantWhyHereAr({ grantNameAr: 'منحة وجيز', percentOff: 40, max: 4, lastDay: '17 نوفمبر' }))
+      .toBe('منحة وجيز تغطي 40% من سعر دوراتك المباشرة على Zoom. اختر حتى 4 دورات قبل 17 نوفمبر، ويمكنك استبدالها لاحقا.')
     expect(PAGE, 'عادت فقرة الحد الطويلة').not.toMatch(/وهذا أقصى ما تغطيه منحتك|بعد استشارة مستشارك الخاص/)
   })
 
@@ -232,7 +239,8 @@ describe('بعد النموذج', () => {
     ])
     for (const g of GRANT_GAINS_AR) expect(plainAr(g.title)).toBe(g.title)
     /* وفي صندوق الكود وحدَه — حُذف من الصفحة الأولى بقراره (٢٥ أكتوبر ٢٠٢٦): «احذفها من الصفحة الأولى» */
-    expect(PAGE.match(/\{GRANT_GAINS_AR\.map\(/g)?.length, 'البنود في غير صندوق الكود').toBe(1)
+    /* ثمّ (١٥ نوفمبر ٢٠٢٦): «خفّف الكلام» — سطرُ الأيقونات ذهب من صندوق الكود، وما يحصل عليه في «لماذا هذه المنحة؟» */
+    expect(PAGE, 'عاد سطر الأيقونات').not.toMatch(/GRANT_GAINS_AR\.map\(/)
     const formAt = PAGE.indexOf('const ready = form.fullName')
     expect(formAt, 'الصفحة الأولى لم توجد').toBeGreaterThan(0)
     expect(PAGE.slice(formAt), 'عادت البنود إلى الصفحة الأولى').not.toContain('GRANT_GAINS_AR')
@@ -241,10 +249,8 @@ describe('بعد النموذج', () => {
        وأسفلها سطرٌ صغير». فلا عمودان ولا ما يميل إلى طرفٍ على الحاسوب */
     expect(card).toMatch(/^<Card tone="accent" className="text-center">/)
     expect(card, 'مال شيء في الصندوق إلى طرف على الحاسوب').not.toMatch(/sm:(text-start|justify-start|justify-end|grid-cols|border-s)/)
-    /* وبأيقونةٍ قبل كلّ بندٍ في السطر نفسِه — قرارُه (٢٧ أكتوبر ٢٠٢٦): «ضع أيقوناتٍ للمباشر وغيرها في نفس السطر.. تكون عصريّة» */
-    expect(card, 'السطر الصغير ليس تحت الحد').toMatch(/\{grantLimitAr\(max\)\}<\/p>\}\s*<p className="mx-auto mt-3 flex max-w-lg flex-wrap justify-center gap-x-4 gap-y-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">\s*\{GRANT_GAINS_AR\.map\(\(g\) => \{/)
-    expect(card, 'البند بلا أيقونته في سطره').toMatch(/<span key=\{g\.id\} className="inline-flex items-center gap-1\.5 whitespace-nowrap">\s*<Icon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" \/>\{g\.title\}\s*<\/span>/)
-    expect(PAGE).toMatch(/const GAIN_ICON: Record<\(typeof GRANT_GAINS_AR\)\[number\]\["id"\], LucideIcon> = \{ live: Video, practice: PencilRuler, certificate: Award \};/)
+    /* وكان سطرُ أيقوناتٍ تحت الحدّ (٢٧ أكتوبر ٢٠٢٦) — ثمّ ذهب (١٥ نوفمبر ٢٠٢٦، «خفّف الكلام»): ما يحصل عليه في «لماذا هذه المنحة؟» */
+    expect(card, 'عاد سطر الأيقونات في صندوق الكود').not.toMatch(/GRANT_GAINS_AR|GAIN_ICON/)
     expect(card, 'عادت «+» بين البنود').not.toContain('"+ "')
     expect(card, 'عادت الأيقونات قائمة عمودية').not.toMatch(/GrantGains|<ul /)
     expect(card, 'عادت أيقونة الهدية سطرا وحدها').not.toMatch(/<Gift className="mx-auto/)
@@ -334,7 +340,8 @@ describe('بعد النموذج', () => {
     /* و«لا تتعارض» لا تُقال إلّا وكلُّ مقترحةٍ لها لقاءاتٌ معتمَدة */
     expect(PAGE).toMatch(/const timedSuggested = top\.length > 0 && top\.every\(\(x\) => \(x\.sessions\?\.length \?\? 0\) > 0\);/)
     /* ودورةٌ أوّلا والكودُ يبقى لباقيها — صاحب المنصّة (١٣ نوفمبر ٢٠٢٦): «أرى الناس تستصعب شراء أربع دورات» */
-    expect(PAGE).toMatch(/تناسبك\{timedSuggested \? " ولا تتعارض مواعيدها" : ""\}\. ابدأ بالأولى، وكودك يبقى لك لباقيها بنفس الخصم\{lastDayLong \? ` حتى \$\{lastDayLong\}` : ""\}\./)
+    /* وأقصر (١٥ نوفمبر ٢٠٢٦): آخرُ يومها في سطر الترحيب أعلاه */
+    expect(PAGE).toMatch(/تناسبك\{timedSuggested \? " ولا تتعارض مواعيدها" : ""\}\. ابدأ بالأولى، وكودك يبقى لباقيها بنفس الخصم\./)
   })
 
   /* «عندما يقوم بالدفع لا يظهر نفس السعر… يجب أن يصلح من جهتك» — واختار صاحبُ المنصّة المطابقةَ بالبريد (٢٧ أكتوبر ٢٠٢٦) */
@@ -401,7 +408,8 @@ describe('بعد النموذج', () => {
     expect(grantShortTitleAr('دورة الضرائب في الأردن تطبيقيا: ضريبة الدخل')).toBe('الضرائب في الأردن تطبيقيا')
     /* ٢) وما يخسره إن تأخّر — في لوح الدفع لمن له منحة، بلا مبلغ */
     const payCard = PAGE.slice(payAt, PAGE.indexOf('</Card>', payAt))
-    expect(payCard).toMatch(/\{lastDayShort && <p className="mt-0\.5 text-read text-muted-foreground">\{grantUntilAr\(lastDayShort\)\}<\/p>\}/)
+    /* ثمّ (١٥ نوفمبر ٢٠٢٦): «خفّف الكلام» — آخرُ يومها في سطر الترحيب والعدّاد أعلاه، لا سطرا ثالثا في اللوح */
+    expect(payCard, 'عاد «المنحة حتى… وبعدها تعود لسعرها» في اللوح').not.toMatch(/grantUntilAr/)
     expect(grantUntilAr('7 نوفمبر')).toBe('المنحة حتى 7 نوفمبر، وبعدها تعود لسعرها')
     for (const t of [grantUntilAr('7 نوفمبر'), GRANT_OUTCOMES_TITLE_AR, ...[1, 2, 4, 16].map(grantSessionsAr), 'للقاء']) expect(t).toBe(plainAr(t))
   })
@@ -620,7 +628,8 @@ describe('بعد النموذج', () => {
     expect(panel, 'عاد سطر الكود في اللوح').not.toMatch(/يوضع تلقائيا|stored\.code/)
     expect(panel, 'عاد العداد في اللوح').not.toContain('GrantCountdown')
     expect(PAGE, 'عاد شرح الكود الطويل').not.toContain('يستعمل مرة واحدة')
-    expect(PAGE).toContain('أرسلناه إلى بريدك أيضا.')
+    /* والكودُ شارةٌ صغيرةٌ تحت الترحيب، ومن أرسلناه إليه يُقال له أين هو (١٥ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toContain('كودك في بريدك {stored.sentTo}، اكتبه عند الدفع.')
     expect(PAGE, 'عادت «ادفع الآن»').not.toContain('ادفع الآن')
     expect(code('src/application/commerce/grant-registrants.ts'), 'نتائج الحملة تسمي قناتها').toMatch(/channel === 'share' \? 'هدية من صديق'/)
   })
@@ -774,7 +783,9 @@ describe('بعد النموذج', () => {
     expect(PAGE).not.toMatch(/"دقيقة"|"ثانية"/)
     expect(PAGE).toContain('تنتهي المنحة بعد {left}')
     expect(PAGE).toContain('آخر يوم: {fmtDateLong(')
-    expect(PAGE).toMatch(/\{grantOn && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}/)
+    /* وتحت الكود سطرٌ واحد — آخرُ يومها في سطر الترحيب (١٥ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/\{grantOn && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} compact className="mt-3" \/>\}/)
+    expect(PAGE).toMatch(/\{!compact && <p className="mt-0\.5 text-read text-muted-foreground">آخر يوم:/)
     expect(PAGE.match(/<GrantCountdown /g)?.length, 'العداد في النموذج وتحت الكود وحدهما').toBe(2)
   })
 
@@ -792,7 +803,7 @@ describe('بعد النموذج', () => {
 
   it('⚠️ قليل هادئ — ثلاث بكلمتين، وأربع خانات بلا شرح تحتها، والاختياري مطوي، وسطر عن الأكاديمية', () => {
     expect(GRANT_GAINS_AR, 'عادت بطاقات ما يحصل عليه').toHaveLength(3)
-    expect(PAGE).toMatch(/\{GRANT_GAINS_AR\.map\(\(g\) => \{/)
+    expect(PAGE, 'عاد سطر الأيقونات (١٥ نوفمبر ٢٠٢٦)').not.toMatch(/\{GRANT_GAINS_AR\.map\(/)
     expect(PAGE, 'عادت النبذة الطويلة').not.toMatch(/FAMILY_INTRO|grantStepsAr|كيف تعمل المنحة|ماذا تحصل عليه/)
     /* الاختياريّان داخل <details> مطويّ — لا مفتوحَين فوق الزرّ */
     const formAt = PAGE.indexOf('<Card as="form"')
@@ -837,7 +848,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'نقترحها لك', 'نقترح لك', 'تناسبك', ' ولا تتعارض مواعيدها', ' ابدأ بالأولى، وكودك يبقى لك لباقيها بنفس الخصم', 'ابدأ بها', 'يناسب ما تريد تطويره', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
+      'نقترحها لك', 'نقترح لك', 'تناسبك', ' ولا تتعارض مواعيدها', ' ابدأ بالأولى، وكودك يبقى لباقيها بنفس الخصم.', 'ابدأ بها', 'يناسب ما تريد تطويره', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'كودك في بريدك ', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')

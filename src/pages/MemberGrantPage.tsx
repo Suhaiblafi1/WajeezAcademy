@@ -62,9 +62,9 @@ import type { TimedSession } from "@/application/learning/cohort-overlap";
 import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
 import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
-  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
-  type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr, parsePicksParam,
+  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_DIAG_PATH, GRANT_HUMAN_DIAG_AR, GRANT_SELF_DIAG_AR,
 } from "@/application/commerce/grant-landing";
 import { BLACK_FRIDAY_GRANT_STORE_KEY, GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -116,7 +116,7 @@ const money = (n: number) => fmtMoney(n, USD);
 const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
 
 /** عدّادُ انتهاء المنحة وآخرُ يومٍ لها — سطرٌ واحدٌ بالأيّام، وتحت اليوم بالساعات (`grantLeftAr`) */
-function GrantCountdown({ closesAt, className = "" }: { closesAt: string; className?: string }) {
+function GrantCountdown({ closesAt, className = "", compact = false }: { closesAt: string; className?: string; compact?: boolean }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -127,7 +127,7 @@ function GrantCountdown({ closesAt, className = "" }: { closesAt: string; classN
   return (
     <div className={className} role="timer">
       <p className="inline-flex items-center gap-1.5 font-black"><Clock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> تنتهي المنحة بعد {left}</p>
-      <p className="mt-0.5 text-read text-muted-foreground">آخر يوم: {fmtDateLong(new Date(new Date(closesAt).getTime() - 1))}</p>
+      {!compact && <p className="mt-0.5 text-read text-muted-foreground">آخر يوم: {fmtDateLong(new Date(new Date(closesAt).getTime() - 1))}</p>}
     </div>
   );
 }
@@ -140,8 +140,6 @@ const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
 const OTHER_DOMAIN = "أخرى";
 /** كم وجها في رأس كلِّ قسم */
 const SECTION_FACES = 3;
-/** أيقونةُ كلِّ بندٍ ممّا يحصل عليه — في سطر صندوق الكود */
-const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, certificate: Award };
 /** أيقونةُ كلِّ قيمةٍ في «لماذا هذه المنحة؟» */
 const WHY_ICON: Record<(typeof GRANT_WHY_POINTS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, proof: Award, advisor: UserRound };
 
@@ -513,8 +511,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               {/* وعددُ لقاءاتها المباشرة — ووقتُه بجانب سعره، فيصغر المبلغُ أمام ما يأخذه */}
               <span className="mt-0.5 block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · {meetings > 0 ? `${grantSessionsAr(meetings)} على Zoom` : "مباشرة على Zoom"}</span>
               <span className="mt-2 flex flex-wrap items-baseline gap-x-2">
-                <bdi dir="ltr" className="text-lg font-black">{money(pay)}</bdi>
+                {/* الأصليُّ مشطوبا أوّلا على اليمين، ثمّ ما يدفعه — قرارُ صاحب المنصّة (١٥ نوفمبر ٢٠٢٦) */}
                 {pct > 0 && <bdi dir="ltr" className="text-read text-muted-foreground line-through">{money(x.price)}</bdi>}
+                <bdi dir="ltr" className="text-lg font-black">{money(pay)}</bdi>
                 {perMeeting !== null && <span className="text-read text-muted-foreground">· <bdi dir="ltr">{money(perMeeting)}</bdi> للقاء</span>}
               </span>
               {clash && (
@@ -562,41 +561,34 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         {/* صندوقُ الكود — عمودٌ واحدٌ في الوسط: الكودُ ثمّ العدّادُ وآخرُ يومٍ والحدّ، وتحتها سطرٌ صغيرٌ بما يحصل عليه.
             قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «تنتهي المنحة بعد… وآخر يوم واختر حتى ٤ يجب أن تكون في المنتصف،
             وأسفلها سطرٌ صغير». وكان عمودين على الحاسوب، وما يحصل عليه قائمةٌ بأيقونات (٢٤ أكتوبر) */}
+        {/* ═══ ورأسُ الصفحة ترحيبٌ ولماذا هو هنا، ثمّ كودُه والعدّاد (١٥ نوفمبر ٢٠٢٦، `grantWelcomeAr`) ═══
+            كان أوّلَه «لك كود منحة من قبل…» ثمّ «تنتهي بعد…» و«آخر يوم» و«اختر حتى…» وسطرُ أيقونات — قال صاحبُ المنصّة: «بدايةٌ
+            غيرُ احترافيّة.. ابدأ بمقدّمةٍ ترحيبيّة ولماذا هو هنا». فالترحيبُ عنوان، وسطرٌ واحدٌ بنسبتها وحدّها وآخر يومها، والكودُ
+            شارةٌ صغيرة، والعدّادُ سطرٌ واحد. ومن نفدت عنه أو أُغلقت يبقى له ما كان يُقال */}
         <Card tone="accent" className="text-center">
-          {stored.code ? (
+          {grantOn && (
             <>
-              <p className="flex items-center justify-center gap-1.5 text-read text-muted-foreground">
-                <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> كود منحتك
+              <h1 className="text-2xl font-black leading-9">{grantWelcomeAr(stored.name)}</h1>
+              <p className="mx-auto mt-1 max-w-md text-read leading-6 text-muted-foreground">
+                {grantWhyHereAr({ grantNameAr: nameAr, percentOff: pct, max, lastDay: lastDayShort })}
               </p>
-              <p className="mt-1 flex items-center justify-center gap-2 text-2xl font-black" dir="ltr">
-                {stored.code}
-                <button type="button" aria-label="انسخ الكود" onClick={() => void copy(stored.code!)} className="cursor-pointer"><Copy className="h-5 w-5" /></button>
-              </p>
-              <p className="mt-0.5 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا.</p>
             </>
+          )}
+          {stored.code ? (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-gold/10 px-3.5 py-1.5 text-read">
+              <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> كود منحتك
+              <b dir="ltr" className="text-base font-black">{stored.code}</b>
+              <button type="button" aria-label="انسخ الكود" onClick={() => void copy(stored.code!)} className="cursor-pointer"><Copy className="h-4 w-4" /></button>
+            </p>
           ) : stored.sentTo ? (
-            <p className="text-read">لك كود منحة من قبل. أرسلناه إلى {stored.sentTo}، واكتبه عند الدفع.</p>
+            <p className="mt-3 text-read text-muted-foreground">كودك في بريدك {stored.sentTo}، اكتبه عند الدفع.</p>
           ) : (
             topNote && <p className="text-read">{topNote}</p>
           )}
           {/* وصاحبُ الكود بعد يومها الأخير يُقال له إنّها أُغلقت — فلا يظنّ كودَه يُخصم عند الدفع */}
           {(stored.code || stored.sentTo) && !c.open && <p className="mt-2 text-read font-bold">{GRANT_CLOSED_AR}</p>}
-          {/* والعدّادُ والحدُّ والهديّةُ لمن له منحةٌ يستعملها — ومن نفدت عنه لا يُقال له «تنتهي بعد يومين» ولا «أهدِها» (٢٨ أكتوبر ٢٠٢٦) */}
-          {grantOn && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
-          {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
-          {grantOn && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
-          {/* وما يحصل عليه سطرٌ صغيرٌ تحت خطٍّ رفيع، بأيقونةٍ قبل كلّ بند — قرارُه (٢٧ أكتوبر ٢٠٢٦): «ضع أيقوناتٍ للمباشر وغيرها
-              في نفس السطر.. تكون عصريّة». وكلُّ بندٍ لا ينقسم بين سطرين على الهاتف */}
-          <p className="mx-auto mt-3 flex max-w-lg flex-wrap justify-center gap-x-4 gap-y-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">
-            {GRANT_GAINS_AR.map((g) => {
-              const Icon = GAIN_ICON[g.id];
-              return (
-                <span key={g.id} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                  <Icon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />{g.title}
-                </span>
-              );
-            })}
-          </p>
+          {/* والعدّادُ لمن له منحةٌ يستعملها — سطرٌ واحد، وآخرُ يومها في السطر فوقه */}
+          {grantOn && c.closesAt && <GrantCountdown closesAt={c.closesAt} compact className="mt-3" />}
         </Card>
 
 
@@ -607,8 +599,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           <p className="mt-2 text-read">
             {/* «لا تتعارض» قولٌ يُقاس: يُقال حين لكلِّ مقترحةٍ لقاءاتٌ معتمَدة، وإلّا فـ«تناسبك» وحدَها */}
             {/* «أرى الناس تستصعب شراء أربع دورات» — صاحب المنصّة (١٣ نوفمبر ٢٠٢٦). فيُقال: دورةٌ أوّلا، والكودُ يبقى لباقيها
-                حتى آخر يوم (`coursesLeft` في كلّ شراء). والحدُّ يُقال تحت العدّاد (`grantLimitAr`) */}
-            نقترح لك {coursesAr(suggested.length)} تناسبك{timedSuggested ? " ولا تتعارض مواعيدها" : ""}. ابدأ بالأولى، وكودك يبقى لك لباقيها بنفس الخصم{lastDayLong ? ` حتى ${lastDayLong}` : ""}.
+                حتى آخر يوم (`coursesLeft` في كلّ شراء). والحدُّ يُقال في سطر الترحيب (`grantWhyHereAr`) */}
+            نقترح لك {coursesAr(suggested.length)} تناسبك{timedSuggested ? " ولا تتعارض مواعيدها" : ""}. ابدأ بالأولى، وكودك يبقى لباقيها بنفس الخصم.
           </p>
         )}
 
@@ -694,7 +686,6 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               <>
                 <p className="mt-0.5 text-read text-muted-foreground">{GRANT_VALUE_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi> {GRANT_VALUE_PAID_AR}</p>
                 {/* وما يخسره إن تأخّر — أقوى ممّا يوفّره (٣١ أكتوبر ٢٠٢٦) */}
-                {lastDayShort && <p className="mt-0.5 text-read text-muted-foreground">{grantUntilAr(lastDayShort)}</p>}
                 {/* وما بقي له ضمن منحته — فلا يترك منها شيئا (قرارُه: «اختر ٤ دوراتٍ بحدٍّ أقصى») */}
                 <p className="mt-1 text-read font-bold text-gold-ink">{grantRemainingAr(chosen.length, max)}</p>
               </>
