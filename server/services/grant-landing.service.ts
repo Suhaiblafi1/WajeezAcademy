@@ -37,7 +37,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { AdvisorService } from './advisor.service'
 import { GRANT_HOLDS, GrantService } from './grant.service'
-import { GrantCoursesService } from './grant-courses.service'
+import { pageCourses } from './grant-scope.service'
 import { enqueueMail } from './outbox.service'
 import { renderMail } from './mail-template'
 import { mintShortLink } from './short-link.service'
@@ -86,14 +86,12 @@ const INFLUENCER_SELECT = { id: true, nameAr: true, code: true, commissionPercen
 export class GrantLandingService {
   private prisma: PrismaClient
   private grants: GrantService
-  private courses: GrantCoursesService
   private advisors: AdvisorService
   readonly slug: GrantSlug
   constructor(prisma: PrismaClient, slug: GrantSlug = MEMBER_GRANT_SLUG) {
     this.prisma = prisma
     this.slug = slug
     this.grants = new GrantService(prisma, slug)
-    this.courses = new GrantCoursesService(prisma)
     this.advisors = new AdvisorService(prisma)
   }
 
@@ -106,10 +104,11 @@ export class GrantLandingService {
     })
   }
 
-  /** صفحةُ حملة المؤثّرين: حالُها ودوراتُها، واسمُ المؤثّر إن كان كودُه في الرابط صحيحا — ونسبتُها ما يأخذه متابعُه هو */
+  /** صفحةُ حملة المؤثّرين: حالُها ودوراتُها، واسمُ المؤثّر إن كان كودُه في الرابط صحيحا — ودوراتُه هو إن اختيرت له،
+      ونسبتُها ما يأخذه متابعُه هو */
   async influencerView(raw: string | null | undefined, now = new Date()) {
     const found = await this.influencerByCode(raw)
-    const v = await this.view(now)
+    const v = await this.view(now, found?.id ?? null)
     return {
       influencer: found ? { nameAr: found.nameAr, code: found.code } : null, ...v,
       campaign: { ...v.campaign, percentOff: influencerPercentOff(v.campaign.percentOff, found?.percentOff) },
@@ -132,9 +131,13 @@ export class GrantLandingService {
     }
   }
 
-  /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين */
-  async view(now = new Date()) {
-    const [s, open] = await Promise.all([this.grants.settings(now), this.courses.openCourses(now)])
+  /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين.
+      ودوراتُها ما اختاره المديرُ للحملة، ولمؤثّرها في منحة المؤثّرين — وبلا اختيارٍ تلقائيّة (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`).
+      والقائمةُ للصفحة وحدَها: الكودُ يخصم على أيّ دورةٍ حتى حدّه */
+  async view(now = new Date(), influencerId: string | null = null) {
+    const [s, open] = await Promise.all([
+      this.grants.settings(now), pageCourses(this.prisma, this.slug, influencerId, now),
+    ])
     const [summaries, sessions] = await Promise.all([
       this.summaries(open.courses.map((c) => c.courseId)), this.sessions(open.courses.map((c) => c.cohortId)),
     ])
@@ -280,7 +283,7 @@ export class GrantLandingService {
       if (!(e instanceof AuthError) || !['grant_closed', 'grant_sold_out'].includes(e.code)) throw e
       reasonAr = e.message
     }
-    const v = await this.view(now)
+    const v = await this.view(now, credited?.id ?? null)
     return {
       ref: lead.id, grant, reasonAr,
       ...(forInfluencer ? { influencer: credited ? { nameAr: credited.nameAr, code: credited.code } : null } : {}),
@@ -342,10 +345,14 @@ export class GrantLandingService {
       هذا ثالثُه. والمفتاحُ رقمُ طلبه (`ref`) كما في `askAdvisor`: لا يعرفه إلّا متصفّحُه. ولا يُحفظ إلّا ما يُشترى اليوم
       في حملته، وبحدِّ دوراتها — فلا يكتب أحدٌ في ملفٍّ ما لا يُختار. */
   async savePicks(ref: string, courseIds: string[], now = new Date()) {
-    const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null }, select: { id: true, campaign: true } })
+    const lead = await this.prisma.lead.findFirst({
+      where: { id: ref, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null },
+      select: { id: true, campaign: true, influencerId: true, grantCode: { select: { influencerId: true } } },
+    })
     if (!lead) throw new AuthError('not_found', 'عبئ النموذج أولا', 404)
     const own = lead.campaign === this.slug ? this : new GrantLandingService(this.prisma, lead.campaign as GrantSlug)
-    const v = await own.view(now)
+    /* ودوراتُ مؤثّر كوده — أو من جاء بكوده إن لم يأخذ كودا */
+    const v = await own.view(now, lead.grantCode?.influencerId ?? lead.influencerId)
     const open = new Set(v.openCourses.map((c) => c.courseId))
     const picks = [...new Set(courseIds)].filter((id) => open.has(id)).slice(0, v.campaign.maxCourses)
     await this.prisma.lead.update({ where: { id: lead.id }, data: { grantPicks: picks, grantPicksAt: now } })

@@ -11,7 +11,9 @@
       مرّتين، ولا بكودٍ مأخوذ. وما سقط بعد الحسم يردّه قيدَ المراجعة بلا مؤثّرٍ معلَّق، فيُقبَل ثانيةً بالكود نفسِه.
    ⑤ والاعتذارُ يحسم الطلبَ ويصله سببُه، ولا حساب.
    ⑥ والطابورُ وقرارُه لحبّة `commerce.manage` وحدَها، الأوسعُ وصولا أوّلا، و«ما ينتظرك» يعدّ القائم.
-   ⑦ والدفعةُ الزائدةُ على رصيده تُردّ بخيارَيها، وتُسجَّل سلفةً بـ`advance` — في الأثر وفي بريده. */
+   ⑦ والدفعةُ الزائدةُ على رصيده تُردّ بخيارَيها، وتُسجَّل سلفةً بـ`advance` — في الأثر وفي بريده.
+   ⑧ والإضافةُ من الشاشة كالقبول (١٥ نوفمبر ٢٠٢٦): البريدُ لازم، والمؤرشفُ يُردّ قبل أن يُكتب شيء، والمدعوُّ تصله دعوةٌ
+      جديدة، وبريدُ الترحيب نفسُه بكوده ورابطه وشروطه على وجوه الحساب الثلاثة. */
 
 import { beforeAll, beforeEach, describe, expect as vexpect, it, vi } from 'vitest'
 import { plainExpect } from '../helpers/plain-expect'
@@ -35,6 +37,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { GrantService } from '../../services/grant.service'
 import { InfluencerService } from '../../services/influencer.service'
+import { InfluencerApplicationService } from '../../services/influencer-application.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 import { StaffInboxService } from '../../services/staff-inbox.service'
@@ -209,7 +212,7 @@ describe('④ القبول — خطوة واحدة', () => {
 
   it('⚠️ ولا يقبل بكود مأخوذ أو لا يصلح — ويبقى الطلب قائما', async () => {
     const taken = `TK${STAMP % 100000}`
-    await new InfluencerService(prisma).create({ nameAr: 'صاحب الكود', code: taken, commissionPercent: 15 }, bossId)
+    await new InfluencerService(prisma).create({ nameAr: 'صاحب الكود', code: taken, commissionPercent: 15, email: `infapp-taken-${STAMP}@test.local` }, bossId)
     const { reference } = (await submit(form())).json() as { reference: string }
     const row = await rowOf(reference)
     vexpect((await approve(row.id, taken.toLowerCase())).statusCode).toBe(409)
@@ -289,6 +292,86 @@ describe('⑥ لمن يملك القرار', () => {
     vexpect(item?.count).toBe(waiting)
     vexpect(item?.href).toBe('/admin/influencer-grant')
     vexpect((await inbox.forStaff(bossId, ['advisor.manage'])).map((i) => i.key)).not.toContain('influencer_applications')
+  })
+})
+
+/* ═══ والإضافةُ من الشاشة كقبول الطلب، والبريدُ لازم (١٥ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «Same + email required». والعلّةُ في رأس `influencer.service.ts` */
+describe('⑧ الإضافة من الشاشة كالقبول', () => {
+  const add = (payload: Record<string, unknown>) =>
+    app.inject({ method: 'POST', url: '/api/admin/influencers', headers: { cookie: bossCookie }, payload })
+  const invites = (userId: string) => prisma.passwordResetToken.count({ where: { userId, purpose: 'invite', usedAt: null } })
+
+  it('⚠️ بلا بريد ترد — ولا يكتب مؤثر', async () => {
+    const code = `NOMAIL${seq += 1}`
+    for (const payload of [{ nameAr: 'مؤثر بلا بريد', code, commissionPercent: 15 }, { nameAr: 'مؤثر بلا بريد', code, commissionPercent: 15, email: '' }]) {
+      vexpect((await add(payload)).statusCode, 'أضيف مؤثر بلا بريد').toBe(400)
+    }
+    await vexpect(new InfluencerService(prisma).create({ nameAr: 'مؤثر بلا بريد', code, commissionPercent: 15, email: ' ' }, bossId))
+      .rejects.toMatchObject({ code: 'email_required' })
+    vexpect(await prisma.influencer.count({ where: { code } })).toBe(0)
+  })
+
+  it('⚠️ بريد حساب مؤرشف يرد قبل أن يكتب شيء — وبريد مؤثر آخر', async () => {
+    const email = `infadd-archived-${STAMP}@test.local`
+    const u = await auth.register(email, 'Influence#12345', 'حساب مؤرشف')
+    await prisma.user.update({ where: { id: u.userId }, data: { status: 'archived' } })
+    const code = `ARCH${seq += 1}`
+    const res = await add({ nameAr: 'مؤثر مؤرشف', code, commissionPercent: 15, email })
+    vexpect(res.statusCode, res.body).toBe(409)
+    vexpect((res.json() as { error: { code: string; message_ar: string } }).error).toMatchObject({ code: 'archived' })
+    expect((res.json() as { error: { message_ar: string } }).error.message_ar).toContain('أعد تنشيطه من «المستخدمون» ثم أضف المؤثر')
+    vexpect(await prisma.influencer.count({ where: { code } }), 'كتب مؤثر لحساب مؤرشف').toBe(0)
+    vexpect(mailsTo(email)).toHaveLength(0)
+
+    const taken = `infadd-taken-${STAMP}@test.local`
+    vexpect((await add({ nameAr: 'مؤثر أول', code: `FIRST${seq += 1}`, commissionPercent: 15, email: taken })).statusCode).toBe(201)
+    const second = `SECOND${seq += 1}`
+    const again = await add({ nameAr: 'مؤثر ثان', code: second, commissionPercent: 15, email: taken })
+    vexpect(again.statusCode).toBe(409)
+    vexpect(await prisma.influencer.count({ where: { code: second } }), 'كتب مؤثر بحساب مؤثر آخر').toBe(0)
+  })
+
+  it('⚠️ بريد الترحيب بكوده ورابطه وعمولته وشروطه — على وجوه الحساب الثلاثة، والمدعو تصله دعوة جديدة', async () => {
+    const terms = influencerTermsAr({ ...(await new InfluencerApplicationService(prisma).deal()), commissionPercent: 17 })
+    const welcomeOf = (email: string) => mailsTo(email).find((m) => m.subject.includes('أضفناك'))
+    const check = (email: string, code: string) => {
+      const w = welcomeOf(email)
+      vexpect(w, `لم يصل بريد الترحيب ${email}`).toBeTruthy()
+      expect(w!.text).toContain(code)
+      expect(w!.text).toContain(`/grant/i/${code}`)
+      expect(w!.text).toContain('عمولتك 17%')
+      for (const t of terms) expect(w!.text).toContain(t)
+      return w!.text
+    }
+
+    /* حسابٌ جديد: دعوتُه في بريدٍ وحدَه، والترحيبُ يقول ذلك */
+    const fresh = `infadd-new-${STAMP}@test.local`
+    const newCode = `WNEW${seq += 1}`
+    const r1 = await add({ nameAr: 'مؤثر جديد', code: newCode, commissionPercent: 17, email: fresh })
+    vexpect(r1.statusCode, r1.body).toBe(201)
+    vexpect((r1.json() as { account: { created: boolean } }).account.created).toBe(true)
+    expect(check(fresh, newCode)).toContain('وصلك بريد آخر فيه رابط تفعيل حسابك')
+
+    /* حسابٌ قائمٌ لم يُفعَّل: دعوةٌ جديدةٌ في الترحيب نفسِه */
+    const invitedEmail = `infadd-invited-${STAMP}@test.local`
+    const inv = await auth.register(invitedEmail, 'Influence#12345', 'مدعو لم يفعل')
+    await prisma.user.update({ where: { id: inv.userId }, data: { status: 'invited' } })
+    const before = await invites(inv.userId)
+    const invCode = `WINV${seq += 1}`
+    vexpect((await add({ nameAr: 'مؤثر مدعو', code: invCode, commissionPercent: 17, email: invitedEmail })).statusCode).toBe(201)
+    vexpect(await invites(inv.userId), 'لم تصدر دعوة جديدة للحساب الذي لم يفعل').toBe(before + 1)
+    expect(check(invitedEmail, invCode)).toContain('/auth/reset?token=')
+
+    /* حسابٌ قائمٌ يدخله: إلى صفحته، بلا دعوة */
+    const activeEmail = `infadd-active-${STAMP}@test.local`
+    const act = await auth.register(activeEmail, 'Influence#12345', 'متعلم نشط')
+    const actCode = `WACT${seq += 1}`
+    vexpect((await add({ nameAr: 'مؤثر نشط', code: actCode, commissionPercent: 17, email: activeEmail })).statusCode).toBe(201)
+    vexpect(await invites(act.userId)).toBe(0)
+    const text = check(activeEmail, actCode)
+    expect(text).toContain('/influencer')
+    expect(text).not.toContain('/auth/reset')
   })
 })
 

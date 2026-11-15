@@ -4238,6 +4238,9 @@ model GrantCampaign {
   /// أوّلُ لحظةٍ لا يُعطى فيها كودٌ ولا يُستعمل — تُقرأ عند الاستعمال، فتمديدُها يمدّ كلَّ كود
   closesAt    DateTime?
   active      Boolean     @default(false)
+  /// دوراتُ الحملة التي اختارها المدير لصفحتها (١٥ نوفمبر ٢٠٢٦) — فارغةٌ: تلقائيّة (كلُّ دورةٍ تُعرض بشروط
+  /// `grant-courses.service.ts`). وبها: لا تُعرض إلّا هي. والكودُ يخصم على أيّ دورةٍ حتى حدّه في الحالين. والقاعدةُ في `grant-scope.ts`
+  courseIds   String[]    @default([])
   updatedBy   String?     @db.Uuid
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -4287,6 +4290,9 @@ model Influencer {
   /// حسابُه الذي يرى فيه مستحقّاته
   userId            String?  @unique @db.Uuid
   active            Boolean  @default(true)
+  /// دوراتُ صفحته من دورات «منحة مؤثرين وجيز» (١٥ نوفمبر ٢٠٢٦) — فارغةٌ: دوراتُ الحملة كلُّها. وبها: ما يقع منها في
+  /// قائمة الحملة (التقاطع)، فلا تزيد عليها — وإن لم يبقَ منها شيءٌ فقائمةُ الحملة كلُّها. والقاعدةُ في `grant-scope.ts`
+  courseIds         String[] @default([])
   createdBy         String?  @db.Uuid
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

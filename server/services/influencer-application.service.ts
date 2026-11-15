@@ -23,18 +23,14 @@
    · ولا يُقبَل طلبٌ بريدُه لحسابٍ مؤرشف: يُعاد تنشيطُه من «المستخدمون» أوّلا. */
 
 import type { Prisma, PrismaClient } from '@prisma/client'
-import { AuthError, AuthService } from './auth.service'
+import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { renderMail, type MailBlock } from './mail-template'
-import { notifyRole, publicSiteUrl, sendDirectEmail, type DirectMailStatus } from './notification.service'
-import { inviteLink } from './account-mail'
-import { GrantService } from './grant.service'
-import { InfluencerService, assertCodeFree } from './influencer.service'
+import { notifyRole, sendDirectEmail, type DirectMailStatus } from './notification.service'
+import { InfluencerService, assertCodeFree, influencerDeal, notifyInfluencerWelcome } from './influencer.service'
 import { ROLE_PERMISSIONS } from '../auth/permissions'
-import { MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
-import { INFLUENCER_GRANT_SLUG } from '../../src/application/commerce/grant'
 import {
-  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_COMMISSION_DEFAULT, influencerLink, normalizeInfluencerCode,
+  INFLUENCER_CODE_FORMAT_AR, normalizeInfluencerCode,
 } from '../../src/application/commerce/influencer'
 import {
   INFLUENCER_PLATFORMS, influencerReach, influencerTermsAr, type InfluencerAccount, type InfluencerDealView,
@@ -96,10 +92,9 @@ export class InfluencerApplicationService {
     this.prisma = prisma
   }
 
-  /** أرقامُ الاتّفاق ساعتَها — من إعدادات منحة المؤثّرين، والعمولةُ المقترحة */
+  /** أرقامُ الاتّفاق ساعتَها — من إعدادات منحة المؤثّرين، والعمولةُ المقترحة (`influencerDeal`، ويقرؤها بريدُ الترحيب أيضا) */
   async deal(): Promise<InfluencerDealView> {
-    const s = await new GrantService(this.prisma, INFLUENCER_GRANT_SLUG).settings()
-    return { percentOff: s.percentOff, maxCourses: s.maxCourses, commissionPercent: INFLUENCER_COMMISSION_DEFAULT, open: s.open }
+    return influencerDeal(this.prisma)
   }
 
   /** طلبٌ جديدٌ من الصفحة العامّة — يعود برقمه وبحال بريد استلامه */
@@ -210,17 +205,13 @@ export class InfluencerApplicationService {
     if (claimed.count === 0) throw new AuthError('decided', 'حسم هذا الطلب من قبل', 409)
 
     let influencerId: string | null = null
-    let account: { userId: string; created: boolean; inviteSent: boolean | null }
-    let inviteToken: string | null = null
+    let made: Awaited<ReturnType<InfluencerService['addWithAccount']>>
     try {
-      const made = await new InfluencerService(this.prisma).create(
+      /* والإضافةُ نفسُها التي في الشاشة (١٥ نوفمبر ٢٠٢٦): حسابُه، ودعوةٌ جديدةٌ لحسابٍ قائمٍ لم يُفعَّل */
+      made = await new InfluencerService(this.prisma).addWithAccount(
         { nameAr: app.fullName, code, commissionPercent: input.commissionPercent, email: app.email }, actorId,
       )
       influencerId = made.id
-      if (!made.account) throw new Error('لم يربط حساب المؤثر')
-      account = made.account
-      /* حسابٌ قائمٌ لم يدخله صاحبُه قطّ لا يُدَلّ على صفحته — لا كلمةَ له يدخل بها، فتصله دعوةٌ جديدة */
-      if (!account.created && existing?.status === 'invited') inviteToken = (await new AuthService(this.prisma).issueInvite(account.userId)).token
       await this.prisma.influencerApplication.update({ where: { id }, data: { influencerId } })
     } catch (e) {
       /* لا يبقى طلبٌ «مقبولا» بلا حساب، ولا مؤثّرٌ بكودٍ بلا صاحب: ما سقط بعد الحسم يردّه قيدَ المراجعة،
@@ -237,45 +228,14 @@ export class InfluencerApplicationService {
 
     await recordAudit(this.prisma, {
       actorId, action: 'influencer.application.approve', entityType: 'influencer_application', entityId: id,
-      meta: { reference: app.reference, influencerId, userId: account.userId, code, commissionPercent: input.commissionPercent, newAccount: account.created },
+      meta: { reference: app.reference, influencerId, userId: made.account.userId, code, commissionPercent: input.commissionPercent, newAccount: made.account.created },
     })
-
-    const terms = await this.deal()
-    const link = influencerLink(publicSiteUrl(), code)
-    const mail = await sendDirectEmail(this.prisma, {
-      to: app.email,
-      subject: 'قبلناك مؤثرا في منحة مؤثرين وجيز',
-      ...renderMail({
-        greetingName: app.fullName,
-        heading: 'أهلا بك في منحة مؤثرين وجيز',
-        preheader: `كودك ${code}`,
-        blocks: [
-          { kind: 'facts', rows: [
-            { label: 'كودك', value: code },
-            { label: 'رابطك', value: link },
-            { label: 'عمولتك', value: `${input.commissionPercent}% من سعر الدورات قبل الخصم` },
-            { label: 'رقم طلبك', value: app.reference },
-          ] },
-          ...(account.created
-            ? ([
-                { kind: 'p', text: 'وصلك بريد آخر فيه رابط تفعيل حسابك. فعله واختر كلمة مرورك، ثم يفتح حسابك على صفحة المؤثر.' },
-              ] satisfies MailBlock[])
-            : inviteToken
-              ? ([
-                  { kind: 'p', text: 'حسابك جاهز بدور المؤثر. فعله واختر كلمة مرورك من الرابط.' },
-                  { kind: 'cta', label: 'فعّل حسابك', href: inviteLink(inviteToken) },
-                  { kind: 'callout', text: `الرابط صالح ${MAIL_LINK_WINDOW_AR}. فإن انتهى فاستعمل «نسيت كلمة المرور» ببريدك هذا.` },
-                ] satisfies MailBlock[])
-              : ([
-                  { kind: 'p', text: 'أضفنا دور المؤثر إلى حسابك. ادخل بحسابك المعتاد تجد صفحة المؤثر.' },
-                  { kind: 'cta', label: 'افتح صفحتك', href: `${publicSiteUrl()}/influencer` },
-                ] satisfies MailBlock[])),
-          { kind: 'h', text: 'تذكير بالاتفاق' },
-          { kind: 'list', items: influencerTermsAr({ ...terms, commissionPercent: input.commissionPercent }) },
-        ],
-      }),
+    /* وبريدُ الترحيب نفسُه الذي يصل من يُضاف من الشاشة — بعنوان القبول ورقم طلبه */
+    const emailDelivery = await notifyInfluencerWelcome(this.prisma, {
+      to: app.email, nameAr: app.fullName, code, commissionPercent: input.commissionPercent, account: made.welcome,
+      subjectAr: 'قبلناك مؤثرا في منحة مؤثرين وجيز', reference: app.reference,
     })
-    return { influencerId, userId: account.userId, newAccount: account.created, inviteSent: account.inviteSent, emailDelivery: mail.status }
+    return { influencerId, userId: made.account.userId, newAccount: made.account.created, inviteSent: made.account.inviteSent, emailDelivery }
   }
 
   /** الاعتذار — وسببُه إن كُتب يصله في رسالته */

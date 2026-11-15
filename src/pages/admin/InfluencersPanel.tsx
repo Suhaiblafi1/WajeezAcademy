@@ -11,7 +11,10 @@
    فرايدي وجيز».
 
    وفوقها طلباتُ الانضمام من «انضم كمؤثر» (`InfluencerApplications.tsx`، ٣١ أكتوبر ٢٠٢٦): يُقبَل منها بكوده وعمولته
-   فيصير صفّا هنا. والدفعةُ الزائدةُ على رصيده تُعرض بخيارَيها — «سجلها سلفة» أو «عدل المبلغ» — لا تُمنع (`recordPayout`). */
+   فيصير صفّا هنا. والدفعةُ الزائدةُ على رصيده تُعرض بخيارَيها — «سجلها سلفة» أو «عدل المبلغ» — لا تُمنع (`recordPayout`).
+
+   ودوراتُه في تفاصيله (١٥ نوفمبر ٢٠٢٦، `GrantCourseChoice`): بعضُ دورات «منحة مؤثرين وجيز» تظهر في صفحته — والافتراضيُّ
+   دوراتُها كلُّها. وكودُ من جاء به يخصم على أيّ دورةٍ حتى حدّه. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
@@ -28,6 +31,7 @@ import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import InfluencerApplications from "./InfluencerApplications";
+import GrantCourseChoice from "./GrantCourseChoice";
 
 interface Totals { signups: number; codes: number; buyers: number; sales: number; earned: number; paid: number; balance: number }
 interface Influencer {
@@ -72,18 +76,21 @@ export default function InfluencersPanel() {
   const commission = Number(form.commission);
   const commissionOk = Number.isInteger(commission) && commission >= 0 && commission <= 100;
   const discount = discountOf(form.discount);
-  const canAdd = form.nameAr.trim().length >= 2 && code !== null && commissionOk && discount !== undefined;
+  /* والبريدُ لازم — لكلّ مؤثّرٍ حسابٌ وصفحة، ويصله بريدُ ترحيبٍ كمن قُبل طلبُه (١٥ نوفمبر ٢٠٢٦) */
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const canAdd = form.nameAr.trim().length >= 2 && code !== null && commissionOk && discount !== undefined && emailOk;
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const out = await apiPost<{ account: { created: boolean; inviteSent: boolean | null } | null }>("/api/admin/influencers", {
-        nameAr: form.nameAr.trim(), code, commissionPercent: commission, percentOff: discount, email: form.email.trim() || null,
+      const out = await apiPost<{ account: { created: boolean; inviteSent: boolean | null }; emailDelivery: string }>("/api/admin/influencers", {
+        nameAr: form.nameAr.trim(), code, commissionPercent: commission, percentOff: discount, email: form.email.trim(),
       });
-      toast(!out.account ? "أضيف المؤثر" : out.account.created
-        ? (out.account.inviteSent ? "أضيف المؤثر، ووصلته دعوة حسابه" : "أضيف المؤثر وأنشئ حسابه، ولم ترسل الدعوة. اطلب منه «نسيت كلمة المرور»")
-        : "أضيف المؤثر وربط بحسابه");
+      const welcome = out.emailDelivery === "sent" ? "، ووصلته رسالة بكوده" : "، ولم ترسل رسالة كوده";
+      toast(out.account.created
+        ? (out.account.inviteSent ? `أضيف المؤثر، ووصلته دعوة حسابه${welcome}` : "أضيف المؤثر وأنشئ حسابه، ولم ترسل الدعوة. اطلب منه «نسيت كلمة المرور»")
+        : `أضيف المؤثر وربط بحسابه${welcome}`);
       setForm({ nameAr: "", code: "", commission: String(INFLUENCER_COMMISSION_DEFAULT), discount: "", email: "" });
       await load();
     } catch (err) { toastError(errAr(err, "تعذر إضافة المؤثر")); }
@@ -113,7 +120,7 @@ export default function InfluencersPanel() {
           <input type="number" min={0} max={100} value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} placeholder="نسبة المنحة" className={staffControlCls} />
         </label>
         <label className="grid gap-1 text-read">بريده (لحسابه)
-          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr" placeholder="اختياري" className={staffControlCls} />
+          <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr" className={staffControlCls} />
         </label>
         <Button type="submit" disabled={busy || !canAdd}>أضف المؤثر</Button>
         {form.code.trim() !== "" && code === null && <p className="w-full text-read text-danger-ink">{INFLUENCER_CODE_FORMAT_AR}</p>}
@@ -236,6 +243,8 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
             <Button size="sm" disabled={busy || codeNorm === null || codeNorm === x.code} onClick={() => setConfirm("code")}>غير الكود</Button>
             <p className="w-full text-read text-muted-foreground">{codeNorm === null && newCode.trim() !== "" ? INFLUENCER_CODE_FORMAT_AR : INFLUENCER_CODE_KEEPS_AR}</p>
           </div>
+
+          <GrantCourseChoice endpoint={`/api/admin/influencers/${x.id}/courses`} forInfluencer />
 
           {!x.email && (
             <div className="flex flex-wrap items-end gap-3">

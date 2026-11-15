@@ -66,7 +66,7 @@ async function pay(userId: string, cohortIds: string[], code: string) {
   return out.orderId
 }
 async function addInfluencer(code: string, commissionPercent = 15) {
-  return (await influencers.create({ nameAr: `مؤثر ${code}`, code, commissionPercent }, ownerId)).id
+  return (await influencers.create({ nameAr: `مؤثر ${code}`, code, commissionPercent, email: `${code.toLowerCase()}-inf-${STAMP}@test.local` }, ownerId)).id
 }
 
 beforeAll(async () => {
@@ -104,9 +104,9 @@ describe('② كود المؤثر لازم', () => {
       await expect(landing.apply(p)).rejects.toMatchObject({ code: 'bad_influencer_code' })
       expect(await prisma.lead.count({ where: { email: p.email } }), 'حفظ من جاء بلا كود صحيح').toBe(0)
     }
-    await expect(influencers.create({ nameAr: 'آخر', code: 'stopped', commissionPercent: 15 }, ownerId))
+    await expect(influencers.create({ nameAr: 'آخر', code: 'stopped', commissionPercent: 15, email: `other-${STAMP}@test.local` }, ownerId))
       .rejects.toMatchObject({ code: 'code_taken' })
-    await expect(influencers.create({ nameAr: 'آخر', code: 'a b', commissionPercent: 15 }, ownerId))
+    await expect(influencers.create({ nameAr: 'آخر', code: 'a b', commissionPercent: 15, email: `other-${STAMP}@test.local` }, ownerId))
       .rejects.toMatchObject({ code: 'bad_code' })
   })
 })

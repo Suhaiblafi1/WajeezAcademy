@@ -34,7 +34,7 @@ import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
-import { BLACK_FRIDAY_GRANT_NAME_AR, grantClosesAt, grantLastDay, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH } from "@/application/commerce/grant";
+import { BLACK_FRIDAY_GRANT_NAME_AR, grantClosesAt, grantLastDay, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
 import { staffControlCls } from "@/components/FormKit";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -63,6 +63,8 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
   const forBlackFriday = variant === "blackfriday";
   const api = forInfluencer ? "/api/admin/influencer-grant" : forOpen ? "/api/admin/open-grant" : forBlackFriday ? "/api/admin/black-friday-grant" : "/api/admin/member-grant";
   const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : forOpen ? OPEN_GRANT_NAME_AR : forBlackFriday ? BLACK_FRIDAY_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  /* اسمُ الحملة القصير — لمن عبّأ نموذجَها ولدوراتها (`GrantKind`) */
+  const grantKind: GrantKind = forInfluencer ? "influencer" : forOpen ? "open" : forBlackFriday ? "blackfriday" : "member";
   const [commissionPct, setCommissionPct] = useState(0);
   const [s, setS] = useState<Settings | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
@@ -188,9 +190,9 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
 
       {/* ومنحةُ المؤثرين لها إحصاءاتُها ومن عبّأ نموذجَها أيضا، تحت مؤثّريها (٣ نوفمبر ٢٠٢٦) */}
       {(forInfluencer || forBlackFriday) && <InfluencersPanel />}
-      <GrantRegistrants grant={forInfluencer ? "influencer" : forOpen ? "open" : forBlackFriday ? "blackfriday" : "member"} />
+      <GrantRegistrants grant={grantKind} />
 
-      <GrantCourses percentOff={pctOk ? pctNum : null} />
+      <GrantCourses grant={grantKind} percentOff={pctOk ? pctNum : null} />
 
       <h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة {pctOk ? `${pctNum}%` : "—"}</h2>
       <p className="mt-1 text-read text-muted-foreground">

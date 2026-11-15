@@ -3,8 +3,12 @@
    قراراتُ صاحب المنصّة: «اجعل الافتراضيَّ كلَّ الدورات المفعّلة ولها مدرّبٌ ولها شعبةٌ مفتوحةٌ للفصل القادم
    القريب»، ثمّ «ألم نتّفق أن يظهر له دوراتٌ فقط» — فحُذفت «اقتراحاتُ المنحة» التي كانت هنا، وبقيت الدوراتُ
    التي يختار منها صاحبُ المنحة: بفصلها، ولكلٍّ يومُ بدئها وسعرُها وسعرُها بالمنحة **بالنسبة التي في خانة
-   الإعدادات** ومقاعدُها. ولا تُعدَّل من هنا: تتحدّث وحدَها حين تُفتح شعبةٌ أو تُغلق. والعلّةُ في
-   `server/services/grant-courses.service.ts`. */
+   الإعدادات** ومقاعدُها. وتتحدّث وحدَها حين تُفتح شعبةٌ أو تُغلق. والعلّةُ في
+   `server/services/grant-courses.service.ts`.
+
+   ═══ ولكلّ حملةٍ دوراتُها يختارها المدير (١٥ نوفمبر ٢٠٢٦) ═══
+   فوق القائمة اختيارُها (`GrantCourseChoice`): «تلقائي» كما كانت، أو دوراتٌ بعينها تظهر وحدَها — والكودُ يخصم على أيّ
+   دورةٍ حتى حدّه. والقائمةُ تحته ما يظهر في صفحة الحملة الآن، وتُقرأ ثانيةً بعد الحفظ. */
 
 import { useEffect, useMemo, useState } from "react";
 import { apiGet } from "@/services/api";
@@ -16,31 +20,36 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { Card } from "@/components/ui/Surface";
+import type { GrantKind } from "@/application/commerce/grant";
+import GrantCourseChoice from "./GrantCourseChoice";
 
 interface OpenCourse { courseId: string; courseTitleAr: string; price: number; currency: string; startsAt: string | null; seatsLeft: number | null }
 
 /** المقاعدُ الباقيةُ بصيغة عددها — والمثنّى بلا رقم */
 const seatsLeftAr = (n: number) => (n === 2 ? "بقي مقعدان" : `بقي ${countAr(n, { one: "مقعد", two: "مقعدان", few: "مقاعد", many: "مقعدا" })}`);
 
-export default function GrantCourses({ percentOff }: { percentOff: number | null }) {
+export default function GrantCourses({ grant, percentOff }: { grant: GrantKind; percentOff: number | null }) {
   const [open, setOpen] = useState<OpenCourse[]>([]);
   const [termAr, setTermAr] = useState<string | null>(null);
   /* دوراتُ المنحة تنمو بنموّ الكتالوج — فيُبحث فيها ويُقلَّب */
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const shown = useMemo(() => paginate(open.filter((c) => matchesQuery(q, [c.courseTitleAr])), page, 25), [open, q, page]);
+  /* ويُقرأ ثانيةً بعد حفظ الاختيار — فيرى ما صار يظهر */
+  const [reload, setReload] = useState(0);
   useEffect(() => {
-    apiGet<{ termAr: string | null; courses: OpenCourse[] }>("/api/admin/member-grant/open-courses")
+    apiGet<{ termAr: string | null; courses: OpenCourse[] }>(`/api/admin/member-grant/open-courses?grant=${grant}`)
       .then((r) => { setOpen(r.courses); setTermAr(r.termAr); })
       .catch(() => setOpen([]));
-  }, []);
+  }, [grant, reload]);
 
   return (
     <>
       <h2 className="mt-6 text-lg font-black">دورات المنحة ({open.length})</h2>
       <p className="mt-1 text-read text-muted-foreground">
-        {termAr ? `${termAr}: ` : ""}كل دورة منشورة لها مدرب منشور وشعبة مفتوحة للتسجيل. منها يختار من يعبئ النموذج، وتتحدث وحدها حين تفتح شعبة أو تغلق.
+        {termAr ? `${termAr}: ` : ""}كل دورة منشورة لها مدرب منشور وشعبة مفتوحة للتسجيل، من الدورات التي تختارها هنا. منها يختار من يعبئ النموذج، وتتحدث وحدها حين تفتح شعبة أو تغلق.
       </p>
+      <GrantCourseChoice endpoint={`/api/admin/grant-courses/${grant}`} onSaved={() => setReload((n) => n + 1)} />
       <Card className="mt-3">
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={shown} placeholder="ابحث باسم الدورة" unit="دورة" />
         {shown.rows.length === 0 ? (

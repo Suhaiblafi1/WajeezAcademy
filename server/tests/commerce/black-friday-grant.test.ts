@@ -11,7 +11,9 @@
    ⑤ **والكودُ يتغيّر ورابطُه القديمُ يعمل** — والقديمُ لا يأخذه مؤثّرٌ غيرُه، ويعود إلى صاحبه إن أراده.
    ⑥ **ومنحةٌ واحدةٌ لكلّ متعلّم على الحملات الأربع.**
    ⑦ **والمتابعةُ والتذكيرُ كمنحة المؤثّرين** — حالةٌ تسمّيها، وتذكيرٌ بنهايتها يعيد إلى رابط مؤثّره فيها.
-   ⑧ **ورابطُ صاحب المنصّة مزروعٌ بالترحيل** — SUHAIB بسبعين وبلا عمولة وبلا حساب. */
+   ⑧ **ورابطُ صاحب المنصّة مزروعٌ بالترحيل** — SUHAIB بسبعين وبلا عمولة وبلا حساب.
+   ⑨ **ودوراتُ صفحتها بقائمتها هي** (#941): دوراتُ المؤثّر فيها قائمتُه داخلَ قائمة بلاك فرايدي لا قائمةِ منحة المؤثّرين،
+      وإن لم يقع منها فيها شيءٌ فقائمتُها كلُّها. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -22,6 +24,7 @@ import { GrantService } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
 import { InfluencerService } from '../../services/influencer.service'
 import { recordGrantVisit } from '../../services/grant-visit.service'
+import { campaignScope, influencerScope } from '../../services/grant-scope.service'
 import { openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 import {
@@ -70,8 +73,10 @@ async function pay(userId: string, cohortIds: string[], code: string) {
   await commerce.payOrder(out.orderId, userId, `bf-${out.orderId}`)
   return out.orderId
 }
+/* والبريدُ لازمٌ في الإضافة — لكلّ مؤثّرٍ حسابٌ وصفحة (#941، ١٥ نوفمبر ٢٠٢٦) */
+const infEmail = (code: string) => `${code.toLowerCase()}-bf-${STAMP}@test.local`
 async function addInfluencer(code: string, percentOff: number | null = null, commissionPercent = 15) {
-  return (await influencers.create({ nameAr: `مؤثر ${code}`, code, commissionPercent, percentOff }, ownerId)).id
+  return (await influencers.create({ nameAr: `مؤثر ${code}`, code, commissionPercent, percentOff, email: infEmail(code) }, ownerId)).id
 }
 
 beforeAll(async () => {
@@ -187,7 +192,7 @@ describe('④ خصم المؤثر في منحة المؤثرين أيضا', () =
     for (const percentOff of [101, -1, 12.5]) {
       await expect(influencers.update(id, { percentOff }, ownerId)).rejects.toMatchObject({ code: 'bad_discount' })
     }
-    await expect(influencers.create({ nameAr: 'خطأ', code: 'BADPCT2', commissionPercent: 15, percentOff: 120 }, ownerId))
+    await expect(influencers.create({ nameAr: 'خطأ', code: 'BADPCT2', commissionPercent: 15, percentOff: 120, email: infEmail('BADPCT2') }, ownerId))
       .rejects.toMatchObject({ code: 'bad_discount' })
   })
 })
@@ -314,6 +319,30 @@ describe('⑧ رابط صاحب المنصة مزروع بالترحيل', () =>
       expect(v.campaign.percentOff, 'رابطه لا يقول سبعين').toBe(70)
     } finally {
       await bf.update({ percentOff: 70 }, ownerId)
+    }
+  })
+})
+
+describe('⑨ دورات صفحتها بقائمتها هي', () => {
+  it('⚠️ دورات المؤثر فيها قائمته داخل قائمة بلاك فرايدي — وإن لم يقع منها شيء فقائمتها كلها', async () => {
+    const [a, b, c] = [nextCourse(), nextCourse(), nextCourse()]
+    const sorted = (x: ReadonlySet<string> | null) => (x ? [...x].sort() : null)
+    const infCamp = (await infGrant.settings()).id
+    const bfCamp = (await bf.settings()).id
+    const infBefore = (await prisma.grantCampaign.findUniqueOrThrow({ where: { id: infCamp } })).courseIds
+    try {
+      await prisma.grantCampaign.update({ where: { id: bfCamp }, data: { courseIds: [a, b] } })
+      await prisma.grantCampaign.update({ where: { id: infCamp }, data: { courseIds: [] } })
+      const id = await addInfluencer('BFSCOPE')
+      await prisma.influencer.update({ where: { id }, data: { courseIds: [a, c] } })
+      expect(sorted(await influencerScope(prisma, id, BLACK_FRIDAY_GRANT_SLUG)), 'خرج المؤثر عن قائمة بلاك فرايدي').toEqual([a])
+      expect(sorted(await influencerScope(prisma, id, INFLUENCER_GRANT_SLUG)), 'منحة المؤثرين تغيرت').toEqual([a, c].sort())
+      await prisma.influencer.update({ where: { id }, data: { courseIds: [c] } })
+      expect(sorted(await influencerScope(prisma, id, BLACK_FRIDAY_GRANT_SLUG)), 'لم يرجع إلى قائمتها كلها')
+        .toEqual(sorted(await campaignScope(prisma, BLACK_FRIDAY_GRANT_SLUG)))
+    } finally {
+      await prisma.grantCampaign.update({ where: { id: bfCamp }, data: { courseIds: [] } })
+      await prisma.grantCampaign.update({ where: { id: infCamp }, data: { courseIds: infBefore } })
     }
   })
 })
