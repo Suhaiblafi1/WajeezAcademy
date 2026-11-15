@@ -18,6 +18,7 @@ import { registerAdvisorApplicationRoutes } from './routes/advisor-applications.
 import { registerAdminAdvisorPayoutRoutes } from './routes/admin-advisor-payouts.routes'
 import { registerAdminGrantRoutes } from './routes/admin-grant.routes'
 import { registerPublicGrantRoutes } from './routes/public-grant.routes'
+import { registerPartnerGrantRoutes } from './routes/partner-grant.routes'
 import { registerUnsubscribeRoutes } from './routes/unsubscribe.routes'
 import { registerInfluencerRoutes } from './routes/influencer.routes'
 import { registerInfluencerApplicationRoutes } from './routes/influencer-applications.routes'
@@ -312,6 +313,8 @@ export async function buildApp(prisma: PrismaClient) {
   registerAdminAdvisorPayoutRoutes(app, prisma)
   registerAdminGrantRoutes(app, prisma)
   registerPublicGrantRoutes(app, prisma)
+  /* منحُ الشركاء — الجامعاتُ والشركات (١٥ نوفمبر ٢٠٢٦، `partner-grant.service.ts`) */
+  registerPartnerGrantRoutes(app, prisma)
   registerUnsubscribeRoutes(app, prisma)
   registerInfluencerRoutes(app, prisma)
   registerInfluencerApplicationRoutes(app, prisma)

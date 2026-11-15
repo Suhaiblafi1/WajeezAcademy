@@ -51,7 +51,8 @@ import {
   type GrantCourseSummary,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
-import { GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, isInfluencerGrant, type GrantSlug } from '../../src/application/commerce/grant'
+import { GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
+import { PARTNER_SLUG_PREFIX } from '../../src/application/commerce/partner-grant'
 import { INFLUENCER_CODE_BAD_AR, influencerGrantPath, influencerLink, influencerPercentOff, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
 import { influencerCodeWhere } from './influencer.service'
 import { shortLinkPath } from '../../src/application/links/short-link'
@@ -77,7 +78,7 @@ export interface GrantApplyInput {
 const OPEN_CASE = { notIn: ['closed', 'enrolled', 'not_interested'] }
 
 /** وجهةُ الهديّة لكلّ حملةٍ بلا مؤثّر — ومنحةُ المؤثّرين برابط مؤثّرها (`influencerView`) */
-const SHARE_PATH: Partial<Record<GrantSlug, string>> = { [MEMBER_GRANT_SLUG]: GRANT_SHARE_PATH, [OPEN_GRANT_SLUG]: OPEN_GRANT_SHARE_PATH }
+const SHARE_PATH: Partial<Record<CampaignSlug, string>> = { [MEMBER_GRANT_SLUG]: GRANT_SHARE_PATH, [OPEN_GRANT_SLUG]: OPEN_GRANT_SHARE_PATH }
 /** غرضُ رابط الهديّة القصير — به يُعرف صفُّه فيُعاد ولا يُصنع ثانية */
 const GRANT_SHARE_PURPOSE = 'grant.share'
 /** ما يُقرأ من المؤثّر في النموذج — وخصمُه يُكتب في كوده (`grant.service.ts#issue`) */
@@ -87,12 +88,19 @@ export class GrantLandingService {
   private prisma: PrismaClient
   private grants: GrantService
   private advisors: AdvisorService
-  readonly slug: GrantSlug
-  constructor(prisma: PrismaClient, slug: GrantSlug = MEMBER_GRANT_SLUG) {
+  /** والصفحةُ بالخدمة نفسِها لمنحة الشريك أيضا (`partner-<رابطه>`، ١٥ نوفمبر ٢٠٢٦): `view` و`savePicks` وحدَهما — نموذجُها
+      بريدُ الجامعة لا هذا النموذج (`partner-grant.service.ts`) */
+  readonly slug: CampaignSlug
+  constructor(prisma: PrismaClient, slug: CampaignSlug = MEMBER_GRANT_SLUG) {
     this.prisma = prisma
     this.slug = slug
     this.grants = new GrantService(prisma, slug)
     this.advisors = new AdvisorService(prisma)
+  }
+
+  /** معرّفُ الحملة في أبواب النموذج والمؤثّر — وهي للحملات الأربع وحدَها، فمنحةُ الشريك لا تمرّ بها */
+  private get formSlug(): GrantSlug {
+    return this.slug as GrantSlug
   }
 
   /** المؤثّرُ النشطُ بكوده — أو بكودٍ كان له، فرابطُه القديمُ يعمل ويُقال كودُه اليوم (١٥ نوفمبر ٢٠٢٦) — أو لا أحد */
@@ -113,7 +121,7 @@ export class GrantLandingService {
       influencer: found ? { nameAr: found.nameAr, code: found.code } : null, ...v,
       campaign: { ...v.campaign, percentOff: influencerPercentOff(v.campaign.percentOff, found?.percentOff) },
       /* وهديّتُها برابط مؤثّرها في حملتها — قصيرا كهديّة «منحة وجيز» */
-      sharePath: found ? await this.shareLink(`${influencerGrantPath(this.slug)}/${found.code}`) : null,
+      sharePath: found ? await this.shareLink(`${influencerGrantPath(this.formSlug)}/${found.code}`) : null,
     }
   }
 
@@ -232,7 +240,7 @@ export class GrantLandingService {
       },
     })
     if (input.visitorId) {
-      await linkGrantVisit(this.prisma, this.slug, input.visitorId, lead.id, { page: pageTouch, first: firstTouch, influencerCode: named?.code ?? null }, now)
+      await linkGrantVisit(this.prisma, this.formSlug, input.visitorId, lead.id, { page: pageTouch, first: firstTouch, influencerCode: named?.code ?? null }, now)
     }
     if (!had) {
       await recordAudit(this.prisma, {
@@ -346,11 +354,12 @@ export class GrantLandingService {
       في حملته، وبحدِّ دوراتها — فلا يكتب أحدٌ في ملفٍّ ما لا يُختار. */
   async savePicks(ref: string, courseIds: string[], now = new Date()) {
     const lead = await this.prisma.lead.findFirst({
-      where: { id: ref, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null },
+      /* ومن أكّد بريدَه في منحة شريكٍ يحفظ ما اختاره كذلك — فيراه المستشارُ في ملفّه (١٥ نوفمبر ٢٠٢٦) */
+      where: { id: ref, OR: [{ campaign: { in: [...GRANT_SLUGS] } }, { campaign: { startsWith: PARTNER_SLUG_PREFIX } }], erasedAt: null },
       select: { id: true, campaign: true, influencerId: true, grantCode: { select: { influencerId: true } } },
     })
     if (!lead) throw new AuthError('not_found', 'عبئ النموذج أولا', 404)
-    const own = lead.campaign === this.slug ? this : new GrantLandingService(this.prisma, lead.campaign as GrantSlug)
+    const own = lead.campaign === this.slug ? this : new GrantLandingService(this.prisma, lead.campaign as CampaignSlug)
     /* ودوراتُ مؤثّر كوده — أو من جاء بكوده إن لم يأخذ كودا */
     const v = await own.view(now, lead.grantCode?.influencerId ?? lead.influencerId)
     const open = new Set(v.openCourses.map((c) => c.courseId))
@@ -385,10 +394,11 @@ export class GrantLandingService {
      ولا «عضو» ولا «مستخدم»: «قرّاءُ وجيز» (قرارُه في اليوم نفسِه). ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
   private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
     /* وصاحبُ «منحة وجيز العامة» يعود إلى صفحتها هي — فيها نسبتُها ودوراتُها (`grantPagePath`) */
-    const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode, this.slug) : `${publicSiteUrl()}${grantPagePath(this.slug)}`
+    const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode, this.formSlug) : `${publicSiteUrl()}${grantPagePath(this.slug)}`
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
     const member = this.slug === MEMBER_GRANT_SLUG
-    const { nameAr } = GRANT_CAMPAIGNS[this.slug]
+    /* والنموذجُ للحملات الأربع وحدَها — منحةُ الشريك لا تمرّ بـ`apply` */
+    const { nameAr } = GRANT_CAMPAIGNS[this.formSlug]
     await enqueueMail(this.prisma, {
       to, purpose: 'grant.code',
       subject: `كود ${nameAr} الخاص بك`,

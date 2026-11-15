@@ -246,6 +246,10 @@ export const allSections: AdminNavSection[] = [
       { to: "/admin/black-friday-grant", label: "بلاك فرايدي وجيز", tab: "بلاك فرايدي", icon: Megaphone, need: "commerce.manage",
         inTab: "/admin/member-grant",
         descAr: "نسبة بلاك فرايدي وعددها وآخر يوم لها، وروابط المؤثرين فيها" },
+      /* «الشركاء» (١٥ نوفمبر ٢٠٢٦): جامعاتٌ وشركاتٌ بمنحةٍ لكلٍّ منها — صفحتُها وشعارُها ونطاقُ بريدها ودوراتُها ومن أكّد بريدَه */
+      { to: "/admin/partner-grants", label: "منح الشركاء", tab: "الشركاء", icon: Handshake, need: "commerce.manage",
+        inTab: "/admin/member-grant",
+        descAr: "الجامعات والشركات الشريكة: منحة كل شريك وشعاره ونطاق بريده ودوراته ومن أكد بريده" },
       { to: "/admin/reports", label: "التقارير والتصدير", tab: "التقارير", icon: BarChart3, need: "reports.view",
         descAr: "أرقامُ المنصّة مفصَّلةً، وتصديرُها إلى ملفّ" },
     ],

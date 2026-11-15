@@ -23,7 +23,7 @@ function copy(url: string) {
 export default function GrantSwitcher({ current }: { current: GrantVariant }) {
   const origin = typeof window === "undefined" ? "" : window.location.origin;
   return (
-    <nav aria-label="المنح" className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <nav aria-label="المنح" className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
       {GRANT_SCREENS.map((g) => {
         const on = g.variant === current;
         const url = g.publicPath && `${origin}${g.publicPath}`;
@@ -45,7 +45,7 @@ export default function GrantSwitcher({ current }: { current: GrantVariant }) {
                 <Button size="sm" tone="ghost" icon={Copy} className="shrink-0" onClick={() => copy(url)}>انسخ</Button>
               </div>
             ) : (
-              <p className="text-read text-muted-foreground">لكل مؤثر رابطه، وهو في قائمة المؤثرين.</p>
+              <p className="text-read text-muted-foreground">{g.noteAr ?? "لكل مؤثر رابطه، وهو في قائمة المؤثرين."}</p>
             )}
           </Card>
         );

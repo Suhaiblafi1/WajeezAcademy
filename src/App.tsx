@@ -27,6 +27,7 @@ const SkillCheck = lazy(() => import('./pages/SkillCheck'))
 const Mirror = lazy(() => import('./pages/Mirror'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
 const MemberGrantPage = lazy(() => import('./pages/MemberGrantPage'))
+const PartnerGrantPage = lazy(() => import('./pages/PartnerGrantPage'))
 const InfluencerHome = lazy(() => import('./pages/InfluencerHome'))
 const EndorsementLetter = lazy(() => import('./pages/EndorsementLetter'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
@@ -79,6 +80,7 @@ const AdminTrainerDepartures = lazy(() => import('./pages/admin/TrainerDeparture
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
 const AdminAdvisorPayouts = lazy(() => import('./pages/admin/AdvisorPayouts'))
 const AdminMemberGrant = lazy(() => import('./pages/admin/MemberGrant'))
+const AdminPartnerGrants = lazy(() => import('./pages/admin/PartnerGrants'))
 const AdminTrainerRun = lazy(() => import('./pages/admin/TrainerRun'))
 const AdminTrainerContracts = lazy(() => import('./pages/admin/TrainerContracts'))
 const AdminPendingPlans = lazy(() => import('./pages/admin/PendingPlans'))
@@ -224,6 +226,9 @@ export default function App() {
           <Route path="/grant/bf" element={<MemberGrantPage variant="blackfriday" />} />
           <Route path="/grant/bf/:code" element={<MemberGrantPage variant="blackfriday" />} />
           <Route path="/grant/bf/:code/build" element={<MemberGrantPage variant="blackfriday" />} />
+          {/* منحُ الشركاء — صفحةٌ لكلّ جامعةٍ أو شركة، ورابطُ تأكيد البريد (١٥ نوفمبر ٢٠٢٦، `partner-grant.ts`) */}
+          <Route path="/grant/p/:slug" element={<PartnerGrantPage />} />
+          <Route path="/grant/p/:slug/confirm" element={<PartnerGrantPage />} />
           {/* مسار يبدأ بدورة واحدة — «تفاصيل الدورة» تفتح هذه لا صفحة المسار كاملا */}
           <Route path="/build/:courseId" element={<CoursePathPage />} />
           <Route path="/stories" element={<StoriesPage />} />
@@ -430,6 +435,7 @@ export default function App() {
             <Route path="/admin/influencer-grant" element={<AdminMemberGrant variant="influencer" />} />
             <Route path="/admin/open-grant" element={<AdminMemberGrant variant="open" />} />
             <Route path="/admin/black-friday-grant" element={<AdminMemberGrant variant="blackfriday" />} />
+            <Route path="/admin/partner-grants" element={<AdminPartnerGrants />} />
             <Route path="/admin/audit" element={<AdminAuditLog />} />
             <Route path="/admin/system-health" element={<AdminSystemHealth />} />
             <Route path="/admin/reports" element={<AdminReports />} />

@@ -247,7 +247,7 @@ export function newStorageKey(): string {
 export type StorageOwnerKind =
   | 'trainer_document' | 'contract_document' | 'cv' | 'recording' | 'material' | 'submission'
   | 'assessment_response' | 'trainer_photo' | 'avatar' | 'cohort_file'
-  | 'marketing_photo' | 'poster'
+  | 'marketing_photo' | 'poster' | 'partner_logo'
 
 export interface StorageOwner {
   kind: StorageOwnerKind
@@ -398,6 +398,15 @@ export async function resolveStorageOwner(
   const poster = await prisma.trainerPoster.findUnique({ where: { storageKey }, select: { id: true } })
   if (poster) return { kind: 'poster', maxBytes: MAX_MARKETING_IMAGE_BYTES }
 
+  /* ═══ والثاني عشر: شعارُ شريك المنحة (١٥ نوفمبر ٢٠٢٦) ═══
+
+     يرفعه المديرُ من «الشركاء»، فيُكتب مفتاحُه في `logoPendingKey` قبل الرابط، ويصير `logoKey` حين يكتمل
+     (`partner-grant.service.ts`). صورةٌ تُسأل عنها بايتاتُها، وسقفُها سقفُ الصورة الشخصيّة: شعارٌ في رأس صفحة. */
+  const logo = await prisma.grantCampaign.findFirst({
+    where: { OR: [{ logoPendingKey: storageKey }, { logoKey: storageKey }] }, select: { id: true },
+  })
+  if (logo) return { kind: 'partner_logo', maxBytes: MAX_PHOTO_BYTES }
+
   return null
 }
 
@@ -433,7 +442,7 @@ export function sniffImageMime(buffer: Buffer): string | null {
 
 /** الأنواعُ التي لا يُقبل فيها إلّا ما ثبت أنّه صورة */
 export function kindRequiresImage(kind: StorageOwnerKind): boolean {
-  return kind === 'trainer_photo' || kind === 'avatar' || kind === 'marketing_photo' || kind === 'poster'
+  return kind === 'trainer_photo' || kind === 'avatar' || kind === 'marketing_photo' || kind === 'poster' || kind === 'partner_logo'
 }
 
 /* الحجمُ يبقى في سجلّ وثيقة المتقدّم — تقرؤه شاشةُ المراجعة. والبايتاتُ

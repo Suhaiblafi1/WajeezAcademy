@@ -182,6 +182,12 @@ const PHRASES: Record<string, string> = {
   'coupon.grant_pathway_remove': 'حذف مسار منحة',
   'coupon.grant_apply': 'تعبئة زائر نموذج المنحة',
   'coupon.grant_claim': 'أخذ صاحب حساب كود منحته ببريد النموذج',
+  /* ومنحُ الشركاء — جامعاتٌ وشركات (١٥ نوفمبر ٢٠٢٦، `partner-grant.service.ts`) */
+  'coupon.partner_create': 'إضافة شريك لمنح الشركاء',
+  'coupon.partner_update': 'تعديل شريك أو منحته أو إيقافها',
+  'coupon.partner_logo': 'رفع شعار شريك أو إزالته',
+  'coupon.partner_link': 'طلب رابط تأكيد بريد في منحة شريك',
+  'coupon.partner_verify': 'تأكيد بريد في منحة شريك',
   'influencer.create': 'إضافة مؤثر لمنحة المؤثرين',
   'influencer.update': 'تعديل مؤثر أو عمولته أو إيقافه',
   'influencer.discount.set': 'تغيير خصم متابعي مؤثر',

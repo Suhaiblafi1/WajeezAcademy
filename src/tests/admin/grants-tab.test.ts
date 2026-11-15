@@ -12,8 +12,8 @@ import { GRANT_SCREENS } from '@/pages/admin/grant-screens'
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const MONEY = allSections.find((s) => s.title === 'المال')!
-/* و«بلاك فرايدي وجيز» رابعتُها (١٥ نوفمبر ٢٠٢٦) */
-const GRANTS = ['/admin/member-grant', '/admin/influencer-grant', '/admin/open-grant', '/admin/black-friday-grant']
+/* و«بلاك فرايدي وجيز» رابعتُها (١٥ نوفمبر ٢٠٢٦)، و«منح الشركاء» خامستُها (١٥ نوفمبر ٢٠٢٦) */
+const GRANTS = ['/admin/member-grant', '/admin/influencer-grant', '/admin/open-grant', '/admin/black-friday-grant', '/admin/partner-grants']
 
 describe('المنح لسان واحد في «المال»', () => {
   it('⚠️ لسان واحد للمنح كلها — لا لسان لكل منحة', () => {
@@ -41,6 +41,7 @@ describe('المنح لسان واحد في «المال»', () => {
     expect(tabs).toContain('/admin/influencer-grant')
     expect(tabs).toContain('/admin/open-grant')
     expect(tabs).toContain('/admin/black-friday-grant')
+    expect(tabs).toContain('/admin/partner-grants')
   })
 })
 
@@ -52,6 +53,13 @@ describe('روابط المنح في رأس صفحتها', () => {
   it('⚠️ والصفحة ترسمه في كلّ أحوالها — تحميلا وانقطاعا وعرضا', () => {
     const page = read('src/pages/admin/MemberGrant.tsx')
     const layouts = [...page.matchAll(/<AdminLayout title=\{nameAr\}>\s*(?:\{\/\*[\s\S]*?\*\/\}\s*)?<GrantSwitcher current=\{variant\} \/>/g)]
+    expect(layouts.length, 'حال من أحوال الصفحة بلا روابط المنح').toBe(page.split('<AdminLayout').length - 1)
+  })
+
+  it('⚠️ وشاشة الشركاء ترسمه في كلّ أحوالها كذلك', () => {
+    const page = read('src/pages/admin/PartnerGrants.tsx')
+    const layouts = [...page.matchAll(/<AdminLayout title="منح الشركاء">\s*<GrantSwitcher current="partners" \/>/g)]
+    expect(layouts.length).toBeGreaterThan(0)
     expect(layouts.length, 'حال من أحوال الصفحة بلا روابط المنح').toBe(page.split('<AdminLayout').length - 1)
   })
 })

@@ -101,6 +101,8 @@ export const GRANT_MAIL_PURPOSE_AR: Record<string, string> = {
   'grant.reminder': 'تذكير قبل انتهاء المنحة',
   'grant.extended': 'تمديد المنحة',
   'grant.message': 'رسالة منك',
+  /* ورابطُ تأكيد البريد في منحة الشريك (١٥ نوفمبر ٢٠٢٦، `partner-grant.service.ts`) */
+  'grant.partner_link': 'رابط تأكيد البريد',
 }
 export const mailPurposeAr = (purpose: string | null): string =>
   (purpose && GRANT_MAIL_PURPOSE_AR[purpose]) || 'رسالة من المنصة'
