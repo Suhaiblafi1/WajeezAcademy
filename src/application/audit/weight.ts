@@ -179,6 +179,8 @@ const HIGH: readonly string[] = [
   'influencer.payout', 'influencer.update', 'influencer.account',
   /* وخصمُ متابعيه يُكتب في كوبون كلّ كودٍ بعده، وكودُه في رابطه المنشور يتغيّر (١٥ نوفمبر ٢٠٢٦) */
   'influencer.discount.set', 'influencer.code.change',
+  /* ودعوةٌ جديدةٌ لمؤثّرٍ لم يفعّل حسابَه — رابطُ دخولٍ إلى كشف ماله يصله (١٥ نوفمبر ٢٠٢٦) */
+  'influencer.invite.resend',
   /* وطلبُ الانضمام مؤثّرا (٣١ أكتوبر ٢٠٢٦): القبولُ يفتح له كودا وحسابا بعمولة، والاعتذارُ يحسم طلبه —
      وكلاهما يصله بريدا من معالجه */
   'influencer.application.approve', 'influencer.application.reject',

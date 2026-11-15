@@ -15,6 +15,12 @@
       فلكلّ مؤثّرٍ حسابٌ وصفحة: لا يُضاف بلا بريد، ولا ببريدِ حسابٍ مؤرشفٍ أو حسابِ مؤثّرٍ آخر (يُردّ قبل أن يُكتب شيء)،
       وحسابٌ قائمٌ لم يُفعَّل قطّ تصله دعوةٌ جديدة، ويصله بريدُ الترحيب نفسُه الذي يصل من قُبل طلبُه — بكوده ورابطه
       وعمولته وشروط الاتّفاق (`notifyInfluencerWelcome`، يناديها القبولُ أيضا بعنوانه ورقم طلبه).
+   ١ب) **وتفاصيلُه كلُّها تتغيّر** — قرارُ صاحب المنصّة (١٥ نوفمبر ٢٠٢٦): «منحني فرصة تغيير اسم صاحب المنحة المؤثر وتغيير
+      كل التفاصيل، إيميله، رقمه وإلى آخره». فاسمُه ورقمُه (`phone`، حرٌّ بشكل الرقم) بـ`update` وأثرِ `influencer.update`.
+      **وبريدُه يُغيَّر بنقل ملفّه إلى حساب البريد الجديد** (`connectAccount`): حسابٌ قائمٌ يُضاف له الدور، وجديدٌ يُنشأ مدعوّا،
+      ويُنزع دورُ المؤثّر وحدَه من الحساب القديم — والملفُّ نفسُه (كودُه ومتابعوه وعمولاتُه وما دُفع له) يبقى، فيراه الحسابُ
+      الجديدُ كلَّه. ولا يُنقل إلى حسابٍ مؤرشفٍ أو حسابِ مؤثّرٍ آخر. ويصله بريدُ الترحيب كالإضافة بكوده ورابطه وتفعيله.
+      **ومن لم يفعّل حسابَه تُعاد له الدعوة** (`resendInvite`): رابطُ تفعيلٍ جديدٌ في بريد الترحيب، والقديمُ يبطل.
    ٢) **والكودُ يتغيّر ورابطُه القديمُ يبقى يعمل** — قرارُ صاحب المنصّة (١٥ نوفمبر ٢٠٢٦): «اسمح لي تغيير الكود هناك»،
       نسخا لـ«الكودُ لا يتغيّر بعد إضافته» الذي كان قبله لأنّ الكودَ في رابطه المنشور وتغييرُه يضيع ما نُشر. فالقديمُ
       ينتقل إلى `formerCodes`، ويُقرأ كأنّه كودُه في الرابط والنموذج وعدّ الزيارات (`influencerCodeWhere`) — فما نُشر لا يضيع،
@@ -59,6 +65,7 @@ import { BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, INFLUENCER_GRANT_SLUGS 
 import {
   INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_DISCOUNT_BAD_AR, OWN_PURCHASE_AR, buyerNameAr,
   commissionStateAr, influencerCommission, influencerLink, influencerPercentOff, normalizeInfluencerCode,
+  INFLUENCER_PHONE_BAD_AR, cleanInfluencerPhone,
 } from '../../src/application/commerce/influencer'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
@@ -79,6 +86,8 @@ export interface InfluencerInput {
   percentOff?: number | null
   /** لازمٌ — لكلّ مؤثّرٍ حسابٌ وصفحة (١٥ نوفمبر ٢٠٢٦) */
   email: string
+  /** رقمُه — اختياريّ (`cleanInfluencerPhone`) */
+  phone?: string | null
 }
 
 export interface InfluencerUpdate {
@@ -88,10 +97,14 @@ export interface InfluencerUpdate {
   percentOff?: number | null
   /** كودُه الجديد — والقديمُ ينتقل إلى أكواده السابقة */
   code?: string
+  /** رقمُه — و`null` أو الفارغُ يمحوه */
+  phone?: string | null
   active?: boolean
 }
 
 const ADMIN_WELCOME_SUBJECT_AR = 'أضفناك مؤثرا في منحة مؤثرين وجيز'
+/** وبريدُ الترحيب حين يُربط حسابُه أو يتغيّر بريدُه أو تُعاد دعوتُه من الشاشة */
+const ACCOUNT_WELCOME_SUBJECT_AR = 'حسابك في منحة مؤثرين وجيز'
 
 /** أرقامُ الاتّفاق ساعتَها — من إعدادات منحة المؤثّرين، والعمولةُ المقترحة. يقرؤها الاتّفاقُ العامّ وبريدُ الترحيب */
 export async function influencerDeal(prisma: PrismaClient): Promise<InfluencerDealView> {
@@ -150,6 +163,13 @@ function assertPercent(n: number) {
   if (!(Number.isInteger(n) && n >= 0 && n <= 100)) throw new AuthError('bad_percent', 'العمولة عدد صحيح من 0 إلى 100', 400)
 }
 
+/** رقمُه بشكله أو فارغ — وما لا يشبه رقما يُردّ بسببه */
+function phoneOf(raw: string | null | undefined): string | null {
+  const v = cleanInfluencerPhone(raw)
+  if (v === undefined) throw new AuthError('bad_phone', INFLUENCER_PHONE_BAD_AR, 400)
+  return v
+}
+
 function assertDiscount(n: number | null) {
   if (n !== null && !(Number.isInteger(n) && n >= 0 && n <= 100)) throw new AuthError('bad_discount', INFLUENCER_DISCOUNT_BAD_AR, 400)
 }
@@ -189,7 +209,7 @@ export class InfluencerService {
       const st = await this.statement(r.id)
       return {
         id: r.id, nameAr: r.nameAr, code: r.code, formerCodes: r.formerCodes, commissionPercent: r.commissionPercent,
-        percentOff: r.percentOff, active: r.active,
+        percentOff: r.percentOff, active: r.active, phone: r.phone,
         link: influencerLink(site, r.code),
         /* ورابطاه في حملتَي المؤثّرين — منحةِ المؤثّرين و«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) */
         links: { influencer: influencerLink(site, r.code), blackFriday: influencerLink(site, r.code, BLACK_FRIDAY_GRANT_SLUG) },
@@ -222,6 +242,7 @@ export class InfluencerService {
     assertPercent(input.commissionPercent)
     const percentOff = input.percentOff ?? null
     assertDiscount(percentOff)
+    const phone = phoneOf(input.phone)
     /* ولا كودا هو لمؤثّرٍ غيره اليومَ أو كان — رابطُه القديمُ ما زال يوصل إليه (`influencerCodeWhere`). يُسأل هنا قبل
        البريد والحساب فيُقال السببُ أوّلا، ثمّ ثانيةً تحت القفل عند الكتابة */
     await assertCodeFree(this.prisma, code)
@@ -240,7 +261,7 @@ export class InfluencerService {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${CODE_LOCK}))`
       await assertCodeFree(tx, code)
       return tx.influencer.create({
-        data: { nameAr, code, commissionPercent: input.commissionPercent, percentOff, createdBy: actorId },
+        data: { nameAr, code, commissionPercent: input.commissionPercent, percentOff, phone, createdBy: actorId },
       })
     })
     let account: { userId: string; created: boolean; inviteSent: boolean | null }
@@ -256,7 +277,7 @@ export class InfluencerService {
     }
     await recordAudit(this.prisma, {
       actorId, action: 'influencer.create', entityType: 'influencer', entityId: row.id,
-      after: { nameAr, code, commissionPercent: row.commissionPercent, percentOff: row.percentOff },
+      after: { nameAr, code, commissionPercent: row.commissionPercent, percentOff: row.percentOff, phone: row.phone },
     })
     const welcome: WelcomeAccount = account.created ? { kind: 'created' } : inviteToken ? { kind: 'invited', inviteToken } : { kind: 'active' }
     return { id: row.id, code, nameAr, email, commissionPercent: row.commissionPercent, account, welcome }
@@ -266,7 +287,7 @@ export class InfluencerService {
   async update(id: string, input: InfluencerUpdate, actorId: string) {
     const exists = await this.prisma.influencer.findUnique({ where: { id }, select: { id: true } })
     if (!exists) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
-    const data: { nameAr?: string; commissionPercent?: number; percentOff?: number | null; active?: boolean } = {}
+    const data: { nameAr?: string; commissionPercent?: number; percentOff?: number | null; phone?: string | null; active?: boolean } = {}
     if (input.nameAr !== undefined) {
       const n = input.nameAr.trim()
       if (n.length < 2) throw new AuthError('bad_name', 'اكتب اسم المؤثر', 400)
@@ -274,6 +295,7 @@ export class InfluencerService {
     }
     if (input.commissionPercent !== undefined) { assertPercent(input.commissionPercent); data.commissionPercent = input.commissionPercent }
     if (input.percentOff !== undefined) { assertDiscount(input.percentOff); data.percentOff = input.percentOff }
+    if (input.phone !== undefined) data.phone = phoneOf(input.phone)
     if (input.active !== undefined) data.active = input.active
     let code: string | null = null
     if (input.code !== undefined) {
@@ -292,7 +314,7 @@ export class InfluencerService {
       const after = await tx.influencer.update({ where: { id }, data: { ...data, ...codeData } })
       return { before, after }
     })
-    const pick = (x: typeof before) => ({ nameAr: x.nameAr, commissionPercent: x.commissionPercent, active: x.active })
+    const pick = (x: typeof before) => ({ nameAr: x.nameAr, commissionPercent: x.commissionPercent, active: x.active, phone: x.phone })
     if (JSON.stringify(pick(before)) !== JSON.stringify(pick(after))) {
       await recordAudit(this.prisma, {
         actorId, action: 'influencer.update', entityType: 'influencer', entityId: id, before: pick(before), after: pick(after),
@@ -332,17 +354,22 @@ export class InfluencerService {
     return { ok: true as const, code: after.code }
   }
 
-  /** حسابُه: يُربط بحسابٍ قائمٍ ببريده ويُضاف له دورُ المؤثّر، أو يُنشأ له حسابٌ بدعوة */
+  /** حسابُه: يُربط بحسابٍ قائمٍ ببريده ويُضاف له دورُ المؤثّر، أو يُنشأ له حسابٌ بدعوة.
+      وإن كان له حسابٌ غيرُه فقد تغيّر بريدُه (١ب): يُنقل ملفُّه إلى هذا، ويُنزع دورُ المؤثّر وحدَه من القديم */
   async attachAccount(id: string, rawEmail: string, actorId: string): Promise<{ userId: string; created: boolean; inviteSent: boolean | null }> {
     const email = rawEmail.trim().toLowerCase()
     if (!EMAIL_RE.test(email)) throw new AuthError('invalid_email', 'صيغة البريد غير صحيحة', 400)
-    const inf = await this.prisma.influencer.findUnique({ where: { id } })
+    const inf = await this.prisma.influencer.findUnique({ where: { id }, include: { user: { select: { id: true, email: true } } } })
     if (!inf) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
-    const existing = await this.prisma.user.findUnique({ where: { email }, select: { id: true } })
+    const existing = await this.prisma.user.findUnique({ where: { email }, select: { id: true, status: true } })
     if (existing) {
+      if (existing.status === 'archived') {
+        throw new AuthError('archived', 'لهذا البريد حساب مؤرشف — أعد تنشيطه من «المستخدمون» ثم أضف المؤثر', 409)
+      }
       const other = await this.prisma.influencer.findUnique({ where: { userId: existing.id }, select: { id: true } })
       if (other && other.id !== id) throw new AuthError('account_taken', 'هذا الحساب لمؤثر آخر', 409)
     }
+    const prev = inf.user
     let userId: string
     let created = false
     let inviteSent: boolean | null = null
@@ -370,11 +397,57 @@ export class InfluencerService {
       inviteSent = mail.status === 'sent'
     }
     await this.prisma.influencer.update({ where: { id }, data: { userId } })
+    /* والحسابُ القديمُ لا يرى صفحةَ المؤثّر بعدُ — يُنزع دورُه هذا وحدَه، وأدوارُه الأخرى كما هي */
+    const moved = prev && prev.id !== userId
+    if (moved) await this.prisma.userRole.deleteMany({ where: { userId: prev.id, roleId: INFLUENCER_ROLE } })
     await recordAudit(this.prisma, {
       actorId, action: 'influencer.account', entityType: 'influencer', entityId: id,
-      meta: { userId, email, created, inviteSent },
+      ...(moved ? { before: { userId: prev.id, email: prev.email }, after: { userId, email } } : {}),
+      meta: { userId, email, created, inviteSent, ...(moved ? { from: prev.email, to: email, fromUserId: prev.id } : {}) },
     })
     return { userId, created, inviteSent }
+  }
+
+  /** ربطُ حسابه من الشاشة أو تغييرُ بريده (١ب) — ثمّ بريدُ الترحيب كالإضافة: كودُه ورابطُه وتفعيلُ حسابه على وجهه.
+      وحسابٌ قائمٌ لم يُفعَّل قطّ تصله دعوةٌ جديدة، كالإضافة */
+  async connectAccount(id: string, rawEmail: string, actorId: string) {
+    const email = rawEmail.trim().toLowerCase()
+    const inf = await this.prisma.influencer.findUnique({ where: { id }, include: { user: { select: { email: true } } } })
+    if (!inf) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
+    if (inf.user && inf.user.email.toLowerCase() === email) throw new AuthError('same_email', 'هذا بريده الآن', 400)
+    const account = await this.attachAccount(id, email, actorId)
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: account.userId }, select: { status: true } })
+    const welcome: WelcomeAccount = account.created
+      ? { kind: 'created' }
+      : user.status === 'invited'
+        ? { kind: 'invited', inviteToken: (await this.auth.issueInvite(account.userId)).token }
+        : { kind: 'active' }
+    const emailDelivery = await notifyInfluencerWelcome(this.prisma, {
+      to: email, nameAr: inf.nameAr, code: inf.code, commissionPercent: inf.commissionPercent, account: welcome,
+      subjectAr: ACCOUNT_WELCOME_SUBJECT_AR,
+    })
+    return { account, emailDelivery }
+  }
+
+  /** دعوةٌ جديدةٌ لمن لم يفعّل حسابَه (١ب) — رابطُ تفعيلٍ جديدٌ في بريد الترحيب بكوده ورابطه، والقديمُ يبطل (`issueInvite`).
+      رسالةٌ واحدةٌ فيها كلُّ شيء، لا دعوةٌ وترحيبٌ برابطين يبطل أحدُهما الآخر */
+  async resendInvite(id: string, actorId: string) {
+    const inf = await this.prisma.influencer.findUnique({ where: { id }, include: { user: { select: { id: true, email: true, status: true } } } })
+    if (!inf) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
+    if (!inf.user) throw new AuthError('no_account', 'لا حساب له بعد. اكتب بريده لينشأ حسابه', 409)
+    if (inf.user.status !== 'invited') {
+      throw new AuthError('not_invited', 'حسابه مفعل. يدخل بكلمة مروره، أو يستعمل «نسيت كلمة المرور»', 409)
+    }
+    const { token, expiresAt } = await this.auth.issueInvite(inf.user.id)
+    const emailDelivery = await notifyInfluencerWelcome(this.prisma, {
+      to: inf.user.email, nameAr: inf.nameAr, code: inf.code, commissionPercent: inf.commissionPercent,
+      account: { kind: 'invited', inviteToken: token }, subjectAr: ACCOUNT_WELCOME_SUBJECT_AR,
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'influencer.invite.resend', entityType: 'influencer', entityId: id,
+      meta: { userId: inf.user.id, email: inf.user.email, sent: emailDelivery === 'sent' },
+    })
+    return { emailDelivery, expiresAt }
   }
 
   /** دفعةٌ دُفعت له من عمولته.

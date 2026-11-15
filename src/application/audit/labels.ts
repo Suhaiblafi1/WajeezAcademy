@@ -186,7 +186,8 @@ const PHRASES: Record<string, string> = {
   'influencer.update': 'تعديل مؤثر أو عمولته أو إيقافه',
   'influencer.discount.set': 'تغيير خصم متابعي مؤثر',
   'influencer.code.change': 'تغيير كود مؤثر — والرابط القديم يعمل',
-  'influencer.account': 'ربط مؤثر بحساب أو إنشاء حساب له',
+  'influencer.account': 'ربط مؤثر بحساب أو تغيير بريده',
+  'influencer.invite.resend': 'دعوة جديدة لمؤثر لم يفعل حسابه',
   'influencer.payout': 'تسجيل دفعة لمؤثر من عمولته',
   'influencer.courses': 'تغيير دورات مؤثر في منحة المؤثرين',
   /* وطلبُ الانضمام مؤثّرا (٣١ أكتوبر ٢٠٢٦) — القبولُ يكتب كودَه وعمولتَه وينشئ حسابَه بدعوة */

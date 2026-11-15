@@ -13,6 +13,7 @@ import { auditActionAr } from '@/application/audit/labels'
 import { allSections } from '@/pages/admin/nav-map'
 import * as GRANT from '@/application/commerce/grant'
 import * as INFLUENCER from '@/application/commerce/influencer'
+import { homePathForRoles } from '@/services/auth'
 import { grantFollowupAr } from '@/application/commerce/grant-landing'
 import { waToPerson } from '@/application/site/whatsapp'
 
@@ -252,5 +253,48 @@ describe('بلاك فرايدي وجيز ومؤثروها', () => {
     for (const t of texts.slice(2)) expect(PANEL).toContain(t)
     for (const t of texts) expect(t).toBe(plainAr(t))
     for (const k of ['influencer.discount.set', 'influencer.code.change']) expect(auditActionAr(k), `«${k}» بلا عنوان`).not.toBe(k)
+  })
+})
+
+/* ═══ تفاصيلُ المؤثّر كلُّها تتغيّر (١٥ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «منحني فرصة تغيير اسم صاحب المنحة المؤثر وتغيير كل التفاصيل، إيميله، رقمه». فاسمُه ورقمُه وبريدُه في تفاصيله
+   بتأكيدٍ يقول ما يقع، ودعوتُه تُعاد لمن لم يفعّل. والسلوكُ في `server/tests/commerce/influencer-contact.test.ts`. */
+describe('تفاصيل المؤثر تتغير', () => {
+  const INF_ROUTES = code('server/http/routes/influencer.routes.ts')
+  const PANEL = code('src/pages/admin/InfluencersPanel.tsx')
+
+  it('⚠️ اسمه ورقمه وبريده بتأكيد، ودعوته تعاد — وأبوابها بصلاحية الكوبونات', () => {
+    expect(PANEL).toMatch(/apiPatch\(`\/api\/admin\/influencers\/\$\{x\.id\}`, \{ nameAr: nameNew \}\)/)
+    expect(PANEL).toMatch(/apiPatch\(`\/api\/admin\/influencers\/\$\{x\.id\}`, \{ phone: phoneNew \?\? null \}\)/)
+    expect(PANEL).toMatch(/apiPost<Connected>\(`\/api\/admin\/influencers\/\$\{x\.id\}\/account`, \{ email: emailNew \}\), connectedAr,/)
+    expect(PANEL).toMatch(/\{x\.accountStatus === "invited" && \(\s*<Button[\s\S]{0,200}\/resend-invite`/)
+    for (const c of ['"name"', '"phone"', '"email"']) expect(PANEL, `${c} بلا تأكيد`).toMatch(new RegExp(`\\{confirm === ${c} && \\(\\s*<ConfirmAction`))
+    /* والبريدُ القديمُ لا يُسدّ بابُه: «غير البريد» حيث كان «أنشئ حسابه أو اربطه» وحدَه لمن لا حساب له */
+    expect(PANEL).toContain('{x.email ? "غير البريد" : "أنشئ حسابه أو اربطه"}')
+    expect(INF_ROUTES).toMatch(/app\.post\('\/api\/admin\/influencers\/:id\/resend-invite', \{\s*preHandler: canManage/)
+    expect(INF_ROUTES).toMatch(/return influencers\.connectAccount\(id\.parse\(req\.params\)\.id, email, req\.auth!\.userId\)/)
+    expect(INF_ROUTES).toMatch(/phone: z\.string\(\)\.trim\(\)\.max\(40\)\.nullable\(\)\.optional\(\),\s*active: z\.boolean\(\)/)
+  })
+
+  it('⚠️ الرقم بشكله أو فارغ — ونصوصها بلا تشكيل، وأفعال أثرها بعناوين', () => {
+    expect(INFLUENCER.cleanInfluencerPhone('  +962  79 123-4567 ')).toBe('+962 79 123-4567')
+    expect(INFLUENCER.cleanInfluencerPhone('')).toBeNull()
+    expect(INFLUENCER.cleanInfluencerPhone(null)).toBeNull()
+    for (const bad of ['abc', '12345', '+962 79 12a', '1'.repeat(21), '962+79']) expect(INFLUENCER.cleanInfluencerPhone(bad), bad).toBeUndefined()
+    const texts = [
+      INFLUENCER.INFLUENCER_PHONE_BAD_AR, 'الاسم', 'احفظ الاسم', 'رقمه', 'احفظ الرقم', 'غير البريد', 'أعد إرسال الدعوة',
+      'تغيير اسم المؤثر', 'تغيير رقم المؤثر', 'تغيير بريد المؤثر', 'ربط حساب المؤثر', 'يمحى رقمه.',
+      'لم يفعل حسابه بعد. الدعوة الجديدة تصله مع كوده، وتبطل القديمة.',
+      'ويصل البريد الجديد رسالة بكوده: دعوة لتفعيل حسابه إن كان جديدا، أو دخول بحسابه إن كان له حساب.',
+    ]
+    for (const t of texts.slice(1)) expect(PANEL).toContain(t)
+    for (const t of texts) expect(t).toBe(plainAr(t))
+    for (const k of ['influencer.account', 'influencer.invite.resend']) expect(auditActionAr(k), `«${k}» بلا عنوان`).not.toBe(k)
+  })
+
+  /* وسؤالُ صاحب المنصّة: يُربط حسابُه مؤثّرا (SUHAIB) ويبقى بابُه الإدارة — الدورُ الأعلى أوّلا */
+  it('⚠️ مدير المنصة مؤثرا يبقى بابه الإدارة', () => {
+    expect(homePathForRoles(['influencer', 'super_admin'])).toBe('/admin')
+    expect(homePathForRoles(['learner', 'influencer'])).toBe('/influencer')
   })
 })
