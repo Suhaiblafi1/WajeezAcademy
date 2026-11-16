@@ -39,7 +39,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Award, Check, ChevronDown, Clock, Compass, Copy, GraduationCap, ExternalLink, Flame, Gift, LayoutGrid, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
+import { Award, Check, ChevronDown, Clock, Copy, GraduationCap, ExternalLink, Flame, Gift, LayoutGrid, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { syncPageTheme } from "@/services/theme";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
@@ -65,7 +65,7 @@ import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, parsePicksParam,
-  GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_DIAG_PATH, GRANT_HUMAN_DIAG_AR, GRANT_SELF_DIAG_AR,
+  GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_HUMAN_DIAG_AR,
 } from "@/application/commerce/grant-landing";
 import { BLACK_FRIDAY_GRANT_STORE_KEY, GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
@@ -199,21 +199,9 @@ function GrantHumanDiagnosis({ href }: { href: string }) {
   );
 }
 
-/** والتشخيصُ الذاتيّ سطرا واحدا — «باختصارٍ شديد» (٨ نوفمبر ٢٠٢٦، `GRANT_SELF_DIAG_AR`). يُفتح في صفحةٍ جديدة فلا يضيع ما اختاره */
-function GrantSelfDiagnosis() {
-  return (
-    <Inset className="mt-4 flex flex-wrap items-center justify-between gap-3" data-testid="grant-self-diag">
-      <span className="flex min-w-0 items-center gap-2.5">
-        <Compass className="h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-        <span className="min-w-0">
-          <span className="block font-bold leading-6">{GRANT_SELF_DIAG_AR.title}</span>
-          <span className="block text-read text-muted-foreground">{GRANT_SELF_DIAG_AR.meta}</span>
-        </span>
-      </span>
-      <Button as="a" href={GRANT_DIAG_PATH} target="_blank" rel="noreferrer" icon={Compass} size="sm" className="shrink-0">{GRANT_SELF_DIAG_AR.cta}</Button>
-    </Inset>
-  );
-}
+/* ═══ والتشخيصُ الذاتيّ لا يُعرض في صفحة المنحة (١٦ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «لا داعي لهذا البوكس لكل الحملات» — «أو شخص احتياجك بنفسك». وكان سطرا تحت الإهداء يُخرج إلى
+   صفحة التشخيص؛ والتشخيصُ البشريُّ على واتساب (`GrantHumanDiagnosis`) يبقى. وصفحةُ التشخيص نفسُها باقيةٌ في الموقع. */
 
 export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" | "open" | "blackfriday" }) {
   /* «بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) حملةُ مؤثّرين كالثانية — `forInfluencer` لهما معا، و`forBlackFriday` لما يخصّها */
@@ -732,7 +720,6 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             اجعلها واتساب مباشرة». برسالةٍ فيها اسمُه وكودُه، والرقمُ موضعُه في شاشة الربط (`grant_advisor`).
             وطلبُ المستشار المكتوب (`/api/public/grant/advisor`) بقي في الخادم ولا تناديه الصفحة: مكالمةُ الساعتين تُفتح وحدَها */}
         {/* وصندوقُ المستشار صار التشخيصَ الذاتيَّ باختصار — المستشارُ نفسُه في «لست متأكدا» أعلاه (٨ نوفمبر ٢٠٢٦) */}
-        {view.openCourses.length > 0 && <GrantSelfDiagnosis />}
 
         {authOpen && (
           <Modal onClose={() => setAuthOpen(false)} label="أنشئ حسابك لتدفع" panelClassName="w-full max-w-md">
