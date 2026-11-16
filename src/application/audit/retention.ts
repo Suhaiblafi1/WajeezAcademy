@@ -55,6 +55,8 @@ export const PERMANENT_AUDIT_PREFIXES = [
 /** وأفعالٌ ماليّةٌ مفردةٌ لا عائلةَ لها — بنصّها، فلا تبتلع بادئةٌ بلا نقطةٍ ما يشبه اسمَها */
 export const PERMANENT_AUDIT_ACTIONS = [
   'influencer.payout',
+  /* وما صُرف للشريك من حصّته — مالٌ خرج (١٦ نوفمبر ٢٠٢٦) */
+  'partner.payout',
 ] as const
 
 /** أيُحفَظ هذا الفعلُ أبدا؟ — تُقرأ في الخادم وفي الاختبار معا */

@@ -69,6 +69,8 @@ model User {
   couponsRestricted    Coupon[]                   @relation("CouponRestrictedTo")
   /// حسابُ المؤثّر إن كان هذا الحسابُ حسابَه (`influencer.service.ts`)
   influencer           Influencer?
+  /// شريكٌ (جامعةٌ أو شركة) هو ممثّلُه — يرى لوحتَه في `/partner` (١٦ نوفمبر ٢٠٢٦)
+  partnerCampaign      GrantCampaign?   @relation("PartnerAccount")
   skillRemeasures      SkillRemeasure[]           @relation("SkillRemeasureUser")
   retrievalCards       RetrievalCard[]            @relation("RetrievalCardUser")
   scenarioRuns         ScenarioRun[]              @relation("ScenarioRunUser")
@@ -4253,6 +4255,13 @@ model GrantCampaign {
   logoKey        String?  @unique
   /// شعارٌ يُرفع ولم يُعتمد بعد — يصير `logoKey` حين يكتمل رفعُه
   logoPendingKey String?  @unique
+  /// حصّةُ الشريك من المبلغ الذي دفعه المستفيدُ فعلا، قبل أجور المدرّبين (١٦ نوفمبر ٢٠٢٦) — للشريك وحدَه، وفارغةٌ لغيره.
+  /// على ما يُعطى من أكوادٍ بعد اليوم: تُكتب في كود المنحة يومَ يُعطى (`GrantCode.partnerSharePercent`)
+  partnerSharePercent Int?
+  /// حسابُ ممثّل الشريك الذي يرى لوحته (`/partner`) — من سجّل ومن دفع وحصّتُه وما صُرف له
+  partnerUserId  String?  @unique @db.Uuid
+  partnerUser    User?    @relation("PartnerAccount", fields: [partnerUserId], references: [id], onDelete: SetNull)
+  partnerPayouts PartnerPayout[]
   updatedBy   String?     @db.Uuid
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -4298,6 +4307,8 @@ model GrantCode {
   influencerId      String?     @db.Uuid
   /// عمولتُه على هذا الكود يومَ أُعطي — نسبةٌ من سعر الدورات قبل المنحة، فتغييرُها بعده لا يمسّه
   commissionPercent Int?
+  /// حصّةُ الشريك على هذا الكود يومَ أُعطي — نسبةٌ ممّا دفعه المستفيدُ فعلا، فتغييرُها بعده لا يمسّه (١٦ نوفمبر ٢٠٢٦)
+  partnerSharePercent Int?
   campaign   GrantCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   coupon     Coupon        @relation(fields: [couponId], references: [id], onDelete: Cascade)
   lead       Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
@@ -4340,6 +4351,20 @@ model Influencer {
   grantCodes GrantCode[]
   leads      Lead[]
   payouts    InfluencerPayout[]
+}
+
+/// ما صُرف للشريك من حصّته (١٦ نوفمبر ٢٠٢٦) — والرصيدُ ما استحقّه ناقصا ما صُرف (`partner-revenue.service.ts`)
+model PartnerPayout {
+  id         String        @id @default(uuid()) @db.Uuid
+  campaignId String        @db.Uuid
+  amount     Decimal       @db.Decimal(10, 2)
+  currency   String        @default("USD")
+  noteAr     String?
+  paidAt     DateTime      @default(now())
+  recordedBy String?       @db.Uuid
+  campaign   GrantCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, paidAt])
 }
 
 /// ما دُفع للمؤثّر من عمولته — والرصيدُ ما استحقّه ناقصا ما دُفع (`influencer.service.ts`)

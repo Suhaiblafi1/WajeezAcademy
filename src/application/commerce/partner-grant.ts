@@ -88,8 +88,33 @@ export const PARTNER_TYPE_AR: Record<PartnerType, { label: string; audience: str
   company: { label: 'شركة', audience: 'لموظفي الشركة', people: 'موظفي', email: 'بريد العمل', emailHint: 'البريد الذي أعطتك إياه الشركة' },
 }
 
-/** القيمُ الأولى لشريكٍ جديد — والمديرُ يغيّرها */
-export const PARTNER_DEFAULTS = { percentOff: 75, maxCourses: 4 } as const
+/** القيمُ الأولى لشريكٍ جديد — والمديرُ يغيّرها. والخصمُ ٥٠٪ وحصّةُ الشريك ٥٠٪ ممّا يُدفع (١٦ نوفمبر ٢٠٢٦، «ok»): ٧٥٪ خصما
+    مع ٥٠٪ حصّةً يُبقيان لنا ثُمنَ السعر قبل أجر المدرّب، فيخسر المقعد. والجامعةُ الهاشميّةُ بقيت بخصمها حتى يُغيَّر */
+export const PARTNER_DEFAULTS = { percentOff: 50, maxCourses: 4, sharePercent: 50 } as const
+
+/* ═══ حصّةُ الشريك من الإيراد (١٦ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: الجامعةُ تنشر رابطَ منحتها لطلابها وموظّفيها، ونتقاسم ما يدفعونه — «% of what the student paid»:
+   **نسبةٌ ممّا دفعه المستفيدُ فعلا بعد المنحة، قبل أجور المدرّبين** (لا من سعر القائمة كعمولة المؤثّر). وتُكتب في كود
+   المنحة يومَ يُعطى، فتغييرُها يقع على ما بعده. وما رُدّ من الثمن ينقص منها بنسبته، والمردودُ كلُّه لا حصّةَ له. ولها لوحةٌ
+   يرى فيها ممثّلُها من سجّل ومن دفع وحصّتَه عن كلٍّ وما صُرف له (`server/services/partner-revenue.service.ts`). */
+
+/** حصّةُ الشريك عن طلب: نسبتُها ممّا دُفع، ناقصا ما رُدّ بنسبته (`refunded` من ٠ إلى ١) */
+export function partnerShare(paid: number, sharePercent: number, refunded = 0): number {
+  const kept = Math.max(0, paid * (1 - Math.min(1, Math.max(0, refunded))))
+  return Math.round(kept * Math.max(0, sharePercent)) / 100
+}
+
+/** حالُ الطلب في كشف الشريك */
+export function partnerShareStateAr(status: string): string {
+  if (status === 'refunded') return 'رد كاملا — بلا حصة'
+  if (status === 'partially_refunded') return 'رد بعضه — الحصة مما بقي'
+  return 'مدفوع'
+}
+
+/** ما يقوله سطرُ الحصّة للمدير وللشريك */
+export const partnerShareLineAr = (pct: number | null): string =>
+  pct === null || pct <= 0 ? 'بلا حصة من الإيراد بعد' : `${pct}% مما يدفعه المستفيد، قبل أجور المدربين`
 
 /** «شراكة بين الجامعة الهاشمية وأكاديمية وجيز» */
 export const partnerHeadlineAr = (nameAr: string): string => `شراكة بين ${nameAr} وأكاديمية وجيز`

@@ -41,6 +41,8 @@ export interface CampaignMarginRow extends MarginStats {
   active: boolean
   percentOff: number
   commissionPercent: number
+  /** حصّةُ الشريك ممّا يُدفع — تُطرح من الهامش كالعمولة (١٦ نوفمبر ٢٠٢٦). وصفرٌ للحملات */
+  sharePercent: number
   /** أعلى عمولةٍ لمؤثّرٍ نشط — في حملتَي المؤثّرين */
   topCommission: boolean
   influencers?: InfluencerMarginRow[]
@@ -50,11 +52,11 @@ export async function grantMarginsSummary(prisma: PrismaClient): Promise<{ curre
   /* الحسابُ بحملةٍ أيّا كانت: النسبةُ تُمرَّر، فلا يقرأ منها إلّا صفَّها */
   const calc = new GrantService(prisma)
   const cache = new Map<string, Promise<MarginStats>>()
-  const statsFor = (pct: number, commission: number) => {
-    const key = `${pct}|${commission}`
+  const statsFor = (pct: number, commission: number, share = 0) => {
+    const key = `${pct}|${commission}|${share}`
     let hit = cache.get(key)
     if (!hit) {
-      hit = calc.margins(pct, commission).then((r) => marginStats(r.rows, LEDGER_CURRENCY))
+      hit = calc.margins(pct, commission, share).then((r) => marginStats(r.rows, LEDGER_CURRENCY))
       cache.set(key, hit)
     }
     return hit
@@ -76,7 +78,7 @@ export async function grantMarginsSummary(prisma: PrismaClient): Promise<{ curre
     const commissionPercent = forInfluencers ? top : 0
     return {
       slug: c.slug, nameAr: GRANT_CAMPAIGNS[c.slug as GrantSlug].nameAr, group: 'campaign', active: c.active,
-      percentOff: c.percentOff, commissionPercent, topCommission: forInfluencers,
+      percentOff: c.percentOff, commissionPercent, sharePercent: 0, topCommission: forInfluencers,
       ...(await statsFor(c.percentOff, commissionPercent)),
       ...(forInfluencers
         ? {
@@ -91,10 +93,13 @@ export async function grantMarginsSummary(prisma: PrismaClient): Promise<{ curre
         : {}),
     }
   }))
-  /* والشركاء بعدها — منحةٌ لكلّ شريكٍ بنسبتها، بلا عمولة (`partner-grant.ts`) */
-  const partnerRows = await Promise.all(partners.map(async (p): Promise<CampaignMarginRow> => ({
-    slug: p.slug, nameAr: p.nameAr, group: 'partner', active: p.active, percentOff: p.percentOff, commissionPercent: 0,
-    topCommission: false, ...(await statsFor(p.percentOff, 0)),
-  })))
+  /* والشركاء بعدها — منحةٌ لكلّ شريكٍ بنسبتها، وحصّتُه ممّا يُدفع تُطرح من الهامش (١٦ نوفمبر ٢٠٢٦، `partnerShare`) */
+  const partnerRows = await Promise.all(partners.map(async (p): Promise<CampaignMarginRow> => {
+    const share = p.partnerSharePercent ?? 0
+    return {
+      slug: p.slug, nameAr: p.nameAr, group: 'partner', active: p.active, percentOff: p.percentOff, commissionPercent: 0,
+      sharePercent: share, topCommission: false, ...(await statsFor(p.percentOff, 0, share)),
+    }
+  }))
   return { currency: LEDGER_CURRENCY, campaigns: [...campaigns, ...partnerRows] }
 }

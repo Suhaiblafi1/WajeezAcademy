@@ -76,6 +76,8 @@ export interface PartnerInput {
   maxCodes?: number | null
   closesAt?: Date | null
   active?: boolean
+  /** حصّتُه ممّا يُدفع (١٦ نوفمبر ٢٠٢٦) — وفارغةٌ: بلا حصّة */
+  sharePercent?: number | null
 }
 
 type PartnerRow = Prisma.GrantCampaignGetPayload<object>
@@ -86,6 +88,7 @@ const isOpen = (c: { active: boolean; closesAt: Date | null }, now: Date) => c.a
 const pick = (c: PartnerRow) => ({
   nameAr: c.nameAr, nameEn: c.partnerNameEn, type: c.partnerType, domains: c.emailDomains, percentOff: c.percentOff,
   maxCourses: c.maxCourses, maxCodes: c.maxCodes, closesAt: c.closesAt?.toISOString() ?? null, active: c.active,
+  sharePercent: c.partnerSharePercent,
 })
 
 /** رابطُ رفعٍ موقّعٌ إلى مسار الرفع العامّ — كصورة التسويق (`trainer-marketing.service.ts`) */
@@ -129,6 +132,7 @@ export class PartnerGrantService {
       percentOff: c.percentOff, maxCourses: c.maxCourses, maxCodes: c.maxCodes, closesAt: c.closesAt, active: c.active,
       open: settings.open, issued: settings.issued, used: settings.used, pending: settings.pending, claims,
       hasLogo: c.logoKey !== null, publicPath: partnerPagePath(slug), updatedAt: c.updatedAt,
+      sharePercent: c.partnerSharePercent, hasAccount: c.partnerUserId !== null,
     }
   }
 
@@ -187,6 +191,12 @@ export class PartnerGrantService {
       if (input.maxCodes !== null && input.maxCodes < issued) throw new AuthError('below_issued', `أعطي ${issued} كودا، فلا يقل العدد عنه`, 409)
       data.maxCodes = input.maxCodes
     }
+    if (input.sharePercent !== undefined) {
+      if (input.sharePercent !== null && !(Number.isInteger(input.sharePercent) && input.sharePercent >= 0 && input.sharePercent <= 100)) {
+        throw new AuthError('bad_share', 'حصة الشريك عدد صحيح من 0 إلى 100', 400)
+      }
+      data.partnerSharePercent = input.sharePercent
+    }
     if (input.closesAt !== undefined) data.closesAt = input.closesAt
     if (input.active !== undefined) data.active = input.active
     return data
@@ -200,6 +210,7 @@ export class PartnerGrantService {
     const data = this.parse({
       ...input, type: input.type ?? 'university', percentOff: input.percentOff ?? PARTNER_DEFAULTS.percentOff,
       maxCourses: input.maxCourses ?? PARTNER_DEFAULTS.maxCourses, active: input.active ?? false,
+      sharePercent: input.sharePercent !== undefined ? input.sharePercent : PARTNER_DEFAULTS.sharePercent,
     })
     const campaignSlug = partnerCampaignSlug(slug)
     if (await this.prisma.grantCampaign.findUnique({ where: { slug: campaignSlug }, select: { id: true } })) {

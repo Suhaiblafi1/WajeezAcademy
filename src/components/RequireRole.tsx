@@ -49,6 +49,8 @@ export const ADVISOR_ROLES = ['advisor', 'super_admin'] as const
 export const LEARNER_ROLES = ['learner', 'super_admin'] as const
 /** حسابُ المؤثّر — كشفُه في «منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) */
 export const INFLUENCER_ROLES = ['influencer', 'super_admin'] as const
+/** لوحةُ الشريك — ممثّلُ الجامعة أو الشركة يرى حصّتَهم (١٦ نوفمبر ٢٠٢٦) */
+export const PARTNER_ROLES = ['partner', 'super_admin'] as const
 /** صفحةُ حالة طلب الانضمام: للمتقدّم، وللمدرّب الذي كان متقدّما */
 export const APPLICANT_ROLES = ['trainer_applicant', 'trainer', 'super_admin'] as const
 

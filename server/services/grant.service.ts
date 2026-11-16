@@ -44,7 +44,7 @@ import {
   GRANT_CAMPAIGNS, GRANT_CLOSED_AR, GRANT_CODE_PREFIX, GRANT_ONCE_AR, GRANT_SOLD_OUT_AR,
   MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, isInfluencerGrant, type CampaignSlug,
 } from '../../src/application/commerce/grant'
-import { isPartnerCampaign, PARTNER_NOT_FOUND_AR } from '../../src/application/commerce/partner-grant'
+import { isPartnerCampaign, PARTNER_NOT_FOUND_AR, partnerShare } from '../../src/application/commerce/partner-grant'
 import { influencerCommission, influencerPercentOff } from '../../src/application/commerce/influencer'
 
 /** ما يحسب منحةً مستعملة: طلبٌ ينتظر الدفعَ بها أو دُفع — والمردودُ كلُّه يُعيدها */
@@ -173,12 +173,12 @@ export class GrantService {
         return await this.prisma.$transaction(async (tx) => {
           /* العدُّ بشرط الحدّ والتشغيل في الكتابة نفسِها، والنسبةُ تُقرأ منها — فلا يتجاوز
              متزامنان العدد، ولا يأخذ أحدُهما نسبةً تغيّرت بين قراءةٍ وكتابة */
-          const rows = await tx.$queryRaw<{ percentOff: number }[]>`
+          const rows = await tx.$queryRaw<{ percentOff: number; kind: string; partnerSharePercent: number | null }[]>`
             UPDATE "GrantCampaign" SET "issuedCount" = "issuedCount" + 1
             WHERE "id" = ${c.id}::uuid AND "active" = true
               AND ("closesAt" IS NULL OR "closesAt" > ${now})
               AND ("maxCodes" IS NULL OR "issuedCount" < "maxCodes")
-            RETURNING "percentOff"`
+            RETURNING "percentOff", "kind", "partnerSharePercent"`
           if (rows.length === 0) {
             throw isOpen(c, now)
               ? new AuthError('grant_sold_out', GRANT_SOLD_OUT_AR, 409)
@@ -193,6 +193,8 @@ export class GrantService {
             data: {
               campaignId: c.id, couponId: coupon.id, leadId: input.leadId ?? null,
               influencerId: input.influencer?.id ?? null, commissionPercent: input.influencer?.commissionPercent ?? null,
+              /* وحصّةُ الشريك يومَ أُعطي — للشريك وحدَه، فتغييرُها بعده لا يمسّه (١٦ نوفمبر ٢٠٢٦، `partnerShare`) */
+              partnerSharePercent: rows[0].kind === 'partner' ? rows[0].partnerSharePercent : null,
             },
           })
           await recordAudit(tx, {
@@ -269,9 +271,11 @@ export class GrantService {
   /** فحصُ الهامش: كلُّ شعبةٍ تُشترى بسعرها بعد المنحة، وأجرُ مقعدها للمدرّب، والفرقُ بينهما.
       وبنسبةٍ تُمرَّر لتُجرَّب قبل أن تُحفظ — وبلا قيمةٍ نسبةُ الحملة. وفي منحة المؤثّرين تُطرح عمولتُه أيضا:
       نسبتُها من سعر القائمة، فما يبقى للأكاديميّة سعرُها بعد المنحة ناقصا أجرَ المقعد وعمولتَه. */
-  async margins(percentOff?: number, commissionPercent = 0) {
+  async margins(percentOff?: number, commissionPercent = 0, sharePercent?: number) {
     const c = await this.campaign()
     const pct = percentOff ?? c.percentOff
+    /* وحصّةُ الشريك ممّا يُدفع — قبل أجر المدرّب (١٦ نوفمبر ٢٠٢٦، `partnerShare`). وبلا قيمةٍ حصّةُ هذا الشريك إن كان شريكا */
+    const share = sharePercent ?? (c.kind === 'partner' ? c.partnerSharePercent ?? 0 : 0)
     const cohorts = await this.prisma.cohort.findMany({
       where: { status: { in: MARGIN_STATUSES }, price: { gt: 0 } },
       select: {
@@ -286,15 +290,16 @@ export class GrantService {
       const price = grantPrice(listPrice, pct)
       const { ruleType, ruleRate, seatCost } = costs.get(x.id)!
       const commission = influencerCommission(listPrice, commissionPercent)
+      const partnerCut = partnerShare(price, share)
       return {
         cohortId: x.id,
         titleAr: `${x.course.versions[0]?.titleAr ?? x.courseId} — ${x.title}`,
         status: x.status, startsAt: x.startsAt, currency: x.currency, capacity: x.capacity,
-        listPrice, price, ruleType, ruleRate, seatCost, commission,
-        margin: seatCost === null ? null : Math.round((price - seatCost - commission) * 100) / 100,
+        listPrice, price, ruleType, ruleRate, seatCost, commission, partnerShare: partnerCut,
+        margin: seatCost === null ? null : Math.round((price - seatCost - commission - partnerCut) * 100) / 100,
       }
     })
-    return { percentOff: pct, commissionPercent, rows }
+    return { percentOff: pct, commissionPercent, sharePercent: share, rows }
   }
 
   /** أجرُ مقعدٍ واحدٍ لكلّ شعبة: بالمقعد كما هو، وبنسبة الإيراد على سعر القائمة — هكذا يُحسب الكشف
