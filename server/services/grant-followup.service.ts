@@ -309,6 +309,11 @@ export async function sendGrantReminders(
     /* ومنحةُ الشريك بلا مؤثّر — تعود إلى صفحته (`grantPagePath`، ١٥ نوفمبر ٢٠٢٦) */
     const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug as GrantSlug) : `${publicSiteUrl()}${grantPagePath(slug)}`
     const lastDayRow = days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]
+    /* وفي بلاك فرايدي: يُغلق التسجيلُ بعدها حتى الفصل القادم — كبريد الترقية (١٦ نوفمبر ٢٠٢٦: «tell them 22nd the
+       registration is fully closed until next semester! Hurry up»). فتذكيرا الخميس وصباحِ السبت يقولانه أيضا */
+    const closing: MailBlock[] = slug === BLACK_FRIDAY_GRANT_SLUG
+      ? [{ kind: 'p', text: `${days <= 1 ? 'اليوم آخر يوم.' : `آخر يوم ${fmtDateLong(lastDay)}.`} ومن ${fmtDateLong(closesAt)} يغلق التسجيل تماما حتى الفصل القادم، فسجل الآن.` }]
+      : []
     /* ما اختاره هو ممّا يُشترى اليوم — بسعر كلٍّ بعد منحته، ومجموعِها وقيمةِ منحته، وزرٍّ يعيده إلى اختياره (٣١ أكتوبر ٢٠٢٦) */
     const pool = await poolOf(lead.grantCode?.influencerId ?? null)
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
@@ -318,6 +323,7 @@ export async function sendGrantReminders(
       ? [
           { kind: 'p', text: GRANT_PICKS_INTRO_AR },
           { kind: 'list', numbered: true, items: mine.map((c) => `${grantShortTitleAr(c.courseTitleAr)}: ${fmtMoney(grantPrice(c.price, pct))} بدل ${fmtMoney(c.price)}`) },
+          ...closing,
           { kind: 'facts', rows: [
             { label: 'تدفع', value: `${fmtMoney(payTotal)} بدل ${fmtMoney(listTotal)}` },
             { label: GRANT_VALUE_AR, value: fmtMoney(listTotal - payTotal) },
@@ -329,6 +335,7 @@ export async function sendGrantReminders(
         ]
       : [
           { kind: 'p', text: `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom مع مدربين معتمدين.` },
+          ...closing,
           { kind: 'facts', rows: [
             { label: 'كود منحتك', value: coupon.code },
             /* وفي آخر يومٍ لا يُكرَّر: عنوانُه «اليوم آخر يوم لمنحتك» */

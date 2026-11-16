@@ -17,16 +17,16 @@
 
    ═══ و«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) ═══
 
-   `variant="blackfriday"`: حملةُ مؤثّرين بصفّها هي — إعداداتُها كأخواتها، والهامشُ يطرح عمولةَ المؤثّر كمنحة المؤثّرين.
+   `variant="blackfriday"`: بصفّها هي — إعداداتُها كأخواتها. وصارت منحةً للجميع بلا مؤثّرين (١٦ نوفمبر ٢٠٢٦،
+   `grant-merge.service.ts`)، فلا عمولةَ في هامشها.
    **والمؤثّرون لا يُدارون هنا** (١٦ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة: «احذف المؤثرين من صفحة منحة بلاك فرايدي لأنّ لهم
    صفحة»): لوحُهم (`InfluencersPanel`) في «منحة مؤثرين وجيز» وحدَها، وفيه رابطُ كلٍّ في الحملتين وخصمُه وكودُه.
 
    ═══ وكلُّها لسانٌ واحدٌ «المنح»، والتنقّلُ بينها في رأس الصفحة (٣ نوفمبر ٢٠٢٦، `GrantSwitcher`) ═══
 
-   ═══ وتحته «الهامش في كل المنح» (١٦ نوفمبر ٢٠٢٦، `GrantMarginsSummary`) ═══
-   قرارُ صاحب المنصّة: «وامنحني معرفة الهامش لكل نوع من المنح»، ثمّ «واجعل الهامش يحسب للجميع ومنهم الشركاء». فكلُّ منحةٍ
-   بنسبتها، وكلُّ مؤثّرٍ نشطٍ بخصمه وعمولته، وكلُّ شريكٍ بنسبته، في لوحٍ واحد في كلّ صفحات المنح — وصفحةُ الشركاء معها
-   (`PartnerGrants.tsx`). و«فحص الهامش» أسفلَ الصفحة لمنحتها وحدَها كما كان. */
+   ═══ و«فحص الهامش» أسفلَها لأيّ منحة (١٦ نوفمبر ٢٠٢٦، `GrantMarginCheck`) ═══
+   قرارُ صاحب المنصّة: «أريد فوق هذا الجدول أن أختار المنحةَ التي أرى جدولَها.. ولا حاجةَ للجدول الذي وضعتَه في رأس
+   الصفحة». فذهب لوحُ «الهامش في كل المنح»، وفوق الفحص اختيارٌ: المنح، ثمّ كلُّ مؤثّر، ثمّ كلُّ شريك. ويبدأ بمنحة الصفحة. */
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
@@ -35,13 +35,13 @@ import GrantCourses from "./GrantCourses";
 import GrantRegistrants from "./GrantRegistrants";
 import InfluencersPanel from "./InfluencersPanel";
 import GrantSwitcher from "./GrantSwitcher";
-import GrantMarginsSummary from "./GrantMarginsSummary";
+import GrantMarginCheck from "./GrantMarginCheck";
 import type { GrantVariant } from "./grant-screens";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiGet, apiPut, ApiError } from "@/services/api";
-import { fmtDate, fmtMoney } from "@/application/text/format-ar";
-import { BLACK_FRIDAY_GRANT_NAME_AR, grantClosesAt, grantLastDay, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
+import { fmtDate } from "@/application/text/format-ar";
+import { BLACK_FRIDAY_GRANT_NAME_AR, GRANT_KIND_SLUG, grantClosesAt, grantLastDay, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
 import { staffControlCls } from "@/components/FormKit";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -50,20 +50,6 @@ interface Settings {
   id: string; nameAr: string; percentOff: number; maxCodes: number | null; maxCourses: number; closesAt: string | null;
   active: boolean; open: boolean; issued: number; used: number; pending: number; left: number | null;
 }
-interface MarginRow {
-  cohortId: string; titleAr: string; status: string; startsAt: string | null; currency: string;
-  listPrice: number; price: number; ruleType: string | null; ruleRate: number | null;
-  seatCost: number | null; margin: number | null;
-  /** عمولةُ المؤثّر عن المقعد — في منحة المؤثّرين وحدَها */
-  commission?: number;
-}
-
-const RULE_AR: Record<string, string> = {
-  per_seat: "أجر المقعد",
-  revenue_share: "نسبة من سعر الدورة",
-  fixed_per_cohort: "مبلغ ثابت للشعبة",
-};
-
 export default function AdminMemberGrant({ variant = "members" }: { variant?: GrantVariant }) {
   const forInfluencer = variant === "influencer";
   const forOpen = variant === "open";
@@ -72,7 +58,6 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
   const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : forOpen ? OPEN_GRANT_NAME_AR : forBlackFriday ? BLACK_FRIDAY_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
   /* اسمُ الحملة القصير — لمن عبّأ نموذجَها ولدوراتها (`GrantKind`) */
   const grantKind: GrantKind = forInfluencer ? "influencer" : forOpen ? "open" : forBlackFriday ? "blackfriday" : "member";
-  const [commissionPct, setCommissionPct] = useState(0);
   const [s, setS] = useState<Settings | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const [pct, setPct] = useState("");
@@ -80,7 +65,6 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
   const [courses, setCourses] = useState("");
   const [lastDay, setLastDay] = useState("");
   const [active, setActive] = useState(false);
-  const [rows, setRows] = useState<MarginRow[] | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -99,18 +83,9 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
   }, [api]);
   useEffect(() => { void load(); }, [load]);
 
-  /* الهامشُ بالنسبة التي في الخانة — يتبعها وهي تُكتب */
+  /* والنسبةُ التي في الخانة تُجرَّب في «فحص الهامش» قبل حفظها */
   const pctNum = Number(pct);
   const pctOk = Number.isInteger(pctNum) && pctNum >= 1 && pctNum <= 100;
-  useEffect(() => {
-    if (!pctOk) return;
-    const t = setTimeout(() => {
-      apiGet<{ rows: MarginRow[]; commissionPercent?: number }>(`${api}/margins?percentOff=${pctNum}`)
-        .then((r) => { setRows(r.rows); setCommissionPct(r.commissionPercent ?? 0); })
-        .catch(() => setRows(null));
-    }, 300);
-    return () => clearTimeout(t);
-  }, [pctNum, pctOk, api]);
 
   const maxNum = max.trim() === "" ? null : Number(max);
   const maxOk = maxNum === null || (Number.isInteger(maxNum) && maxNum >= 1);
@@ -151,14 +126,11 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
     );
   }
 
-  const losing = (rows ?? []).filter((r) => r.margin !== null && r.margin < 0).length;
 
   return (
     <AdminLayout title={nameAr}>
       {/* المنحُ الثلاثُ وروابطُها العامّة — في رأس الصفحة دائما، لا ألسنةٌ في شريط «المال» (`GrantSwitcher`) */}
       <GrantSwitcher current={variant} />
-      {/* والهامشُ في كلّ المنح — في رأس كلّ صفحة منحة (١٦ نوفمبر ٢٠٢٦، `GrantMarginsSummary`) */}
-      <GrantMarginsSummary />
       <Card className="mt-6">
         <p className="text-read font-bold">
           {s.open ? "المنحة مشغلة" : s.active ? "المنحة انتهت" : "المنحة موقوفة"}
@@ -170,7 +142,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
         </p>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
           {forInfluencer && "صفحتها برابط كل مؤثر، وكوده لازم في نموذجها. "}
-          {forBlackFriday && "صفحتها برابط كل مؤثر، وكوده لازم في نموذجها. ولكل مؤثر خصمه إن كتبته له، وإلا فنسبتها. "}
+          {forBlackFriday && "منحة للجميع بلا كود مؤثر ولا عمولة. "}
           {forOpen && `للجميع، وصفحتها ${OPEN_GRANT_PATH}. وقواعدها قواعد منحة وجيز، ومنحة واحدة لكل متعلم على المنح كلها. `}
           من يعبئ نموذج الحملة يأخذ كودا شخصيا، ويمكن أن يعطيه لغيره. ويستعمل في أكثر من شراء حتى {s.maxCourses} دورات على الكود كله، ومنحة واحدة لكل متعلم. وصاحبه يدفع نسبة ثابتة من سعر الدورات بدل خصم الباقة، أو سعر الباقة إن كان أقل. ونسبة كل كود هي نسبة يوم إعطائه.
         </p>
@@ -203,52 +175,7 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
 
       <GrantCourses grant={grantKind} percentOff={pctOk ? pctNum : null} />
 
-      <h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة {pctOk ? `${pctNum}%` : "—"}</h2>
-      <p className="mt-1 text-read text-muted-foreground">
-        سعر كل شعبة مفتوحة بعد المنحة، وما يأخذه المدرب عن كل مقعد{commissionPct > 0 ? `، وعمولة المؤثر ${commissionPct}% من السعر (أعلى عمولة لمؤثر نشط)` : ""}. الخصم كله من حصة الأكاديمية.
-        {losing > 0 ? ` ${losing} شعبة تخسر بهذه النسبة.` : ""}
-      </p>
-      {rows === null ? (
-        <Card as="p" className="mt-3 text-read text-muted-foreground">اكتب نسبة من 1 إلى 100.</Card>
-      ) : rows.length === 0 ? (
-        <Card as="p" className="mt-3 text-read text-muted-foreground">لا شعبة مفتوحة بسعر بعد.</Card>
-      ) : (
-        <Card className="mt-3 overflow-x-auto">
-          <table className="w-full text-read">
-            <thead>
-              <tr className="text-muted-foreground">
-                <th className="p-2 text-start">الشعبة</th>
-                <th className="p-2 text-start">السعر</th>
-                <th className="p-2 text-start">بعد المنحة</th>
-                <th className="p-2 text-start">للمدرب عن المقعد</th>
-                {commissionPct > 0 && <th className="p-2 text-start">للمؤثر</th>}
-                <th className="p-2 text-start">يبقى للأكاديمية</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.cohortId} className="border-t border-border">
-                  <td className="p-2 font-bold">{r.titleAr}</td>
-                  <td className="p-2" dir="ltr">{fmtMoney(r.listPrice, r.currency)}</td>
-                  <td className="p-2" dir="ltr">{fmtMoney(r.price, r.currency)}</td>
-                  <td className="p-2">
-                    {r.seatCost !== null
-                      ? <span dir="ltr">{fmtMoney(r.seatCost, r.currency)}</span>
-                      : r.ruleType === "fixed_per_cohort" && r.ruleRate !== null
-                        ? `${RULE_AR.fixed_per_cohort}: ${fmtMoney(r.ruleRate, r.currency)}`
-                        : "لا قاعدة أتعاب"}
-                    {r.ruleType === "revenue_share" && r.ruleRate !== null ? ` (${r.ruleRate}% ${RULE_AR.revenue_share})` : ""}
-                  </td>
-                  {commissionPct > 0 && <td className="p-2" dir="ltr">{fmtMoney(r.commission ?? 0, r.currency)}</td>}
-                  <td className={`p-2 font-bold ${r.margin !== null && r.margin < 0 ? "text-danger-ink" : ""}`} dir="ltr">
-                    {r.margin === null ? "—" : fmtMoney(r.margin, r.currency)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
+      <GrantMarginCheck pageKey={GRANT_KIND_SLUG[grantKind]} draftPercent={pctOk ? pctNum : null} />
 
       {confirm && (
         <ConfirmAction

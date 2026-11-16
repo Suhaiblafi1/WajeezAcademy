@@ -47,7 +47,8 @@ describe('شاشة صاحب المنصة', () => {
     expect(PAGE).toMatch(/const api = forInfluencer \? "\/api\/admin\/influencer-grant" : forOpen \? "\/api\/admin\/open-grant" : forBlackFriday \? "\/api\/admin\/black-friday-grant" : "\/api\/admin\/member-grant";/)
     /* و«منحة وجيز العامة» ببابها هي — إعداداتُها ونتائجُها (١ نوفمبر ٢٠٢٦) */
     expect(ROUTES).toMatch(/app\.put\('\/api\/admin\/open-grant', \{\s*preHandler: canManage/)
-    expect(PAGE).toMatch(/apiGet<\{ rows: MarginRow\[\]; commissionPercent\?: number \}>\(`\$\{api\}\/margins\?percentOff=\$\{pctNum\}`\)/)
+    /* والنسبةُ التي في الخانة تُجرَّب في «فحص الهامش» على منحة الصفحة (`GrantMarginCheck`) */
+    expect(PAGE).toMatch(/<GrantMarginCheck pageKey=\{GRANT_KIND_SLUG\[grantKind\]\} draftPercent=\{pctOk \? pctNum : null\} \/>/)
     expect(PAGE).toContain('والأكواد التي أعطيت قبله')
   })
 })
@@ -193,7 +194,7 @@ describe('النصوص', () => {
       GRANT.grantCoursesLeftAr(1), GRANT.grantCoursesLeftAr(2), GRANT.grantCoursesLeftAr(3),
     ]
     for (const t of ['المنحة مشغلة', 'المنحة موقوفة', 'نسبة المنحة %', 'عدد المنح', 'دورات المنحة', 'آخر يوم', 'يبقى للأكاديمية', 'لا قاعدة أتعاب']) {
-      expect(PAGE).toContain(t)
+      expect(PAGE + code('src/pages/admin/GrantMarginCheck.tsx')).toContain(t)
       texts.push(t)
     }
     for (const t of texts) expect(t).toBe(plainAr(t))
@@ -301,33 +302,40 @@ describe('تفاصيل المؤثر تتغير', () => {
   })
 })
 
-/* ═══ «الهامش في كل المنح» في رأس كلّ صفحة منحة (١٦ نوفمبر ٢٠٢٦) ═══
-   قرارُ صاحب المنصّة: «وامنحني معرفة الهامش لكل نوع من المنح». والسلوكُ في `server/tests/commerce/grant-margins-summary.test.ts`. */
-describe('الهامش في كل المنح', () => {
-  const SUMMARY = code('src/pages/admin/GrantMarginsSummary.tsx')
+/* ═══ «فحص الهامش» لأيّ منحة — يُختار فوق جدوله (١٦ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «أريد فوق هذا الجدول أن أختار المنحةَ التي أرى جدولَها، خاصّةً للمؤثّرين والشركاء.. ولا حاجةَ
+   للجدول الذي وضعتَه في رأس الصفحة». والسلوكُ في `server/tests/commerce/grant-margin-picker.test.ts`. */
+describe('فحص الهامش باختيار المنحة', () => {
+  const CHECK = code('src/pages/admin/GrantMarginCheck.tsx')
+  const PARTNERS = code('src/pages/admin/PartnerGrants.tsx')
 
-  it('⚠️ في رأس كل صفحة منحة تحت روابط المنح — من بابه بصلاحية الكوبونات، وفحص كل منحة باق تحته', () => {
-    expect(PAGE).toMatch(/<GrantSwitcher current=\{variant\} \/>\s*<GrantMarginsSummary \/>\s*<Card/)
-    /* وصفحةُ الشركاء معها — «واجعل الهامش يحسب للجميع ومنهم الشركاء» */
-    expect(code('src/pages/admin/PartnerGrants.tsx')).toMatch(/<GrantSwitcher current="partners" \/>\s*<GrantMarginsSummary \/>/)
-    expect(PAGE, 'ذهب فحص هامش المنحة').toMatch(/<h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة/)
-    expect(SUMMARY).toMatch(/apiGet<Summary>\("\/api\/admin\/grants\/margins-summary"\)/)
-    expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/grants\/margins-summary', \{\s*preHandler: canManage/)
-    /* الخاسرةُ بلون التنبيه، والأرقامُ من اليسار، ولكلّ مؤثّرٍ صفُّه تحت منحته */
-    expect(SUMMARY).toMatch(/\{s\.losing > 0 \? <Chip tone="warn"><bdi dir="ltr">\{s\.losing\}<\/bdi><\/Chip>/)
-    expect(SUMMARY).toMatch(/\{\(c\.influencers \?\? \[\]\)\.map\(\(x\) => \(/)
+  it('⚠️ لا لوح هامش في رأس صفحات المنح — تحت روابط المنح إعداداتها مباشرة', () => {
+    expect(PAGE).toMatch(/<GrantSwitcher current=\{variant\} \/>\s*<Card/)
+    expect(PARTNERS).toMatch(/<GrantSwitcher current="partners" \/>\s*<Card>/)
+    expect(PAGE + PARTNERS, 'عاد لوح الهامش في كل المنح').not.toMatch(/GrantMarginsSummary|margins-summary/)
   })
 
-  it('⚠️ التلخيص يعد ما يعده الفحص — والنصوص بلا تشكيل', async () => {
-    const { marginStats, GRANT_MARGINS_TITLE_AR, GRANT_MARGINS_LINE_AR, GRANT_MARGINS_TOP_AR } = await import('@/application/commerce/grant-margins')
-    const rows = [
-      { margin: -5, currency: 'USD' }, { margin: null, currency: 'USD' }, { margin: 10, currency: 'USD' }, { margin: -1, currency: 'JOD' },
-    ]
-    expect(marginStats(rows, 'USD')).toEqual({ cohorts: 4, losing: 2, noCost: 1, otherCurrency: 1, avg: 2.5, min: -5 })
-    expect(marginStats([{ margin: null, currency: 'USD' }], 'USD')).toMatchObject({ cohorts: 1, noCost: 1, avg: null, min: null })
-    const texts = [GRANT_MARGINS_TITLE_AR, GRANT_MARGINS_LINE_AR, GRANT_MARGINS_TOP_AR, 'المنحة', 'الحال', 'الخصم', 'العمولة', 'الشعب', 'تخسر', 'بلا أجر مقعد', 'متوسط الهامش', 'أدنى هامش', ' (الأعلى)', ' (خصمه)', 'لا مؤثر نشط.', 'تعذر حساب الهامش الآن.']
-    for (const t of texts.slice(3)) expect(SUMMARY).toContain(t)
-    for (const t of texts) expect(t).toBe(plainAr(t))
-    expect(GRANT_MARGINS_LINE_AR).toContain('سعر المقعد بعد المنحة ناقصا أجر المدرب وعمولة المؤثر')
+  it('⚠️ فوق الجدول اختيار: المنح ثم المؤثرون ثم الشركاء — يبدأ بمنحة الصفحة، والشريك بشريكه', () => {
+    expect(CHECK).toMatch(/<h2[^>]*>فحص الهامش[\s\S]*?<select value=\{key\} onChange=\{\(e\) => setKey\(e\.target\.value\)\}[\s\S]*?<table/)
+    expect(CHECK).toMatch(/\{ group: "campaign", labelAr: "المنح" \},\s*\{ group: "influencer", labelAr: "المؤثرون" \},\s*\{ group: "partner", labelAr: "الشركاء" \}/)
+    expect(CHECK).toMatch(/<optgroup key=\{group\} label=\{labelAr\}>/)
+    expect(CHECK).toMatch(/useState\(pageKey \?\? ""\)/)
+    expect(CHECK).toMatch(/apiGet<\{ options: MarginOption\[\] \}>\("\/api\/admin\/grants\/margin-options"\)/)
+    expect(CHECK).toMatch(/apiGet<Margins>\(`\/api\/admin\/grants\/margins\?\$\{q\}`\)/)
+    /* والنسبةُ التي في الخانة على منحة الصفحة وحدَها */
+    expect(CHECK).toMatch(/const tryPct = ownPage \? draftPercent \?\? null : null;/)
+    expect(PARTNERS).toMatch(/<GrantMarginCheck key=\{current\.id\} pageKey=\{partnerCampaignSlug\(current\.slug\)\} \/>/)
+    for (const path of ['/api/admin/grants/margin-options', '/api/admin/grants/margins']) {
+      expect(ROUTES).toMatch(new RegExp(`app\\.get\\('${path.replace(/\//g, '\\/')}', \\{\\s*preHandler: canManage`))
+    }
+  })
+
+  it('⚠️ عمود المؤثر حين عمولة، وعمود الشريك حين حصة — والنصوص بلا تشكيل', () => {
+    expect(CHECK).toMatch(/\{commission && <th className="p-2 text-start">للمؤثر<\/th>\}/)
+    expect(CHECK).toMatch(/\{share && <th className="p-2 text-start">للشريك<\/th>\}/)
+    for (const t of ['المنحة', 'المنح', 'المؤثرون', 'الشركاء', 'للمؤثر', 'للشريك', 'يبقى للأكاديمية', 'تعذر حساب الهامش الآن.', ' · موقوفة']) {
+      expect(CHECK).toContain(t)
+      expect(t).toBe(plainAr(t))
+    }
   })
 })

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Download, ExternalLink, ImageUp, Loader2, Plus, ServerOff, Trash2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import GrantSwitcher from "./GrantSwitcher";
-import GrantMarginsSummary from "./GrantMarginsSummary";
+import GrantMarginCheck from "./GrantMarginCheck";
 import GrantCourseChoice from "./GrantCourseChoice";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -19,7 +19,7 @@ import { mediaSrc, putSigned } from "@/services/signed-upload";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
 import PartnerRevenueView, { type PartnerStatement } from "@/components/partner/PartnerRevenueView";
 import { grantClosesAt, grantLastDay } from "@/application/commerce/grant";
-import { normalizeDomain, normalizePartnerSlug, PARTNER_DEFAULTS, PARTNER_TYPE_AR, type PartnerType } from "@/application/commerce/partner-grant";
+import { normalizeDomain, normalizePartnerSlug, partnerCampaignSlug, PARTNER_DEFAULTS, PARTNER_TYPE_AR, type PartnerType } from "@/application/commerce/partner-grant";
 import { staffControlCls } from "@/components/FormKit";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { matchesQuery } from "@/application/text/search-ar";
@@ -109,8 +109,6 @@ export default function AdminPartnerGrants() {
   return (
     <AdminLayout title="منح الشركاء">
       <GrantSwitcher current="partners" />
-      {/* والهامشُ في كلّ المنح هنا أيضا — كلُّ شريكٍ بنسبته (١٦ نوفمبر ٢٠٢٦: «واجعل الهامش يحسب للجميع ومنهم الشركاء») */}
-      <GrantMarginsSummary />
       <Card>
         <p className="text-read leading-7 text-muted-foreground">
           لكل جامعة أو شركة منحتها وصفحتها. يكتب الطالب بريده الجامعي فيصله رابط، وإذا فتحه أخذ كوده. والكود يعمل على أي دورة حتى حد دوراته،
@@ -162,6 +160,8 @@ export default function AdminPartnerGrants() {
           <GrantCourseChoice endpoint={`/api/admin/partners/${current.id}/courses`} />
           <PartnerRevenue partner={current} onChanged={() => void load()} />
           <PartnerClaims partner={current} />
+          {/* و«فحص الهامش» يبدأ بهذا الشريك، ويُختار فوقه غيرُه (١٦ نوفمبر ٢٠٢٦، `GrantMarginCheck`) */}
+          <GrantMarginCheck key={current.id} pageKey={partnerCampaignSlug(current.slug)} />
         </>
       )}
     </AdminLayout>

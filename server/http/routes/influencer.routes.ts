@@ -12,7 +12,7 @@ import { requirePermission } from '../auth-plugin'
 import { InfluencerService } from '../../services/influencer.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantCourseChoiceService } from '../../services/grant-scope.service'
-import { BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, isInfluencerGrant } from '../../../src/application/commerce/grant'
 import { INFLUENCER_COMMISSION_DEFAULT } from '../../../src/application/commerce/influencer'
 
 export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -50,6 +50,8 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
       schema: { tags: ['admin-commerce'], summary: `سعر كل شعبة بعد ${nameAr} مقابل أجر مقعدها وعمولة المؤثر` },
     }, async (req) => {
       const { percentOff } = z.object({ percentOff: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query)
+      /* و«بلاك فرايدي وجيز» لم تعد حملةَ مؤثّرين (١٦ نوفمبر ٢٠٢٦، `grant-merge.service.ts`) — فلا عمولةَ في هامشها */
+      if (!isInfluencerGrant(svc.slug)) return svc.margins(percentOff)
       const top = await prisma.influencer.aggregate({ where: { active: true }, _max: { commissionPercent: true } })
       return svc.margins(percentOff, top._max.commissionPercent ?? INFLUENCER_COMMISSION_DEFAULT)
     })

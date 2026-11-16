@@ -1,68 +1,48 @@
-/* الهامشُ في كلّ المنح — لوحٌ واحدٌ في رأس كلّ صفحة منحة (١٦ نوفمبر ٢٠٢٦). والعلّةُ في `src/application/commerce/grant-margins.ts`.
+/* «فحص الهامش» لأيّ منحة — يُختار من فوق جدوله (١٦ نوفمبر ٢٠٢٦).
+
+   قرارُ صاحب المنصّة، وهو في صفحة بلاك فرايدي: «أريد فوق هذا الجدول أن أختار المنحةَ التي أرى جدولَها، خاصّةً للمؤثّرين
+   والشركاء لأنّهم كثيرون.. بلاك فرايدي واحدة.. ولا حاجةَ للجدول الذي وضعتَه في رأس الصفحة». فذهب لوحُ «الهامش في كل المنح»،
+   وصار فوق «فحص الهامش» اختيارٌ واحد: المنحُ الأربع، ثمّ كلُّ مؤثّرٍ نشط، ثمّ كلُّ شريك.
 
    ═══ ما يقع ═══
 
-   ١) **لكلّ حملةٍ صفٌّ بنسبتها المحفوظة** — الأربعُ ثمّ الشركاء. والعمولةُ صفرٌ إلّا في حملتَي المؤثّرين: أعلى عمولةٍ لمؤثّرٍ
-      نشط، كما يقرؤها «فحص الهامش» في صفحتهما (`influencer.routes.ts`) — فلا يُرى هامشٌ أحسنُ ممّا يقع.
-   ٢) **ولكلّ مؤثّرٍ نشطٍ صفٌّ تحت كلٍّ من حملتَي المؤثّرين** — بخصمه هو (`percentOff`، وفارغُه نسبةُ الحملة) وعمولتِه هو:
-      ما يقع حقّا على من جاء بكوده. والموقوفُ لا يُعطى به كودٌ جديدٌ فلا صفَّ له.
-   ٣) **والحسابُ حسابُ «فحص الهامش» نفسُه** (`GrantService.margins`) بنسبةٍ وعمولةٍ تُمرَّران — لا يُكتب ثانية. ونتيجتُه لا تتعلّق
-      بالحملة إذا مُرّرت النسبة، فيُحسب لكلّ زوجٍ (نسبة، عمولة) مرّةً واحدة: المؤثّرون بخصم حملتهم وعمولتها الشائعة صفٌّ واحدٌ
-      محسوب، لا قراءةٌ لكلّ مؤثّر. */
+   ١) **لكلّ منحةٍ خيارٌ بنسبتها المحفوظة.** والعمولةُ صفرٌ إلّا في «منحة مؤثرين وجيز»: أعلى عمولةٍ لمؤثّرٍ نشط، فلا يُرى
+      هامشٌ أحسنُ ممّا يقع. و«بلاك فرايدي وجيز» لم تعد حملةَ مؤثّرين (`grant-merge.service.ts`) — فلا عمولةَ فيها.
+   ٢) **ولكلّ مؤثّرٍ نشطٍ خيارُه** — بخصمه هو (وفارغُه نسبةُ منحة المؤثّرين) وعمولتِه هو: ما يقع حقّا على من جاء بكوده.
+      والموقوفُ لا يُعطى به كودٌ جديدٌ فلا خيارَ له.
+   ٣) **ولكلّ شريكٍ خيارُه** بنسبته، وحصّتُه ممّا يُدفع تُطرح من الهامش (`partnerShare`).
+   ٤) **والحسابُ حسابُ «فحص الهامش» نفسُه** (`GrantService.margins`) بنسبةٍ وعمولةٍ وحصّةٍ تُمرَّر — لا يُكتب ثانية. والنسبةُ
+      تُجرَّب قبل أن تُحفظ: تُمرَّر فتغلب نسبةَ الخيار. */
 
 import type { PrismaClient } from '@prisma/client'
 import { GrantService } from './grant.service'
 import {
-  BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, isInfluencerGrant, type GrantSlug,
+  BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, isInfluencerGrant, type CampaignSlug, type GrantSlug,
 } from '../../src/application/commerce/grant'
 import { INFLUENCER_COMMISSION_DEFAULT, influencerPercentOff } from '../../src/application/commerce/influencer'
-import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
-import { marginStats, type MarginStats } from '../../src/application/commerce/grant-margins'
 
-/** ترتيبُ الحملات في اللوح — كما يقرؤها صاحبُ المنصّة: منحتا الجميع، ثمّ منحتا المؤثّرين */
-const ORDER: readonly GrantSlug[] = [MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, INFLUENCER_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG]
+/** ترتيبُ المنح في الاختيار — كما يقرؤها صاحبُ المنصّة */
+const ORDER: readonly GrantSlug[] = [MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG]
 
-export interface InfluencerMarginRow extends MarginStats {
-  id: string
+/** مفتاحُ خيار المؤثّر — والمنحُ والشركاءُ مفتاحُهم صفُّ حملتهم */
+export const influencerMarginKey = (id: string) => `influencer:${id}`
+
+export interface MarginOption {
+  key: string
+  group: 'campaign' | 'influencer' | 'partner'
   nameAr: string
-  code: string
-  /** الخصمُ الذي يأخذه متابعُه في هذه الحملة */
-  percentOff: number
-  /** أهو خصمُه هو أم نسبةُ الحملة */
-  ownPercent: boolean
-  commissionPercent: number
-}
-
-export interface CampaignMarginRow extends MarginStats {
-  slug: string
-  nameAr: string
-  /** حملةٌ من الأربع أم شريك */
-  group: 'campaign' | 'partner'
+  /** الحملةُ التي يُحسب بها */
+  slug: CampaignSlug
   active: boolean
   percentOff: number
   commissionPercent: number
-  /** حصّةُ الشريك ممّا يُدفع — تُطرح من الهامش كالعمولة (١٦ نوفمبر ٢٠٢٦). وصفرٌ للحملات */
   sharePercent: number
-  /** أعلى عمولةٍ لمؤثّرٍ نشط — في حملتَي المؤثّرين */
-  topCommission: boolean
-  influencers?: InfluencerMarginRow[]
+  /** كودُ المؤثّر */
+  code?: string
 }
 
-export async function grantMarginsSummary(prisma: PrismaClient): Promise<{ currency: string; campaigns: CampaignMarginRow[] }> {
-  /* الحسابُ بحملةٍ أيّا كانت: النسبةُ تُمرَّر، فلا يقرأ منها إلّا صفَّها */
-  const calc = new GrantService(prisma)
-  const cache = new Map<string, Promise<MarginStats>>()
-  const statsFor = (pct: number, commission: number, share = 0) => {
-    const key = `${pct}|${commission}|${share}`
-    let hit = cache.get(key)
-    if (!hit) {
-      hit = calc.margins(pct, commission, share).then((r) => marginStats(r.rows, LEDGER_CURRENCY))
-      cache.set(key, hit)
-    }
-    return hit
-  }
-
-  const [settings, partners, active] = await Promise.all([
+export async function marginOptions(prisma: PrismaClient): Promise<MarginOption[]> {
+  const [settings, partners, influencers] = await Promise.all([
     Promise.all(ORDER.map((slug) => new GrantService(prisma, slug).campaign())),
     prisma.grantCampaign.findMany({ where: { kind: 'partner' }, orderBy: { createdAt: 'asc' } }),
     prisma.influencer.findMany({
@@ -70,36 +50,31 @@ export async function grantMarginsSummary(prisma: PrismaClient): Promise<{ curre
       select: { id: true, nameAr: true, code: true, percentOff: true, commissionPercent: true },
     }),
   ])
-  const top = active.reduce<number | null>((m, x) => (m === null || x.commissionPercent > m ? x.commissionPercent : m), null)
+  const top = influencers.reduce<number | null>((m, x) => (m === null || x.commissionPercent > m ? x.commissionPercent : m), null)
     ?? INFLUENCER_COMMISSION_DEFAULT
+  const infCampaign = settings.find((c) => c.slug === INFLUENCER_GRANT_SLUG)!
 
-  const campaigns = await Promise.all(settings.map(async (c): Promise<CampaignMarginRow> => {
-    const forInfluencers = isInfluencerGrant(c.slug)
-    const commissionPercent = forInfluencers ? top : 0
-    return {
-      slug: c.slug, nameAr: GRANT_CAMPAIGNS[c.slug as GrantSlug].nameAr, group: 'campaign', active: c.active,
-      percentOff: c.percentOff, commissionPercent, sharePercent: 0, topCommission: forInfluencers,
-      ...(await statsFor(c.percentOff, commissionPercent)),
-      ...(forInfluencers
-        ? {
-            influencers: await Promise.all(active.map(async (x): Promise<InfluencerMarginRow> => {
-              const pct = influencerPercentOff(c.percentOff, x.percentOff)
-              return {
-                id: x.id, nameAr: x.nameAr, code: x.code, percentOff: pct, ownPercent: x.percentOff !== null,
-                commissionPercent: x.commissionPercent, ...(await statsFor(pct, x.commissionPercent)),
-              }
-            })),
-          }
-        : {}),
-    }
-  }))
-  /* والشركاء بعدها — منحةٌ لكلّ شريكٍ بنسبتها، وحصّتُه ممّا يُدفع تُطرح من الهامش (١٦ نوفمبر ٢٠٢٦، `partnerShare`) */
-  const partnerRows = await Promise.all(partners.map(async (p): Promise<CampaignMarginRow> => {
-    const share = p.partnerSharePercent ?? 0
-    return {
-      slug: p.slug, nameAr: p.nameAr, group: 'partner', active: p.active, percentOff: p.percentOff, commissionPercent: 0,
-      sharePercent: share, topCommission: false, ...(await statsFor(p.percentOff, 0, share)),
-    }
-  }))
-  return { currency: LEDGER_CURRENCY, campaigns: [...campaigns, ...partnerRows] }
+  return [
+    ...settings.map((c): MarginOption => ({
+      key: c.slug, group: 'campaign', nameAr: GRANT_CAMPAIGNS[c.slug as GrantSlug].nameAr, slug: c.slug as CampaignSlug, active: c.active,
+      percentOff: c.percentOff, commissionPercent: isInfluencerGrant(c.slug) ? top : 0, sharePercent: 0,
+    })),
+    ...influencers.map((x): MarginOption => ({
+      key: influencerMarginKey(x.id), group: 'influencer', nameAr: x.nameAr, code: x.code, slug: INFLUENCER_GRANT_SLUG,
+      active: infCampaign.active, percentOff: influencerPercentOff(infCampaign.percentOff, x.percentOff),
+      commissionPercent: x.commissionPercent, sharePercent: 0,
+    })),
+    ...partners.map((p): MarginOption => ({
+      key: p.slug, group: 'partner', nameAr: p.nameAr, slug: p.slug as CampaignSlug, active: p.active,
+      percentOff: p.percentOff, commissionPercent: 0, sharePercent: p.partnerSharePercent ?? 0,
+    })),
+  ]
+}
+
+/** «فحص الهامش» لخيارٍ واحد — ونسبةٌ تُمرَّر تُجرَّب مكانَ نسبته. و`null` لمفتاحٍ لا خيارَ له */
+export async function marginsFor(prisma: PrismaClient, key: string, percentOff?: number) {
+  const option = (await marginOptions(prisma)).find((o) => o.key === key)
+  if (!option) return null
+  const r = await new GrantService(prisma, option.slug).margins(percentOff ?? option.percentOff, option.commissionPercent, option.sharePercent)
+  return { option, ...r }
 }
