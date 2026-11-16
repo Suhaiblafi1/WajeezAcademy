@@ -94,6 +94,139 @@ export const grantUntilAr = (lastDay: string): string => `المنحة حتى ${
 
 export const GRANT_OUTCOMES_TITLE_AR = 'ما ستخرج به'
 
+/* ═══ «ما ستخرج به» بما يخرج به حقّا — من صفوف الدورة والشعبة لا من كلامٍ عامّ (١٦ نوفمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة عن أسماء الدورات المرقّمة ووسمَي اللقاءات والمدرّبين: «لا داعي لهذا لأنّه غير مفيد للبيع، إلّا إذا لديك
+   اقتراحٌ يوضّح لهم ماذا يخرج حقيقةً بمشاريع ومهام وتقييم وشهادة»، وخُيّر فاختار **ما يخرج به حقّا**. فلكلّ دورةٍ اختارها
+   ما هو مكتوبٌ في المنصّة وحدَه — ولا يُقال ما لا صفَّ له:
+   · **مشروعُها العمليّ** — `PracticalProject` لآخر نسخةٍ من الدورة، سطرا قصيرا (`grantProjectLineAr`). وبلا مشروعٍ لا سطر.
+   · **مهامُّها التي يصحّحها المدرّب** — تكاليفُ الشعبة ومشاريعُها المنشورةُ للمتعلّمين (`status: 'published'`): ما يراه
+     المسجَّلُ نفسُه. والمسودّةُ قبل اعتماد الخطّة أو بعده لا تُعدّ. والاختباراتُ القصيرةُ تُعدّ وحدَها.
+   · **لقاءاتُها المباشرة** — ما يُعلَن في صفحة الدورة (`sessions`).
+   · **وشهادتُها** — برابط تحقّق (`/verify/<رقمها>`)، وشرطُها قواعدُ الإكمال السارية على الشعبة نفسُها التي يُصدِر بها الإصدارُ
+     (`resolveCompletionRules`): حضورٌ ومهامُّ مقبولةٌ واختبارات — يُقال كما هو.
+   ولا وعدَ بوظيفةٍ ولا دخل. والخادم: `grant-landing.service.ts#outcomes`. */
+
+/** ما يخرج به من دورةٍ في شعبتها — من صفوفها وحدَها */
+export interface GrantCourseOutcome {
+  /** مشروعُها العمليّ سطرا قصيرا — أو `null` إن لم يُكتب */
+  projectAr: string | null
+  /** تكاليفُ ومشاريعُ منشورةٌ يصحّحها المدرّب */
+  tasks: number
+  /** اختباراتٌ قصيرةٌ منشورة */
+  quizzes: number
+  /** شرطُ شهادتها: قواعدُ الإكمال السارية على الشعبة */
+  certificate: { rules: { type: string; threshold: number }[] }
+}
+
+/** سقفُ سطر المشروع — يُقرأ في لمحة */
+export const GRANT_PROJECT_MAX = 110
+
+/** مشروعُ الدورة سطرا: بلا تشكيلٍ ولا أسطر، وأوّلُ جملةٍ منه، وما زاد يُقطع عند كلمةٍ بـ«…» */
+export function grantProjectLineAr(desc: string | null | undefined): string | null {
+  const v = plainAr(desc ?? '').replace(/\s+/g, ' ').trim()
+  if (!v) return null
+  const first = v.split(/(?<=[.!؟])\s/)[0].replace(/[.]$/, '').trim()
+  if (first.length <= GRANT_PROJECT_MAX) return first
+  const cut = first.slice(0, GRANT_PROJECT_MAX)
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), 40)).replace(/[،,:+\s]+$/, '')}…`
+}
+
+/** «4 مهام يصححها المدرب» — والمفردُ والمثنّى بلا رقم */
+export function grantTasksAr(n: number): string {
+  if (n === 1) return 'مهمة واحدة يصححها المدرب'
+  if (n === 2) return 'مهمتان يصححهما المدرب'
+  return n >= 3 && n <= 10 ? `${n} مهام يصححها المدرب` : `${n} مهمة يصححها المدرب`
+}
+
+/** «اختبار قصير واحد» و«3 اختبارات قصيرة» */
+export function grantQuizzesAr(n: number): string {
+  if (n === 1) return 'اختبار قصير واحد'
+  if (n === 2) return 'اختباران قصيران'
+  return n >= 3 && n <= 10 ? `${n} اختبارات قصيرة` : `${n} اختبارا قصيرا`
+}
+
+/** «مشروع عملي» و«3 مشاريع عملية» — في رأس البطاقة */
+export function grantProjectsAr(n: number): string {
+  if (n === 1) return 'مشروع عملي'
+  if (n === 2) return 'مشروعان عمليان'
+  return n >= 3 && n <= 10 ? `${n} مشاريع عملية` : `${n} مشروعا عمليا`
+}
+
+/** «شهادة برابط تحقق» و«3 شهادات برابط تحقق» */
+export function grantCertificatesAr(n: number): string {
+  if (n === 1) return 'شهادة برابط تحقق'
+  if (n === 2) return 'شهادتان برابط تحقق'
+  return n >= 3 && n <= 10 ? `${n} شهادات برابط تحقق` : `${n} شهادة برابط تحقق`
+}
+
+export const GRANT_CERTIFICATE_AR = 'شهادة من وجيز برابط تحقق'
+
+/** شرطٌ واحدٌ من قواعد الإكمال بكلامٍ قصير — وما لا يُعرف نوعُه لا يُقال */
+function ruleAr(r: { type: string; threshold: number }): string | null {
+  const n = r.threshold
+  switch (r.type) {
+    case 'attendance_pct': return `حضور ${n}% من اللقاءات`
+    case 'assignment_accepted': return n === 1 ? 'قبول مهمة واحدة' : n === 2 ? 'قبول مهمتين' : `قبول ${n} مهام`
+    case 'project_accepted': return n === 1 ? 'قبول مشروعك' : `قبول ${n} مشاريع`
+    case 'assessment_passed': return n === 1 ? 'اجتياز اختبار واحد' : `اجتياز ${n} اختبارات`
+    case 'modules_completed': return n === 1 ? 'إكمال محور واحد' : `إكمال ${n} محاور`
+    default: return null
+  }
+}
+
+/** سطرٌ ممّا يخرج به من دورة — ونوعُه لأيقونته */
+export interface GrantOutcomeLine { kind: 'project' | 'tasks' | 'sessions' | 'certificate'; text: string }
+
+/** ما يقرؤه سطرُ الدورة من دورتها — وما لم يصل من الخادم (نسخةٌ قديمة) يُعدّ غائبا لا يُخترع */
+export interface GrantOutcomeSource {
+  projectAr?: string | null
+  tasks?: number
+  quizzes?: number
+  sessions?: readonly unknown[]
+  certificate?: { rules: readonly { type: string; threshold: number }[] } | null
+}
+
+/** سطورُ الدورة الواحدة في «ما ستخرج به»: مشروعُها، ومهامُّها، ولقاءاتُها، وشهادتُها — ما له صفٌّ وحدَه، أربعةٌ على الأكثر */
+export function grantOutcomeLinesAr(x: GrantOutcomeSource): GrantOutcomeLine[] {
+  const tasks = x.tasks ?? 0
+  const quizzes = x.quizzes ?? 0
+  const meetings = x.sessions?.length ?? 0
+  const out: GrantOutcomeLine[] = []
+  if (x.projectAr) out.push({ kind: 'project', text: `مشروع: ${x.projectAr}` })
+  if (tasks > 0 || quizzes > 0) {
+    out.push({
+      kind: 'tasks',
+      text: tasks > 0 && quizzes > 0 ? `${grantTasksAr(tasks)} و${grantQuizzesAr(quizzes)}` : tasks > 0 ? grantTasksAr(tasks) : grantQuizzesAr(quizzes),
+    })
+  }
+  if (meetings > 0) out.push({ kind: 'sessions', text: grantSessionsAr(meetings) })
+  if (x.certificate) out.push({ kind: 'certificate', text: grantCertificateLineAr(x.certificate.rules) })
+  return out
+}
+
+/** رأسُ «ما ستخرج به»: مجاميعُ ما يأخذه من دوراته كلِّها — المشاريعُ والمهامُّ واللقاءاتُ والشهادات، وما كان صفرا لا يُقال */
+export function grantOutcomeTotalsAr(list: readonly GrantOutcomeSource[]): string[] {
+  const projects = list.filter((x) => !!x.projectAr).length
+  const tasks = list.reduce((n, x) => n + (x.tasks ?? 0), 0)
+  const meetings = list.reduce((n, x) => n + (x.sessions?.length ?? 0), 0)
+  const certificates = list.filter((x) => !!x.certificate).length
+  return [
+    projects > 0 ? grantProjectsAr(projects) : null,
+    tasks > 0 ? grantTasksAr(tasks) : null,
+    meetings > 0 ? grantSessionsAr(meetings) : null,
+    certificates > 0 ? grantCertificatesAr(certificates) : null,
+  ].filter((t): t is string => !!t)
+}
+
+/** «شهادة من وجيز برابط تحقق، بعد حضور 80% من اللقاءات وقبول مهمة واحدة» — شرطُها كما يُصدَر بها */
+export function grantCertificateLineAr(rules: readonly { type: string; threshold: number }[]): string {
+  const parts = rules.map(ruleAr).filter((x): x is string => !!x)
+  if (parts.length === 0) return GRANT_CERTIFICATE_AR
+  const joined = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join('، ')} و${parts[parts.length - 1]}`
+  return `${GRANT_CERTIFICATE_AR}، بعد ${joined}`
+}
+
 /* ═══ «ما ستخرج به» أجملَ وأقصر — بلا تكرار (١ نوفمبر ٢٠٢٦) ═══
 
    طلبُ صاحب المنصّة: «اجعلها أجمل»، ثمّ: «النصوص مكتظّة.. صغّرها»، و«سيكون هناك تكرار.. لا تجعل هناك أيَّ تكرار، ووزّع
@@ -151,11 +284,6 @@ export const GRANT_HUMAN_DIAG_AR = {
   title: 'نشخص احتياجك معك على واتساب',
   lead: 'أرسل سيرتك الذاتية، ويحدد لك مستشارك الدورات المناسبة. مجانا.',
   cta: 'تواصل معنا على واتساب',
-} as const
-export const GRANT_SELF_DIAG_AR = {
-  title: 'أو شخص احتياجك بنفسك',
-  meta: '3 إلى 6 دقائق، مجانا',
-  cta: 'ابدأ التشخيص',
 } as const
 /* ═══ والتذكيرُ بما اختاره هو (٣١ أكتوبر ٢٠٢٦) ═══
 

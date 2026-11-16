@@ -47,10 +47,12 @@ import { normalizePhone } from '../../src/application/advisor/guest-contact'
 import { cleanTouch } from '../../src/application/marketing/signup-source'
 import { linkGrantVisit } from './grant-visit.service'
 import {
+  type GrantCourseOutcome, grantProjectLineAr,
   CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, OPEN_GRANT_SHARE_PATH, WORK_FIELDS, campaignTag, grantCourseSummary, leadProfileAr,
   type GrantCourseSummary,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
+import { resolveCompletionRules } from '../../src/application/learning/completion-rules'
 import { GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
 import { PARTNER_SLUG_PREFIX } from '../../src/application/commerce/partner-grant'
 import { INFLUENCER_CODE_BAD_AR, influencerGrantPath, influencerLink, influencerPercentOff, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
@@ -146,8 +148,9 @@ export class GrantLandingService {
     const [s, open] = await Promise.all([
       this.grants.settings(now), pageCourses(this.prisma, this.slug, influencerId, now),
     ])
-    const [summaries, sessions] = await Promise.all([
+    const [summaries, sessions, outcomes] = await Promise.all([
       this.summaries(open.courses.map((c) => c.courseId)), this.sessions(open.courses.map((c) => c.cohortId)),
+      this.outcomes(open.courses),
     ])
     return {
       /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
@@ -164,8 +167,50 @@ export class GrantLandingService {
         summary: summaries.get(c.courseId) ?? null,
         /* ومواعيدُ لقاءاتها — يُقال بها فورا إن تعارضت مع ما اختاره قبلها، ولا يُقترح له دورتان تتعارضان */
         sessions: sessions.get(c.cohortId) ?? [],
+        /* وما يخرج به منها حقّا: مشروعُها ومهامُّها وشرطُ شهادتها — من صفوفها وحدَها (١٦ نوفمبر ٢٠٢٦، `GrantCourseOutcome`) */
+        ...(outcomes.get(c.cohortId) ?? { projectAr: null, tasks: 0, quizzes: 0, certificate: { rules: [] } }),
       })),
     }
+  }
+
+  /** ما يخرج به من كلّ شعبةٍ معروضة (١٦ نوفمبر ٢٠٢٦) — والعلّةُ في `grant-landing.ts` («ما ستخرج به»):
+      مشروعُ آخر نسخةٍ من الدورة، ومهامُّ الشعبة المنشورةُ للمتعلّمين، وقواعدُ إكمالها السارية كما يُصدِر بها الإصدار */
+  private async outcomes(courses: readonly { courseId: string; cohortId: string }[]): Promise<Map<string, GrantCourseOutcome>> {
+    if (courses.length === 0) return new Map()
+    const courseIds = [...new Set(courses.map((c) => c.courseId))]
+    const cohortIds = courses.map((c) => c.cohortId)
+    const [projects, tasks, rules] = await Promise.all([
+      this.prisma.courseVersion.findMany({
+        where: { courseId: { in: courseIds } },
+        orderBy: [{ courseId: 'asc' }, { version: 'desc' }],
+        distinct: ['courseId'],
+        select: { courseId: true, project: { select: { descriptionAr: true } } },
+      }),
+      /* ما يراه المسجَّلُ نفسُه (`learnerCohortView`): المنشورُ وحدَه — لا مسودّةٌ ولا مغلقة */
+      this.prisma.cohortAssessment.groupBy({
+        by: ['cohortId', 'type'], where: { cohortId: { in: cohortIds }, status: 'published' }, _count: { _all: true },
+      }),
+      this.prisma.completionRule.findMany({
+        where: { OR: [{ cohortId: { in: cohortIds } }, { courseId: { in: courseIds }, cohortId: null }] },
+        select: { courseId: true, cohortId: true, type: true, threshold: true, required: true },
+      }),
+    ])
+    const projectOf = new Map(projects.map((p) => [p.courseId, grantProjectLineAr(p.project?.descriptionAr)]))
+    const out = new Map<string, GrantCourseOutcome>()
+    for (const c of courses) {
+      const mine = tasks.filter((t) => t.cohortId === c.cohortId)
+      const resolved = resolveCompletionRules(
+        rules.filter((r) => r.courseId === c.courseId && r.cohortId === null),
+        rules.filter((r) => r.cohortId === c.cohortId),
+      )
+      out.set(c.cohortId, {
+        projectAr: projectOf.get(c.courseId) ?? null,
+        tasks: mine.filter((t) => t.type !== 'quiz').reduce((n, t) => n + t._count._all, 0),
+        quizzes: mine.filter((t) => t.type === 'quiz').reduce((n, t) => n + t._count._all, 0),
+        certificate: { rules: resolved.map((r) => ({ type: r.type, threshold: r.threshold })) },
+      })
+    }
+    return out
   }
 
   /** لقاءاتُ كلِّ شعبةٍ بموعدها — ما يُعلَن في صفحة الدورة نفسِه (`PUBLIC_SESSION_WHERE`)، بالبداية والنهاية وحدهما */
