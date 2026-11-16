@@ -1623,8 +1623,10 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   const { applyPartnerLaunch } = await import('../services/partner-grant.service')
   const partnered = await applyPartnerLaunch(prisma)
   /* و«منحة وجيز» و«العامة» تصيران «بلاك فرايدي وجيز» بـ70% لكلّ كود، ويوقف المؤثّرون — مرّةً واحدة (١٦ نوفمبر ٢٠٢٦) */
-  const { applyBlackFridayMerge } = await import('../services/grant-merge.service')
+  const { applyBlackFridayMerge, sendBlackFridayUpgradeNotice } = await import('../services/grant-merge.service')
   await applyBlackFridayMerge(prisma)
+  /* وبريدُ من ارتفع كودُه إلى 70% — مرّةً، عصرَ ١٧ نوفمبر (١٦ نوفمبر ٢٠٢٦: «send them tomorrow afternoon») */
+  await sendBlackFridayUpgradeNotice(prisma, now)
   const seeded = await seedGrantAdvisorWhatsApp(prisma)
   /* ولكلّ حملةٍ بنهايتها: «منحة وجيز» و«منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) و«منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
   const members = await sendGrantReminders(prisma, now)

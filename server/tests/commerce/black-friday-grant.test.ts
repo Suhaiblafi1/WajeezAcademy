@@ -365,5 +365,32 @@ describe('⑩ الدمج في بلاك فرايدي', () => {
     const again = await landing.apply({ ...m, phone: m.phone })
     expect(again.ref).toBe(mOut.ref)
     expect(await applyBlackFridayMerge(prisma), 'دمج مرتين').toBeNull()
+
+    /* ⑪ وبريد من ارتفع كوده — عصر ١٧ نوفمبر، بنسبته القديمة، وآخر يوم، وإغلاق التسجيل بعده، ومرة */
+    const { sendBlackFridayUpgradeNotice, BF_UPGRADE_SEND_AT } = await import('../../services/grant-merge.service')
+    const had = await prisma.integrationSetting.findUnique({ where: { provider: 'email' }, select: { enabled: true, config: true } })
+    const cfg = { apiKey: 'test-key', fromEmail: 'no-reply@test.local' }
+    await prisma.integrationSetting.upsert({ where: { provider: 'email' }, update: { enabled: true, config: cfg }, create: { provider: 'email', enabled: true, config: cfg } })
+    const close = new Date(BF_UPGRADE_SEND_AT.getTime() + 5 * 24 * 3_600_000)
+    await bf.update({ closesAt: close }, ownerId)
+    try {
+      const notices = (to: string) => prisma.outboxMail.findMany({ where: { to, purpose: 'grant.reminder', subject: { contains: 'أكبر خصم' } } })
+      expect((await sendBlackFridayUpgradeNotice(prisma, new Date(BF_UPGRADE_SEND_AT.getTime() - 60_000))).sent, 'أرسل قبل موعده').toBe(0)
+      const after = new Date(BF_UPGRADE_SEND_AT.getTime() + 3_600_000)
+      await sendBlackFridayUpgradeNotice(prisma, after)
+      const mm = await notices(m.email)
+      expect(mm, 'لم يصل صاحب الستين').toHaveLength(1)
+      expect(mm[0].text).toContain('بدل 60%')
+      expect(mm[0].text).toContain(mOut.grant!.code!)
+      expect(mm[0].text, 'لا يقول إغلاق التسجيل').toContain('يغلق التسجيل تماما حتى الفصل القادم')
+      expect((await notices(o.email))[0]?.text, 'لم يصل صاحب الخمسين').toContain('بدل 50%')
+      expect(await notices(e.email), 'وصل من نزل كوده بريد الارتفاع').toHaveLength(0)
+      await sendBlackFridayUpgradeNotice(prisma, after)
+      expect(await notices(m.email), 'وصله مرتين').toHaveLength(1)
+    } finally {
+      await bf.update({ closesAt: null }, ownerId)
+      if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
+      else await prisma.integrationSetting.delete({ where: { provider: 'email' } })
+    }
   })
 })
