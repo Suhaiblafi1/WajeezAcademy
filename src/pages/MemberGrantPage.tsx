@@ -39,7 +39,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Award, Check, ChevronDown, Clock, Copy, GraduationCap, ExternalLink, Flame, Gift, LayoutGrid, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
+import { Award, Check, ChevronDown, ClipboardCheck, Clock, Copy, GraduationCap, ExternalLink, Flame, Gift, LayoutGrid, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { syncPageTheme } from "@/services/theme";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
@@ -64,7 +64,7 @@ import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } f
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
-  type GrantPathOption, GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, parsePicksParam,
+  type GrantPathOption, type GrantOutcomeLine, GRANT_OUTCOMES_TITLE_AR, grantOutcomeLinesAr, grantOutcomeTotalsAr, grantPerSession, grantSessionsAr, grantShortTitleAr, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_HUMAN_DIAG_AR,
 } from "@/application/commerce/grant-landing";
 import { BLACK_FRIDAY_GRANT_STORE_KEY, GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -84,6 +84,11 @@ interface GrantCourse {
   summary?: GrantCourseSummary | null;
   /** مواعيدُ لقاءاتها المعتمَدة — بها يُقال التعارضُ فورَ الاختيار (`grantClashAr`) */
   sessions?: TimedSession[];
+  /** وما يخرج به منها حقّا (١٦ نوفمبر ٢٠٢٦، `GrantCourseOutcome`): مشروعُها ومهامُّها وشرطُ شهادتها — من صفوفها */
+  projectAr?: string | null;
+  tasks?: number;
+  quizzes?: number;
+  certificate?: { rules: { type: string; threshold: number }[] } | null;
 }
 interface View {
   /** `soldOut`: نفدت أكوادُها والمنحةُ مفتوحة — فمن لا كودَ له يبقى عند سببه ولا يعود إلى النموذج كلَّ زيارة */
@@ -138,8 +143,10 @@ const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
   .map((x) => ({ id: x.id, title: x.title, courseIds: x.course_ids }));
 /** مجالُ دورةٍ لم تُسمَّ عائلتُها — لا يُعرض فيما يريد تطويرَه */
 const OTHER_DOMAIN = "أخرى";
-/** كم وجها في رأس كلِّ قسم */
-const SECTION_FACES = 3;
+/** كم وجها في رأس كلِّ قسم — أربعةٌ بحجمٍ أكبر (١٦ نوفمبر ٢٠٢٦: «كبّر هذا القسم داخليا أكثر») */
+const SECTION_FACES = 4;
+/** أيقونةُ كلِّ سطرٍ في «ما ستخرج به» */
+const OUTCOME_ICON: Record<GrantOutcomeLine["kind"], LucideIcon> = { project: PencilRuler, tasks: ClipboardCheck, sessions: Video, certificate: Award };
 /** أيقونةُ كلِّ قيمةٍ في «لماذا هذه المنحة؟» */
 const WHY_ICON: Record<(typeof GRANT_WHY_POINTS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, proof: Award, advisor: UserRound };
 
@@ -442,13 +449,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const topNote = reasonAr ?? (!c.open ? GRANT_CLOSED_AR : c.soldOut ? GRANT_SOLD_OUT_AR : null);
     /* آخرُ يومٍ قصيرا («7 نوفمبر») — لسطر ما يخسره إن تأخّر */
     const lastDayShort = c.closesAt ? cohortDayAr(new Date(new Date(c.closesAt).getTime() - 1), { day: "numeric", month: "long" }) : null;
-    /* وفي رأس «ما ستخرج به»: لقاءاتُها كلُّها ومدرّبوها — ما يأخذه لا ما يدفعه. والشهادةُ نزلت إلى «ومع كل دورة» */
-    const chosenMeetings = chosen.reduce((n, x) => n + (x.sessions?.length ?? 0), 0);
-    const chosenTrainers = new Set(chosen.map((x) => x.trainer?.id).filter(Boolean)).size;
-    const outcomeExtras = [
-      chosenMeetings > 0 ? grantSessionsAr(chosenMeetings) : null,
-      chosenTrainers > 0 ? grantTrainersAr(chosenTrainers) : null,
-    ].filter((x): x is string => !!x);
+    /* وفي رأس «ما ستخرج به» مجاميعُ ما يأخذه حقّا من دوراته: مشاريعُها ومهامُّها ولقاءاتُها وشهاداتُها (١٦ نوفمبر ٢٠٢٦) —
+       نسخا لوسمَي «لقاءات» و«مدربين» وحدهما: «غير مفيد للبيع» */
+    const outcomeTotals = grantOutcomeTotalsAr(chosen);
     /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب
        هي الشيءَ الذي يراه الشخص، بتصميمٍ يبيّن الصورةَ بحجمٍ كبيرٍ عصريّ». والشاراتُ وسومٌ نصّيّةٌ أعلاها لا أقراصٌ تُشبه
        الأزرار («نقترحها لك يبدو زرّا»)، والسعرُ قيمتان بلا «قبل المنحة/بعد المنحة»: ما يدفعه كبيرا، وأصلُه مشطوبا */
@@ -613,29 +616,31 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
                 <p className="mt-1 text-read text-muted-foreground">افتح أي مجال لترى دوراته ومدربيها.</p>
               </div>
             )}
+            {/* وأكبرُ من الداخل (١٦ نوفمبر ٢٠٢٦) — قرارُ صاحب المنصّة: «كبّر هذا القسم داخليا أكثر ليأخذ مكانته بكل المنح».
+                فحشوةٌ أوسع، وصفُّ كلّ مجالٍ أعلى، ووجوهُ مدرّبيه أكبرُ (أصغرُ قليلا على الهاتف)، واسمُ المجال بخطّ العناوين */}
             {sections.length > 0 && (
-              <Card className={top.length > 0 ? "mt-3" : "mt-6"}>
+              <Card className={`${top.length > 0 ? "mt-3" : "mt-6"} px-5 py-2 sm:px-8 sm:py-3`}>
                 <div className="divide-y divide-border">
                   {sections.map((sec) => {
                     const mineHere = sec.items.filter((x) => picked.includes(x.courseId)).length;
                     /* وجهُ كلِّ مدرّبٍ مرّةً — ومن درّس دورتين في القسم لا يتكرّر */
                     const faces = [...new Map(sec.items.filter((x) => x.trainer?.photoUrl).map((x) => [x.trainer!.id, x])).values()].slice(0, SECTION_FACES);
                     return (
-                      <details key={sec.domain} className="group py-3 last:pb-0">
-                        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
+                      <details key={sec.domain} className="group">
+                        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 py-4 sm:gap-4 [&::-webkit-details-marker]:hidden">
                           {faces.length > 0 && (
-                            <span className="flex shrink-0 -space-x-2 rtl:space-x-reverse" aria-hidden="true">
-                              {faces.map((x) => <img key={x.courseId} src={x.trainer!.photoUrl!} alt="" loading="lazy" className="h-8 w-8 rounded-full object-cover object-[50%_25%] ring-2 ring-paper" />)}
+                            <span className="flex shrink-0 -space-x-3 rtl:space-x-reverse" aria-hidden="true">
+                              {faces.map((x) => <img key={x.courseId} src={x.trainer!.photoUrl!} alt="" loading="lazy" className="h-10 w-10 rounded-full object-cover object-[50%_25%] ring-2 ring-paper sm:h-12 sm:w-12" />)}
                             </span>
                           )}
                           <span className="min-w-0 flex-1">
-                            <span className="block font-bold leading-6">{sec.domain}</span>
+                            <span className="block text-lg font-black leading-7">{sec.domain}</span>
                             <span className="block text-read text-muted-foreground">{grantCountAr(sec.items.length)}</span>
                           </span>
                           {mineHere > 0 && <Chip tone="accent">اخترت {mineHere}</Chip>}
-                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
+                          <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
                         </summary>
-                        <div className="mt-3 space-y-3">{sec.items.map((x) => row(x, true))}</div>
+                        <div className="space-y-3 pb-4">{sec.items.map((x) => row(x, true))}</div>
                       </details>
                     );
                   })}
@@ -646,29 +651,41 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           </>
         )}
 
-        {/* «ما ستخرج به» من الدورات التي اختارها — أسماؤها وعددُ لقاءاتها ومدرّبيها (٣١ أكتوبر، ثمّ ١ نوفمبر ٢٠٢٦: «لا تكرار»).
-            ولوحُ الدفع تحتها في موضعه */}
+        {/* «ما ستخرج به» من الدورات التي اختارها — بما يخرج به حقّا (١٦ نوفمبر ٢٠٢٦). قال صاحبُ المنصّة عن أسمائها المرقّمة
+            ووسمَي اللقاءات والمدرّبين: «لا داعي لهذا لأنّه غير مفيد للبيع، إلّا إذا لديك اقتراحٌ يوضّح لهم ماذا يخرج حقيقةً بمشاريع
+            ومهام وتقييم وشهادة»، واختار ما يخرج به حقّا. فلكلّ دورةٍ مشروعُها ومهامُّها ولقاءاتُها وشهادتُها بشرطها — من صفوفها
+            وحدَها (`grantOutcomeLinesAr`)، ولا سطرَ لما لا صفَّ له. ولوحُ الدفع تحتها في موضعه */}
         {chosen.length > 0 && (
           <Card className="mt-6">
-            {/* الرأس: أيقونةٌ والعنوانُ وأرقامُ ما اختاره وسوما */}
+            {/* الرأس: أيقونةٌ والعنوانُ ومجاميعُ ما يأخذه وسوما */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold/10"><GraduationCap className="h-5 w-5 text-gold-ink" aria-hidden="true" /></span>
               <p className="text-lg font-black">{GRANT_OUTCOMES_TITLE_AR}</p>
-              {outcomeExtras.length > 0 && (
+              {outcomeTotals.length > 0 && (
                 <span className="flex flex-wrap gap-1.5 sm:ms-auto">
-                  {outcomeExtras.map((t) => <Chip key={t} tone="accent">{t}</Chip>)}
+                  {outcomeTotals.map((t) => <Chip key={t} tone="accent">{t}</Chip>)}
                 </span>
               )}
             </div>
-            {/* دوراتُه بأسمائها مرقّمةً — ووعدُ كلٍّ تحت اسمها في صفّها فوق، فلا يُعاد هنا (١ نوفمبر ٢٠٢٦: «لا تكرار») */}
-            <ol className="mt-3 grid gap-2 text-read sm:grid-cols-2">
-              {chosen.map((x, i) => (
-                <Inset as="li" key={x.courseId} className="flex items-center gap-2.5 py-2.5">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-teal/15 text-fine font-black text-teal-light-ink" aria-hidden="true">{i + 1}</span>
-                  <span className="min-w-0 font-bold leading-6">{grantShortTitleAr(x.titleAr)}</span>
+            {/* ولكلّ دورةٍ اسمُها وسطورُ ما يخرج به منها */}
+            <ul className="mt-3 grid gap-2 text-read sm:grid-cols-2">
+              {chosen.map((x) => (
+                <Inset as="li" key={x.courseId} className="py-3">
+                  <p className="font-bold leading-6">{grantShortTitleAr(x.titleAr)}</p>
+                  <ul className="mt-1.5 space-y-1">
+                    {grantOutcomeLinesAr(x).map((l) => {
+                      const Icon = OUTCOME_ICON[l.kind];
+                      return (
+                        <li key={l.kind} className="flex items-start gap-2 leading-6">
+                          <Icon className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+                          <span className="min-w-0">{l.text}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </Inset>
               ))}
-            </ol>
+            </ul>
           </Card>
         )}
         {/* لوحُ الدفع في موضعه آخرَ الاختيار، لا عالقا أسفلَ الشاشة — قرارُ صاحب المنصّة (٢ نوفمبر ٢٠٢٦): «لا تجعل هذه تظهر

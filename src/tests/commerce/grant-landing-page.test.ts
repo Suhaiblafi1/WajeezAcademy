@@ -16,6 +16,7 @@ import { grantWelcomeAr, grantWhyHereAr,
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, blackFridayLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
+  GRANT_CERTIFICATE_AR, GRANT_PROJECT_MAX, grantCertificatesAr, grantOutcomeLinesAr, grantOutcomeTotalsAr, grantProjectLineAr, grantProjectsAr, grantQuizzesAr, grantTasksAr,
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_DIAG_PATH, GRANT_HUMAN_DIAG_AR,
 } from '@/application/commerce/grant-landing'
@@ -402,9 +403,11 @@ describe('بعد النموذج', () => {
     expect(payAt, 'لوح الدفع غائب').toBeGreaterThan(-1)
     expect(PAGE, 'عاد لوح الدفع عالقا').not.toMatch(/className=\{?["`][^"`]*\b(sticky|fixed)\b/)
     for (const v of ['"influencer"', '"open"', '"blackfriday"']) expect(APP, `منحة ${v} في صفحة أخرى`).toContain(`element={<MemberGrantPage variant=${v} />}`)
-    /* ومنذ ١ نوفمبر ٢٠٢٦ («لا تكرار»): أسماؤها وحدَها هنا — ووعدُ كلٍّ تحت اسمها في صفّها */
-    expect(PAGE).toMatch(/<span className="min-w-0 font-bold leading-6">\{grantShortTitleAr\(x\.titleAr\)\}<\/span>/)
-    expect(PAGE).toMatch(/chosenMeetings > 0 \? grantSessionsAr\(chosenMeetings\) : null,\s*chosenTrainers > 0 \? grantTrainersAr\(chosenTrainers\) : null,/)
+    /* ومنذ ١٦ نوفمبر ٢٠٢٦ («ماذا يخرج حقيقةً»): لكلّ دورةٍ اسمُها القصيرُ وسطورُ ما يخرج به منها — ووعدُها في صفّها فوق،
+       والرأسُ مجاميعُ ما يأخذه لا وسما «لقاءات» و«مدربين» وحدهما */
+    expect(PAGE).toMatch(/<p className="font-bold leading-6">\{grantShortTitleAr\(x\.titleAr\)\}<\/p>/)
+    expect(PAGE).toMatch(/const outcomeTotals = grantOutcomeTotalsAr\(chosen\);/)
+    expect(PAGE, 'عاد وسم المدربين في «ما ستخرج به»').not.toMatch(/chosenTrainers/)
     expect(grantShortTitleAr('دورة الضرائب في الأردن تطبيقيا: ضريبة الدخل')).toBe('الضرائب في الأردن تطبيقيا')
     /* ٢) وما يخسره إن تأخّر — في لوح الدفع لمن له منحة، بلا مبلغ */
     const payCard = PAGE.slice(payAt, PAGE.indexOf('</Card>', payAt))
@@ -737,7 +740,16 @@ describe('بعد النموذج', () => {
     expect(PAGE).not.toContain('دورات أخرى حسب المجال')
     expect(PAGE, 'عاد «كل الدورات المتاحة»').not.toContain('كل الدورات المتاحة')
     expect(PAGE).toMatch(/اختر دوراتك\{view\.termAr && <span className="text-read font-normal text-muted-foreground"> · \{view\.termAr\}<\/span>\}/)
-    expect(PAGE, 'الأقسام مطوية بلا فتح').toMatch(/<details key=\{sec\.domain\} className="group py-3 last:pb-0">/)
+    expect(PAGE, 'الأقسام مطوية بلا فتح').toMatch(/<details key=\{sec\.domain\} className="group">/)
+    /* وأكبرُ من الداخل (١٦ نوفمبر ٢٠٢٦: «كبّر هذا القسم داخليا أكثر ليأخذ مكانته بكل المنح») — صفٌّ أعلى، ووجوهٌ أكبرُ
+       وأصغرُ قليلا على الهاتف، واسمُ المجال بخطّ العناوين، وسهمٌ أكبر */
+    expect(PAGE).toMatch(/<Card className=\{`\$\{top\.length > 0 \? "mt-3" : "mt-6"\} px-5 py-2 sm:px-8 sm:py-3`\}>/)
+    expect(PAGE).toMatch(/<summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 py-4 sm:gap-4 \[&::-webkit-details-marker\]:hidden">/)
+    expect(PAGE).toMatch(/className="h-10 w-10 rounded-full object-cover object-\[50%_25%\] ring-2 ring-paper sm:h-12 sm:w-12"/)
+    expect(PAGE).toMatch(/<span className="block text-lg font-black leading-7">\{sec\.domain\}<\/span>/)
+    expect(PAGE).toMatch(/<ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition group-open:rotate-180"/)
+    expect(PAGE).toMatch(/^const SECTION_FACES = 4;$/m)
+    expect(PAGE, 'عادت الوجوه الصغيرة في رأس القسم').not.toMatch(/h-8 w-8 rounded-full object-cover/)
     expect(PAGE, 'يعيد اسم المجال تحت قسمه').toMatch(/\{sec\.items\.map\(\(x\) => row\(x, true\)\)\}/)
     expect(PAGE).toMatch(/\{x\.domainAr && !inSection \? `\$\{x\.domainAr\} · ` : ""\}/)
     expect(PAGE, 'لا تقول كم اختار في القسم المطوي').toMatch(/mineHere > 0 && <Chip tone="accent">اخترت \{mineHere\}<\/Chip>/)
@@ -768,7 +780,7 @@ describe('بعد النموذج', () => {
       expect(code(f), `${f} يقرأ أقسام المنحة`).not.toMatch(/grantSectionOf|GRANT_SECTION_GROUPS/)
     }
     /* وبطاقةٌ واحدةٌ هادئة لا أزرارٌ متكدّسة: الأقسامُ صفوفٌ بينها خطوط، وفي رأس كلٍّ وجوهُ مدرّبيه */
-    expect(PAGE).toMatch(/<Card className=\{top\.length > 0 \? "mt-3" : "mt-6"\}>\s*<div className="divide-y divide-border">\s*\{sections\.map\(/)
+    expect(PAGE).toMatch(/<Card className=\{`\$\{top\.length > 0 \? "mt-3" : "mt-6"\} px-5 py-2 sm:px-8 sm:py-3`\}>\s*<div className="divide-y divide-border">\s*\{sections\.map\(/)
     expect(PAGE, 'تكرر وجه المدرب في رأس القسم').toMatch(/const faces = \[\.\.\.new Map\(sec\.items\.filter\(\(x\) => x\.trainer\?\.photoUrl\)\.map\(\(x\) => \[x\.trainer!\.id, x\]\)\)\.values\(\)\]\.slice\(0, SECTION_FACES\);/)
   })
 
@@ -896,6 +908,52 @@ describe('النصوص', () => {
    يُقال عن كلّ أداةٍ مجانيّةٍ هو ما تقوله صفحتُها — لا رقمٌ يُنسخ فيبلى. */
 const fnOf = (name: string) => PAGE.slice(PAGE.indexOf(`function ${name}(`), PAGE.indexOf('\n}\n', PAGE.indexOf(`function ${name}(`)))
 const outcomesCard = () => { const at = PAGE.indexOf('{GRANT_OUTCOMES_TITLE_AR}'); return PAGE.slice(at, PAGE.indexOf('</Card>', at)) }
+/* ═══ «ما ستخرج به» بما يخرج به حقّا (١٦ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «لا داعي لهذا لأنّه غير مفيد للبيع، إلّا إذا لديك اقتراحٌ يوضّح لهم ماذا يخرج حقيقةً بمشاريع ومهام
+   وتقييم وشهادة»، فاختار ما يخرج به حقّا. والسلوكُ على صفوفٍ حقيقيّة في `server/tests/commerce/grant-outcomes.test.ts`. */
+describe('ما ستخرج به — ما يخرج به حقا', () => {
+  it('⚠️ لكل دورة سطور من صفوفها وحدها: مشروعها ومهامها ولقاءاتها وشهادتها بشرطها — ولا سطر لما لا صف له', () => {
+    const out = outcomesCard()
+    expect(out).toMatch(/\{grantOutcomeLinesAr\(x\)\.map\(\(l\) => \{\s*const Icon = OUTCOME_ICON\[l\.kind\];/)
+    expect(out, 'عاد وعد الدورة إلى «ما ستخرج به»').not.toMatch(/summary|aboutAr/)
+    const full = grantOutcomeLinesAr({
+      projectAr: 'ملف قرار مهني', tasks: 4, quizzes: 1, sessions: new Array(8).fill(0),
+      certificate: { rules: [{ type: 'attendance_pct', threshold: 80 }, { type: 'assignment_accepted', threshold: 1 }] },
+    })
+    expect(full).toEqual([
+      { kind: 'project', text: 'مشروع: ملف قرار مهني' },
+      { kind: 'tasks', text: '4 مهام يصححها المدرب واختبار قصير واحد' },
+      { kind: 'sessions', text: '8 لقاءات مباشرة' },
+      { kind: 'certificate', text: 'شهادة من وجيز برابط تحقق، بعد حضور 80% من اللقاءات وقبول مهمة واحدة' },
+    ])
+    expect(grantOutcomeLinesAr({}), 'اخترع سطرا بلا صف').toEqual([])
+    expect(grantOutcomeLinesAr({ certificate: { rules: [] } })).toEqual([{ kind: 'certificate', text: 'شهادة من وجيز برابط تحقق' }])
+    expect(grantOutcomeTotalsAr([
+      { projectAr: 'أ', tasks: 4, sessions: [1, 2], certificate: { rules: [] } },
+      { projectAr: null, tasks: 2, sessions: [1], certificate: { rules: [] } },
+    ])).toEqual(['مشروع عملي', '6 مهام يصححها المدرب', '3 لقاءات مباشرة', 'شهادتان برابط تحقق'])
+  })
+
+  it('⚠️ المشروع سطر قصير بلا تشكيل — ونصوصها بيضاء بلا ضمان ولا وعد بوظيفة', () => {
+    expect(grantProjectLineAr('  مَلفُّ قرارٍ   مهني.  ثم دفاع شفهي. ')).toBe('ملفّ قرار مهني')
+    expect(grantProjectLineAr(null)).toBeNull()
+    expect(grantProjectLineAr('   ')).toBeNull()
+    const long = grantProjectLineAr('رسالتا تواصل + مقابلتان معلوماتيتان موثقتان مع ممارسين مختلفين (الثانية مستقلة) + بنك أسئلة حساسة مجرب + رسالة شكر ومتابعة وسجل صلات')!
+    expect(long.length, long).toBeLessThanOrEqual(GRANT_PROJECT_MAX + 1)
+    expect(long.endsWith('…')).toBe(true)
+    const texts = [
+      ...grantOutcomeLinesAr({ projectAr: 'م', tasks: 2, quizzes: 3, sessions: [1], certificate: { rules: [
+        { type: 'attendance_pct', threshold: 75 }, { type: 'project_accepted', threshold: 1 }, { type: 'assessment_passed', threshold: 2 }, { type: 'modules_completed', threshold: 1 },
+      ] } }).map((l) => l.text),
+      ...[1, 2, 5, 12].flatMap((n) => [grantTasksAr(n), grantQuizzesAr(n), grantProjectsAr(n), grantCertificatesAr(n)]),
+      GRANT_CERTIFICATE_AR,
+    ]
+    for (const t of texts) {
+      expect(plainAr(t), t).toBe(t)
+      expect(t, 'ضمان أو وظيفة أو دخل').not.toMatch(/ضمان|نضمن|مضمون|وظيف|دخل|راتب/)
+    }
+  })
+})
 const ALL_NEW = () => [
   ...Object.values(GRANT_WHY_AR), ...GRANT_WHY_LOSSES_AR, ...GRANT_WHY_POINTS_AR.flatMap((x) => [x.title, x.body]),
   ...Object.values(GRANT_HUMAN_DIAG_AR),
