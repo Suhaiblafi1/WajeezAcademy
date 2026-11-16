@@ -20,7 +20,11 @@
    `variant="blackfriday"`: حملةُ مؤثّرين بصفّها هي — إعداداتُها كأخواتها، والمؤثّرون تحتها بروابطهم فيها وخصمِ كلٍّ وكودِه
    (`InfluencersPanel`)، والهامشُ يطرح عمولةَ المؤثّر كمنحة المؤثّرين.
 
-   ═══ وكلُّها لسانٌ واحدٌ «المنح»، والتنقّلُ بينها في رأس الصفحة (٣ نوفمبر ٢٠٢٦، `GrantSwitcher`) ═══ */
+   ═══ وكلُّها لسانٌ واحدٌ «المنح»، والتنقّلُ بينها في رأس الصفحة (٣ نوفمبر ٢٠٢٦، `GrantSwitcher`) ═══
+
+   ═══ وتحته «الهامش في كل المنح» (١٦ نوفمبر ٢٠٢٦، `GrantMarginsSummary`) ═══
+   قرارُ صاحب المنصّة: «وامنحني معرفة الهامش لكل نوع من المنح». فكلُّ منحةٍ بنسبتها وكلُّ مؤثّرٍ نشطٍ بخصمه وعمولته في لوحٍ
+   واحد، في كلّ صفحات المنح. و«فحص الهامش» أسفلَ الصفحة لمنحتها وحدَها كما كان. */
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
@@ -29,6 +33,7 @@ import GrantCourses from "./GrantCourses";
 import GrantRegistrants from "./GrantRegistrants";
 import InfluencersPanel from "./InfluencersPanel";
 import GrantSwitcher from "./GrantSwitcher";
+import GrantMarginsSummary from "./GrantMarginsSummary";
 import type { GrantVariant } from "./grant-screens";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -150,7 +155,9 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
     <AdminLayout title={nameAr}>
       {/* المنحُ الثلاثُ وروابطُها العامّة — في رأس الصفحة دائما، لا ألسنةٌ في شريط «المال» (`GrantSwitcher`) */}
       <GrantSwitcher current={variant} />
-      <Card>
+      {/* والهامشُ في كلّ المنح — في رأس كلّ صفحة منحة (١٦ نوفمبر ٢٠٢٦، `GrantMarginsSummary`) */}
+      <GrantMarginsSummary />
+      <Card className="mt-6">
         <p className="text-read font-bold">
           {s.open ? "المنحة مشغلة" : s.active ? "المنحة انتهت" : "المنحة موقوفة"}
           {" · "}أعطي {s.issued} كودا{s.maxCodes !== null ? ` من ${s.maxCodes}` : ""}

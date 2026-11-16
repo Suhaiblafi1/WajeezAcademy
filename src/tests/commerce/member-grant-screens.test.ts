@@ -298,3 +298,32 @@ describe('تفاصيل المؤثر تتغير', () => {
     expect(homePathForRoles(['learner', 'influencer'])).toBe('/influencer')
   })
 })
+
+/* ═══ «الهامش في كل المنح» في رأس كلّ صفحة منحة (١٦ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «وامنحني معرفة الهامش لكل نوع من المنح». والسلوكُ في `server/tests/commerce/grant-margins-summary.test.ts`. */
+describe('الهامش في كل المنح', () => {
+  const SUMMARY = code('src/pages/admin/GrantMarginsSummary.tsx')
+
+  it('⚠️ في رأس كل صفحة منحة تحت روابط المنح — من بابه بصلاحية الكوبونات، وفحص كل منحة باق تحته', () => {
+    expect(PAGE).toMatch(/<GrantSwitcher current=\{variant\} \/>\s*<GrantMarginsSummary \/>\s*<Card/)
+    expect(PAGE, 'ذهب فحص هامش المنحة').toMatch(/<h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة/)
+    expect(SUMMARY).toMatch(/apiGet<Summary>\("\/api\/admin\/grants\/margins-summary"\)/)
+    expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/grants\/margins-summary', \{\s*preHandler: canManage/)
+    /* الخاسرةُ بلون التنبيه، والأرقامُ من اليسار، ولكلّ مؤثّرٍ صفُّه تحت منحته */
+    expect(SUMMARY).toMatch(/\{s\.losing > 0 \? <Chip tone="warn"><bdi dir="ltr">\{s\.losing\}<\/bdi><\/Chip>/)
+    expect(SUMMARY).toMatch(/\{\(c\.influencers \?\? \[\]\)\.map\(\(x\) => \(/)
+  })
+
+  it('⚠️ التلخيص يعد ما يعده الفحص — والنصوص بلا تشكيل', async () => {
+    const { marginStats, GRANT_MARGINS_TITLE_AR, GRANT_MARGINS_LINE_AR, GRANT_MARGINS_TOP_AR } = await import('@/application/commerce/grant-margins')
+    const rows = [
+      { margin: -5, currency: 'USD' }, { margin: null, currency: 'USD' }, { margin: 10, currency: 'USD' }, { margin: -1, currency: 'JOD' },
+    ]
+    expect(marginStats(rows, 'USD')).toEqual({ cohorts: 4, losing: 2, noCost: 1, otherCurrency: 1, avg: 2.5, min: -5 })
+    expect(marginStats([{ margin: null, currency: 'USD' }], 'USD')).toMatchObject({ cohorts: 1, noCost: 1, avg: null, min: null })
+    const texts = [GRANT_MARGINS_TITLE_AR, GRANT_MARGINS_LINE_AR, GRANT_MARGINS_TOP_AR, 'المنحة', 'الحال', 'الخصم', 'العمولة', 'الشعب', 'تخسر', 'بلا أجر مقعد', 'متوسط الهامش', 'أدنى هامش', ' (الأعلى)', ' (خصمه)', 'لا مؤثر نشط.', 'تعذر حساب الهامش الآن.']
+    for (const t of texts.slice(3)) expect(SUMMARY).toContain(t)
+    for (const t of texts) expect(t).toBe(plainAr(t))
+    expect(GRANT_MARGINS_LINE_AR).toContain('سعر المقعد بعد المنحة ناقصا أجر المدرب وعمولة المؤثر')
+  })
+})
