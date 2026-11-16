@@ -92,20 +92,17 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     return reply.status(201).send(await influencers.apply(body, req.ip))
   })
 
-  /* ═══ «بلاك فرايدي وجيز» — نموذجُ منحة المؤثّرين بصفّها هي، وكودُ المؤثّر لازم ═══ */
+  /* ═══ «بلاك فرايدي وجيز» — منحةُ وجيز للجميع بلا كود مؤثّر (١٦ نوفمبر ٢٠٢٦، `grant-merge.service.ts`) ═══ */
   app.get('/api/public/grant/bf', {
-    schema: { tags: ['public'], summary: 'حال منحة بلاك فرايدي ودوراتها، واسم المؤثر وخصمه إن كان كوده صحيحا' },
-  }, async (req) => {
-    const { code } = z.object({ code: z.string().max(40).optional() }).parse(req.query)
-    return blackfriday.influencerView(code)
-  })
+    schema: { tags: ['public'], summary: 'حال منحة بلاك فرايدي ودوراتها بفصلها' },
+  }, async () => blackfriday.view())
 
   app.post('/api/public/grant/bf', {
     config: { rateLimit: { max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' } },
-    schema: { tags: ['public'], summary: 'نموذج بلاك فرايدي وجيز: كود المؤثر لازم، وعميل محتمل وكوده' },
+    schema: { tags: ['public'], summary: 'نموذج بلاك فرايدي وجيز: عميل محتمل وكوده، والدورات' },
   }, async (req, reply) => {
     assertNotBot(req.body)
-    const body = influencerBody.parse(req.body)
+    const body = applyBody.parse(req.body)
     return reply.status(201).send(await blackfriday.apply(body, req.ip))
   })
 

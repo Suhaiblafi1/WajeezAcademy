@@ -59,7 +59,7 @@ import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import type { TimedSession } from "@/application/learning/cohort-overlap";
-import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
+import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
 import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
@@ -111,6 +111,7 @@ const USD = "USD";
 /** طريقُ العودة بعد توثيق البريد — اختيارُه محفوظٌ على الجهاز، والصفحةُ تعيده (`pending-checkout.ts`) */
 const PICK_PATH = "/grant/build";
 const OPEN_PICK_PATH = `${OPEN_GRANT_PATH}/build`;
+const BF_PICK_PATH = `${BLACK_FRIDAY_GRANT_PATH}/build`;
 const influencerPickPath = (base: string, code: string) => `${base}/${code}/build`;
 const BUY_TITLE_AR = "دورات منحتك";
 /** حيث يُحفظ ما اختاره، وكم يُنتظر بعد آخر نقرةٍ قبل حفظه */
@@ -211,9 +212,10 @@ function GrantHumanDiagnosis({ href }: { href: string }) {
    صفحة التشخيص؛ والتشخيصُ البشريُّ على واتساب (`GrantHumanDiagnosis`) يبقى. وصفحةُ التشخيص نفسُها باقيةٌ في الموقع. */
 
 export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" | "open" | "blackfriday" }) {
-  /* «بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) حملةُ مؤثّرين كالثانية — `forInfluencer` لهما معا، و`forBlackFriday` لما يخصّها */
+  /* «بلاك فرايدي وجيز» منحةُ وجيز للجميع بلا كود مؤثّر (١٦ نوفمبر ٢٠٢٦) — وكانت حملةَ مؤثّرين كالثانية. وإليها صارت «منحة وجيز»
+     و«العامة»: صفحتاهما تفتحانها (`App.tsx`)، وأكوادُهما فيها بـ70% (`grant-merge.service.ts`) */
   const forBlackFriday = variant === "blackfriday";
-  const forInfluencer = variant === "influencer" || forBlackFriday;
+  const forInfluencer = variant === "influencer";
   /* «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦): صفحةُ الأولى نفسُها بصفّها هي — بلا كود مؤثّر، وبلا شكرٍ لقرّاء وجيز */
   const forOpen = variant === "open";
   const kind: GrantKind = forBlackFriday ? "blackfriday" : forInfluencer ? "influencer" : forOpen ? "open" : "member";
@@ -237,7 +239,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const hp = useHoneypot();
   const [view, setView] = useState<View | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
-  const [stored, setStored] = useState<StoredGrant | null>(() => readStoredGrant(storeKey));
+  /* ومن أخذ كودَه في «منحة وجيز» أو «العامة» قبل أن تصيرا بلاك فرايدي يجد كودَه هنا من جهازه — بنسبة بلاك فرايدي اليوم لا
+     بما حُفظ معه (١٦ نوفمبر ٢٠٢٦) */
+  const [stored, setStored] = useState<StoredGrant | null>(() => readStoredGrant(storeKey) ?? (forBlackFriday ? movedGrant() : null));
   const [reasonAr, setReasonAr] = useState<string | null>(null);
   /* ومن عاد إلى النموذج (لا كودَ له بعد) يجده بما كتب أوّلَ مرّة — إلّا رقمَه، فهو لا يُحفظ على جهازه */
   const [form, setForm] = useState(() => {
@@ -248,11 +252,13 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [influencerCode, setInfluencerCode] = useState(urlCode ?? "");
   /* ومن حُسب له: مؤثّرُ ما حُفظ إن أخذ كودا، وإلّا مؤثّرُ الرابط */
   const creditedCode = stored?.influencer ?? urlCode;
-  const pickPath = forInfluencer ? (creditedCode ? influencerPickPath(influencerBase, creditedCode) : null) : forOpen ? OPEN_PICK_PATH : PICK_PATH;
+  const pickPath = forInfluencer ? (creditedCode ? influencerPickPath(influencerBase, creditedCode) : null) : forBlackFriday ? BF_PICK_PATH : forOpen ? OPEN_PICK_PATH : PICK_PATH;
   const shell = forInfluencer
     ? { title: nameAr, path: `${influencerBase}${urlCode ? `/${urlCode}` : ""}`, description: forBlackFriday
         ? "بلاك فرايدي في أكاديمية وجيز: دورات مباشرة على Zoom بخصم كبير، والعدد محدود."
         : "منحة من أكاديمية وجيز: دورات مباشرة تختارها بخصم كبير، والعدد محدود." }
+    : forBlackFriday
+      ? { title: nameAr, path: BLACK_FRIDAY_GRANT_PATH, description: "بلاك فرايدي في أكاديمية وجيز: دورات مباشرة على Zoom بخصم كبير، والعدد محدود." }
     : forOpen
       ? { title: nameAr, path: OPEN_GRANT_PATH, description: "منحة من أكاديمية وجيز للجميع: دورات مباشرة على Zoom بخصم كبير، والعدد محدود." }
       : {};
@@ -283,10 +289,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const load = useCallback(async () => {
     const url = forInfluencer
       ? `${influencerApi}${urlCode ? `?code=${encodeURIComponent(urlCode)}` : ""}`
-      : forOpen ? "/api/public/grant/open" : "/api/public/grant";
+      : forBlackFriday ? "/api/public/grant/bf" : forOpen ? "/api/public/grant/open" : "/api/public/grant";
     try { setView(await apiGet<View>(url)); }
     catch (e) { setFailed(e instanceof ApiError ? e.message : "تعذر تحميل الصفحة"); }
-  }, [forInfluencer, forOpen, influencerApi, urlCode]);
+  }, [forInfluencer, forBlackFriday, forOpen, influencerApi, urlCode]);
   useEffect(() => { void load(); }, [load]);
 
   const [resumed] = useState(() => (pickPath ? resumedCheckoutFor(pickPath) : null));
@@ -351,7 +357,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     e.preventDefault();
     setBusy(true);
     try {
-      const out = await apiPost<ApplyResult>(forInfluencer ? influencerApi : forOpen ? "/api/public/grant/open" : "/api/public/grant", {
+      const out = await apiPost<ApplyResult>(forInfluencer ? influencerApi : forBlackFriday ? "/api/public/grant/bf" : forOpen ? "/api/public/grant/open" : "/api/public/grant", {
         ...form, careerLevel: form.careerLevel || null, interests, ...campaignParams(window.location.search), website: hp.value,
         source: { page: opened, first: firstTouch() }, visitorId: visitor,
         ...(forInfluencer ? { influencerCode: influencerCode.trim() } : {}),
@@ -419,7 +425,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   /* آخرُ يومٍ بتاريخه الطويل — في رسالة الهديّة («30 أكتوبر 2026») */
   const lastDayLong = c.closesAt ? fmtDateLong(new Date(new Date(c.closesAt).getTime() - 1)) : null;
   /* ومنحةُ المؤثّرين تُهدى برابط مؤثّرها — فالصديقُ يأخذ منحتَها، ويُحسب للمؤثّر */
-  const sharePath = forInfluencer && creditedCode ? `${influencerBase}/${creditedCode}` : forOpen ? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;
+  const sharePath = forInfluencer && creditedCode ? `${influencerBase}/${creditedCode}` : forBlackFriday ? `${BLACK_FRIDAY_GRANT_PATH}?ch=share` : forOpen ? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;
   /* والرابطُ قصيرٌ من الخادم إن صنعه — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «الرابط يجب أن يكون قصيرا جدّا» */
   const shareLink = view.sharePath ? `https://${BARE_HOST}${view.sharePath}` : `${window.location.origin}${sharePath}`;
   /* والهديّةُ بنسبة الحملة اليوم لا بنسبة كوده: الصديقُ يأخذ كودا جديدا بنسبة يومه */
@@ -787,7 +793,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
                 {forOpen
                   ? openGrantLineAr(c.percentOff)
                   : forBlackFriday
-                  ? blackFridayLineAr(c.percentOff, view.influencer?.nameAr)
+                  ? blackFridayLineAr(c.percentOff, null)
                   : !forInfluencer
                   ? grantThanksAr(c.percentOff)
                   : view.influencer
@@ -928,4 +934,10 @@ function Shell({
       <main className="mx-auto max-w-3xl px-5 py-8">{children}</main>
     </div>
   );
+}
+
+/** كودُ «منحة وجيز» أو «العامة» المحفوظُ على الجهاز — صار في بلاك فرايدي، فيُقرأ هناك بلا نسبته القديمة */
+function movedGrant(): StoredGrant | null {
+  const was = readStoredGrant(GRANT_STORE_KEY) ?? readStoredGrant(OPEN_GRANT_STORE_KEY);
+  return was ? { ...was, percentOff: undefined } : null;
 }
