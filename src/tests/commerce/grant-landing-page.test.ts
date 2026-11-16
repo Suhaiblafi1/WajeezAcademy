@@ -37,9 +37,11 @@ const ROUTES = code('server/http/routes/public-grant.routes.ts')
 const HTTP = code('server/http/app.ts')
 
 describe('الطريق والأبواب', () => {
-  it('⚠️ /grant و/grant/build (العودة بعد توثيق البريد) — والأبواب العامة بسقف ومصيدة', () => {
-    expect(APP).toMatch(/<Route path="\/grant" element=\{<MemberGrantPage \/>\} \/>/)
-    expect(APP).toMatch(/<Route path="\/grant\/build" element=\{<MemberGrantPage \/>\} \/>/)
+  it('⚠️ /grant و/grant/build تفتحان بلاك فرايدي بما بعد «؟» — والأبواب العامة بسقف ومصيدة', () => {
+    /* «منحة وجيز» صارت «بلاك فرايدي وجيز» (١٦ نوفمبر ٢٠٢٦، `grant-merge.service.ts`): رابطُها في كلّ بريدٍ قديمٍ يفتحها */
+    expect(APP).toMatch(/<Route path="\/grant" element=\{<KeepQuery to="\/grant\/bf" \/>\} \/>/)
+    expect(APP).toMatch(/<Route path="\/grant\/build" element=\{<KeepQuery to="\/grant\/bf\/build" \/>\} \/>/)
+    expect(APP, 'التحويل يضيع ?picks= و?ch=').toMatch(/<Navigate to=\{`\$\{to\}\$\{search\}`\} replace \/>/)
     expect(PAGE, 'طريق العودة غير الطريق الذي يفتح الصفحة').toMatch(/const PICK_PATH = "\/grant\/build";/)
     expect(HTTP).toMatch(/registerPublicGrantRoutes\(app, prisma\)/)
     /* وسقفُ النموذجين حاجزُ غَمرٍ لا حاجزُ ناس: ١٢٠ في ربع الساعة لكلّ عنوان — هواتفُ الشبكة الواحدة تخرج من عنوانٍ واحد،
@@ -51,14 +53,17 @@ describe('الطريق والأبواب', () => {
     expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/influencer', \{\s*config: \{ rateLimit: \{ max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' \} \}/)
     /* وباب «منحة وجيز العامة» رابعُها، بالسقف نفسِه — وصفحتُها وطريقُ عودتها غيرُ `/grant` (١ نوفمبر ٢٠٢٦) */
     expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/open', \{\s*config: \{ rateLimit: \{ max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' \} \}/)
-    expect(APP).toMatch(/<Route path="\/grant\/open" element=\{<MemberGrantPage variant="open" \/>\} \/>/)
-    expect(APP).toMatch(/<Route path="\/grant\/open\/build" element=\{<MemberGrantPage variant="open" \/>\} \/>/)
+    /* و«العامة» صارت بلاك فرايدي أيضا (١٦ نوفمبر ٢٠٢٦) */
+    expect(APP).toMatch(/<Route path="\/grant\/open" element=\{<KeepQuery to="\/grant\/bf" \/>\} \/>/)
+    expect(APP).toMatch(/<Route path="\/grant\/open\/build" element=\{<KeepQuery to="\/grant\/bf\/build" \/>\} \/>/)
     expect(PAGE).toMatch(/const OPEN_PICK_PATH = `\$\{OPEN_GRANT_PATH\}\/build`;/)
     /* وباب «بلاك فرايدي وجيز» خامسُها، بالسقف نفسِه — وصفحتُها برابط المؤثّر وطريقُ عودتها (١٥ نوفمبر ٢٠٢٦) */
     expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/bf', \{\s*config: \{ rateLimit: \{ max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' \} \}/)
-    for (const path of ['/grant/bf', '/grant/bf/:code', '/grant/bf/:code/build']) {
+    /* وصارت منحةَ وجيز بلا كود مؤثّر (١٦ نوفمبر ٢٠٢٦): صفحتُها وطريقُ عودتها، ورابطُ مؤثّرٍ قديمٌ يفتحها بلا كوده */
+    for (const path of ['/grant/bf', '/grant/bf/build']) {
       expect(APP).toContain(`<Route path="${path}" element={<MemberGrantPage variant="blackfriday" />} />`)
     }
+    expect(APP).toContain('<Route path="/grant/bf/:code" element={<KeepQuery to="/grant/bf" />} />')
     expect((ROUTES.match(/assertNotBot\(req\.body\)/g) ?? []).length, 'باب بلا مصيدة').toBe(5)
   })
 })
@@ -210,7 +215,7 @@ describe('بعد النموذج', () => {
     expect(openGrantLineAr(50)).toBe('منحة من أكاديمية وجيز لكل من يريد أن يتعلم، تصل إلى 50% من سعر دوراتك.')
     expect(openGrantLineAr(50), 'شكر قراء وجيز في المنحة العامة').not.toMatch(/قرّ?ائه|حصرية/)
     /* و«بلاك فرايدي وجيز» بسطرها: بلاك فرايدي ونسبةُ متابع المؤثّر، وباسمه إن جاء برابطه (١٥ نوفمبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/: forBlackFriday\s*\? blackFridayLineAr\(c\.percentOff, view\.influencer\?\.nameAr\)/)
+    expect(PAGE).toMatch(/: forBlackFriday\s*\? blackFridayLineAr\(c\.percentOff, null\)/)
     expect(blackFridayLineAr(70)).toBe('بلاك فرايدي في أكاديمية وجيز: خصم يصل إلى 70% من سعر دوراتك.')
     expect(blackFridayLineAr(70, 'صهيب')).toBe('بلاك فرايدي في أكاديمية وجيز بدعوة من صهيب: خصم يصل إلى 70% من سعر دوراتك.')
     expect(grantThanksAr(60)).toBe('تطبيق وجيز يشكرك لأنك من قرّائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى 60% لتستفيد من منتجنا الجديد: أكاديمية وجيز.')
@@ -402,7 +407,8 @@ describe('بعد النموذج', () => {
        ولمنحه الثلاث (الصفحةُ واحدةٌ لها) */
     expect(payAt, 'لوح الدفع غائب').toBeGreaterThan(-1)
     expect(PAGE, 'عاد لوح الدفع عالقا').not.toMatch(/className=\{?["`][^"`]*\b(sticky|fixed)\b/)
-    for (const v of ['"influencer"', '"open"', '"blackfriday"']) expect(APP, `منحة ${v} في صفحة أخرى`).toContain(`element={<MemberGrantPage variant=${v} />}`)
+    /* و«العامة» صارت بلاك فرايدي (١٦ نوفمبر ٢٠٢٦) — فالباقيتان في الصفحة نفسِها */
+    for (const v of ['"influencer"', '"blackfriday"']) expect(APP, `منحة ${v} في صفحة أخرى`).toContain(`element={<MemberGrantPage variant=${v} />}`)
     /* ومنذ ١٦ نوفمبر ٢٠٢٦ («ماذا يخرج حقيقةً»): لكلّ دورةٍ اسمُها القصيرُ وسطورُ ما يخرج به منها — ووعدُها في صفّها فوق،
        والرأسُ مجاميعُ ما يأخذه لا وسما «لقاءات» و«مدربين» وحدهما */
     expect(PAGE).toMatch(/<p className="font-bold leading-6">\{grantShortTitleAr\(x\.titleAr\)\}<\/p>/)
@@ -606,7 +612,7 @@ describe('بعد النموذج', () => {
     expect(GRANT_GIFT_AR).toEqual({ title: 'يحق لك أن تهدي هذه المنحة لأصدقائك', limit: 'بحد أعلى 3 أصدقاء' })
     /* الرابطُ القصيرُ من الخادم إن صنعه، والطويلُ بوسمه إن لم يصنع — ومنحةُ المؤثّرين برابط مؤثّرها */
     /* وحملتا المؤثّرين برابط المؤثّر في حملته: `/grant/i` أو `/grant/bf` (١٥ نوفمبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/const sharePath = forInfluencer && creditedCode \? `\$\{influencerBase\}\/\$\{creditedCode\}` : forOpen \? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;/)
+    expect(PAGE).toMatch(/const sharePath = forInfluencer && creditedCode \? `\$\{influencerBase\}\/\$\{creditedCode\}` : forBlackFriday \? `\$\{BLACK_FRIDAY_GRANT_PATH\}\?ch=share` : forOpen \? OPEN_GRANT_SHARE_PATH : GRANT_SHARE_PATH;/)
     expect(PAGE).toMatch(/const influencerBase = influencerGrantPath\(forBlackFriday \? BLACK_FRIDAY_GRANT_SLUG : INFLUENCER_GRANT_SLUG\);/)
     expect(OPEN_GRANT_SHARE_PATH).toBe('/grant/open?ch=share')
     expect(PAGE).toMatch(/const shareLink = view\.sharePath \? `https:\/\/\$\{BARE_HOST\}\$\{view\.sharePath\}` : `\$\{window\.location\.origin\}\$\{sharePath\}`;/)

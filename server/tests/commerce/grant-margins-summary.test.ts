@@ -98,7 +98,8 @@ beforeAll(async () => {
 }, 240_000)
 
 describe('① الحملات الأربع ثم الشركاء', () => {
-  it('⚠️ كل منها بنسبتها، والعمولة صفر إلا في حملتي المؤثرين: أعلى عمولة لمؤثر نشط', async () => {
+  /* و«بلاك فرايدي وجيز» لم تعد حملةَ مؤثّرين (١٦ نوفمبر ٢٠٢٦، `grant-merge.service.ts`): لا عمولةَ فيها ولا صفوفَ مؤثّرين */
+  it('⚠️ كل منها بنسبتها، والعمولة صفر إلا في منحة المؤثرين: أعلى عمولة لمؤثر نشط', async () => {
     const { currency, campaigns } = await grantMarginsSummary(prisma)
     expect(currency).toBe('USD')
     const four: GrantSlug[] = [MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, INFLUENCER_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG]
@@ -107,9 +108,8 @@ describe('① الحملات الأربع ثم الشركاء', () => {
     for (const slug of four) expect(bySlug(campaigns, slug).percentOff).toBe((await new GrantService(prisma, slug).settings()).percentOff)
     expect(bySlug(campaigns, MEMBER_GRANT_SLUG)).toMatchObject({ commissionPercent: 0, topCommission: false })
     expect(bySlug(campaigns, OPEN_GRANT_SLUG)).toMatchObject({ commissionPercent: 0, topCommission: false })
-    for (const slug of [INFLUENCER_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG]) {
-      expect(bySlug(campaigns, slug), 'الموقوف رفع عمولة الحملة أو لم تكن الأعلى').toMatchObject({ commissionPercent: 20, topCommission: true })
-    }
+    expect(bySlug(campaigns, BLACK_FRIDAY_GRANT_SLUG), 'عمولة في بلاك فرايدي').toMatchObject({ commissionPercent: 0, topCommission: false })
+    expect(bySlug(campaigns, INFLUENCER_GRANT_SLUG), 'الموقوف رفع عمولة الحملة أو لم تكن الأعلى').toMatchObject({ commissionPercent: 20, topCommission: true })
     const partner = campaigns.find((c) => c.slug === `partner-gms${STAMP % 10000}`)
     expect(partner, 'غاب الشريك').toMatchObject({ group: 'partner', nameAr: 'جامعة الاختبار', percentOff: 75, commissionPercent: 0 })
   })
@@ -130,10 +130,11 @@ describe('② أرقام كل حملة أرقام فحص الهامش نفسه',
 })
 
 describe('③ لكل مؤثر نشط صفه بخصمه وعمولته', () => {
-  it('⚠️ تحت حملتي المؤثرين وحدهما — بخصمه هو أو نسبة الحملة، وعمولته هو، والموقوف لا صف له', async () => {
+  it('⚠️ تحت منحة المؤثرين وحدها — بخصمه هو أو نسبة الحملة، وعمولته هو، والموقوف لا صف له', async () => {
     const { campaigns } = await grantMarginsSummary(prisma)
     expect(bySlug(campaigns, MEMBER_GRANT_SLUG).influencers).toBeUndefined()
-    for (const slug of [INFLUENCER_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG]) {
+    expect(bySlug(campaigns, BLACK_FRIDAY_GRANT_SLUG).influencers, 'صفوف مؤثرين تحت بلاك فرايدي').toBeUndefined()
+    for (const slug of [INFLUENCER_GRANT_SLUG]) {
       const c = bySlug(campaigns, slug)
       const codes = c.influencers!.map((x) => x.code)
       expect(codes, 'صف لمؤثر موقوف').not.toContain('GMSOFF')
@@ -150,7 +151,7 @@ describe('③ لكل مؤثر نشط صفه بخصمه وعمولته', () => {
       expect(statsOf(plain)).toEqual(await expected(c.percentOff, 10))
     }
     /* ورابطُ صاحب المنصّة: سبعون بلا عمولة — أرقامُه هو لا أعلى عمولة */
-    const suhaib = bySlug(campaigns, BLACK_FRIDAY_GRANT_SLUG).influencers!.find((x) => x.code === 'SUHAIB')!
+    const suhaib = bySlug(campaigns, INFLUENCER_GRANT_SLUG).influencers!.find((x) => x.code === 'SUHAIB')!
     expect(suhaib).toMatchObject({ percentOff: 70, ownPercent: true, commissionPercent: 0 })
     expect(statsOf(suhaib)).toEqual(await expected(70, 0))
   })

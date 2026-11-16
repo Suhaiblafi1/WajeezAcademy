@@ -123,42 +123,28 @@ describe('② صفحتها تقول ما يأخذه المتابع', () => {
   })
 })
 
-describe('③ نموذجها نموذج المؤثرين', () => {
-  it('⚠️ كود المؤثر لازم — بلا كود يرد ولا يحفظ أحد', async () => {
+describe('③ نموذجها منحة وجيز بلا كود مؤثر (١٦ نوفمبر ٢٠٢٦)', () => {
+  /* كانت حملةَ مؤثّرين وكودُ المؤثّر لازمٌ فيها. ثمّ صارت إليها «منحة وجيز» و«العامة» ووُقف المؤثّرون («delete all influencers
+     links»)، فنموذجُها بلا كود مؤثّر، وكودُها بنسبتها، ولا عمولةَ ولا مؤثّرَ يُحسب له — وبريدُه إلى صفحتها لا إلى رابط مؤثّر */
+  it('⚠️ بلا كود مؤثر: كود بنسبتها، بلا مؤثر ولا عمولة، وبريده إلى /grant/bf', async () => {
     const p = person()
-    await expect(landing.apply(p)).rejects.toMatchObject({ code: 'bad_influencer_code' })
-    expect(await prisma.lead.count({ where: { email: p.email } })).toBe(0)
+    const out = await landing.apply(p)
+    expect(out.grant?.percentOff).toBe(70)
+    const lead = await prisma.lead.findUniqueOrThrow({ where: { id: out.ref } })
+    expect(lead).toMatchObject({ campaign: BLACK_FRIDAY_GRANT_SLUG, influencerId: null })
+    const gc = await prisma.grantCode.findFirstOrThrow({ where: { leadId: lead.id } })
+    expect(gc).toMatchObject({ influencerId: null, commissionPercent: null })
+    const mail = await prisma.outboxMail.findFirstOrThrow({ where: { to: p.email, purpose: 'grant.code' }, orderBy: { createdAt: 'desc' } })
+    expect(mail.text).toContain('/grant/bf')
+    expect(mail.text, 'بريده إلى رابط مؤثر').not.toMatch(/\/grant\/bf\/[A-Z]/)
   })
 
-  it('⚠️ مؤثر خصمه ٧٠ والحملة ٦٠: كود بسبعين وعمولته — وبريده وهديته إلى رابطه فيها، والشراء بخصمه وعمولته في كشفه', async () => {
-    await bf.update({ percentOff: 60 }, ownerId)
-    try {
-      const id = await addInfluencer('BFSEVENTY', 70, 15)
-      const p = person({ influencerCode: 'BFSEVENTY' })
-      const out = await landing.apply(p)
-      expect(out.grant?.percentOff, 'أخذ نسبة الحملة لا خصم مؤثره').toBe(70)
-      expect(out.campaign.percentOff, 'الصفحة بعد النموذج لا تقول خصم مؤثره').toBe(70)
-      expect(out).toMatchObject({ influencer: { code: 'BFSEVENTY' } })
-      const lead = await prisma.lead.findUniqueOrThrow({ where: { id: out.ref } })
-      expect(lead).toMatchObject({ campaign: BLACK_FRIDAY_GRANT_SLUG, influencerId: id, channel: 'bfseventy' })
-      const gc = await prisma.grantCode.findFirstOrThrow({ where: { leadId: lead.id }, include: { coupon: true } })
-      expect(gc).toMatchObject({ influencerId: id, commissionPercent: 15 })
-      expect(gc.coupon.percentOff).toBe(70)
-      const mail = await prisma.outboxMail.findFirstOrThrow({ where: { to: p.email, purpose: 'grant.code' }, orderBy: { createdAt: 'desc' } })
-      expect(mail.subject).toBe('كود بلاك فرايدي وجيز الخاص بك')
-      expect(mail.text, 'بريد الكود لا يعيده إلى رابط مؤثره فيها').toContain('/grant/bf/BFSEVENTY')
-      const view = await landing.influencerView('BFSEVENTY')
-      expect((await prisma.shortLink.findUniqueOrThrow({ where: { code: view.sharePath!.slice('/s/'.length) } })).target).toBe('/grant/bf/BFSEVENTY')
-
-      const buyer = await learner()
-      const orderId = await pay(buyer, [await openCohort(100)], out.grant!.code!)
-      expect(Number((await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).total), 'دفع غير خصم مؤثره').toBe(30)
-      const st = await influencers.statement(id)
-      expect(st.rows).toHaveLength(1)
-      expect(st.rows[0]).toMatchObject({ listTotal: 100, percent: 15, commission: 15 })
-    } finally {
-      await bf.update({ percentOff: 70 }, ownerId)
-    }
+  it('⚠️ وكود مؤثر يكتب في النموذج لا يحسب له — لا عمولة ولا خصمه', async () => {
+    await addInfluencer('BFSEVENTY', 75, 15)
+    const out = await landing.apply(person({ influencerCode: 'BFSEVENTY' }))
+    expect(out.grant?.percentOff, 'أخذ خصم المؤثر').toBe(70)
+    const gc = await prisma.grantCode.findFirstOrThrow({ where: { leadId: out.ref } })
+    expect(gc, 'حسبت عمولة لمؤثر').toMatchObject({ influencerId: null, commissionPercent: null })
   })
 
   it('⚠️ ومؤثر بلا خصم: نسبة الحملة', async () => {
@@ -206,19 +192,19 @@ describe('⑤ الكود يتغير ورابطه القديم يعمل', () => {
     const row = await prisma.influencer.findUniqueOrThrow({ where: { id } })
     expect(row).toMatchObject({ code: 'BFNEW', formerCodes: ['BFOLD'] })
 
-    const old = await landing.influencerView('BFOLD')
+    const old = await infLanding.influencerView('BFOLD')
     expect(old.influencer, 'الرابط القديم لا يعمل').toEqual({ nameAr: 'مؤثر BFOLD', code: 'BFNEW' })
     expect(old.campaign.percentOff).toBe(75)
-    const applied = await landing.apply(person({ influencerCode: 'bfold' }))
+    const applied = await infLanding.apply(person({ influencerCode: 'bfold' }))
     expect(applied.influencer?.code).toBe('BFNEW')
     expect((await prisma.lead.findUniqueOrThrow({ where: { id: applied.ref } })).influencerId).toBe(id)
     expect((await prisma.grantCode.findFirstOrThrow({ where: { leadId: applied.ref } })).influencerId).toBe(id)
-    expect((await landing.influencerView('BFNEW')).influencer?.code).toBe('BFNEW')
+    expect((await infLanding.influencerView('BFNEW')).influencer?.code).toBe('BFNEW')
     /* وفي منحة المؤثّرين كذلك — الكودُ للمؤثّر لا للحملة */
     expect((await infLanding.influencerView('BFOLD')).influencer?.code).toBe('BFNEW')
 
     const visitorId = crypto.randomUUID()
-    await recordGrantVisit(prisma, BLACK_FRIDAY_GRANT_SLUG, { visitorId, code: 'BFOLD' })
+    await recordGrantVisit(prisma, INFLUENCER_GRANT_SLUG, { visitorId, code: 'BFOLD' })
     expect((await prisma.grantVisit.findFirstOrThrow({ where: { visitorId } })).influencerCode).toBe('BFNEW')
 
     const audit = await prisma.auditEvent.findFirstOrThrow({ where: { action: 'influencer.code.change', entityId: id } })
@@ -264,44 +250,37 @@ describe('⑥ منحة واحدة لكل متعلم على الحملات الأ
   })
 })
 
-describe('⑦ المتابعة والتذكير كمنحة المؤثرين', () => {
-  it('⚠️ من لم يشتر بعد ساعة: حالة تسمي بلاك فرايدي وكود مؤثره', async () => {
-    await addInfluencer('BFFOLLOW')
-    const out = await landing.apply(person({ influencerCode: 'BFFOLLOW' }))
+describe('⑦ المتابعة والتذكير بلا مؤثر (١٦ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ من لم يشتر بعد ساعة: حالة تسمي بلاك فرايدي', async () => {
+    const out = await landing.apply(person())
     await prisma.lead.update({ where: { id: out.ref }, data: { createdAt: new Date(Date.now() - 2 * 3_600_000) } })
     await openGrantFollowups(prisma)
     const kase = await prisma.advisorCase.findFirst({ where: { leadId: out.ref } })
     expect(kase, 'لم تفتح له حالة').not.toBeNull()
-    expect(kase!.nextAction).toContain('بلاك فرايدي وجيز بكود BFFOLLOW')
+    expect(kase!.nextAction).toContain('بلاك فرايدي وجيز')
   })
 
-  it('⚠️ تذكير بنهايتها هي — يعيده إلى رابط مؤثره فيها لا إلى منحة المؤثرين', async () => {
+  it('⚠️ تذكير بنهايتها هي — إلى صفحتها بنسبتها', async () => {
     const HOUR = 3_600_000
     const T = new Date(Date.now() + 5 * 24 * HOUR)
     const at = (hoursBefore: number) => new Date(T.getTime() - hoursBefore * HOUR)
     const had = await prisma.integrationSetting.findUnique({ where: { provider: 'email' }, select: { enabled: true, config: true } })
     const cfg = { apiKey: 'test-key', fromEmail: 'no-reply@test.local' }
     await prisma.integrationSetting.upsert({ where: { provider: 'email' }, update: { enabled: true, config: cfg }, create: { provider: 'email', enabled: true, config: cfg } })
-    const infClose = (await infGrant.settings()).closesAt
     try {
       await bf.update({ closesAt: T }, ownerId)
-      await infGrant.update({ closesAt: null }, ownerId)
-      await addInfluencer('BFREMIND', 72)
-      const p = person({ influencerCode: 'BFREMIND' })
+      const p = person()
       const out = await landing.apply(p)
       const mails = () => prisma.outboxMail.findMany({ where: { to: p.email, purpose: 'grant.reminder' } })
-      await sendGrantReminders(prisma, at(62.9), INFLUENCER_GRANT_SLUG)
-      expect(await mails(), 'ذكره تذكير منحة المؤثرين').toHaveLength(0)
       const r = await sendGrantReminders(prisma, at(62.9), BLACK_FRIDAY_GRANT_SLUG)
       expect(r.stage).toBe('3d')
       const m = await mails()
       expect(m, 'لم يذكر من لم يشتر').toHaveLength(1)
       expect(m[0].text).toContain(out.grant!.code!)
-      expect(m[0].text).toContain('/grant/bf/BFREMIND')
-      expect(m[0].text).toContain('72%')
+      expect(m[0].text).toContain('/grant/bf')
+      expect(m[0].text).toContain('70%')
     } finally {
       await bf.update({ closesAt: null }, ownerId)
-      await infGrant.update({ closesAt: infClose }, ownerId)
       if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
       else await prisma.integrationSetting.delete({ where: { provider: 'email' } })
     }
@@ -344,5 +323,47 @@ describe('⑨ دورات صفحتها بقائمتها هي', () => {
       await prisma.grantCampaign.update({ where: { id: bfCamp }, data: { courseIds: [] } })
       await prisma.grantCampaign.update({ where: { id: infCamp }, data: { courseIds: infBefore } })
     }
+  })
+})
+
+/* ═══ ⑩ «منحة وجيز» و«العامة» تصيران بلاك فرايدي بـ70%، ويوقف المؤثرون (١٦ نوفمبر ٢٠٢٦) — `grant-merge.service.ts` ═══
+   «اريد ان تتحول منحة وجيز ٦٠٪ الى بلاك فرايدي وتتغير لكل طالب لديه كود فيها… وايضا منحة وجيز العامة تتغير كلها وتصبح ٧٠٪»،
+   و«Lower them to 70%» لأكواد الثمانين مع بريدٍ يشرح، و«delete all influencers links… keep the option to the admin». */
+describe('⑩ الدمج في بلاك فرايدي', () => {
+  it('⚠️ أكواد الحملتين تنتقل بكودها نفسه بسبعين، والثمانون تنزل ببريد، والقديمتان والمؤثرون يوقفون — مرة واحدة', async () => {
+    const { applyBlackFridayMerge } = await import('../../services/grant-merge.service')
+    await new GrantService(prisma, MEMBER_GRANT_SLUG).update({ active: true, percentOff: 60, maxCodes: null, closesAt: null }, ownerId)
+    await new GrantService(prisma, OPEN_GRANT_SLUG).update({ active: true, percentOff: 50, maxCodes: null, closesAt: null }, ownerId)
+    const m = person()
+    const mOut = await new GrantLandingService(prisma, MEMBER_GRANT_SLUG).apply(m)
+    const o = person()
+    const oOut = await new GrantLandingService(prisma, OPEN_GRANT_SLUG).apply(o)
+    await bf.update({ percentOff: 80 }, ownerId)
+    const e = person()
+    const eOut = await landing.apply(e)
+    await bf.update({ percentOff: 70 }, ownerId)
+    await addInfluencer('BFSTOP')
+
+    const r = await applyBlackFridayMerge(prisma)
+    expect(r, 'لم يدمج').not.toBeNull()
+    const bfId = (await bf.settings()).id
+    for (const [out, pct] of [[mOut, 60], [oOut, 50], [eOut, 80]] as const) {
+      const gc = await prisma.grantCode.findFirstOrThrow({ where: { leadId: out.ref }, include: { coupon: true } })
+      expect(gc.campaignId, `كود ${pct}% لم ينتقل`).toBe(bfId)
+      expect(gc.coupon.code, 'تغير الكود').toBe(out.grant!.code)
+      expect(gc.coupon.percentOff, `كود ${pct}% لم يصر سبعين`).toBe(70)
+      expect((await prisma.lead.findUniqueOrThrow({ where: { id: out.ref } })).campaign).toBe(BLACK_FRIDAY_GRANT_SLUG)
+    }
+    expect(await prisma.outboxMail.count({ where: { to: e.email, purpose: 'grant.notice' } }), 'لم يخبر من نزل كوده').toBe(1)
+    expect(await prisma.outboxMail.count({ where: { to: m.email, purpose: 'grant.notice' } }), 'أخبر من ارتفع كوده بنزول').toBe(0)
+    expect((await new GrantService(prisma, MEMBER_GRANT_SLUG).settings()).active).toBe(false)
+    expect((await new GrantService(prisma, OPEN_GRANT_SLUG).settings()).active).toBe(false)
+    expect(await prisma.influencer.count({ where: { active: true } }), 'بقي مؤثر نشط').toBe(0)
+    expect(await prisma.influencer.count({ where: { code: 'BFSTOP' } }), 'حذف ملف المؤثر').toBe(1)
+
+    /* ومن عبأ نموذج بلاك فرايدي ببريده القديم يجد كوده نفسه */
+    const again = await landing.apply({ ...m, phone: m.phone })
+    expect(again.ref).toBe(mOut.ref)
+    expect(await applyBlackFridayMerge(prisma), 'دمج مرتين').toBeNull()
   })
 })

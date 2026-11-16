@@ -67,7 +67,9 @@ export const GRANT_CAMPAIGNS: Record<GrantSlug, { nameAr: string; defaults: { pe
 export const GRANT_SLUGS: readonly GrantSlug[] = [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG]
 
 /** حملاتُ المؤثّرين — نموذجُها يطلب كودَ المؤثّر، وصفحتُها برابطه، وكودُ منحتها يحمل مؤثّرَه وعمولتَه وخصمَه */
-export const INFLUENCER_GRANT_SLUGS: readonly GrantSlug[] = [INFLUENCER_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG]
+/* و«بلاك فرايدي وجيز» لم تعد حملةَ مؤثّرين (١٦ نوفمبر ٢٠٢٦): صارت منحةَ وجيز للجميع بـ70%، وانتقل إليها من أخذ «منحة وجيز»
+   و«العامة» (`grant-merge.service.ts`). فنموذجُها بلا كود مؤثّر، ولا عمولةَ على ما يُعطى فيها بعد اليوم */
+export const INFLUENCER_GRANT_SLUGS: readonly GrantSlug[] = [INFLUENCER_GRANT_SLUG]
 export const isInfluencerGrant = (slug: string | null | undefined): boolean =>
   (INFLUENCER_GRANT_SLUGS as readonly (string | null | undefined)[]).includes(slug)
 

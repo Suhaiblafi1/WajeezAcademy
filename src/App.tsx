@@ -214,19 +214,23 @@ export default function App() {
           {/* تقويمُ الفصل — سطحُ أرشفةٍ لمحرّكات البحث كذلك (البند ٥٠) */}
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/pathways/:id" element={<PathwayPage />} />
-          <Route path="/grant" element={<MemberGrantPage />} />
-          <Route path="/grant/build" element={<MemberGrantPage />} />
+          {/* «منحة وجيز» و«العامة» صارتا «بلاك فرايدي وجيز» (١٦ نوفمبر ٢٠٢٦، `grant-merge.service.ts`): روابطُهما القديمةُ في
+              كلّ بريدٍ ومنشورٍ تفتحها، بما بعد «؟» كما هو — والكودُ المحفوظُ على الجهاز يُقرأ هناك */}
+          <Route path="/grant" element={<KeepQuery to="/grant/bf" />} />
+          <Route path="/grant/build" element={<KeepQuery to="/grant/bf/build" />} />
           {/* «منحة مؤثرين وجيز» — صفحتُها برابط المؤثّر وكودُه مكتوب، غيرُ `/grant` (٢٦ أكتوبر ٢٠٢٦) */}
           <Route path="/grant/i" element={<MemberGrantPage variant="influencer" />} />
           <Route path="/grant/i/:code" element={<MemberGrantPage variant="influencer" />} />
           <Route path="/grant/i/:code/build" element={<MemberGrantPage variant="influencer" />} />
           {/* «منحة وجيز العامة» — للجميع بصفّها هي، غيرُ `/grant` (١ نوفمبر ٢٠٢٦) */}
-          <Route path="/grant/open" element={<MemberGrantPage variant="open" />} />
-          <Route path="/grant/open/build" element={<MemberGrantPage variant="open" />} />
+          <Route path="/grant/open" element={<KeepQuery to="/grant/bf" />} />
+          <Route path="/grant/open/build" element={<KeepQuery to="/grant/bf/build" />} />
           {/* «بلاك فرايدي وجيز» — حملةُ مؤثّرين بصفّها هي، وصفحتُها برابط المؤثّر (١٥ نوفمبر ٢٠٢٦) */}
           <Route path="/grant/bf" element={<MemberGrantPage variant="blackfriday" />} />
-          <Route path="/grant/bf/:code" element={<MemberGrantPage variant="blackfriday" />} />
-          <Route path="/grant/bf/:code/build" element={<MemberGrantPage variant="blackfriday" />} />
+          <Route path="/grant/bf/build" element={<MemberGrantPage variant="blackfriday" />} />
+          {/* ورابطُ مؤثّرٍ قديمٌ فيها يفتحها بلا كوده — لم تعد حملةَ مؤثّرين */}
+          <Route path="/grant/bf/:code" element={<KeepQuery to="/grant/bf" />} />
+          <Route path="/grant/bf/:code/build" element={<KeepQuery to="/grant/bf/build" />} />
           {/* منحُ الشركاء — صفحةٌ لكلّ جامعةٍ أو شركة، ورابطُ تأكيد البريد (١٥ نوفمبر ٢٠٢٦، `partner-grant.ts`) */}
           <Route path="/grant/p/:slug" element={<PartnerGrantPage />} />
           <Route path="/grant/p/:slug/confirm" element={<PartnerGrantPage />} />
@@ -457,4 +461,10 @@ export default function App() {
       <ToastHost />
     </>
   )
+}
+
+/** تحويلٌ يحفظ ما بعد «؟» — `?picks=` من بريد التذكير و`?ch=` من منشور، فلا يضيع اختيارُه ولا مصدرُه */
+function KeepQuery({ to }: { to: string }) {
+  const { search } = useLocation()
+  return <Navigate to={`${to}${search}`} replace />
 }

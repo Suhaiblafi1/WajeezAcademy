@@ -1621,6 +1621,9 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   /* و«الجامعة الهاشمية» شريكُنا الأوّل — يُنشأ موقوفا مرّةً واحدة بدوراتٍ مقترحةٍ لطلابها (١٥ نوفمبر ٢٠٢٦) */
   const { applyPartnerLaunch } = await import('../services/partner-grant.service')
   const partnered = await applyPartnerLaunch(prisma)
+  /* و«منحة وجيز» و«العامة» تصيران «بلاك فرايدي وجيز» بـ70% لكلّ كود، ويوقف المؤثّرون — مرّةً واحدة (١٦ نوفمبر ٢٠٢٦) */
+  const { applyBlackFridayMerge } = await import('../services/grant-merge.service')
+  await applyBlackFridayMerge(prisma)
   const seeded = await seedGrantAdvisorWhatsApp(prisma)
   /* ولكلّ حملةٍ بنهايتها: «منحة وجيز» و«منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) و«منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
   const members = await sendGrantReminders(prisma, now)
