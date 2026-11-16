@@ -228,14 +228,16 @@ describe('بلاك فرايدي وجيز ومؤثروها', () => {
   const INF_ROUTES = code('server/http/routes/influencer.routes.ts')
   const PANEL = code('src/pages/admin/InfluencersPanel.tsx')
 
-  it('⚠️ لها طريق وبند وباب بصلاحية الكوبونات — وإعداداتها كأخواتها والمؤثرون تحتها', () => {
+  it('⚠️ لها طريق وبند وباب بصلاحية الكوبونات — وإعداداتها كأخواتها، والمؤثرون في صفحتهم لا هنا', () => {
     expect(APP).toMatch(/<Route path="\/admin\/black-friday-grant" element=\{<AdminMemberGrant variant="blackfriday" \/>\} \/>/)
     const item = allSections.flatMap((s) => s.items).find((i) => i.to === '/admin/black-friday-grant')
     expect(item?.need).toBe('commerce.manage')
     expect(INF_ROUTES).toMatch(/\['\/api\/admin\/black-friday-grant', new GrantService\(prisma, BLACK_FRIDAY_GRANT_SLUG\), 'بلاك فرايدي وجيز'\]/)
     expect(INF_ROUTES).toMatch(/app\.put\(path, \{\s*preHandler: canManage/)
     expect(INF_ROUTES).toMatch(/const canManage = requirePermission\('commerce\.manage'\)/)
-    expect(PAGE).toMatch(/\{\(forInfluencer \|\| forBlackFriday\) && <InfluencersPanel \/>\}/)
+    /* والمؤثّرون في صفحتهم وحدَها — لا في بلاك فرايدي (١٦ نوفمبر ٢٠٢٦: «احذف المؤثرين من صفحة منحة بلاك فرايدي») */
+    expect(PAGE).toMatch(/\{forInfluencer && <InfluencersPanel \/>\}/)
+    expect(PAGE, 'عاد لوح المؤثرين إلى صفحة بلاك فرايدي').not.toMatch(/forBlackFriday\) && <InfluencersPanel/)
     expect(GRANT.BLACK_FRIDAY_GRANT_DEFAULTS).toEqual({ percentOff: 70, maxCodes: 1000, maxCourses: 4 })
   })
 
@@ -296,5 +298,36 @@ describe('تفاصيل المؤثر تتغير', () => {
   it('⚠️ مدير المنصة مؤثرا يبقى بابه الإدارة', () => {
     expect(homePathForRoles(['influencer', 'super_admin'])).toBe('/admin')
     expect(homePathForRoles(['learner', 'influencer'])).toBe('/influencer')
+  })
+})
+
+/* ═══ «الهامش في كل المنح» في رأس كلّ صفحة منحة (١٦ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «وامنحني معرفة الهامش لكل نوع من المنح». والسلوكُ في `server/tests/commerce/grant-margins-summary.test.ts`. */
+describe('الهامش في كل المنح', () => {
+  const SUMMARY = code('src/pages/admin/GrantMarginsSummary.tsx')
+
+  it('⚠️ في رأس كل صفحة منحة تحت روابط المنح — من بابه بصلاحية الكوبونات، وفحص كل منحة باق تحته', () => {
+    expect(PAGE).toMatch(/<GrantSwitcher current=\{variant\} \/>\s*<GrantMarginsSummary \/>\s*<Card/)
+    /* وصفحةُ الشركاء معها — «واجعل الهامش يحسب للجميع ومنهم الشركاء» */
+    expect(code('src/pages/admin/PartnerGrants.tsx')).toMatch(/<GrantSwitcher current="partners" \/>\s*<GrantMarginsSummary \/>/)
+    expect(PAGE, 'ذهب فحص هامش المنحة').toMatch(/<h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة/)
+    expect(SUMMARY).toMatch(/apiGet<Summary>\("\/api\/admin\/grants\/margins-summary"\)/)
+    expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/grants\/margins-summary', \{\s*preHandler: canManage/)
+    /* الخاسرةُ بلون التنبيه، والأرقامُ من اليسار، ولكلّ مؤثّرٍ صفُّه تحت منحته */
+    expect(SUMMARY).toMatch(/\{s\.losing > 0 \? <Chip tone="warn"><bdi dir="ltr">\{s\.losing\}<\/bdi><\/Chip>/)
+    expect(SUMMARY).toMatch(/\{\(c\.influencers \?\? \[\]\)\.map\(\(x\) => \(/)
+  })
+
+  it('⚠️ التلخيص يعد ما يعده الفحص — والنصوص بلا تشكيل', async () => {
+    const { marginStats, GRANT_MARGINS_TITLE_AR, GRANT_MARGINS_LINE_AR, GRANT_MARGINS_TOP_AR } = await import('@/application/commerce/grant-margins')
+    const rows = [
+      { margin: -5, currency: 'USD' }, { margin: null, currency: 'USD' }, { margin: 10, currency: 'USD' }, { margin: -1, currency: 'JOD' },
+    ]
+    expect(marginStats(rows, 'USD')).toEqual({ cohorts: 4, losing: 2, noCost: 1, otherCurrency: 1, avg: 2.5, min: -5 })
+    expect(marginStats([{ margin: null, currency: 'USD' }], 'USD')).toMatchObject({ cohorts: 1, noCost: 1, avg: null, min: null })
+    const texts = [GRANT_MARGINS_TITLE_AR, GRANT_MARGINS_LINE_AR, GRANT_MARGINS_TOP_AR, 'المنحة', 'الحال', 'الخصم', 'العمولة', 'الشعب', 'تخسر', 'بلا أجر مقعد', 'متوسط الهامش', 'أدنى هامش', ' (الأعلى)', ' (خصمه)', 'لا مؤثر نشط.', 'تعذر حساب الهامش الآن.']
+    for (const t of texts.slice(3)) expect(SUMMARY).toContain(t)
+    for (const t of texts) expect(t).toBe(plainAr(t))
+    expect(GRANT_MARGINS_LINE_AR).toContain('سعر المقعد بعد المنحة ناقصا أجر المدرب وعمولة المؤثر')
   })
 })

@@ -15,6 +15,7 @@ import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { signedUpXlsx } from '../../services/signed-up-export'
 import { GRANT_KINDS, GRANT_KIND_SLUG, OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
 import { GrantCourseChoiceService, campaignScope } from '../../services/grant-scope.service'
+import { grantMarginsSummary } from '../../services/grant-margins.service'
 
 const settingsBody = z.object({
   percentOff: z.number().int().min(1).max(100).optional(),
@@ -41,6 +42,13 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     const body = settingsBody.parse(req.body ?? {})
     return grants.update(body, req.auth!.userId)
   })
+
+  /* ═══ الهامشُ في كلّ المنح — لوحٌ واحدٌ في رأس كلّ صفحة منحة (١٦ نوفمبر ٢٠٢٦، `grant-margins.service.ts`) ═══
+     قرارُ صاحب المنصّة: «وامنحني معرفة الهامش لكل نوع من المنح». بصلاحيّة إعدادات المنحة نفسِها */
+  app.get('/api/admin/grants/margins-summary', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'هامش المقعد في كل المنح: لكل منحة بنسبتها، ولكل مؤثر نشط بخصمه وعمولته' },
+  }, async () => grantMarginsSummary(prisma))
 
   app.get('/api/admin/member-grant/margins', {
     preHandler: canManage,
