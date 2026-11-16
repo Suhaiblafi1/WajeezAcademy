@@ -228,14 +228,16 @@ describe('بلاك فرايدي وجيز ومؤثروها', () => {
   const INF_ROUTES = code('server/http/routes/influencer.routes.ts')
   const PANEL = code('src/pages/admin/InfluencersPanel.tsx')
 
-  it('⚠️ لها طريق وبند وباب بصلاحية الكوبونات — وإعداداتها كأخواتها والمؤثرون تحتها', () => {
+  it('⚠️ لها طريق وبند وباب بصلاحية الكوبونات — وإعداداتها كأخواتها، والمؤثرون في صفحتهم لا هنا', () => {
     expect(APP).toMatch(/<Route path="\/admin\/black-friday-grant" element=\{<AdminMemberGrant variant="blackfriday" \/>\} \/>/)
     const item = allSections.flatMap((s) => s.items).find((i) => i.to === '/admin/black-friday-grant')
     expect(item?.need).toBe('commerce.manage')
     expect(INF_ROUTES).toMatch(/\['\/api\/admin\/black-friday-grant', new GrantService\(prisma, BLACK_FRIDAY_GRANT_SLUG\), 'بلاك فرايدي وجيز'\]/)
     expect(INF_ROUTES).toMatch(/app\.put\(path, \{\s*preHandler: canManage/)
     expect(INF_ROUTES).toMatch(/const canManage = requirePermission\('commerce\.manage'\)/)
-    expect(PAGE).toMatch(/\{\(forInfluencer \|\| forBlackFriday\) && <InfluencersPanel \/>\}/)
+    /* والمؤثّرون في صفحتهم وحدَها — لا في بلاك فرايدي (١٦ نوفمبر ٢٠٢٦: «احذف المؤثرين من صفحة منحة بلاك فرايدي») */
+    expect(PAGE).toMatch(/\{forInfluencer && <InfluencersPanel \/>\}/)
+    expect(PAGE, 'عاد لوح المؤثرين إلى صفحة بلاك فرايدي').not.toMatch(/forBlackFriday\) && <InfluencersPanel/)
     expect(GRANT.BLACK_FRIDAY_GRANT_DEFAULTS).toEqual({ percentOff: 70, maxCodes: 1000, maxCourses: 4 })
   })
 
@@ -306,6 +308,8 @@ describe('الهامش في كل المنح', () => {
 
   it('⚠️ في رأس كل صفحة منحة تحت روابط المنح — من بابه بصلاحية الكوبونات، وفحص كل منحة باق تحته', () => {
     expect(PAGE).toMatch(/<GrantSwitcher current=\{variant\} \/>\s*<GrantMarginsSummary \/>\s*<Card/)
+    /* وصفحةُ الشركاء معها — «واجعل الهامش يحسب للجميع ومنهم الشركاء» */
+    expect(code('src/pages/admin/PartnerGrants.tsx')).toMatch(/<GrantSwitcher current="partners" \/>\s*<GrantMarginsSummary \/>/)
     expect(PAGE, 'ذهب فحص هامش المنحة').toMatch(/<h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة/)
     expect(SUMMARY).toMatch(/apiGet<Summary>\("\/api\/admin\/grants\/margins-summary"\)/)
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/grants\/margins-summary', \{\s*preHandler: canManage/)

@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Download, ExternalLink, ImageUp, Loader2, Plus, ServerOff, Trash2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import GrantSwitcher from "./GrantSwitcher";
+import GrantMarginsSummary from "./GrantMarginsSummary";
 import GrantCourseChoice from "./GrantCourseChoice";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -98,6 +99,8 @@ export default function AdminPartnerGrants() {
   return (
     <AdminLayout title="منح الشركاء">
       <GrantSwitcher current="partners" />
+      {/* والهامشُ في كلّ المنح هنا أيضا — كلُّ شريكٍ بنسبته (١٦ نوفمبر ٢٠٢٦: «واجعل الهامش يحسب للجميع ومنهم الشركاء») */}
+      <GrantMarginsSummary />
       <Card>
         <p className="text-read leading-7 text-muted-foreground">
           لكل جامعة أو شركة منحتها وصفحتها. يكتب الطالب بريده الجامعي فيصله رابط، وإذا فتحه أخذ كوده. والكود يعمل على أي دورة حتى حد دوراته،
