@@ -1618,7 +1618,8 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   const limited = await applyGrantCoursesFix(prisma)
   /* و«منحة وجيز العامة» تُشغَّل حتى ٣٠ نوفمبر — مرّةً واحدة، قبل تذكيرها فيتبع نهايتَها (١ نوفمبر ٢٠٢٦) */
   const launched = await applyOpenGrantLaunch(prisma, now)
-  /* و«الجامعة الهاشمية» شريكُنا الأوّل — يُنشأ موقوفا مرّةً واحدة بدوراتٍ مقترحةٍ لطلابها (١٥ نوفمبر ٢٠٢٦) */
+  /* و«الجامعة الهاشمية» شريكُنا الأوّل — يُنشأ موقوفا مرّةً واحدة بدوراتٍ مقترحةٍ لطلابها (١٥ نوفمبر ٢٠٢٦)،
+     و«جامعة الشرق الأوسط» مشغَّلةً بشعارها (١٦ نوفمبر ٢٠٢٦) — كلٌّ مرّةً بأثره */
   const { applyPartnerLaunch } = await import('../services/partner-grant.service')
   const partnered = await applyPartnerLaunch(prisma)
   /* و«منحة وجيز» و«العامة» تصيران «بلاك فرايدي وجيز» بـ70% لكلّ كود، ويوقف المؤثّرون — مرّةً واحدة (١٦ نوفمبر ٢٠٢٦) */
@@ -1655,11 +1656,11 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   return {
     job: 'grant_reminders',
     summaryAr: (fixed ? 'صار آخر يوم للمنحة 30 أكتوبر · ' : '') + (extended ? 'مدت المنحة إلى 12 نوفمبر · ' : '') + (extendedInfluencers ? 'مدت منحة المؤثرين إلى 12 نوفمبر · ' : '') + (told > 0 ? `أخبر ${told} ممن لم يشتر بتمديد المنحة · ` : '') + (limited ? 'صار حد المنحة 4 دورات · ' : '')
-      + (launched ? 'شغلت منحة وجيز العامة حتى 30 نوفمبر · ' : '') + (partnered ? 'أضيفت الجامعة الهاشمية شريكا موقوفا · ' : '') + (seeded ? 'ضبط رقم واتساب مستشار المنحة · ' : '')
+      + (launched ? 'شغلت منحة وجيز العامة حتى 30 نوفمبر · ' : '') + (partnered.length > 0 ? `أضيف شريكا: ${partnered.join('، ')} · ` : '') + (seeded ? 'ضبط رقم واتساب مستشار المنحة · ' : '')
       + (leftSent > 0 ? `ذكّر ${leftSent} ممن اشترى ببعض كوده بما بقي عليه · ` : '') + (mailOff
       ? 'حلّ تذكير المنحة وقناة البريد غير موصولة — لا يذكّر أحد حتى توصل'
       : sent === 0 ? 'لا تذكير منحة مستحق' : `ذكّر ${sent} ممن لم يشتر بأن المنحة تنتهي (${stage === '1d' ? 'آخر يوم' : 'قبل ثلاثة أيام'})`),
-    done: sent + told + leftSent + (fixed ? 1 : 0) + (extended ? 1 : 0) + (extendedInfluencers ? 1 : 0) + (limited ? 1 : 0) + (launched ? 1 : 0) + (partnered ? 1 : 0) + (seeded ? 1 : 0), failed: 0, ms: Date.now() - started,
+    done: sent + told + leftSent + (fixed ? 1 : 0) + (extended ? 1 : 0) + (extendedInfluencers ? 1 : 0) + (limited ? 1 : 0) + (launched ? 1 : 0) + partnered.length + (seeded ? 1 : 0), failed: 0, ms: Date.now() - started,
   }
 }
 

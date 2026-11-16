@@ -47,7 +47,7 @@ import {
   emailMatchesDomains, normalizeDomain, normalizePartnerSlug, partnerBadEmailAr, partnerCampaignSlug, partnerHeadlineAr,
   partnerLinkSentAr, partnerPagePath, partnerSlugOf, partnerTypeOf, PARTNER_CONSENT_AR, PARTNER_LINK_BAD_AR,
   PARTNER_LINK_EXPIRED_AR, PARTNER_LINK_USED_AR, PARTNER_NOT_FOUND_AR, PARTNER_TYPES, PARTNER_TYPE_AR,
-  HU_PARTNER, PARTNER_DEFAULTS, STUDENT_SUGGESTED_COURSES, type PartnerType,
+  HU_PARTNER, MEU_PARTNER, PARTNER_DEFAULTS, STUDENT_SUGGESTED_COURSES, builtInPartnerLogo, type PartnerType,
 } from '../../src/application/commerce/partner-grant'
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { fmtDate } from '../../src/application/text/format-ar'
@@ -99,6 +99,9 @@ function writeUrl(storageKey: string): string {
 
 /** شعارُه للعامّة — والمسارُ لا يخدمه إلّا والشريكُ مشغَّل */
 export const partnerLogoUrl = (key: string | null | undefined): string | null => (key ? `/api/v1/partner-logos/${key}` : null)
+/** شعارُ الشريك كما يُعرض: المرفوعُ إن رُفع، وإلّا المشحونُ مع الموقع (١٦ نوفمبر ٢٠٢٦)، وإلّا لا شيء */
+export const partnerShownLogo = (c: { slug: string; logoKey: string | null }): string | null =>
+  partnerLogoUrl(c.logoKey) ?? builtInPartnerLogo(partnerSlugOf(c.slug))
 
 export class PartnerGrantService {
   private prisma: PrismaClient
@@ -131,7 +134,9 @@ export class PartnerGrantService {
       id: c.id, slug, nameAr: c.nameAr, nameEn: c.partnerNameEn, type: partnerTypeOf(c.partnerType), domains: c.emailDomains,
       percentOff: c.percentOff, maxCourses: c.maxCourses, maxCodes: c.maxCodes, closesAt: c.closesAt, active: c.active,
       open: settings.open, issued: settings.issued, used: settings.used, pending: settings.pending, claims,
-      hasLogo: c.logoKey !== null, publicPath: partnerPagePath(slug), updatedAt: c.updatedAt,
+      /* وشعارُه المشحونُ مع الموقع يُعدّ شعارا — والمرفوعُ يعلوه، وإزالتُه تعيده إليه (`builtInLogo`) */
+      hasLogo: c.logoKey !== null || builtInPartnerLogo(slug) !== null, uploadedLogo: c.logoKey !== null,
+      builtInLogo: builtInPartnerLogo(slug), publicPath: partnerPagePath(slug), updatedAt: c.updatedAt,
       sharePercent: c.partnerSharePercent, hasAccount: c.partnerUserId !== null,
     }
   }
@@ -309,7 +314,7 @@ export class PartnerGrantService {
     return {
       partner: {
         slug: partnerSlugOf(c.slug), nameAr: c.nameAr, nameEn: c.partnerNameEn, type: partnerTypeOf(c.partnerType),
-        domains: c.emailDomains, logoUrl: partnerLogoUrl(c.logoKey),
+        domains: c.emailDomains, logoUrl: partnerShownLogo(c),
       },
       campaign: v.campaign, termAr: v.termAr, openCourses: v.openCourses,
     }
@@ -516,16 +521,32 @@ export class PartnerGrantService {
      الإنتاجُ يُترك ولا يُسقط شيئا. ويغيّرها هو من «الشركاء». */
 export const HU_LAUNCH_REASON = 'قرار صاحب المنصة (15 نوفمبر 2026): شراكة الجامعة الهاشمية بمنحة 75% على 4 دورات'
 
-export async function applyPartnerLaunch(prisma: PrismaClient): Promise<boolean> {
-  const slug = partnerCampaignSlug(HU_PARTNER.slug)
-  if (await prisma.grantCampaign.findUnique({ where: { slug }, select: { id: true } })) return false
-  const before = await prisma.auditEvent.count({ where: { action: 'coupon.partner_create', actorId: null, reason: HU_LAUNCH_REASON } })
-  if (before > 0) return false
-  const known = new Set((await prisma.course.findMany({ where: { id: { in: [...STUDENT_SUGGESTED_COURSES] } }, select: { id: true } })).map((x) => x.id))
-  await new PartnerGrantService(prisma).create({
-    slug: HU_PARTNER.slug, nameAr: HU_PARTNER.nameAr, nameEn: HU_PARTNER.nameEn, type: HU_PARTNER.type as PartnerType,
-    domains: HU_PARTNER.domains, percentOff: HU_PARTNER.percentOff, maxCourses: HU_PARTNER.maxCourses, maxCodes: null,
-    closesAt: null, active: false,
-  }, null, { reason: HU_LAUNCH_REASON, courseIds: STUDENT_SUGGESTED_COURSES.filter((id) => known.has(id)) })
-  return true
+/* ═══ والثاني: جامعة الشرق الأوسط — بالنمط نفسِه، مشغَّلةً بشعارها (١٦ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «افتح صفحة لشريكين جديدين.. جامعة الشرق الأوسط وكاسيت.. والنسبة للجامعة ٥٠٪ كما موضّح بالعقد»، ولكاسيت
+   كودُ مؤثّرٍ لا صفحةُ شريك. فالشرقُ الأوسط **مشغَّلةٌ** من أوّل يوم: «افتح صفحة»، وشعارُها مع الموقع (`BUILT_IN_PARTNER_LOGOS`) —
+   والهاشميّةُ بقيت موقوفةً لأنّها بلا شعار. وكلُّ شريكٍ مزروعٍ مرّةً واحدةً بأثره وسببه، كما كانت الهاشميّة. */
+export const MEU_LAUNCH_REASON = 'قرار صاحب المنصة (16 نوفمبر 2026): شراكة جامعة الشرق الأوسط بمنحة 50% على 4 دورات'
+
+/** الشركاءُ المزروعون — كلٌّ بسببه ومشغَّلٌ أو موقوف */
+const SEEDED_PARTNERS: readonly { partner: typeof HU_PARTNER | typeof MEU_PARTNER; reason: string; active: boolean }[] = [
+  { partner: HU_PARTNER, reason: HU_LAUNCH_REASON, active: false },
+  { partner: MEU_PARTNER, reason: MEU_LAUNCH_REASON, active: true },
+]
+
+/** يزرع ما لم يُزرع من الشركاء — ويعيد أسماءَ ما زُرع الآن */
+export async function applyPartnerLaunch(prisma: PrismaClient): Promise<string[]> {
+  const made: string[] = []
+  for (const { partner: p, reason, active } of SEEDED_PARTNERS) {
+    if (await prisma.grantCampaign.findUnique({ where: { slug: partnerCampaignSlug(p.slug) }, select: { id: true } })) continue
+    if ((await prisma.auditEvent.count({ where: { action: 'coupon.partner_create', actorId: null, reason } })) > 0) continue
+    const known = new Set((await prisma.course.findMany({ where: { id: { in: [...STUDENT_SUGGESTED_COURSES] } }, select: { id: true } })).map((x) => x.id))
+    await new PartnerGrantService(prisma).create({
+      slug: p.slug, nameAr: p.nameAr, nameEn: p.nameEn, type: p.type as PartnerType,
+      domains: [...p.domains], percentOff: p.percentOff, maxCourses: p.maxCourses, maxCodes: null,
+      closesAt: null, active,
+    }, null, { reason, courseIds: STUDENT_SUGGESTED_COURSES.filter((id) => known.has(id)) })
+    made.push(p.nameAr)
+  }
+  return made
 }

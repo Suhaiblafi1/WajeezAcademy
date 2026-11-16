@@ -13,6 +13,7 @@ import { markedTexts } from '../helpers/marked-text'
 import {
   emailMatchesDomains, normalizeDomain, normalizePartnerSlug, partnerCampaignSlug, partnerFaqAr, partnerHeadlineAr,
   partnerOfferAr, partnerSlugOf, isPartnerCampaign, STUDENT_SUGGESTED_COURSES, HU_PARTNER,
+  BUILT_IN_PARTNER_LOGOS, MEU_PARTNER, builtInPartnerLogo,
 } from '@/application/commerce/partner-grant'
 import { GRANT_SLUGS, grantPagePath } from '@/application/commerce/grant'
 import { parseStoredPartnerGrant } from '@/services/partner-grant'
@@ -99,5 +100,27 @@ describe('④ ما يحفظ على الجهاز', () => {
     expect(parseStoredPartnerGrant(JSON.stringify({ ...ok, ref: 'x' }))).toBeNull()
     expect(parseStoredPartnerGrant(JSON.stringify({ ...ok, at: Date.now() - 61 * 86_400_000 }))).toBeNull()
     expect(parseStoredPartnerGrant('{')).toBeNull()
+  })
+})
+
+/* ═══ جامعة الشرق الأوسط وشعارُها مع الموقع (١٦ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «افتح صفحة لشريكين جديدين.. جامعة الشرق الأوسط وكاسيت، وإليك اللوقات.. والنسبة للجامعة ٥٠٪». والسلوكُ
+   في `server/tests/commerce/partner-grant.test.ts` ⑦. وهنا: ثوابتُها، وأنّ شعارَها ملفٌّ في `public` صورٌ لا شيفرة، وعلى أرضيّةٍ
+   بيضاء في الصفحة — نصُّه رماديٌّ داكنٌ لا يُقرأ على الليليّ. */
+describe('⑤ جامعة الشرق الأوسط وشعارها مع الموقع', () => {
+  it('⚠️ بخمسين على أربع دورات ونطاقها، وشعارها ملف في public صور لا شيفرة', () => {
+    expect(MEU_PARTNER).toMatchObject({ slug: 'meu', nameAr: 'جامعة الشرق الأوسط', nameEn: 'Middle East University', type: 'university', domains: ['meu.edu.jo'], percentOff: 50, maxCourses: 4 })
+    expect(builtInPartnerLogo('meu')).toBe('/partners/meu.svg')
+    expect(builtInPartnerLogo('hu'), 'شعار مشحون لم يرسل').toBeNull()
+    for (const path of Object.values(BUILT_IN_PARTNER_LOGOS)) {
+      const svg = read(`public${path}`)
+      expect(svg.startsWith('<svg'), path).toBe(true)
+      expect(svg, `${path} فيه شيفرة أو رابط`).not.toMatch(/<script|<foreignObject|<image|\son[a-z]+=|javascript:|href=|@import|url\(/i)
+    }
+  })
+
+  it('⚠️ والشعار في الصفحة على أرضية بيضاء — فيقرأ في الليلي', () => {
+    const page = read('src/pages/PartnerGrantPage.tsx')
+    expect(page).toMatch(/<span className="grid h-20 min-w-20 max-w-\[11rem\] place-items-center rounded-2xl bg-white[^"]*">\s*\{partner\.logoUrl/)
   })
 })
