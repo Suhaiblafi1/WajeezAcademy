@@ -729,7 +729,11 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/grantSections\(courses\.filter\(\(x\) => !ours\.has\(x\.courseId\)\), stored\.interests, OTHER_DOMAIN\)/)
     expect(PAGE).toMatch(/\{top\.length > 0 && <div className="mt-5 space-y-3">\{top\.map\(\(x\) => row\(x\)\)\}<\/div>\}/)
     /* وعنوانُ الأقسام بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «دوراتٌ أخرى حسب المجال.. عنوانٌ فاشل» */
-    expect(PAGE).toMatch(/\{top\.length > 0 && <p className="mb-1 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية<\/p>\}/)
+    /* وخارجَ البطاقة عنوانا بأيقونةٍ وعدد، وسطرٌ يدعو إلى فتح المجالات (١٦ نوفمبر ٢٠٢٦: «يجب أن تكون خارج البوكس… توضّح
+       أنّ هناك دوراتٍ أخرى يجب أن يطّلع عليها») */
+    expect(PAGE).toMatch(/\{sections\.length > 0 && top\.length > 0 && \(\s*<div className="mt-8">\s*<h3[^>]*>\s*<LayoutGrid[^>]*\/>\s*ويمكنك اختيار دورات أخرى من المجالات التالية\s*<Chip tone="accent">\{grantCountAr\(/)
+    expect(PAGE).toContain('افتح أي مجال لترى دوراته ومدربيها.')
+    expect(PAGE, 'عاد العنوان داخل البطاقة').not.toMatch(/<Card className="mt-6">\s*\{top\.length > 0 && <p className="mb-1 font-bold">ويمكنك/)
     expect(PAGE).not.toContain('دورات أخرى حسب المجال')
     expect(PAGE, 'عاد «كل الدورات المتاحة»').not.toContain('كل الدورات المتاحة')
     expect(PAGE).toMatch(/اختر دوراتك\{view\.termAr && <span className="text-read font-normal text-muted-foreground"> · \{view\.termAr\}<\/span>\}/)
@@ -764,8 +768,7 @@ describe('بعد النموذج', () => {
       expect(code(f), `${f} يقرأ أقسام المنحة`).not.toMatch(/grantSectionOf|GRANT_SECTION_GROUPS/)
     }
     /* وبطاقةٌ واحدةٌ هادئة لا أزرارٌ متكدّسة: الأقسامُ صفوفٌ بينها خطوط، وفي رأس كلٍّ وجوهُ مدرّبيه */
-    expect(PAGE).toMatch(/<Card className="mt-6">\s*\{top\.length > 0 && <p className="mb-1 font-bold">/)
-    expect(PAGE).toMatch(/<div className="divide-y divide-border">\s*\{sections\.map\(/)
+    expect(PAGE).toMatch(/<Card className=\{top\.length > 0 \? "mt-3" : "mt-6"\}>\s*<div className="divide-y divide-border">\s*\{sections\.map\(/)
     expect(PAGE, 'تكرر وجه المدرب في رأس القسم').toMatch(/const faces = \[\.\.\.new Map\(sec\.items\.filter\(\(x\) => x\.trainer\?\.photoUrl\)\.map\(\(x\) => \[x\.trainer!\.id, x\]\)\)\.values\(\)\]\.slice\(0, SECTION_FACES\);/)
   })
 
@@ -848,7 +851,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'نقترحها لك', 'نقترح لك', 'تناسبك', ' ولا تتعارض مواعيدها', ' ابدأ بالأولى، وكودك يبقى لباقيها بنفس الخصم.', 'ابدأ بها', 'يناسب ما تريد تطويره', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'كودك في بريدك ', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
+      'نقترحها لك', 'نقترح لك', 'تناسبك', ' ولا تتعارض مواعيدها', ' ابدأ بالأولى، وكودك يبقى لباقيها بنفس الخصم.', 'ابدأ بها', 'يناسب ما تريد تطويره', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'افتح أي مجال لترى دوراته ومدربيها.', 'كودك في بريدك ', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')

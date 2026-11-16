@@ -39,7 +39,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Award, Check, ChevronDown, Clock, Compass, Copy, GraduationCap, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
+import { Award, Check, ChevronDown, Clock, Compass, Copy, GraduationCap, ExternalLink, Flame, Gift, LayoutGrid, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { syncPageTheme } from "@/services/theme";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
@@ -612,9 +612,21 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             {/* والباقي أقسامٌ مطويّةٌ بمجالها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «الدوراتُ كثيرةٌ وتحيّر الشخص».
                 ثمّ (٢٧ أكتوبر ٢٠٢٦): «التصميمُ سطحيٌّ… لا أزرارا متكدّسةً وراء بعضها… ادمج كلَّ جزئين». فبطاقةٌ واحدةٌ هادئة،
                 أقسامُها مدموجةٌ (`GRANT_SECTION_GROUPS`) بينها خطوطٌ رفيعة، وفي كلّ قسمٍ وجوهُ مدرّبيه وعددُ دوراته */}
+            {/* وعنوانُها خارجَ البطاقة (١٦ نوفمبر ٢٠٢٦) — قرارُ صاحب المنصّة: «جملة ويمكنك اختيار دورات أخرى يجب أن تكون خارج
+                البوكس لكل أنواع المنح، بطريقةٍ توضّح أنّ هناك دوراتٍ أخرى يجب أن يطّلع عليها». فعنوانٌ بأيقونةٍ وعددِ ما في
+                الأقسام، وسطرٌ يدعو إلى فتحها — والصفحةُ واحدةٌ للمنح كلّها */}
+            {sections.length > 0 && top.length > 0 && (
+              <div className="mt-8">
+                <h3 className="flex flex-wrap items-center gap-2 text-lg font-black">
+                  <LayoutGrid className="h-5 w-5 text-gold-ink" aria-hidden="true" />
+                  ويمكنك اختيار دورات أخرى من المجالات التالية
+                  <Chip tone="accent">{grantCountAr(sections.reduce((n, sec) => n + sec.items.length, 0))}</Chip>
+                </h3>
+                <p className="mt-1 text-read text-muted-foreground">افتح أي مجال لترى دوراته ومدربيها.</p>
+              </div>
+            )}
             {sections.length > 0 && (
-              <Card className="mt-6">
-                {top.length > 0 && <p className="mb-1 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية</p>}
+              <Card className={top.length > 0 ? "mt-3" : "mt-6"}>
                 <div className="divide-y divide-border">
                   {sections.map((sec) => {
                     const mineHere = sec.items.filter((x) => picked.includes(x.courseId)).length;
