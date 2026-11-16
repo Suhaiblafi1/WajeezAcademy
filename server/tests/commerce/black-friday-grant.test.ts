@@ -279,6 +279,15 @@ describe('⑦ المتابعة والتذكير بلا مؤثر (١٦ نوفمب
       expect(m[0].text).toContain(out.grant!.code!)
       expect(m[0].text).toContain('/grant/bf')
       expect(m[0].text).toContain('70%')
+      /* ويقول إنّ التسجيل يُغلق بعدها حتى الفصل القادم — الخميسَ بآخر يوم، وصباحَ السبت «اليوم آخر يوم» */
+      expect(m[0].text, 'لا يقول إغلاق التسجيل').toContain('يغلق التسجيل تماما حتى الفصل القادم، فسجل الآن.')
+      expect(m[0].text).toMatch(/آخر يوم [^.]+\. ومن /)
+      expect(m[0].text, 'لا رابط إلغاء الاشتراك').toMatch(/unsubscribe/i)
+      /* وتذكيرُ آخر يوم يقولها أيضا — وعنوانُه بعدد الأيام بتوقيت عمّان، فلا يُطابَق هنا */
+      expect((await sendGrantReminders(prisma, at(14.9), BLACK_FRIDAY_GRANT_SLUG)).stage).toBe('1d')
+      const last = (await mails()).find((x) => x.id !== m[0].id)
+      expect(last, 'لم يصل تذكير آخر يوم').toBeDefined()
+      expect(last!.text).toContain('يغلق التسجيل تماما حتى الفصل القادم، فسجل الآن.')
     } finally {
       await bf.update({ closesAt: null }, ownerId)
       if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
