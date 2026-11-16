@@ -3,7 +3,7 @@ import { StaleChunkBoundary } from '@/components/StaleChunkBoundary'
 import Home from './pages/Home'
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router'
 import Auth from './pages/Auth'
-import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, INFLUENCER_ROLES, LEARNER_ROLES, TRAINER_ROLES } from './components/RequireRole'
+import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, INFLUENCER_ROLES, LEARNER_ROLES, PARTNER_ROLES, TRAINER_ROLES } from './components/RequireRole'
 import ToastHost from './components/Toast'
 import { KeyedByParam } from './components/KeyedByParam'
 
@@ -29,6 +29,7 @@ const PathwayPage = lazy(() => import('./pages/Pathway'))
 const MemberGrantPage = lazy(() => import('./pages/MemberGrantPage'))
 const PartnerGrantPage = lazy(() => import('./pages/PartnerGrantPage'))
 const InfluencerHome = lazy(() => import('./pages/InfluencerHome'))
+const PartnerHome = lazy(() => import('./pages/partner/PartnerHome'))
 const EndorsementLetter = lazy(() => import('./pages/EndorsementLetter'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
 const TrainerPublicPage = lazy(() => import('./pages/TrainerPublic'))
@@ -336,6 +337,10 @@ export default function App() {
           <Route element={<RequireRole allow={INFLUENCER_ROLES} />}>
             <Route path="/influencer" element={<InfluencerHome />} />
             <Route path="/influencer/account" element={<AccountPage />} />
+          </Route>
+          {/* لوحةُ الشريك — حصّتُه ممّا يدفعه من جاء برابط منحته */}
+          <Route element={<RequireRole allow={PARTNER_ROLES} />}>
+            <Route path="/partner" element={<PartnerHome />} />
           </Route>
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />

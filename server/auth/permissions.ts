@@ -156,6 +156,9 @@ export const PERMISSIONS = [
   /* حسابُ المؤثّر (٢٦ أكتوبر ٢٠٢٦): يرى من جاء بكوده في «منحة مؤثرين وجيز» وعمولتَه عنهم — كشفَه هو لا غيرَه
      (`influencer.service.ts`) */
   { key: 'influencer.portal', description: 'رؤية من سجل بكودك في منحة المؤثرين، وعمولتك عن كل منهم' },
+  /* ولوحةُ الشريك (١٦ نوفمبر ٢٠٢٦): ممثّلُ الجامعة أو الشركة يرى من سجّل برابط منحتها ومن دفع وحصّتَها — كشفَ شريكه وحدَه
+     (`partner-revenue.service.ts`) */
+  { key: 'partner.portal', description: 'رؤية من سجل برابط منحتكم ومن دفع وحصتكم وما صرف لكم' },
   { key: 'learner.submit', description: 'تسليم الواجبات ومحاولات التقييم' },
   // المستشارون — الحالات المسندة فقط
   { key: 'advisor.cases.view', description: 'عرض حالات العملاء المسندة إلى المستشار فقط' },
@@ -330,6 +333,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
   support: ['catalog.view', 'support.operate'],
   learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request', 'rating.submit'],
   influencer: ['influencer.portal'],
+  partner: ['partner.portal'],
 }
 
 /* ═══════════ تفويض الصلاحيات — من يمنح لمن، وماذا ═══════════
@@ -361,6 +365,8 @@ export const ROLE_RANK: Record<string, number> = {
   trainer_applicant: 20,
   /* فوق المتعلّم ودون المتقدّم: حسابٌ يرى كشفَه وحدَه، ولا يُدير أحدا */
   influencer: 15,
+  /* كالمؤثّر: حسابٌ يرى كشفَ شريكه وحدَه، ولا يُدير أحدا */
+  partner: 15,
   learner: 10,
 }
 
@@ -532,4 +538,5 @@ export const ROLE_NAMES_AR: Record<string, string> = {
   support: 'الدعم',
   learner: 'متعلم',
   influencer: 'مؤثر',
+  partner: 'شريك',
 }

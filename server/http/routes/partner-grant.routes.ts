@@ -11,6 +11,7 @@ import type { PrismaClient } from '@prisma/client'
 import { assertNotBot } from '../honeypot'
 import { requirePermission } from '../auth-plugin'
 import { PartnerGrantService } from '../../services/partner-grant.service'
+import { PartnerRevenueService } from '../../services/partner-revenue.service'
 import { GrantCourseChoiceService } from '../../services/grant-scope.service'
 import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-store'
 import { partnerCampaignSlug } from '../../../src/application/commerce/partner-grant'
@@ -29,11 +30,14 @@ const partnerBody = z.object({
   maxCodes: z.number().int().min(1).nullable().optional(),
   closesAt: z.coerce.date().nullable().optional(),
   active: z.boolean().optional(),
+  /* حصّتُه ممّا يُدفع قبل أجور المدرّبين (١٦ نوفمبر ٢٠٢٦) — وفارغةٌ: بلا حصّة */
+  sharePercent: z.number().int().min(0).max(100).nullable().optional(),
 })
 
 export function registerPartnerGrantRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const partners = new PartnerGrantService(prisma)
   const choice = new GrantCourseChoiceService(prisma)
+  const revenue = new PartnerRevenueService(prisma)
   const canManage = requirePermission('commerce.manage')
   const slugParam = z.object({ slug: z.string().trim().min(1).max(40) })
   const idParam = z.object({ id: z.string().uuid() })
@@ -176,4 +180,63 @@ export function registerPartnerGrantRoutes(app: FastifyInstance, prisma: PrismaC
       .header('content-disposition', `attachment; filename="partner-claims.xlsx"; filename*=UTF-8''${encodeURIComponent(name)}`)
       .send(buf)
   })
+
+  /* ═══ حصّةُ الشريك من الإيراد — كشفُه وصرفُه وحسابُ ممثّله (١٦ نوفمبر ٢٠٢٦، `partner-revenue.service.ts`) ═══ */
+
+  app.get('/api/admin/partners/:id/revenue', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'كشف حصة الشريك: من سجل ومن دفع وحصته عن كل طلب وما صرف له' },
+  }, async (req) => revenue.statement(idParam.parse(req.params).id))
+
+  app.get('/api/admin/partners/:id/revenue.csv', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'كشف حصة الشريك ملفا يدقق' },
+  }, async (req, reply) => {
+    const { text, nameAr } = await revenue.csv(null, idParam.parse(req.params).id)
+    return csvReply(reply, text, nameAr)
+  })
+
+  app.post('/api/admin/partners/:id/payouts', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'تسجيل ما صرف للشريك من حصته' },
+  }, async (req) => {
+    const body = z.object({
+      amount: z.number().positive().max(1_000_000),
+      noteAr: z.string().trim().max(300).nullable().optional(),
+      advance: z.boolean().optional(),
+    }).parse(req.body)
+    return revenue.recordPayout(idParam.parse(req.params).id, body, req.auth!.userId)
+  })
+
+  app.post('/api/admin/partners/:id/account', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'حساب ممثل الشريك الذي يرى لوحته — بريد له حساب أو جديد بدعوة' },
+  }, async (req) => {
+    const { email } = z.object({ email: z.string().trim().max(200) }).parse(req.body)
+    return revenue.attachAccount(idParam.parse(req.params).id, email, req.auth!.userId)
+  })
+
+  /* ═══ لوحةُ ممثّل الشريك — كشفُ شريكه وحدَه ═══ */
+
+  app.get('/api/partner/me', {
+    preHandler: requirePermission('partner.portal'),
+    schema: { tags: ['partner'], summary: 'لوحة الشريك: من سجل برابطه ومن دفع وحصته وما صرف له' },
+  }, async (req) => revenue.portal(req.auth!.userId))
+
+  app.get('/api/partner/me.csv', {
+    preHandler: requirePermission('partner.portal'),
+    schema: { tags: ['partner'], summary: 'كشف الشريك ملفا يدقق' },
+  }, async (req, reply) => {
+    const { text, nameAr } = await revenue.csv(req.auth!.userId)
+    return csvReply(reply, text, nameAr)
+  })
+}
+
+/** الكشفُ ملفّا باسم الشريك واليوم */
+function csvReply(reply: import('fastify').FastifyReply, text: string, nameAr: string) {
+  const name = `حصة ${nameAr} ${zonedDay(new Date())}.csv`
+  return reply
+    .header('content-type', 'text/csv; charset=utf-8')
+    .header('content-disposition', `attachment; filename="partner-revenue.csv"; filename*=UTF-8''${encodeURIComponent(name)}`)
+    .send(text)
 }

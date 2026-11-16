@@ -14,6 +14,8 @@ import Chip from "@/components/ui/Chip";
 interface InfluencerRow extends MarginStats { id: string; nameAr: string; code: string; percentOff: number; ownPercent: boolean; commissionPercent: number }
 interface CampaignRow extends MarginStats {
   slug: string; nameAr: string; group: "campaign" | "partner"; active: boolean; percentOff: number; commissionPercent: number;
+  /** حصّةُ الشريك ممّا يُدفع — تُطرح من الهامش (١٦ نوفمبر ٢٠٢٦) */
+  sharePercent?: number;
   topCommission: boolean; influencers?: InfluencerRow[];
 }
 interface Summary { currency: string; campaigns: CampaignRow[] }
@@ -53,7 +55,7 @@ export default function GrantMarginsSummary() {
                 <th className="p-2 text-start">المنحة</th>
                 <th className="p-2 text-start">الحال</th>
                 <th className="p-2 text-start">الخصم</th>
-                <th className="p-2 text-start">العمولة</th>
+                <th className="p-2 text-start">العمولة أو حصة الشريك</th>
                 <th className="p-2 text-start">الشعب</th>
                 <th className="p-2 text-start">تخسر</th>
                 <th className="p-2 text-start">بلا أجر مقعد</th>
@@ -83,7 +85,11 @@ function CampaignRows({ c, currency }: { c: CampaignRow; currency: string }) {
         <td className="p-2 font-bold">{c.group === "partner" ? `شريك: ${c.nameAr}` : c.nameAr}</td>
         <td className="p-2">{c.active ? "مشغلة" : "موقوفة"}</td>
         <td className="p-2"><bdi dir="ltr">{c.percentOff}%</bdi></td>
-        <td className="p-2"><bdi dir="ltr">{c.commissionPercent}%</bdi>{c.topCommission ? " (الأعلى)" : ""}</td>
+        <td className="p-2">
+          {c.group === "partner"
+            ? (c.sharePercent ? <>حصته <bdi dir="ltr">{c.sharePercent}%</bdi> مما يدفع</> : "بلا حصة")
+            : <><bdi dir="ltr">{c.commissionPercent}%</bdi>{c.topCommission ? " (الأعلى)" : ""}</>}
+        </td>
         <StatCells s={c} currency={currency} />
       </tr>
       {(c.influencers ?? []).map((x) => (

@@ -177,6 +177,8 @@ const HIGH: readonly string[] = [
   'advisor_payout.generate', 'advisor_payout.approve', 'advisor_payout.pay', 'advisor_payout.cancel',
   /* وعمولةُ المؤثّر: دفعةٌ دُفعت له، وعمولتُه أو إيقافُ كوده، وحسابُه يُنشأ أو يُربط (٢٦ أكتوبر ٢٠٢٦) */
   'influencer.payout', 'influencer.update', 'influencer.account',
+  /* وحصّةُ الشريك من الإيراد: ما صُرف له، وحسابُ ممثّله الذي يرى ماله (١٦ نوفمبر ٢٠٢٦) */
+  'partner.payout', 'partner.account',
   /* وخصمُ متابعيه يُكتب في كوبون كلّ كودٍ بعده، وكودُه في رابطه المنشور يتغيّر (١٥ نوفمبر ٢٠٢٦) */
   'influencer.discount.set', 'influencer.code.change',
   /* ودعوةٌ جديدةٌ لمؤثّرٍ لم يفعّل حسابَه — رابطُ دخولٍ إلى كشف ماله يصله (١٥ نوفمبر ٢٠٢٦) */
