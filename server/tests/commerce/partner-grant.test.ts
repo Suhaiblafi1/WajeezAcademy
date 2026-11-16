@@ -7,7 +7,9 @@
    ③ **الكودُ بنسبة الشريك وحدّه عند الدفع** — ٧٥٪ على ٤ دورات، ومنحةٌ واحدةٌ لكلّ متعلّم على المنح كلِّها.
    ④ **الموقوفُ لا صفحةَ له ولا رابطَ ولا كود**، وشعارُه لا يُخدَم.
    ⑤ **والمديرُ وحدَه يضيف ويعدّل، والأثرُ بقبلُ وبعدُ، والرابطُ لا يتغيّر**، والشعارُ صورةٌ تُسأل عنها بايتاتُها.
-   ⑥ **والحملاتُ الأربعُ كما كانت**، والجامعةُ الهاشميّةُ تُنشأ مرّةً موقوفةً بدوراتٍ موجودة، ومن لم يشترِ يُتابَع. */
+   ⑥ **والحملاتُ الأربعُ كما كانت**، والجامعةُ الهاشميّةُ تُنشأ مرّةً موقوفةً بدوراتٍ موجودة، ومن لم يشترِ يُتابَع.
+   ⑦ **وجامعةُ الشرق الأوسط تُنشأ مرّةً مشغَّلةً بخمسين ونطاقها** (١٦ نوفمبر ٢٠٢٦)، **وشعارُها مع الموقع** — يظهر في صفحتها
+      وقائمة المدير، والمرفوعُ يعلوه، وإزالتُه تعيده. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -16,13 +18,13 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
-import { applyPartnerLaunch, HU_LAUNCH_REASON, PartnerGrantService, PARTNER_LINKS_PER_HOUR } from '../../services/partner-grant.service'
+import { applyPartnerLaunch, HU_LAUNCH_REASON, MEU_LAUNCH_REASON, PartnerGrantService, PARTNER_LINKS_PER_HOUR } from '../../services/partner-grant.service'
 import { openGrantFollowups } from '../../services/grant-followup.service'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 import { GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, grantPagePath } from '../../../src/application/commerce/grant'
-import { HU_PARTNER, STUDENT_SUGGESTED_COURSES, partnerCampaignSlug } from '../../../src/application/commerce/partner-grant'
+import { HU_PARTNER, MEU_PARTNER, STUDENT_SUGGESTED_COURSES, partnerCampaignSlug } from '../../../src/application/commerce/partner-grant'
 
 let prisma: PrismaClient
 let app: FastifyInstance
@@ -348,7 +350,7 @@ describe('⑥ الحملات الأربع كما كانت، والجامعة ا�
   })
 
   it('⚠️ الجامعة الهاشمية مرة واحدة، موقوفة، بنطاقها ونسبتها، ودوراتها موجودة', async () => {
-    expect(await applyPartnerLaunch(prisma)).toBe(true)
+    expect(await applyPartnerLaunch(prisma)).toEqual([HU_PARTNER.nameAr, MEU_PARTNER.nameAr])
     const hu = await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: partnerCampaignSlug('hu') } })
     expect(hu).toMatchObject({
       kind: 'partner', nameAr: HU_PARTNER.nameAr, partnerNameEn: HU_PARTNER.nameEn, emailDomains: ['hu.edu.jo'],
@@ -358,10 +360,44 @@ describe('⑥ الحملات الأربع كما كانت، والجامعة ا�
     expect(hu.courseIds.length).toBeGreaterThan(0)
     expect(hu.courseIds.every((id) => known.has(id))).toBe(true)
     expect(await prisma.auditEvent.count({ where: { action: 'coupon.partner_create', entityId: hu.id, actorId: null, reason: HU_LAUNCH_REASON } })).toBe(1)
-    expect(await applyPartnerLaunch(prisma)).toBe(false)
+    expect(await applyPartnerLaunch(prisma)).toEqual([])
     /* ومن حذفه بعدُ لا يعود */
     await prisma.grantCampaign.delete({ where: { id: hu.id } })
-    expect(await applyPartnerLaunch(prisma)).toBe(false)
+    expect(await applyPartnerLaunch(prisma)).toEqual([])
+  })
+
+  it('⚠️ جامعة الشرق الأوسط مرة واحدة، مشغلة، بخمسين على أربع دورات ونطاقها — ولا تعود إن حذفت', async () => {
+    const meu = await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: partnerCampaignSlug('meu') } })
+    expect(meu).toMatchObject({
+      kind: 'partner', nameAr: 'جامعة الشرق الأوسط', partnerNameEn: 'Middle East University', partnerType: 'university',
+      emailDomains: ['meu.edu.jo'], percentOff: 50, maxCourses: 4, maxCodes: null, closesAt: null, active: true,
+    })
+    expect(meu.courseIds.length).toBeGreaterThan(0)
+    expect(await prisma.auditEvent.count({ where: { action: 'coupon.partner_create', entityId: meu.id, actorId: null, reason: MEU_LAUNCH_REASON } })).toBe(1)
+    /* وصفحتُها مفتوحةٌ للزائر بنسبتها */
+    const res = await inject('GET', '/api/public/grant/p/meu')
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toMatchObject({ partner: { slug: 'meu', nameAr: 'جامعة الشرق الأوسط', domains: ['meu.edu.jo'] }, campaign: { percentOff: 50, maxCourses: 4 } })
+    expect(await applyPartnerLaunch(prisma)).toEqual([])
+  })
+
+  it('⚠️ شعارها مع الموقع: في صفحتها وقائمة المدير — والمرفوع يعلوه، وإزالته تعيده', async () => {
+    const meu = await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: partnerCampaignSlug('meu') } })
+    expect((await inject('GET', '/api/public/grant/p/meu')).json().partner.logoUrl, 'غاب الشعار المشحون').toBe('/partners/meu.svg')
+    const listed = (await inject('GET', '/api/admin/partners', boss)).json().find((x: { slug: string }) => x.slug === 'meu')
+    expect(listed).toMatchObject({ hasLogo: true, uploadedLogo: false, builtInLogo: '/partners/meu.svg' })
+
+    const up = await inject('POST', `/api/admin/partners/${meu.id}/logo`, boss, { mime: 'image/png', sizeBytes: PNG.length })
+    await app.inject({ method: 'PUT', url: up.json().uploadUrl, headers: { 'content-type': 'application/octet-stream' }, payload: PNG })
+    expect((await inject('POST', `/api/admin/partners/${meu.id}/logo/commit`, boss)).statusCode).toBe(200)
+    expect((await inject('GET', '/api/public/grant/p/meu')).json().partner.logoUrl, 'المرفوع لم يعل المشحون').toMatch(/^\/api\/v1\/partner-logos\//)
+    expect((await inject('DELETE', `/api/admin/partners/${meu.id}/logo`, boss)).statusCode).toBe(200)
+    expect((await inject('GET', '/api/public/grant/p/meu')).json().partner.logoUrl).toBe('/partners/meu.svg')
+
+    /* والهاشميّةُ وغيرُها بلا شعارٍ مشحون — كما كانت */
+    const other = await partner('nologo')
+    expect(other).toMatchObject({ hasLogo: false, builtInLogo: null })
+    expect((await inject('GET', '/api/public/grant/p/nologo')).json().partner.logoUrl).toBeNull()
   })
 
   it('⚠️ من أكد بريده ولم يشتر تفتح له حالة تسمي الشريك', async () => {

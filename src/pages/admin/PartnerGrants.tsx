@@ -30,6 +30,10 @@ interface Partner {
   id: string; slug: string; nameAr: string; nameEn: string | null; type: PartnerType; domains: string[];
   percentOff: number; maxCourses: number; maxCodes: number | null; closesAt: string | null; active: boolean; open: boolean;
   issued: number; used: number; pending: number; claims: number; hasLogo: boolean; publicPath: string; updatedAt: string;
+  /** شعارٌ رفعه المدير — يعلو المشحونَ مع الموقع */
+  uploadedLogo?: boolean;
+  /** شعارُه المشحونُ مع الموقع (`/partners/<رابطه>.svg`) — أو `null` (١٦ نوفمبر ٢٠٢٦) */
+  builtInLogo?: string | null;
 }
 interface Claim {
   id: string; fullName: string; email: string | null; phone: string | null; verifiedAt: string; code: string | null;
@@ -300,25 +304,30 @@ function PartnerLogo({ partner, onChanged }: { partner: Partner; onChanged: () =
       <h2 className="mt-6 text-lg font-black">الشعار</h2>
       <Card className="mt-3 flex flex-wrap items-center gap-4">
         <span className="grid h-24 w-44 place-items-center rounded-2xl bg-white p-2 ring-1 ring-black/10">
-          {partner.hasLogo
+          {/* المرفوعُ إن رُفع، وإلّا المشحونُ مع الموقع، وإلّا اسمُه — كما تعرضه صفحتُه (`partnerShownLogo`) */}
+          {partner.uploadedLogo
             ? <img src={mediaSrc(`/api/admin/partners/${partner.id}/logo?v=${stamp}`)} alt={`شعار ${partner.nameAr}`} className="max-h-20 w-auto object-contain" />
-            : <span className="text-center text-sm font-black text-teal-deep">{partner.nameAr}</span>}
+            : partner.builtInLogo
+              ? <img src={partner.builtInLogo} alt={`شعار ${partner.nameAr}`} className="max-h-20 w-auto object-contain" />
+              : <span className="text-center text-sm font-black text-teal-deep">{partner.nameAr}</span>}
         </span>
         <div className="grid gap-2 text-read">
           <span className="text-muted-foreground">
-            {partner.hasLogo ? "يظهر في صفحته بجانب شعار وجيز ما دامت مشغلة." : "بلا شعار يكتب اسمه في صفحته."} صورة PNG أو JPEG أو WebP حتى 1MB.
+            {partner.uploadedLogo || !partner.builtInLogo
+              ? (partner.hasLogo ? "يظهر في صفحته بجانب شعار وجيز ما دامت مشغلة." : "بلا شعار يكتب اسمه في صفحته.")
+              : "شعاره من الموقع، ويظهر في صفحته. وإن رفعت شعارا ظهر بدله."} صورة PNG أو JPEG أو WebP حتى 1MB.
           </span>
           <span className="flex flex-wrap gap-2">
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" tabIndex={-1} aria-hidden="true"
               onChange={(e) => { void upload(e.target.files?.[0]); e.target.value = ""; }} />
             <Button size="sm" icon={ImageUp} loading={busy} onClick={() => fileRef.current?.click()}>{partner.hasLogo ? "بدل الشعار" : "ارفع الشعار"}</Button>
-            {partner.hasLogo && <Button size="sm" tone="danger" icon={Trash2} disabled={busy} onClick={() => setConfirmRemove(true)}>أزل الشعار</Button>}
+            {partner.uploadedLogo && <Button size="sm" tone="danger" icon={Trash2} disabled={busy} onClick={() => setConfirmRemove(true)}>أزل الشعار</Button>}
           </span>
         </div>
       </Card>
       {confirmRemove && (
         <ConfirmAction tone="danger" titleAr="إزالة الشعار" confirmLabelAr="أزل" busy={busy} onCancel={() => setConfirmRemove(false)} onConfirm={() => void remove()}>
-          <p>يكتب اسم {partner.nameAr} مكان الشعار في صفحته. ويمكنك رفع شعار جديد متى شئت.</p>
+          <p>{partner.builtInLogo ? `يعود شعاره الذي مع الموقع إلى صفحته.` : `يكتب اسم ${partner.nameAr} مكان الشعار في صفحته.`} ويمكنك رفع شعار جديد متى شئت.</p>
         </ConfirmAction>
       )}
     </>

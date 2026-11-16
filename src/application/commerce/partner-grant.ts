@@ -162,3 +162,28 @@ export const HU_PARTNER = {
   percentOff: 75,
   maxCourses: 4,
 } as const
+
+/* ═══ والثاني: جامعة الشرق الأوسط (١٦ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «للشركاء افتح صفحة لشريكين جديدين.. جامعة الشرق الأوسط وكاسيت، وإليك اللوقات لتضعها في رابط الحملة
+   الخاص بهم كما فعلنا للجامعة الهاشمية، والنسبة للجامعة ٥٠٪ كما موضّح بالعقد». ثمّ اختار لكاسيت كودَ مؤثّرٍ بدل صفحة شريك —
+   فلا صفحةَ لها هنا. وحدُّ الدورات أربعٌ كالهاشمية (لم يُذكر غيرُه)، وتُفتح مشغَّلةً بشعارها (`BUILT_IN_PARTNER_LOGOS`). */
+export const MEU_PARTNER = {
+  slug: 'meu',
+  nameAr: 'جامعة الشرق الأوسط',
+  nameEn: 'Middle East University',
+  type: 'university' as PartnerType,
+  domains: ['meu.edu.jo'],
+  percentOff: 50,
+  maxCourses: 4,
+} as const
+
+/* ═══ شعاراتٌ مع المنصّة (١٦ نوفمبر ٢٠٢٦) ═══
+
+   الشعارُ يرفعه المديرُ من «الشركاء» (`logoKey`)، وما أرسله صاحبُ المنصّة مع الشريك يُشحن مع الموقع نفسِه في `public/partners`
+   فيظهر من أوّل يوم — والمرفوعُ يعلوه إن رُفع. ومن المصدر نفسِه (`img-src 'self'`)، وملفُّه صورٌ ومسارات لا شيفرة فيه. */
+export const BUILT_IN_PARTNER_LOGOS: Readonly<Record<string, string>> = {
+  meu: '/partners/meu.svg',
+}
+/** شعارُ الشريك المشحونُ مع الموقع برابطه — أو `null` */
+export const builtInPartnerLogo = (slug: string): string | null => BUILT_IN_PARTNER_LOGOS[slug] ?? null
