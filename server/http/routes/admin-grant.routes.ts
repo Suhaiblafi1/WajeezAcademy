@@ -15,7 +15,8 @@ import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { signedUpXlsx } from '../../services/signed-up-export'
 import { GRANT_KINDS, GRANT_KIND_SLUG, OPEN_GRANT_SLUG } from '../../../src/application/commerce/grant'
 import { GrantCourseChoiceService, campaignScope } from '../../services/grant-scope.service'
-import { grantMarginsSummary } from '../../services/grant-margins.service'
+import { marginOptions, marginsFor } from '../../services/grant-margins.service'
+import { AuthError } from '../../services/auth.service'
 
 const settingsBody = z.object({
   percentOff: z.number().int().min(1).max(100).optional(),
@@ -43,12 +44,25 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     return grants.update(body, req.auth!.userId)
   })
 
-  /* ═══ الهامشُ في كلّ المنح — لوحٌ واحدٌ في رأس كلّ صفحة منحة (١٦ نوفمبر ٢٠٢٦، `grant-margins.service.ts`) ═══
-     قرارُ صاحب المنصّة: «وامنحني معرفة الهامش لكل نوع من المنح». بصلاحيّة إعدادات المنحة نفسِها */
-  app.get('/api/admin/grants/margins-summary', {
+  /* ═══ «فحص الهامش» لأيّ منحة — يُختار فوق جدوله (١٦ نوفمبر ٢٠٢٦، `grant-margins.service.ts`) ═══
+     قرارُ صاحب المنصّة: «أريد فوق هذا الجدول أن أختار المنحةَ التي أرى جدولَها». بصلاحيّة إعدادات المنحة نفسِها */
+  app.get('/api/admin/grants/margin-options', {
     preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'هامش المقعد في كل المنح: لكل منحة بنسبتها، ولكل مؤثر نشط بخصمه وعمولته' },
-  }, async () => grantMarginsSummary(prisma))
+    schema: { tags: ['admin-commerce'], summary: 'ما يختار منه فحص الهامش: المنح، ثم كل مؤثر نشط، ثم كل شريك' },
+  }, async () => ({ options: await marginOptions(prisma) }))
+
+  app.get('/api/admin/grants/margins', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'سعر كل شعبة بعد منحة مختارة مقابل أجر مقعدها وعمولة المؤثر وحصة الشريك' },
+  }, async (req) => {
+    const { key, percentOff } = z.object({
+      key: z.string().min(1).max(200),
+      percentOff: z.coerce.number().int().min(1).max(100).optional(),
+    }).parse(req.query)
+    const r = await marginsFor(prisma, key, percentOff)
+    if (!r) throw new AuthError('not_found', 'لا منحة بهذا الاسم', 404)
+    return r
+  })
 
   app.get('/api/admin/member-grant/margins', {
     preHandler: canManage,
