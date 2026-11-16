@@ -16,7 +16,8 @@ import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiDelete, apiDownload, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { mediaSrc, putSigned } from "@/services/signed-upload";
-import { fmtDate } from "@/application/text/format-ar";
+import { fmtDate, fmtMoney } from "@/application/text/format-ar";
+import PartnerRevenueView, { type PartnerStatement } from "@/components/partner/PartnerRevenueView";
 import { grantClosesAt, grantLastDay } from "@/application/commerce/grant";
 import { normalizeDomain, normalizePartnerSlug, PARTNER_DEFAULTS, PARTNER_TYPE_AR, type PartnerType } from "@/application/commerce/partner-grant";
 import { staffControlCls } from "@/components/FormKit";
@@ -34,6 +35,7 @@ interface Partner {
   uploadedLogo?: boolean;
   /** شعارُه المشحونُ مع الموقع (`/partners/<رابطه>.svg`) — أو `null` (١٦ نوفمبر ٢٠٢٦) */
   builtInLogo?: string | null;
+  sharePercent: number | null; hasAccount: boolean;
 }
 interface Claim {
   id: string; fullName: string; email: string | null; phone: string | null; verifiedAt: string; code: string | null;
@@ -42,16 +44,20 @@ interface Claim {
 interface Draft {
   slug: string; nameAr: string; nameEn: string; type: PartnerType; domains: string; percentOff: string; maxCourses: string;
   maxCodes: string; lastDay: string; active: boolean;
+  /** حصّتُه ممّا يُدفع — فارغةٌ: بلا حصّة (١٦ نوفمبر ٢٠٢٦) */
+  sharePercent: string;
 }
 
 const EMPTY: Draft = {
   slug: "", nameAr: "", nameEn: "", type: "university", domains: "", percentOff: String(PARTNER_DEFAULTS.percentOff),
   maxCourses: String(PARTNER_DEFAULTS.maxCourses), maxCodes: "", lastDay: "", active: false,
+  sharePercent: String(PARTNER_DEFAULTS.sharePercent),
 };
 const draftOf = (p: Partner): Draft => ({
   slug: p.slug, nameAr: p.nameAr, nameEn: p.nameEn ?? "", type: p.type, domains: p.domains.join("\n"),
   percentOff: String(p.percentOff), maxCourses: String(p.maxCourses), maxCodes: p.maxCodes === null ? "" : String(p.maxCodes),
   lastDay: p.closesAt ? grantLastDay(p.closesAt) : "", active: p.active,
+  sharePercent: p.sharePercent === null ? "" : String(p.sharePercent),
 });
 const domainsOf = (raw: string) => raw.split(/[\s,،]+/).map((d) => d.trim()).filter(Boolean);
 
@@ -108,7 +114,7 @@ export default function AdminPartnerGrants() {
       <Card>
         <p className="text-read leading-7 text-muted-foreground">
           لكل جامعة أو شركة منحتها وصفحتها. يكتب الطالب بريده الجامعي فيصله رابط، وإذا فتحه أخذ كوده. والكود يعمل على أي دورة حتى حد دوراته،
-          ومنحة واحدة لكل متعلم على المنح كلها، وبلا عمولة.
+          ومنحة واحدة لكل متعلم على المنح كلها. وللشريك حصة مما يدفعه من جاء برابطه، قبل أجور المدربين، يراها في لوحته.
         </p>
       </Card>
 
@@ -131,6 +137,7 @@ export default function AdminPartnerGrants() {
                   {p.open ? "مشغلة" : p.active ? "انتهت" : "موقوفة"} · {p.percentOff}% على {p.maxCourses} دورات
                   {" · "}أكد {p.claims} · أعطي {p.issued} كودا · استعمل {p.used}
                   {p.hasLogo ? "" : " · بلا شعار"}
+                  {" · "}{p.sharePercent ? `حصته ${p.sharePercent}%` : "بلا حصة"}
                 </p>
                 <div className="flex min-w-0 items-center gap-2">
                   <a href={url} target="_blank" rel="noreferrer" dir="ltr" className="flex min-w-0 items-center gap-1 text-read text-muted-foreground hover:text-foreground">
@@ -153,6 +160,7 @@ export default function AdminPartnerGrants() {
           <PartnerLogo partner={current} onChanged={() => void load()} />
           <h2 className="mt-6 text-lg font-black">دورات صفحة {current.nameAr}</h2>
           <GrantCourseChoice endpoint={`/api/admin/partners/${current.id}/courses`} />
+          <PartnerRevenue partner={current} onChanged={() => void load()} />
           <PartnerClaims partner={current} />
         </>
       )}
@@ -170,12 +178,14 @@ function PartnerEditor({ partner, onSaved, onClose }: { partner: Partner | null;
   const pct = Number(d.percentOff);
   const courses = Number(d.maxCourses);
   const maxCodes = d.maxCodes.trim() === "" ? null : Number(d.maxCodes);
+  const share = d.sharePercent.trim() === "" ? null : Number(d.sharePercent);
   const domains = domainsOf(d.domains);
   const badDomain = domains.find((x) => normalizeDomain(x) === null) ?? null;
   const slugOk = partner !== null || normalizePartnerSlug(d.slug) !== null;
   const ok = d.nameAr.trim().length >= 2 && slugOk && domains.length > 0 && !badDomain
     && Number.isInteger(pct) && pct >= 1 && pct <= 100 && Number.isInteger(courses) && courses >= 1 && courses <= 20
-    && (maxCodes === null || (Number.isInteger(maxCodes) && maxCodes >= 1));
+    && (maxCodes === null || (Number.isInteger(maxCodes) && maxCodes >= 1))
+    && (share === null || (Number.isInteger(share) && share >= 0 && share <= 100));
   const was = partner ? draftOf(partner) : null;
   const changed = !was || (Object.keys(d) as (keyof Draft)[]).some((k) => d[k] !== was[k]);
 
@@ -183,7 +193,7 @@ function PartnerEditor({ partner, onSaved, onClose }: { partner: Partner | null;
     setBusy(true);
     const body = {
       nameAr: d.nameAr.trim(), nameEn: d.nameEn.trim() || null, type: d.type, domains, percentOff: pct, maxCourses: courses,
-      maxCodes, closesAt: d.lastDay ? grantClosesAt(d.lastDay) : null, active: d.active,
+      maxCodes, closesAt: d.lastDay ? grantClosesAt(d.lastDay) : null, active: d.active, sharePercent: share,
     };
     try {
       const out = partner
@@ -228,6 +238,10 @@ function PartnerEditor({ partner, onSaved, onClose }: { partner: Partner | null;
         <label className="grid gap-1 text-read">دورات المنحة
           <input type="number" min={1} max={20} value={d.maxCourses} onChange={(e) => set({ maxCourses: e.target.value })} className={staffControlCls} />
         </label>
+        <label className="grid gap-1 text-read">حصة الشريك %
+          <input type="number" min={0} max={100} value={d.sharePercent} onChange={(e) => set({ sharePercent: e.target.value })} placeholder="بلا حصة" className={staffControlCls} />
+          <span className="text-muted-foreground">مما يدفعه المستفيد فعلا، قبل أجور المدربين.</span>
+        </label>
         <label className="grid gap-1 text-read">عدد المنح
           <input type="number" min={1} value={d.maxCodes} onChange={(e) => set({ maxCodes: e.target.value })} placeholder="بلا حد" className={staffControlCls} />
         </label>
@@ -254,6 +268,9 @@ function PartnerEditor({ partner, onSaved, onClose }: { partner: Partner | null;
             {!partner && <li>الصفحة /grant/p/{normalizePartnerSlug(d.slug)}، ولا يتغير رابطها بعد الإضافة.</li>}
             {(!was || was.percentOff !== d.percentOff) && <li>النسبة {pct}% على الأكواد التي تعطى بعد الحفظ. وما أعطي قبله يبقى بنسبته.</li>}
             {(!was || was.maxCourses !== d.maxCourses) && <li>حتى {courses} دورات على الكود كله.</li>}
+            {(!was || was.sharePercent !== d.sharePercent) && (
+              <li>{share === null || share === 0 ? "بلا حصة للشريك على الأكواد التي تعطى بعد الحفظ." : `حصة الشريك ${share}% مما يدفعه المستفيد، على الأكواد التي تعطى بعد الحفظ. وما أعطي قبله يبقى بحصته.`}</li>
+            )}
             {(!was || was.domains !== d.domains) && <li>يقبل البريد على: <bdi dir="ltr">{domains.join("، ")}</bdi> وما تحتها.</li>}
             {(!was || was.maxCodes !== d.maxCodes) && <li>{maxCodes === null ? "لا حد لعدد المنح." : `يعطى ${maxCodes} كودا في المجموع.`}</li>}
             {(!was || was.lastDay !== d.lastDay) && <li>{d.lastDay ? `آخر يوم ${fmtDate(new Date(`${d.lastDay}T00:00:00`))}، ويسري على كل الأكواد.` : "بلا آخر يوم."}</li>}
@@ -395,6 +412,91 @@ function PartnerClaims({ partner }: { partner: Partner }) {
       <Inset as="p" className="mt-3 text-read text-muted-foreground">
         يظهر هنا من فتح رابط التأكيد. ومن لم يشتر بعد ساعة تفتح له حالة عند مستشار.
       </Inset>
+    </>
+  );
+}
+
+/* ═══ حصّةُ الشريك من الإيراد — حسابُ ممثّله، وكشفُه، وما صُرف له (١٦ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: الشريكُ يأخذ نسبةً ممّا يدفعه المستفيد قبل أجور المدرّبين، وله لوحةٌ تُدقَّق. فهنا ما يراه في لوحته
+   نفسِها (`PartnerRevenueView`)، وربطُ حساب ممثّله، وتسجيلُ ما يُصرف له بتأكيدٍ يقول الرصيد. */
+function PartnerRevenue({ partner, onChanged }: { partner: Partner; onChanged: () => void }) {
+  const [st, setSt] = useState<(PartnerStatement & { account: { email: string; active: boolean } | null }) | null>(null);
+  const [email, setEmail] = useState("");
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [confirmPay, setConfirmPay] = useState(false);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let on = true;
+    apiGet<PartnerStatement & { account: { email: string; active: boolean } | null }>(`/api/admin/partners/${partner.id}/revenue`)
+      .then((r) => { if (on) setSt(r); })
+      .catch(() => { if (on) setSt(null); });
+    return () => { on = false; };
+  }, [partner.id, tick]);
+
+  const attach = async () => {
+    setBusy(true);
+    try {
+      const r = await apiPost<{ created: boolean; inviteSent: boolean | null }>(`/api/admin/partners/${partner.id}/account`, { email });
+      toast(r.created ? (r.inviteSent ? "أنشئ الحساب وأرسلت دعوته" : "أنشئ الحساب — لم تخرج الدعوة، أعد إرسالها من المستخدمين") : "ربط الحساب");
+      setEmail("");
+      setTick((n) => n + 1);
+      onChanged();
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر ربط الحساب"); }
+    finally { setBusy(false); }
+  };
+  const value = Number(amount);
+  const pay = async (advance: boolean) => {
+    setBusy(true);
+    try {
+      const r = await apiPost<PartnerStatement & { account: { email: string; active: boolean } | null }>(
+        `/api/admin/partners/${partner.id}/payouts`, { amount: value, noteAr: note.trim() || null, advance },
+      );
+      setSt(r);
+      setAmount("");
+      setNote("");
+      setConfirmPay(false);
+      toast("سجل ما صرف");
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر التسجيل"); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <>
+      <h2 className="mt-6 text-lg font-black">حصة {partner.nameAr} من الإيراد</h2>
+      <Card className="mt-3 grid gap-4">
+        <div className="grid gap-2 text-read">
+          <span className="font-bold">لوحة الشريك</span>
+          <span className="text-muted-foreground">
+            {st?.account ? `يدخلها ${st.account.email}${st.account.active ? "" : " (لم يفعل حسابه بعد)"}. ويرى فيها ما تراه هنا.` : "لا حساب للشريك بعد. اكتب بريد ممثله فيصله رابط تفعيل لوحته."}
+          </span>
+          <span className="flex flex-wrap gap-2">
+            <input value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" placeholder="name@hu.edu.jo" className={`${staffControlCls} max-w-xs`} />
+            <Button size="sm" loading={busy} disabled={!email.includes("@")} onClick={() => void attach()}>{st?.account ? "غير الحساب" : "اربط الحساب"}</Button>
+          </span>
+        </div>
+        {st ? <PartnerRevenueView st={st} csvHref={`/api/admin/partners/${partner.id}/revenue.csv`} /> : <Loader2 className="h-6 w-6 animate-spin text-teal-light-ink" />}
+        {st && (
+          <div className="grid gap-2 text-read">
+            <span className="font-bold">سجل ما صرف للشريك</span>
+            <span className="flex flex-wrap gap-2">
+              <input type="number" min={0} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="المبلغ" className={`${staffControlCls} w-32`} />
+              <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} placeholder="ملاحظة، مثل: حوالة أكتوبر" className={`${staffControlCls} max-w-xs`} />
+              <Button size="sm" disabled={!(value > 0)} onClick={() => setConfirmPay(true)}>سجل</Button>
+            </span>
+          </div>
+        )}
+      </Card>
+      {confirmPay && st && (
+        <ConfirmAction tone="default" titleAr="تسجيل ما صرف" confirmLabelAr="سجل" busy={busy}
+          onCancel={() => setConfirmPay(false)} onConfirm={() => void pay(value > st.totals.balance)}>
+          <p>
+            يسجل صرف {fmtMoney(value, st.currency)} لـ{partner.nameAr}، ويراه في لوحته. رصيده الآن {fmtMoney(st.totals.balance, st.currency)}
+            {value > st.totals.balance ? `، فالزائد ${fmtMoney(value - st.totals.balance, st.currency)} سلفة من حصته القادمة.` : `، ويصير ${fmtMoney(st.totals.balance - value, st.currency)}.`}
+          </p>
+        </ConfirmAction>
+      )}
     </>
   );
 }

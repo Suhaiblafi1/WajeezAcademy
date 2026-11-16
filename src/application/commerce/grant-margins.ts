@@ -40,5 +40,5 @@ export function marginStats(rows: readonly { margin: number | null; currency: st
 }
 
 export const GRANT_MARGINS_TITLE_AR = 'الهامش في كل المنح'
-export const GRANT_MARGINS_LINE_AR = 'الهامش هنا: سعر المقعد بعد المنحة ناقصا أجر المدرب وعمولة المؤثر، في كل شعبة مفتوحة. وفحص الهامش في صفحة كل منحة يسمي الشعب.'
+export const GRANT_MARGINS_LINE_AR = 'الهامش هنا: سعر المقعد بعد المنحة ناقصا أجر المدرب وعمولة المؤثر وحصة الشريك، في كل شعبة مفتوحة. وفحص الهامش في صفحة كل منحة يسمي الشعب.'
 export const GRANT_MARGINS_TOP_AR = 'عمولة منحتي المؤثرين أعلى عمولة لمؤثر نشط، وتحت كل منهما كل مؤثر نشط بخصمه وعمولته.'
