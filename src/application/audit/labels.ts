@@ -203,6 +203,7 @@ const PHRASES: Record<string, string> = {
   'influencer.application.reject': 'الاعتذار عن طلب انضمام مؤثر',
   'advisor.case.grant_followup': 'فتح حالة متابعة لمن عبأ نموذج المنحة ولم يشتر',
   'coupon.grant_reminder': 'تذكير من أخذ كود المنحة ولم يشتر قبل انتهائها',
+  'coupon.grant_notice': 'بريد تغيير المنحة لصاحب كودها',
   'coupon.grant_registrant_removed': 'حذف مدير شخصا من قائمة من عبأ نموذج المنحة',
   'coupon.grant_message': 'رسالة بريد كتبها مدير لمن عبأ نموذج المنحة',
   /* ومن ردّ «توقف» على واتساب (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */

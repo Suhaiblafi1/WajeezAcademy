@@ -24,8 +24,12 @@ import { recordAudit } from './audit'
 import { enqueueMail } from './outbox.service'
 import { renderMail } from './mail-template'
 import { publicSiteUrl } from './site-url'
+import { GrantService } from './grant.service'
+import { liveChannels } from './notification.service'
+import { optedOut, unsubscribeLinks } from './mail-optout.service'
+import { fmtDateLong } from '../../src/application/text/format-ar'
 import {
-  BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG,
+  BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr,
 } from '../../src/application/commerce/grant'
 
 /** نسبةُ بلاك فرايدي لكلّ كود — قرارُ صاحب المنصّة (١٦ نوفمبر ٢٠٢٦) */
@@ -96,4 +100,96 @@ export async function applyBlackFridayMerge(prisma: PrismaClient): Promise<{ mov
     return { moved: movedCodes.count, lowered: lowered.length, raised: raised.count }
   })
   return result
+}
+
+/* ═══ وبريدٌ لمن ارتفع كودُه إلى 70% — مرّةً، عصرَ ١٧ نوفمبر ٢٠٢٦ بتوقيت عمّان ═══
+
+   قال صاحبُ المنصّة: «Yes send them tomorrow afternoon»، ووافق على نصّه بعد أن رآه، وقال في آخر يوم: «Keep 21 and tell them
+   22nd the registration is fully closed until next semester! Hurry up and register now with biggest discount ever!». فيصل من
+   كان كودُه في «منحة وجيز» (60%) أو «العامة» (50%) — يُعرف بأثر إعطائه (`coupon.grant_issue` بمعرّف حملته القديمة) — بنسبته
+   القديمة في البريد، ويُعرف به من ذُكِّر (`coupon.grant_notice` بمرحلة `bf70`) فلا يصله ثانية. ولا يصل من ألغى رسائلَ التسويق،
+   ولا من استعمل كودَه كلَّه، ولا يُكتب شيءٌ والبريدُ مفصول أو بلاك فرايدي مغلقة. */
+export const BF_UPGRADE_SEND_AT = new Date('2026-11-17T12:00:00.000Z')
+export const BF_UPGRADE_STAGE = 'bf70'
+
+export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = new Date()): Promise<{ sent: number }> {
+  if (now < BF_UPGRADE_SEND_AT) return { sent: 0 }
+  const bf = await prisma.grantCampaign.findUnique({
+    where: { slug: BLACK_FRIDAY_GRANT_SLUG }, select: { id: true, active: true, closesAt: true, percentOff: true, maxCourses: true },
+  })
+  if (!bf?.active || (bf.closesAt && bf.closesAt <= now)) return { sent: 0 }
+  if (!(await liveChannels(prisma)).includes('email')) return { sent: 0 }
+  const old = await prisma.grantCampaign.findMany({ where: { slug: { in: [...MERGED] } }, select: { id: true } })
+  if (old.length === 0) return { sent: 0 }
+  /* الأكوادُ التي أُعطيت في الحملتين القديمتين — بنسبتها يومَ أُعطيت */
+  const issued = await prisma.auditEvent.findMany({
+    where: { action: 'coupon.grant_issue', entityType: 'grant_campaign', entityId: { in: old.map((c) => c.id) } },
+    select: { meta: true },
+  })
+  const oldPct = new Map<string, number>()
+  for (const r of issued) {
+    const m = (r.meta ?? {}) as { grantCodeId?: string; percentOff?: number }
+    if (m.grantCodeId && typeof m.percentOff === 'number') oldPct.set(m.grantCodeId, m.percentOff)
+  }
+  const told = new Set((await prisma.auditEvent.findMany({
+    where: { action: 'coupon.grant_notice', entityType: 'lead', meta: { path: ['stage'], equals: BF_UPGRADE_STAGE } },
+    select: { entityId: true },
+  })).map((r) => r.entityId))
+  const codes = await prisma.grantCode.findMany({
+    where: { id: { in: [...oldPct.keys()] }, campaignId: bf.id, lead: { erasedAt: null, email: { not: null } } },
+    select: {
+      id: true,
+      lead: { select: { id: true, fullName: true, email: true } },
+      coupon: { select: { id: true, code: true, percentOff: true, usedCount: true, maxUses: true } },
+    },
+  })
+  const off = await optedOut(prisma, codes.map((c) => c.lead!.email!))
+  const grants = new GrantService(prisma)
+  const site = publicSiteUrl()
+  const lastDay = bf.closesAt ? fmtDateLong(new Date(bf.closesAt.getTime() - 1)) : null
+  const closedDay = bf.closesAt ? fmtDateLong(bf.closesAt) : null
+  let sent = 0
+  for (const g of codes) {
+    const lead = g.lead!
+    const was = oldPct.get(g.id)!
+    if (told.has(lead.id) || off.has(lead.email!.toLowerCase())) continue
+    if (was >= (g.coupon.percentOff ?? 0)) continue
+    const left = await grants.coursesLeft({
+      ...g.coupon, grantCode: { campaign: { id: bf.id, active: bf.active, closesAt: bf.closesAt, maxCourses: bf.maxCourses } },
+    })
+    if (left <= 0) continue
+    const pct = g.coupon.percentOff ?? bf.percentOff
+    const subject = `خصمك صار ${pct}% — أكبر خصم لدينا${lastDay ? ` حتى ${lastDay}` : ''}`
+    const links = unsubscribeLinks(lead.email!)
+    await prisma.$transaction(async (tx) => {
+      await recordAudit(tx, {
+        action: 'coupon.grant_notice', entityType: 'lead', entityId: lead.id,
+        meta: { stage: BF_UPGRADE_STAGE, grantCodeId: g.id, from: was, to: pct },
+      })
+      await enqueueMail(tx, {
+        to: lead.email!, purpose: 'grant.reminder', subject, unsubscribeUrl: links.oneClick,
+        ...renderMail({
+          unsubscribeUrl: links.page,
+          greetingName: lead.fullName ?? undefined,
+          heading: subject,
+          preheader: `كودك نفسه، وخصمه الآن ${pct}% على كل الدورات${lastDay ? ` حتى ${lastDay}` : ''}.`,
+          blocks: [
+            { kind: 'p', text: `خبر جيد: انضمت منحتك إلى ${BLACK_FRIDAY_GRANT_NAME_AR}، فصار خصمك ${pct}% بدل ${was}%. وهذا أكبر خصم قدمناه.` },
+            { kind: 'p', text: `كودك هو نفسه، ويطبق وحده عند الشراء من حسابك. اختر حتى ${grantCoursesAr(left)}.` },
+            ...(lastDay && closedDay
+              ? [{ kind: 'p' as const, text: `آخر يوم ${lastDay}. ومن ${closedDay} يغلق التسجيل تماما حتى الفصل القادم، فسجل الآن.` }]
+              : []),
+            { kind: 'facts', rows: [
+              { label: 'كود منحتك', value: g.coupon.code },
+              { label: 'الخصم', value: `${pct}%` },
+              ...(lastDay ? [{ label: 'آخر يوم', value: lastDay }] : []),
+            ] },
+            { kind: 'cta', label: 'سجل الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` },
+          ],
+        }),
+      })
+    })
+    sent += 1
+  }
+  return { sent }
 }
