@@ -6,11 +6,11 @@ import { Check, Copy, Download, Megaphone } from "lucide-react";
 import { apiGet } from "@/services/api";
 import { Panel, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-import { BF_KIT_DESIGNS, bfKitLink, bfKitTexts, bfLastDayAr } from "@/application/trainer/bf-kit";
+import { BF_KIT_DESIGNS, bareLink, bfKitLink, bfKitTexts, bfLastDayAr } from "@/application/trainer/bf-kit";
 
 interface BfCampaign { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null }
 
-export default function BlackFridayKit({ refCode, name }: { refCode: string; name?: string | null }) {
+export default function BlackFridayKit({ refCode, name, shortLink }: { refCode: string; name?: string | null; shortLink?: string | null }) {
   const [campaign, setCampaign] = useState<BfCampaign | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -22,7 +22,8 @@ export default function BlackFridayKit({ refCode, name }: { refCode: string; nam
     return () => { alive = false };
   }, []);
 
-  const link = bfKitLink(window.location.origin, refCode);
+  /* القصيرُ إن كان — `wajeezacademy.com/s/XXXXXX` («اختصر الرابط للمدرّبين»، ١٧ نوفمبر ٢٠٢٦) — وإلّا الطويل */
+  const link = bareLink(shortLink ?? bfKitLink(window.location.origin, refCode));
   const texts = useMemo(() => campaign && bfKitTexts({
     link, percentOff: campaign.percentOff, maxCourses: campaign.maxCourses,
     lastDayAr: campaign.closesAt ? bfLastDayAr(campaign.closesAt) : null, name,

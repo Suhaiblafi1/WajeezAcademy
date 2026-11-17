@@ -171,6 +171,16 @@ describe('⑥ روابط «شارك دوراتك» القصيرة', () => {
     expect(again.short.cohorts[cohort.A1], 'تغير الرابط فضاع ما نشر').toBe(short)
     expect(first.short.cohorts[cohort.B1], 'رابط لشعبة غيره').toBeUndefined()
   })
+
+  /* «اختصر الرابط للمدرّبين» (صاحب المنصّة، ١٧ نوفمبر ٢٠٢٦): رابطُه إلى منحة بلاك فرايدي قصيرٌ ثابتٌ برمز رابطه الواسع */
+  it('⚠️ ورابطه إلى بلاك فرايدي قصير برمز رابطه الواسع — والثاني هو الأول', async () => {
+    const first = await shares.kit(A.userId)
+    expect(first.short.bf, 'لا رابط قصير لبلاك فرايدي').toMatch(/\/s\/[A-Z0-9]{6}$/)
+    const row = await prisma.shortLink.findUniqueOrThrow({ where: { code: first.short.bf!.slice(first.short.bf!.lastIndexOf('/') + 1) } })
+    const wide = await prisma.trainerReferralLink.findFirstOrThrow({ where: { profile: { userId: A.userId }, cohortId: null }, select: { code: true } })
+    expect(row.target).toBe(`/grant/bf?ref=${wide.code}`)
+    expect((await shares.kit(A.userId)).short.bf, 'تغير الرابط فضاع ما نشر').toBe(first.short.bf)
+  })
 })
 
 /* ⑦ معاينةُ روابطه — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): «أضف معاينة، نعم». فرابطُه القصيرُ إذا لُصق في واتساب
