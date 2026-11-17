@@ -102,6 +102,30 @@ export async function applyBlackFridayMerge(prisma: PrismaClient): Promise<{ mov
   return result
 }
 
+/* ═══ وأكوادُ بلاك فرايدي تتبع نسبتَها — كلُّها، لا ما يُعطى بعد الحفظ وحدَه (١٧ نوفمبر ٢٠٢٦) ═══
+
+   رفع صاحبُ المنصّة بلاك فرايدي إلى 80% من صفحتها، فبقي كلُّ من أخذ كودَه قبلُ — ومنهم كلُّ من انتقل إليها من «منحة وجيز»
+   و«العامة» — على 70%، وقال: «but the discount is now 80%!! why you don't sync». فنسبةُ كلّ كودٍ فيها نسبتُها هي: تُكتب
+   عند الحفظ (`GrantService.update`)، ويلحقها العاملُ كلَّ ساعةٍ لما سبق — رفعا أو خفضا. وما دُفع لا يُمسّ: الكوبونُ يقول
+   سعرَ ما يُشترى به بعدُ، والطلبُ يحفظ سعرَه. وكلُّ مزامنةٍ غيّرت شيئا تُكتب أثرا بسببها. */
+export const BLACK_FRIDAY_SYNC_REASON = 'قرار صاحب المنصة (17 نوفمبر 2026): كل أكواد بلاك فرايدي بنسبتها، لا ما يعطى بعد الحفظ وحده'
+
+export async function syncBlackFridayCodes(prisma: PrismaClient, actorId: string | null = null): Promise<{ changed: number; percentOff: number } | null> {
+  const bf = await prisma.grantCampaign.findUnique({ where: { slug: BLACK_FRIDAY_GRANT_SLUG }, select: { id: true, percentOff: true } })
+  if (!bf) return null
+  const out = await prisma.coupon.updateMany({
+    where: { grantCode: { campaignId: bf.id }, OR: [{ percentOff: { not: bf.percentOff } }, { percentOff: null }] },
+    data: { percentOff: bf.percentOff },
+  })
+  if (out.count > 0) {
+    await recordAudit(prisma, {
+      actorId, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: bf.id,
+      reason: BLACK_FRIDAY_SYNC_REASON, after: { percentOff: bf.percentOff }, meta: { codesSynced: out.count },
+    })
+  }
+  return { changed: out.count, percentOff: bf.percentOff }
+}
+
 /* ═══ وبريدٌ لمن ارتفع كودُه إلى 70% — مرّةً، عصرَ ١٧ نوفمبر ٢٠٢٦ بتوقيت عمّان ═══
 
    قال صاحبُ المنصّة: «Yes send them tomorrow afternoon»، ووافق على نصّه بعد أن رآه، وقال في آخر يوم: «Keep 21 and tell them
@@ -109,7 +133,8 @@ export async function applyBlackFridayMerge(prisma: PrismaClient): Promise<{ mov
    كان كودُه في «منحة وجيز» (60%) أو «العامة» (50%) — يُعرف بأثر إعطائه (`coupon.grant_issue` بمعرّف حملته القديمة) — بنسبته
    القديمة في البريد، ويُعرف به من ذُكِّر (`coupon.grant_notice` بمرحلة `bf70`) فلا يصله ثانية. ولا يصل من ألغى رسائلَ التسويق،
    ولا من استعمل كودَه كلَّه، ولا يُكتب شيءٌ والبريدُ مفصول أو بلاك فرايدي مغلقة. */
-export const BF_UPGRADE_SEND_AT = new Date('2026-11-17T12:00:00.000Z')
+/* الخامسةُ عصرا بتوقيت عمّان (كان الثالثة) — لتصل مزامنةُ الـ80% قبله فيقول البريدُ نسبتَه الصحيحة (١٧ نوفمبر ٢٠٢٦) */
+export const BF_UPGRADE_SEND_AT = new Date('2026-11-17T14:00:00.000Z')
 export const BF_UPGRADE_STAGE = 'bf70'
 
 export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = new Date()): Promise<{ sent: number }> {

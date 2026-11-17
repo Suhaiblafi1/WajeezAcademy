@@ -42,7 +42,7 @@ import { cohortLeadTrainers } from './cohort-lead'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
   GRANT_CAMPAIGNS, GRANT_CLOSED_AR, GRANT_CODE_PREFIX, GRANT_ONCE_AR, GRANT_SOLD_OUT_AR,
-  MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, isInfluencerGrant, type CampaignSlug,
+  BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, isInfluencerGrant, type CampaignSlug,
 } from '../../src/application/commerce/grant'
 import { isPartnerCampaign, PARTNER_NOT_FOUND_AR, partnerShare } from '../../src/application/commerce/partner-grant'
 import { influencerCommission, influencerPercentOff } from '../../src/application/commerce/influencer'
@@ -145,6 +145,11 @@ export class GrantService {
       actorId, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
       before: pick(c), after: pick(after),
     })
+    /* وفي بلاك فرايدي تتبعها أكوادُها كلُّها عند الحفظ (١٧ نوفمبر ٢٠٢٦، `syncBlackFridayCodes`) */
+    if (this.slug === BLACK_FRIDAY_GRANT_SLUG && input.percentOff !== undefined && input.percentOff !== c.percentOff) {
+      const { syncBlackFridayCodes } = await import('./grant-merge.service')
+      await syncBlackFridayCodes(this.prisma, actorId)
+    }
     return this.settings(now)
   }
 

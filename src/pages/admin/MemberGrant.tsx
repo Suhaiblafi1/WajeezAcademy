@@ -184,7 +184,10 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
         >
           <ul className="list-disc space-y-1 ps-5">
             {pctNum !== s.percentOff && (
-              <li>النسبة الجديدة {pctNum}% على الأكواد التي تعطى بعد الحفظ. والأكواد التي أعطيت قبله ({s.issued}) تبقى بنسبتها.</li>
+              /* وفي بلاك فرايدي تتبعها أكوادُها كلُّها (١٧ نوفمبر ٢٠٢٦، `syncBlackFridayCodes`) */
+              forBlackFriday
+                ? <li>النسبة الجديدة {pctNum}% على كل أكواد المنحة: ما أعطي قبل الحفظ ({s.issued}) وما يعطى بعده.</li>
+                : <li>النسبة الجديدة {pctNum}% على الأكواد التي تعطى بعد الحفظ. والأكواد التي أعطيت قبله ({s.issued}) تبقى بنسبتها.</li>
             )}
             {coursesNum !== s.maxCourses && <li>المنحة على {coursesNum} دورات بحد أقصى لكل متعلم.</li>}
             {maxNum !== s.maxCodes && <li>{maxNum === null ? "لا حد لعدد المنح." : `يعطى ${maxNum} كودا في المجموع.`}</li>}
