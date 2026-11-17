@@ -46,7 +46,11 @@ export function registerPartnerGrantRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/public/grant/p/:slug', {
     schema: { tags: ['public'], summary: 'صفحة منحة الشريك: هو وشعاره وحال منحته ودوراتها' },
-  }, async (req) => partners.view(slugParam.parse(req.params).slug))
+  }, async (req) => {
+    /* ومرجعُ نموذجه (`?ref=`) — ما اختاره قبلُ يبقى في صفحته ولو خرج من القائمة (١٧ نوفمبر ٢٠٢٦، «Keep their picks») */
+    const q = z.object({ ref: z.string().uuid().optional() }).safeParse(req.query)
+    return partners.view(slugParam.parse(req.params).slug, new Date(), q.success ? q.data.ref ?? null : null)
+  })
 
   app.post('/api/public/grant/p/:slug/link', {
     config: { rateLimit: { max: PARTNER_LINK_RATE_MAX, timeWindow: '15 minutes' } },

@@ -6,6 +6,7 @@ import Auth from './pages/Auth'
 import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, INFLUENCER_ROLES, LEARNER_ROLES, PARTNER_ROLES, TRAINER_ROLES } from './components/RequireRole'
 import ToastHost from './components/Toast'
 import { KeyedByParam } from './components/KeyedByParam'
+import { channelSearch } from './application/commerce/influencer'
 
 /* مبدل أدوار الديمو — يُحمَّل كقطعة منفصلة ولا يُجلب ولا يظهر إلا في بناء الديمو */
 
@@ -231,9 +232,9 @@ export default function App() {
           {/* «بلاك فرايدي وجيز» — حملةُ مؤثّرين بصفّها هي، وصفحتُها برابط المؤثّر (١٥ نوفمبر ٢٠٢٦) */}
           <Route path="/grant/bf" element={<MemberGrantPage variant="blackfriday" />} />
           <Route path="/grant/bf/build" element={<MemberGrantPage variant="blackfriday" />} />
-          {/* ورابطُ مؤثّرٍ قديمٌ فيها يفتحها بلا كوده — لم تعد حملةَ مؤثّرين */}
-          <Route path="/grant/bf/:code" element={<KeepQuery to="/grant/bf" />} />
-          <Route path="/grant/bf/:code/build" element={<KeepQuery to="/grant/bf/build" />} />
+          {/* ورابطُ مؤثّرٍ قديمٌ فيها يفتحها بكوده قناةً `?ch=` — فيُنسب إليه من جاء به (١٧ نوفمبر ٢٠٢٦، `channelSearch`) */}
+          <Route path="/grant/bf/:code" element={<KeepQueryAsChannel to="/grant/bf" />} />
+          <Route path="/grant/bf/:code/build" element={<KeepQueryAsChannel to="/grant/bf/build" />} />
           {/* منحُ الشركاء — صفحةٌ لكلّ جامعةٍ أو شركة، ورابطُ تأكيد البريد (١٥ نوفمبر ٢٠٢٦، `partner-grant.ts`) */}
           <Route path="/grant/p/:slug" element={<PartnerGrantPage />} />
           <Route path="/grant/p/:slug/confirm" element={<PartnerGrantPage />} />
@@ -470,4 +471,11 @@ export default function App() {
 function KeepQuery({ to }: { to: string }) {
   const { search } = useLocation()
   return <Navigate to={`${to}${search}`} replace />
+}
+
+/** وكودُ المؤثّر في المسار قناتُه — كان يسقط فلا يُنسب إليه من جاء برابطه (`channelSearch`) */
+function KeepQueryAsChannel({ to }: { to: string }) {
+  const { search } = useLocation()
+  const { code } = useParams()
+  return <Navigate to={`${to}${channelSearch(search, code)}`} replace />
 }

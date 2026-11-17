@@ -100,6 +100,8 @@ describe('① تنشأ مرة من طريق إضافة المدير — بدور
     await new GrantService(prisma, BLACK_FRIDAY_GRANT_SLUG).update({ active: true, closesAt: null }, ownerId)
     const early = await bf.apply(person({ channel: 'kaseet' }))
     earlyLead = early.ref
+    /* وبقناة كودها السابق `?ch=kasset` — كان العاملُ لا ينسبه إليها (١٧ نوفمبر ٢٠٢٦، Fix all 6) */
+    const earlyOld = await bf.apply(person({ channel: 'kasset' }))
     expect((await prisma.lead.findUniqueOrThrow({ where: { id: early.ref } })).influencerId).toBeNull()
     outbox.length = 0
 
@@ -120,6 +122,8 @@ describe('① تنشأ مرة من طريق إضافة المدير — بدور
 
     /* ومن سبقها برابطها نُسب إليها — بعمولةٍ صفر، فبلاك فرايدي بلا عمولة */
     expect((await prisma.lead.findUniqueOrThrow({ where: { id: earlyLead } })).influencerId, 'من سبقها برابطها لم ينسب إليها').toBe(k.id)
+    expect((await prisma.lead.findUniqueOrThrow({ where: { id: earlyOld.ref } })).influencerId, 'من سبقها بقناة كودها السابق لم ينسب إليها').toBe(k.id)
+    expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: earlyOld.ref } })).toMatchObject({ influencerId: k.id, commissionPercent: 5 })
     /* ومن جاء برابطها قبل زرعها يأخذ كودُه عمولتَها — «Yes, 5% on Black Friday» */
     expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: earlyLead } })).toMatchObject({ influencerId: k.id, commissionPercent: 5 })
 
@@ -191,5 +195,25 @@ describe('⑤ وفي بلاك فرايدي برابطها تنسب إليها ب
     const other = await prisma.influencer.create({ data: { nameAr: 'مؤثر آخر', code: `OTHERBF${STAMP % 100000}`, commissionPercent: 15 } })
     const out = await new GrantLandingService(prisma, BLACK_FRIDAY_GRANT_SLUG).apply(person({ channel: other.code.toLowerCase() }))
     expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: out.ref } })).toMatchObject({ influencerId: other.id, commissionPercent: 0 })
+  })
+})
+
+/* ═══ ⑥ وتغييرُ كودها لا يُسقط عمولتَها ولا رأسَها (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): Fix all 6) ═══
+   العلّة: `blackFridayCommission` و`influencerBrand` كانا يُطابقان كودَها الحاليَّ وحدَه بالقائمتين، فإن غيّر المديرُ كودَها
+   سقطت عمولتُها ٥٪ على بلاك فرايدي ورأسُ صفحتها بلا أثر. والكودُ القديمُ ينتقل إلى `formerCodes`، فتُعرف به. */
+describe('⑥ وتغيير كودها لا يسقط عمولتها ولا رأسها', () => {
+  it('⚠️ بكودها الجديد: عمولتها 5% على بلاك فرايدي برابطها، ورأسها في صفحتها وفي بلاك فرايدي', async () => {
+    const k = await kaseet()
+    await influencers.update(k.id, { code: 'KASEETNEW' }, ownerId)
+    try {
+      const out = await new GrantLandingService(prisma, BLACK_FRIDAY_GRANT_SLUG).apply(person({ channel: 'kaseetnew' }))
+      expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: out.ref } }), 'سقطت عمولتها بتغيير كودها')
+        .toMatchObject({ influencerId: k.id, commissionPercent: 5 })
+      const face = { nameAr: 'كاسيت', code: 'KASEETNEW', brand: { logoUrl: null }, whatsAppText: KASEET_TEXT }
+      expect((await app.inject({ method: 'GET', url: '/api/public/grant/bf?ch=kaseetnew' })).json().influencer, 'سقط رأسها').toEqual(face)
+      expect((await app.inject({ method: 'GET', url: '/api/public/grant/influencer?code=KASEETNEW' })).json().influencer).toEqual(face)
+    } finally {
+      await influencers.update(k.id, { code: 'KASEET' }, ownerId)
+    }
   })
 })

@@ -44,14 +44,14 @@
    والحارس: `server/tests/commerce/grant-followup.test.ts` و`influencer-grant.test.ts` و`grant-reminder-deadline.test.ts`
    و`black-friday-grant.test.ts`. */
 
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import { recordAudit } from './audit'
 import { AdvisorService } from './advisor.service'
 import { liveChannels } from './notification.service'
 import { enqueueMail } from './outbox.service'
 import { renderMail, type MailBlock } from './mail-template'
 import { publicSiteUrl } from './site-url'
-import type { BuyableCohort } from './grant-courses.service'
+import { GrantCoursesService, type BuyableCohort } from './grant-courses.service'
 import { pageCourses } from './grant-scope.service'
 import { GrantService } from './grant.service'
 import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_CONTINUE_AR, GRANT_SLUGS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr, grantLeftLineAr, grantPagePath, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
@@ -258,15 +258,48 @@ export function remindedFor(
   return at >= closesAt.getTime() - windowMs && at < closesAt.getTime()
 }
 
-/** تذكيرُ من أخذ كودا ولم يشترِ قبل انتهاء المنحة — المرحلةُ الحالّةُ الأحدثُ، مرّةً لكلّ عميل. ولكلّ حملةٍ بنهايتها */
+/* ═══ ولمتابع المؤثّر آخرُ يومِ مؤثّره (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): Fix all 6) ═══
+
+   آخرُ يومِ المؤثّر يغلب نهايةَ منحة المؤثّرين لمتابعيه (`influencerClosesAt`): به تُفتح صفحتُه وتُعطى أكوادُه وتُستعمل. وكانت
+   رسائلُ التذكير تقرأ نهايةَ الحملة وحدَها — فمتابعُ مؤثّرٍ يومُه أقربُ لم يُذكَّر قبل يومه، وقيل له في البريد يومُ الحملة،
+   ومتابعُ مؤثّرٍ يومُه أبعدُ ذُكِّر بيومٍ ليس يومَه. فالمذكَّرون جماعاتٌ بنهاياتهم: من لا يومَ لمؤثّر كوده بنهاية الحملة، ولكلّ
+   مؤثّرٍ له يومُه جماعةٌ بيومه — وكلٌّ يمرّ بالقواعد نفسِها (موعدُ المرحلة، و«ذُكِّر قبلُ» لهذه النهاية، وما يُكتب في البريد).
+   وفي منحة المؤثّرين وحدَها، كما يقرؤه الدفع (`withInfluencerEnd`): كودُ بلاك فرايدي برابط مؤثّرٍ بنهاية حملته. */
+interface DeadlineGroup { closesAt: Date | null; where: Prisma.LeadWhereInput }
+async function deadlineGroups(prisma: PrismaClient, slug: CampaignSlug, campaignClosesAt: Date | null): Promise<DeadlineGroup[]> {
+  if (!isInfluencerGrant(slug)) return [{ closesAt: campaignClosesAt, where: {} }]
+  const own = await prisma.influencer.findMany({ where: { closesAt: { not: null } }, select: { id: true, closesAt: true }, orderBy: { createdAt: 'asc' } })
+  return [
+    { closesAt: campaignClosesAt, where: { grantCode: { OR: [{ influencerId: null }, { influencerId: { notIn: own.map((i) => i.id) } }] } } },
+    ...own.map((i) => ({ closesAt: i.closesAt, where: { grantCode: { influencerId: i.id } } })),
+  ]
+}
+
+/** تذكيرُ من أخذ كودا ولم يشترِ قبل انتهاء المنحة — المرحلةُ الحالّةُ الأحدثُ، مرّةً لكلّ عميل. ولكلّ حملةٍ بنهايتها،
+    ولمتابع المؤثّر بيوم مؤثّره (`deadlineGroups`). والمرحلةُ المُعادةُ مرحلةُ نهاية الحملة إن حلّت، وإلّا أوّلُ ما حلّ */
 export async function sendGrantReminders(
   prisma: PrismaClient, now = new Date(), slug: CampaignSlug = MEMBER_GRANT_SLUG,
 ): Promise<{ sent: number; stage: string | null; mailOff: boolean }> {
   const campaign = await prisma.grantCampaign.findUnique({
     where: { slug }, select: { id: true, active: true, closesAt: true, percentOff: true },
   })
-  const closesAt = campaign?.closesAt
-  if (!campaign?.active || !closesAt || closesAt <= now) return { sent: 0, stage: null, mailOff: false }
+  const out = { sent: 0, stage: null as string | null, mailOff: false }
+  if (!campaign?.active) return out
+  for (const g of await deadlineGroups(prisma, slug, campaign.closesAt)) {
+    const r = await remindUnbought(prisma, now, slug, campaign, g)
+    out.sent += r.sent
+    out.stage ??= r.stage
+    out.mailOff ||= r.mailOff
+  }
+  return out
+}
+
+async function remindUnbought(
+  prisma: PrismaClient, now: Date, slug: CampaignSlug,
+  campaign: { id: string; percentOff: number }, group: DeadlineGroup,
+): Promise<{ sent: number; stage: string | null; mailOff: boolean }> {
+  const closesAt = group.closesAt
+  if (!closesAt || closesAt <= now) return { sent: 0, stage: null, mailOff: false }
   const due = GRANT_REMINDERS.filter((r) => now.getTime() >= closesAt.getTime() - r.beforeMs).at(-1)
   if (!due) return { sent: 0, stage: null, mailOff: false }
   if (!(await liveChannels(prisma)).includes('email')) return { sent: 0, stage: due.stage, mailOff: true }
@@ -277,10 +310,12 @@ export async function sendGrantReminders(
   })).filter((r) => remindedFor(r, due.stage, closesAt))
   const leads = await prisma.lead.findMany({
     where: {
-      campaign: slug, erasedAt: null, email: { not: null },
-      createdAt: { lt: new Date(closesAt.getTime() - due.beforeMs) },
-      grantCode: { campaignId: campaign.id },
-      id: { notIn: reminded.map((r) => r.entityId) },
+      AND: [{
+        campaign: slug, erasedAt: null, email: { not: null },
+        createdAt: { lt: new Date(closesAt.getTime() - due.beforeMs) },
+        grantCode: { campaignId: campaign.id },
+        id: { notIn: reminded.map((r) => r.entityId) },
+      }, group.where],
     },
     orderBy: { createdAt: 'asc' },
     select: {
@@ -318,7 +353,7 @@ export async function sendGrantReminders(
       ? [{ kind: 'p', text: `${days <= 1 ? 'اليوم آخر يوم.' : `آخر يوم ${fmtDateLong(lastDay)}.`} ومن ${fmtDateLong(closesAt)} يغلق التسجيل تماما حتى الفصل القادم، فسجل الآن.` }]
       : []
     /* ما اختاره هو ممّا يُشترى اليوم — بسعر كلٍّ بعد منحته، ومجموعِها وقيمةِ منحته، وزرٍّ يعيده إلى اختياره (٣١ أكتوبر ٢٠٢٦) */
-    const pool = await poolOf(lead.grantCode?.influencerId ?? null)
+    const pool = await poolOf(lead.grantCode?.influencerId ?? null, lead.grantPicks)
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
     const listTotal = mine.reduce((sum, c) => sum + c.price, 0)
     const payTotal = grantPrice(listTotal, pct)
@@ -390,8 +425,23 @@ export async function sendGrantLeftReminders(
   const campaign = await prisma.grantCampaign.findUnique({
     where: { slug }, select: { id: true, active: true, closesAt: true, percentOff: true, maxCourses: true },
   })
-  const closesAt = campaign?.closesAt
-  if (!campaign?.active || !closesAt || closesAt <= now) return { sent: 0, mailOff: false }
+  const out = { sent: 0, mailOff: false }
+  if (!campaign?.active) return out
+  /* ولمتابع المؤثّر بيوم مؤثّره (`deadlineGroups`، ١٧ نوفمبر ٢٠٢٦) */
+  for (const g of await deadlineGroups(prisma, slug, campaign.closesAt)) {
+    const r = await remindLeft(prisma, now, slug, campaign, g)
+    out.sent += r.sent
+    out.mailOff ||= r.mailOff
+  }
+  return out
+}
+
+async function remindLeft(
+  prisma: PrismaClient, now: Date, slug: CampaignSlug,
+  campaign: { id: string; active: boolean; percentOff: number; maxCourses: number }, group: DeadlineGroup,
+): Promise<{ sent: number; mailOff: boolean }> {
+  const closesAt = group.closesAt
+  if (!closesAt || closesAt <= now) return { sent: 0, mailOff: false }
   if (now.getTime() < closesAt.getTime() - GRANT_REMINDERS[0].beforeMs) return { sent: 0, mailOff: false }
 
   const told = (await prisma.auditEvent.findMany({
@@ -400,9 +450,11 @@ export async function sendGrantLeftReminders(
   })).filter((r) => remindedFor(r, GRANT_LEFT_STAGE, closesAt, GRANT_REMINDERS[0].beforeMs))
   const leads = await prisma.lead.findMany({
     where: {
-      campaign: slug, erasedAt: null, email: { not: null },
-      grantCode: { campaignId: campaign.id, coupon: { orders: { some: { status: { in: [...BOUGHT] } } } } },
-      id: { notIn: told.map((r) => r.entityId) },
+      AND: [{
+        campaign: slug, erasedAt: null, email: { not: null },
+        grantCode: { campaignId: campaign.id, coupon: { orders: { some: { status: { in: [...BOUGHT] } } } } },
+        id: { notIn: told.map((r) => r.entityId) },
+      }, group.where],
     },
     orderBy: { createdAt: 'asc' },
     select: {
@@ -420,7 +472,7 @@ export async function sendGrantLeftReminders(
   for (const lead of leads) {
     const coupon = lead.grantCode?.coupon
     if (!coupon || !lead.email || off.has(lead.email.toLowerCase())) continue
-    const left = await grants.coursesLeft({ ...coupon, grantCode: { campaign: { id: campaign.id, active: campaign.active, closesAt, maxCourses: campaign.maxCourses } } })
+    const left = await grants.coursesLeft({ ...coupon, grantCode: { campaign: { id: campaign.id, slug, active: campaign.active, closesAt, maxCourses: campaign.maxCourses } } })
     if (left <= 0) continue
     const pct = coupon.percentOff ?? campaign.percentOff
     const subject = `بقي لك ${grantCoursesAr(left)} على كود منحتك`
@@ -581,13 +633,28 @@ export async function sendGrantExtendedNotice(
   const campaign = await prisma.grantCampaign.findUnique({
     where: { slug }, select: { id: true, active: true, closesAt: true, percentOff: true },
   })
-  const closesAt = campaign?.closesAt
-  if (!campaign?.active || !closesAt || closesAt <= now) return { sent: 0, mailOff: false }
+  const out = { sent: 0, mailOff: false }
+  if (!campaign?.active) return out
   const extended = await prisma.auditEvent.findFirst({
     where: { action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: campaign.id, actorId: null, reason: GRANT_EXTEND_FIX_REASON },
     select: { createdAt: true },
   })
-  if (!extended) return { sent: 0, mailOff: false }
+  if (!extended) return out
+  /* وآخرُ يومه في بريده يومُ مؤثّره إن كان له (`deadlineGroups`، ١٧ نوفمبر ٢٠٢٦) */
+  for (const g of await deadlineGroups(prisma, slug, campaign.closesAt)) {
+    const r = await tellExtended(prisma, now, slug, campaign, extended.createdAt, g)
+    out.sent += r.sent
+    out.mailOff ||= r.mailOff
+  }
+  return out
+}
+
+async function tellExtended(
+  prisma: PrismaClient, now: Date, slug: GrantSlug,
+  campaign: { id: string; percentOff: number }, extendedAt: Date, group: DeadlineGroup,
+): Promise<{ sent: number; mailOff: boolean }> {
+  const closesAt = group.closesAt
+  if (!closesAt || closesAt <= now) return { sent: 0, mailOff: false }
 
   const told = await prisma.auditEvent.findMany({
     where: { action: 'coupon.grant_reminder', entityType: 'lead', meta: { path: ['stage'], equals: GRANT_EXTENDED_STAGE } },
@@ -595,10 +662,12 @@ export async function sendGrantExtendedNotice(
   })
   const leads = await prisma.lead.findMany({
     where: {
-      campaign: slug, erasedAt: null, email: { not: null },
-      createdAt: { lt: extended.createdAt },
-      grantCode: { campaignId: campaign.id },
-      id: { notIn: told.map((r) => r.entityId) },
+      AND: [{
+        campaign: slug, erasedAt: null, email: { not: null },
+        createdAt: { lt: extendedAt },
+        grantCode: { campaignId: campaign.id },
+        id: { notIn: told.map((r) => r.entityId) },
+      }, group.where],
     },
     orderBy: { createdAt: 'asc' },
     select: {
@@ -626,7 +695,7 @@ export async function sendGrantExtendedNotice(
     /* وزرُّه يحمل كودَه بعد اختياره (١٧ نوفمبر ٢٠٢٦، `grantCodeLink`) */
     const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug) : `${publicSiteUrl()}${grantPagePath(slug)}`
     const coded = (u: string) => (lead.influencer || isPartnerCampaign(slug) ? u : grantCodeLink(u, coupon.code))
-    const pool = await poolOf(lead.grantCode?.influencerId ?? null)
+    const pool = await poolOf(lead.grantCode?.influencerId ?? null, lead.grantPicks)
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
     const blocks: MailBlock[] = [
       { kind: 'p', text: `منحتك ما زالت قائمة، وتصل إلى ${pct}% من سعر الدورات.` },
@@ -685,16 +754,25 @@ export async function applyGrantCoursesFix(prisma: PrismaClient, fix: { from: nu
   return true
 }
 
-/** دوراتُ صفحة المنحة اليوم بسعرها لكلّ مؤثّر — تُحسب مرّةً لكلّ صفحةٍ في الجولة، لا لكلّ صاحب كود (`pageCourses`) */
+/** دوراتُ صفحة المنحة اليوم بسعرها لكلّ مؤثّر — تُحسب مرّةً لكلّ صفحةٍ في الجولة، لا لكلّ صاحب كود (`pageCourses`).
+    ومعها ما اختاره صاحبُ الكود قبلُ ولو خرج من القائمة (`keep`) — قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): «Keep their picks»،
+    فيُذكر في بريده ما اختاره ما دامت له شعبةٌ تُشترى (`withKeptPicks`) */
 function scopedPools(prisma: PrismaClient, slug: CampaignSlug, now: Date) {
   const cache = new Map<string, Promise<Map<string, BuyableCohort>>>()
-  return (influencerId: string | null): Promise<Map<string, BuyableCohort>> => {
+  let every: Promise<Map<string, BuyableCohort>> | null = null
+  return async (influencerId: string | null, keep: readonly string[] = []): Promise<Map<string, BuyableCohort>> => {
     const key = influencerId ?? '*'
     let hit = cache.get(key)
     if (!hit) {
       hit = pageCourses(prisma, slug, influencerId, now).then((o) => new Map(o.courses.map((c) => [c.courseId, c])))
       cache.set(key, hit)
     }
-    return hit
+    const listed = await hit
+    if (keep.every((id) => listed.has(id))) return listed
+    every ??= new GrantCoursesService(prisma).openCourses(now, null).then((o) => new Map(o.courses.map((c) => [c.courseId, c])))
+    const all = await every
+    const out = new Map(listed)
+    for (const id of keep) { const c = all.get(id); if (c && !out.has(id)) out.set(id, c) }
+    return out
   }
 }

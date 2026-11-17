@@ -65,7 +65,7 @@ import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT
 import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, advisorSourceOf, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, advisorSourceOf, campaignParams, withGrantRef, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, type GrantOutcomeLine, GRANT_OUTCOMES_TITLE_AR, grantOutcomeLinesAr, grantOutcomeTotalsAr, grantPerSession, grantSessionsAr, grantShortTitleAr, parseGrantCodeParam, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_HUMAN_DIAG_AR,
 } from "@/application/commerce/grant-landing";
@@ -297,19 +297,21 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 
   /* ورأسُ المؤثّر المشترك — في صفحته، وفي بلاك فرايدي برابطه `?ch=<كوده>` (١٧ نوفمبر ٢٠٢٦، `channelView` في الخادم) */
   const [cobrand, setCobrand] = useState<Cobrand | null>(null);
+  /* ومرجعُ نموذجه — فتُعرض له دوراتٌ اختارها ثمّ خرجت من القائمة (١٧ نوفمبر ٢٠٢٦، «Keep their picks»، `withGrantRef`) */
+  const [firstRef] = useState(() => stored?.ref ?? null);
   const load = useCallback(async () => {
     const ch = forBlackFriday ? campaignParams(window.location.search).channel : null;
     const url = forInfluencer
       ? `${influencerApi}${urlCode ? `?code=${encodeURIComponent(urlCode)}` : ""}`
       : forBlackFriday ? `/api/public/grant/bf${ch ? `?ch=${encodeURIComponent(ch)}` : ""}` : forOpen ? "/api/public/grant/open" : "/api/public/grant";
     try {
-      const v = await apiGet<View>(url);
+      const v = await apiGet<View>(withGrantRef(url, firstRef));
       setView(v);
       const i = v.influencer;
       setCobrand(i?.brand && i.whatsAppText ? { nameAr: i.nameAr, brand: i.brand, whatsAppText: i.whatsAppText } : null);
     }
     catch (e) { setFailed(e instanceof ApiError ? e.message : "تعذر تحميل الصفحة"); }
-  }, [forInfluencer, forBlackFriday, forOpen, influencerApi, urlCode]);
+  }, [forInfluencer, forBlackFriday, forOpen, influencerApi, urlCode, firstRef]);
   useEffect(() => { void load(); }, [load]);
 
   const [resumed] = useState(() => (pickPath ? resumedCheckoutFor(pickPath) : null));
