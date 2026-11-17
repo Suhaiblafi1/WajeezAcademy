@@ -309,8 +309,8 @@ export async function sendGrantReminders(
     const pct = coupon.percentOff ?? campaign.percentOff
     /* ومنحةُ الشريك بلا مؤثّر — تعود إلى صفحته (`grantPagePath`، ١٥ نوفمبر ٢٠٢٦) */
     /* وزرُّه يحمل كودَه فيُفتح على اختيار دوراته ولو في جهازٍ آخر — إلّا صفحةَ المؤثّر والشريك (١٧ نوفمبر ٢٠٢٦، `grantCodeLink`) */
-    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug as GrantSlug)
-      : isPartnerCampaign(slug) ? `${publicSiteUrl()}${grantPagePath(slug)}` : grantCodeLink(`${publicSiteUrl()}${grantPagePath(slug)}`, coupon.code)
+    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug as GrantSlug) : `${publicSiteUrl()}${grantPagePath(slug)}`
+    const coded = (u: string) => (lead.influencer || isPartnerCampaign(slug) ? u : grantCodeLink(u, coupon.code))
     const lastDayRow = days <= 1 ? [] : [{ label: 'آخر يوم', value: fmtDateLong(lastDay) }]
     /* وفي بلاك فرايدي: يُغلق التسجيلُ بعدها حتى الفصل القادم — كبريد الترقية (١٦ نوفمبر ٢٠٢٦: «tell them 22nd the
        registration is fully closed until next semester! Hurry up»). فتذكيرا الخميس وصباحِ السبت يقولانه أيضا */
@@ -333,7 +333,7 @@ export async function sendGrantReminders(
             { label: 'كود منحتك', value: coupon.code },
             ...lastDayRow,
           ] },
-          { kind: 'cta', label: GRANT_PICKS_CTA_AR, href: grantPicksLink(base, mine.map((c) => c.courseId)) },
+          { kind: 'cta', label: GRANT_PICKS_CTA_AR, href: coded(grantPicksLink(base, mine.map((c) => c.courseId))) },
           { kind: 'note', text: 'وإن لم تحتجها، يمكنك أن تهدي الكود لغيرك.' },
         ]
       : [
@@ -345,7 +345,7 @@ export async function sendGrantReminders(
             ...lastDayRow,
           ] },
           /* ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — برابط مؤثّره */
-          { kind: 'cta', label: 'اختر دوراتك', href: base },
+          { kind: 'cta', label: 'اختر دوراتك', href: coded(base) },
           { kind: 'note', text: 'وإن لم تحتجها، يمكنك أن تهدي الكود لغيرك.' },
         ]
     await prisma.$transaction(async (tx) => {
@@ -623,8 +623,9 @@ export async function sendGrantExtendedNotice(
     const coupon = lead.grantCode?.coupon
     if (!coupon || !lead.email || coupon.orders.length > 0 || paid.has(lead.email.toLowerCase()) || off.has(lead.email.toLowerCase())) continue
     const pct = coupon.percentOff ?? campaign.percentOff
-    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug)
-      : isPartnerCampaign(slug) ? `${publicSiteUrl()}${grantPagePath(slug)}` : grantCodeLink(`${publicSiteUrl()}${grantPagePath(slug)}`, coupon.code)
+    /* وزرُّه يحمل كودَه بعد اختياره (١٧ نوفمبر ٢٠٢٦، `grantCodeLink`) */
+    const base = lead.influencer ? influencerLink(publicSiteUrl(), lead.influencer.code, slug) : `${publicSiteUrl()}${grantPagePath(slug)}`
+    const coded = (u: string) => (lead.influencer || isPartnerCampaign(slug) ? u : grantCodeLink(u, coupon.code))
     const pool = await poolOf(lead.grantCode?.influencerId ?? null)
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
     const blocks: MailBlock[] = [
@@ -636,8 +637,8 @@ export async function sendGrantExtendedNotice(
         { label: 'آخر يوم', value: lastDay },
       ] },
       mine.length > 0
-        ? { kind: 'cta', label: GRANT_PICKS_CTA_AR, href: grantPicksLink(base, mine.map((c) => c.courseId)) }
-        : { kind: 'cta', label: 'اختر دوراتك', href: base },
+        ? { kind: 'cta', label: GRANT_PICKS_CTA_AR, href: coded(grantPicksLink(base, mine.map((c) => c.courseId))) }
+        : { kind: 'cta', label: 'اختر دوراتك', href: coded(base) },
       { kind: 'note', text: 'وإن لم تحتجها، يمكنك أن تهدي الكود لغيرك.' },
     ]
     await prisma.$transaction(async (tx) => {
