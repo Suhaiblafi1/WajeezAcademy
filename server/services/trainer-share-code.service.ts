@@ -13,6 +13,8 @@ import { isJpeg, PREVIEW_MAX_BYTES, previewCopy } from './link-preview'
 import { reachOf, type LinkReach } from './link-opens'
 import { bestCode } from '../../src/application/trainer/share-kit'
 import { leadCohortsOf } from './cohort-lead'
+import { publicSiteUrl } from './notification.service'
+import { BLACK_FRIDAY_GRANT_PATH } from '../../src/application/commerce/grant'
 
 export interface ShareCode { code: string; percentOff: number }
 
@@ -24,7 +26,11 @@ export interface ShareKit extends ShareCode {
   photoUrl: string | null
   hisCodes: { code: string; percentOff: number | null }[]
   /** روابطُه قصيرةً — `‎/s/XXXXXX` بدل «‎/t/صهيب-احمد-لافي» المرمَّز في لينكدإن: رابطُه العامّ، ولكلّ شعبةٍ رابطُها */
-  short: { wide: string | null; cohorts: Record<string, string> }
+  short: {
+    wide: string | null; cohorts: Record<string, string>
+    /** ورابطُه إلى منحة بلاك فرايدي برمز رابطه الواسع — قصيرا (١٧ نوفمبر ٢٠٢٦، «اختصر الرابط للمدرّبين»، `bf-kit.ts`) */
+    bf: string | null
+  }
   /** بصمةُ معاينة كلّ رابطٍ قصيرٍ برمزه — وما لا معاينةَ له `null` فترسمها صفحتُه وترفعها (`link-preview.ts`) */
   previews: Record<string, string | null>
   /** ما بلغه كلُّ رابطٍ قصيرٍ برمزه: كم فُتح ومن أيّ منصّة، وكم سجّل منه (`link-opens.ts`) */
@@ -60,7 +66,7 @@ export class TrainerShareCodeService {
     const rows = await this.prisma.shortLink.findMany({ where: { code: { in: all.map((l) => l.code) } }, select: { code: true, previewSig: true } })
     return {
       ...ours,
-      short: { wide: links.wide?.url ?? null, cohorts },
+      short: { wide: links.wide?.url ?? null, cohorts, bf: await this.bfLink(userId) },
       previews: Object.fromEntries(rows.map((r) => [r.code, r.previewSig])),
       reach: await reachOf(this.prisma, all),
       name: profile.application.fullName,
@@ -107,6 +113,14 @@ export class TrainerShareCodeService {
       where: { code },
       data: { previewImage: new Uint8Array(image), previewTitle: copy.title, previewText: copy.text, previewSig: sig.slice(0, 64), previewAt: new Date() },
     })
+  }
+
+  /** رابطُه إلى منحة بلاك فرايدي قصيرا — `‎/s/XXXXXX` بدل «‎/grant/bf?ref=WJ-…» (١٧ نوفمبر ٢٠٢٦). يُسكّ مرّةً ويُعاد، فما نُشر لا يتغيّر.
+      ولا ينتظر صفحتَه العامّة: المنحةُ صفحتُنا لا صفحتُه */
+  private async bfLink(userId: string): Promise<string | null> {
+    const wide = await new ReferralService(this.prisma).wideLinkFor(userId).catch(() => null)
+    if (!wide) return null
+    return this.shortOf(`${publicSiteUrl()}${BLACK_FRIDAY_GRANT_PATH}?ref=${encodeURIComponent(wide.code)}`, userId).catch(() => null)
   }
 
   /** رابطٌ قصيرٌ ثابتٌ لعنوانٍ من عناويننا — يُعاد إن سُكّ له من قبل */

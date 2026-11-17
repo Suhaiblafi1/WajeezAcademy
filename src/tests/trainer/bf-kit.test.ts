@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { BF_KIT_DESIGNS, bfKitLink, bfKitTexts, bfLastDayAr } from '@/application/trainer/bf-kit'
+import { BF_KIT_DESIGNS, bareLink, bfKitLink, bfKitTexts, bfLastDayAr } from '@/application/trainer/bf-kit'
 
 const ROOT = join(__dirname, '..', '..', '..')
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8')
@@ -49,7 +49,10 @@ describe('② نصوصه', () => {
 
 describe('③ في «شارك دوراتك»', () => {
   it('⚠️ تظهر برمز رابطه، ولا تظهر والمنحة مغلقة', () => {
-    expect(read('src/pages/trainer/Referral.tsx')).toMatch(/<BlackFridayKit refCode=\{referral\.code\}/)
+    expect(read('src/pages/trainer/Referral.tsx')).toMatch(/<BlackFridayKit refCode=\{referral\.code\} name=\{kit\?\.name \?\? null\} shortLink=\{kit\?\.short\.bf \?\? null\} \/>/)
+    /* والقصيرُ إن كان، بلا https ولا www — «اختصر الرابط للمدرّبين» (١٧ نوفمبر ٢٠٢٦) */
+    expect(read('src/components/trainer/BlackFridayKit.tsx')).toMatch(/const link = bareLink\(shortLink \?\? bfKitLink\(window\.location\.origin, refCode\)\);/)
+    expect(bareLink('https://www.wajeezacademy.com/s/ABC123')).toBe('wajeezacademy.com/s/ABC123')
     const kit = read('src/components/trainer/BlackFridayKit.tsx')
     expect(kit).toMatch(/apiGet<\{ campaign: BfCampaign \}>\("\/api\/public\/grant\/bf"\)/)
     expect(kit).toMatch(/if \(!campaign\?\.open \|\| !texts\) return null;/)

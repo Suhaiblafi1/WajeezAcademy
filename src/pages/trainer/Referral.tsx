@@ -80,7 +80,7 @@ interface ShareKitData {
   code: string; percentOff: number; name: string; headline: string | null; photoUrl: string | null
   hisCodes: { code: string; percentOff: number | null }[]
   /** روابطُه قصيرةً لما يُنشر — وإن غاب رابطٌ قصيرٌ نُشر الطويل */
-  short: { wide: string | null; cohorts: Record<string, string> }
+  short: { wide: string | null; cohorts: Record<string, string>; bf?: string | null }
   /** بصمةُ معاينة كلّ رابطٍ قصيرٍ برمزه — وما تغيّر يُرسم ويُرفع (`link-preview.ts`) */
   previews?: Record<string, string | null>
   /** ما بلغه كلُّ رابطٍ قصيرٍ برمزه — كم فتحه ومن أيّ منصّة، وكم سجّل منه (`link-opens.ts`) */
@@ -611,7 +611,7 @@ export default function Referral() {
         <>
           {/* ═══ وبلاك فرايدي فوقها ما دامت المنحةُ مفتوحة (١٧ نوفمبر ٢٠٢٦، `bf-kit.ts`) ═══
               «المطلوب منكم نشرُها عبر صفحاتكم بالرابط المخصّص… وتجدون التصميمَ والنصوصَ في صفحة التسويق الخاصّة بكم» */}
-          <BlackFridayKit refCode={referral.code} name={kit?.name ?? null} />
+          <BlackFridayKit refCode={referral.code} name={kit?.name ?? null} shortLink={kit?.short.bf ?? null} />
           {/* ═══ «صمّم منشورك» أوّلا، ومفتوحا للجميع (٢٦ أكتوبر ٢٠٢٦) ═══
               قال صاحبُ المنصّة: «صمّم منشورك هو الأهمّ، اتركها مفتوحة للجميع». فكانت زرّا يُفتح في لوحةٍ ثالثة،
               وصارت أوّلَ ما في الصفحة مفتوحةً بلا نقرة — بدوراته كلِّها ورابطه العامّ، وكاروسيلٌ بشريحةٍ لكلّ دورة.
