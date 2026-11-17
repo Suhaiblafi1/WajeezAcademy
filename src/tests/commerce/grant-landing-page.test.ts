@@ -14,7 +14,7 @@ import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { auditActionAr } from '@/application/audit/labels'
 import { grantWelcomeAr, grantWhyHereAr,
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, blackFridayLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_SECTION_GROUPS, GRANT_SUMMARY_GOALS, grantCourseSummary, grantSectionOf, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, advisorSourceOf, campaignParams, campaignTag, grantAdvisorTextAr, grantClashAr, grantThanksAr, openGrantLineAr, blackFridayLineAr, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
   GRANT_OUTCOMES_TITLE_AR, grantPerSession, grantSessionsAr, grantShortTitleAr, grantUntilAr,
   GRANT_CERTIFICATE_AR, GRANT_PROJECT_MAX, grantCertificatesAr, grantOutcomeLinesAr, grantOutcomeTotalsAr, grantProjectLineAr, grantProjectsAr, grantQuizzesAr, grantTasksAr,
   GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, grantPicksLink, grantPicksPreheaderAr, parsePicksParam,
@@ -698,6 +698,14 @@ describe('بعد النموذج', () => {
     /* ومن لم يختر بعدُ ولا كودَ له — ومنحةُ المؤثّرين باسمها */
     expect(grantAdvisorTextAr({ name: 'سارة', grantNameAr: 'منحة مؤثرين وجيز' })).toBe('مرحبا، أنا سارة.\nسجلت في منحة مؤثرين وجيز، وأريد أن تحدد لي الدورات المناسبة. أرفقت لك سيرتي الذاتية.')
     expect(grantAdvisorTextAr({ name: ' ', email: 'sara@x.test' }).split('\n')[0]).toBe('مرحبا، بريدي sara@x.test.')
+    /* ومصدرُه في آخرها (١٧ نوفمبر ٢٠٢٦): «هل فيها اسمُ الشريك أو المؤثّر؟» — كودُ مؤثّره، ثمّ وسمُ رابطه في هذه الزيارة ثمّ أوّلِها */
+    expect(grantAdvisorTextAr({ name: 'سارة', code: 'WG-ABCD2345', source: 'kaseet' }).endsWith('كود منحتي: WG-ABCD2345\n\n(KASEET)')).toBe(true)
+    expect(grantAdvisorTextAr({ name: 'سارة', source: '<b>' }), 'وسم بغير شكله في الرسالة').not.toContain('(')
+    expect(advisorSourceOf({ influencer: 'CHATTREE', page: { channel: 'kaseet' } })).toBe('CHATTREE')
+    expect(advisorSourceOf({ page: { channel: 'kaseet', utmSource: 'ig' }, first: { channel: 'email' } })).toBe('KASEET')
+    expect(advisorSourceOf({ page: null, first: { utmSource: 'wajeez_app' } })).toBe('WAJEEZ_APP')
+    expect(advisorSourceOf({})).toBeNull()
+    expect(PAGE).toMatch(/source: advisorSourceOf\(\{ influencer: stored\.influencer \?\? null, page: opened, first: firstTouch\(\) \}\),/)
     expect(PAGE).toMatch(/name: stored\.name, email: stored\.email, code: stored\.code, courses: chosen\.map\(\(x\) => x\.titleAr\),/)
     expect(PAGE).toMatch(/recordLink: grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref\), grantNameAr: nameAr,/)
     expect(PAGE, 'عاد الطلب المكتوب').not.toMatch(/\/api\/public\/grant\/advisor|<textarea|اطلب مستشارا/)
