@@ -121,8 +121,8 @@ const money = (n: number) => fmtMoney(n, USD);
 /** «دورة» و«دورتين» بلا رقم، و«4 دورات» */
 const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
 
-/** عدّادُ انتهاء المنحة وآخرُ يومٍ لها — سطرٌ واحدٌ بالأيّام، وتحت اليوم بالساعات (`grantLeftAr`) */
-function GrantCountdown({ closesAt, className = "", compact = false }: { closesAt: string; className?: string; compact?: boolean }) {
+/** عدّادُ انتهاء المنحة — سطرٌ واحدٌ باليوم وحدَه (`grantLeftAr`، ١٧ نوفمبر ٢٠٢٦: «كثير الكلام.. العدّادُ يكون باليوم فقط») */
+function GrantCountdown({ closesAt, className = "" }: { closesAt: string; className?: string }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -131,10 +131,9 @@ function GrantCountdown({ closesAt, className = "", compact = false }: { closesA
   const left = grantLeftAr(grantCountdown(closesAt, now));
   if (!left) return <p className={`text-read font-bold ${className}`}>انتهت المنحة</p>;
   return (
-    <div className={className} role="timer">
-      <p className="inline-flex items-center gap-1.5 font-black"><Clock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> تنتهي المنحة بعد {left}</p>
-      {!compact && <p className="mt-0.5 text-read text-muted-foreground">آخر يوم: {fmtDateLong(new Date(new Date(closesAt).getTime() - 1))}</p>}
-    </div>
+    <p className={`inline-flex items-center gap-1.5 font-black ${className}`} role="timer">
+      <Clock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> {left}
+    </p>
   );
 }
 /* المساراتُ العامّةُ بترتيب مختارات صاحب المنصّة — ومنها الرئيسيُّ والبديل (`suggestPaths`) */
@@ -585,7 +584,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           {/* وصاحبُ الكود بعد يومها الأخير يُقال له إنّها أُغلقت — فلا يظنّ كودَه يُخصم عند الدفع */}
           {(stored.code || stored.sentTo) && !c.open && <p className="mt-2 text-read font-bold">{GRANT_CLOSED_AR}</p>}
           {/* والعدّادُ لمن له منحةٌ يستعملها — سطرٌ واحد، وآخرُ يومها في السطر فوقه */}
-          {grantOn && c.closesAt && <GrantCountdown closesAt={c.closesAt} compact className="mt-3" />}
+          {grantOn && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
         </Card>
 
 
@@ -789,7 +788,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             <>
               {/* المنحةُ بنسبتها لا بما يبقى عليه — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من
                   أنّك تدفع ٤٠٪». وكذلك في بريد الكود وبريد التذكير */}
-              <p className="mt-3 text-lg font-bold">
+              <p className={forBlackFriday ? "mt-3 text-2xl font-black text-gold-ink" : "mt-3 text-lg font-bold"}>
                 {forOpen
                   ? openGrantLineAr(c.percentOff)
                   : forBlackFriday
@@ -800,7 +799,11 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
                     ? `بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`
                     : `منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`}
               </p>
-              <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.</p>
+              {/* وما كان جملةً صار أيقوناتٍ بكلمتين (١٧ نوفمبر ٢٠٢٦: «الدورات الزوم يجب أن تكون أيقونة») */}
+              <ul className="mt-4 flex flex-wrap justify-center gap-2 text-read">
+                <li className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1"><Video className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> مباشرة على Zoom</li>
+                <li className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1"><GraduationCap className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> حتى {coursesAr(c.maxCourses)}</li>
+              </ul>
               {c.closesAt
                 ? <GrantCountdown closesAt={c.closesAt} className="mt-4" />
                 : <p className="mt-3"><Chip tone="warn">المنح محدودة</Chip></p>}

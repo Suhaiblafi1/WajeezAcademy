@@ -53,7 +53,7 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { chosenCohorts, swapCandidates } from "@/application/catalog/pathway-swap";
 import CohortPicker from "@/components/CohortPicker";
 import {
-  giftMissingAr, giftRuleAr, goPath, GO_CODE_RE, privatePathHeadline, privatePathPrice, REASON_LABEL_AR,
+  giftMissingAr, giftRuleAr, goPath, GO_CODE_RE, privatePathGrantLabelAr, privatePathHeadline, privatePathPrice, REASON_LABEL_AR,
   type GiftRule, type PathPreviewNumbers, type PrivatePathPrice,
 } from "@/application/commerce/private-path";
 
@@ -424,7 +424,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
             <dl className="space-y-1.5 text-read">
               <div className="flex justify-between"><dt>السعر الأصلي</dt><dd className="line-through text-muted-foreground">{fmtMoney(current.price.before, current.price.currency)}</dd></div>
               {current.price.grant > 0 && (
-                <div className="flex justify-between"><dt>{current.price.grantNameAr ?? "الخصم"}</dt><dd>− {fmtMoney(current.price.grant, current.price.currency)}</dd></div>
+                <div className="flex justify-between"><dt>{privatePathGrantLabelAr(current.price)}</dt><dd>− {fmtMoney(current.price.grant, current.price.currency)}</dd></div>
               )}
               <div className="flex justify-between text-lg font-black"><dt>{current.price.grant > 0 ? "ما تدفعه بعد المنحة" : "ما تدفعه"}</dt><dd>{fmtMoney(current.price.total, current.price.currency)}</dd></div>
               {priceShift !== 0 && v.price && (

@@ -289,7 +289,7 @@ describe('⑦ المتابعة والتذكير بلا مؤثر (١٦ نوفمب
       expect(last, 'لم يصل تذكير آخر يوم').toBeDefined()
       expect(last!.text).toContain('يغلق التسجيل تماما حتى الفصل القادم، فسجل الآن.')
     } finally {
-      await bf.update({ closesAt: null }, ownerId)
+      await bf.update({ closesAt: null, percentOff: 70 }, ownerId)
       if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
       else await prisma.integrationSetting.delete({ where: { provider: 'email' } })
     }
@@ -347,10 +347,10 @@ describe('⑩ الدمج في بلاك فرايدي', () => {
     const mOut = await new GrantLandingService(prisma, MEMBER_GRANT_SLUG).apply(m)
     const o = person()
     const oOut = await new GrantLandingService(prisma, OPEN_GRANT_SLUG).apply(o)
-    await bf.update({ percentOff: 80 }, ownerId)
+    /* كودٌ بثمانين من قبل الدمج — يُكتب في كوبونه يدا: حفظُ نسبة الحملة صار يجرّ أكوادَها كلَّها (١٧ نوفمبر ٢٠٢٦) */
     const e = person()
     const eOut = await landing.apply(e)
-    await bf.update({ percentOff: 70 }, ownerId)
+    await prisma.coupon.update({ where: { code: eOut.grant!.code! }, data: { percentOff: 80 } })
     await addInfluencer('BFSTOP')
 
     const r = await applyBlackFridayMerge(prisma)
@@ -379,6 +379,8 @@ describe('⑩ الدمج في بلاك فرايدي', () => {
     const { applyBlackFridayRaise } = await import('../../services/grant-merge.service')
     expect(await applyBlackFridayRaise(prisma), 'رفع والنسبة 70%').toBeNull()
     await bf.update({ percentOff: 80 }, ownerId)
+    /* وفي الإنتاج حُفظت الثمانون قبل أن يجرّ الحفظُ أكوادَها (`syncBlackFridayCodes`) — فتُعاد إلى سبعين هنا يدا ليُرى الرفعُ يرفعها */
+    await prisma.coupon.updateMany({ where: { code: { in: [mOut, oOut, eOut].map((x) => x.grant!.code!) } }, data: { percentOff: 70 } })
     const up = await applyBlackFridayRaise(prisma)
     expect(up?.raised, 'لم يرفع').toBeGreaterThanOrEqual(3)
     for (const out of [mOut, oOut, eOut]) {
@@ -394,22 +396,57 @@ describe('⑩ الدمج في بلاك فرايدي', () => {
     const close = new Date(BF_UPGRADE_SEND_AT.getTime() + 5 * 24 * 3_600_000)
     await bf.update({ closesAt: close }, ownerId)
     try {
-      const notices = (to: string) => prisma.outboxMail.findMany({ where: { to, purpose: 'grant.reminder', subject: { contains: 'أكبر خصم' } } })
+      const notices = (to: string) => prisma.outboxMail.findMany({ where: { to, purpose: 'grant.reminder', subject: { contains: 'مفاجأة' } } })
       expect((await sendBlackFridayUpgradeNotice(prisma, new Date(BF_UPGRADE_SEND_AT.getTime() - 60_000))).sent, 'أرسل قبل موعده').toBe(0)
+      /* ⑫ ورفعُها إلى ثمانين يجرّ أكوادَها كلَّها — ما أُعطي قبل الحفظ وما انتقل إليها — فيقول البريدُ ثمانين (١٧ نوفمبر ٢٠٢٦:
+         «but the discount is now 80%!! why you don't sync») */
+      await bf.update({ percentOff: 80 }, ownerId)
+      for (const out of [mOut, oOut, eOut]) {
+        expect((await prisma.coupon.findUniqueOrThrow({ where: { code: out.grant!.code! } })).percentOff, 'كود قديم بقي بنسبته').toBe(80)
+      }
+      /* وما انحرف بعدُ يلحقه العامل — وبأثرٍ يقول سببه */
+      const { syncBlackFridayCodes, BLACK_FRIDAY_SYNC_REASON } = await import('../../services/grant-merge.service')
+      await prisma.coupon.update({ where: { code: mOut.grant!.code! }, data: { percentOff: 70 } })
+      expect(await syncBlackFridayCodes(prisma)).toEqual({ changed: 1, percentOff: 80 })
+      expect((await prisma.coupon.findUniqueOrThrow({ where: { code: mOut.grant!.code! } })).percentOff).toBe(80)
+      expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_settings', reason: BLACK_FRIDAY_SYNC_REASON } })).toBeGreaterThanOrEqual(2)
+      expect((await syncBlackFridayCodes(prisma))!.changed, 'غير ما لم يتغير').toBe(0)
+
+      /* ⑬ ومن أرسلنا له مسارا خاصّا بعد قراءة سيرته: رابطُه في البريد مع رابط المنحة — أحدثُه، لا المنسوخ (١٧ نوفمبر ٢٠٢٦) */
+      const pathPayload = (extra: Record<string, unknown> = {}) => ({
+        v: 1, linkId: 'x', token: 'x', kind: 'advisor', learnerKey: `lead:${mOut.ref}`, firstName: 'م', courses: [], code: mOut.grant!.code, whatsapp: false, ...extra,
+      })
+      const tag = String(Date.now()).slice(-6)
+      /* والمنسوخُ أحدثُ صفّا هنا عمدا — فلا يُختار بتاريخه، بل يُترك لأنّه منسوخ */
+      await prisma.shortLink.create({ data: { code: `NEWP${tag}`, target: `/go/NEWP${tag}`, purpose: 'private_path', payload: pathPayload() as never } })
+      await prisma.shortLink.create({ data: { code: `OLDP${tag}`, target: `/go/OLDP${tag}`, purpose: 'private_path', payload: pathPayload({ supersededBy: `NEWP${tag}` }) as never, createdAt: new Date(Date.now() + 60_000) } })
+
       const after = new Date(BF_UPGRADE_SEND_AT.getTime() + 3_600_000)
       await sendBlackFridayUpgradeNotice(prisma, after)
       const mm = await notices(m.email)
+      expect(mm[0]?.text, 'لا رابط دوراته المقترحة').toContain(`/go/NEWP${tag}`)
+      expect(mm[0].text, 'رابط مسار منسوخ').not.toContain(`/go/OLDP${tag}`)
+      expect(mm[0].text, 'لا رابط المنحة معه').toContain('/grant/bf')
+      expect(mm[0].text).toContain('مسارك بحسب تحليل سيرتك الذاتية')
+      expect(mm[0].text, 'عرض تحليل السيرة على من حللناها').not.toContain('wa.me/')
+      const oText = (await notices(o.email))[0]?.text ?? ''
+      expect(oText, 'رابط مسار لمن لا مسار له').not.toContain('/go/')
+      /* ⑭ ومن لم نحلّل سيرتَه: عرضُ تحليلها على واتساب — برسالةٍ فيها كودُه (١٧ نوفمبر ٢٠٢٦) */
+      expect(oText, 'لا عرض لتحليل السيرة').toContain('نحللها، ونحدد ما ينقصك، ونعطيك نصائح، ونختار لك مسارك.')
+      const wa = /https:\/\/wa\.me\/\d+\?text=[^\s)]+/.exec(oText)?.[0]
+      expect(wa, 'لا رابط واتساب').toBeDefined()
+      expect(decodeURIComponent(wa!.split('?text=')[1]), 'رسالة واتساب بلا كوده').toContain(oOut.grant!.code!)
       expect(mm, 'لم يصل صاحب الستين').toHaveLength(1)
-      expect(mm[0].text).toContain('بدل 60%')
-      expect(mm[0].subject, 'البريد لا يقول الثمانين').toContain('خصمك صار 80%')
+      expect(mm[0].subject, 'البريد بغير نسبتها').toContain('خصمك صار 80%')
+      expect(mm[0].text).toContain('رفعنا منحتك من 60% إلى 80%')
       expect(mm[0].text).toContain(mOut.grant!.code!)
-      expect(mm[0].text, 'لا يقول إغلاق التسجيل').toContain('يغلق التسجيل تماما حتى الفصل القادم')
-      expect((await notices(o.email))[0]?.text, 'لم يصل صاحب الخمسين').toContain('بدل 50%')
+      expect(mm[0].text, 'لا يقول إغلاق التسجيل').toContain('فقط، وبعدها يغلق التسجيل حتى الفصل القادم.')
+      expect((await notices(o.email))[0]?.text, 'لم يصل صاحب الخمسين').toContain('من 50% إلى 80%')
       expect(await notices(e.email), 'وصل من نزل كوده بريد الارتفاع').toHaveLength(0)
       await sendBlackFridayUpgradeNotice(prisma, after)
       expect(await notices(m.email), 'وصله مرتين').toHaveLength(1)
     } finally {
-      await bf.update({ closesAt: null }, ownerId)
+      await bf.update({ closesAt: null, percentOff: 70 }, ownerId)
       if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
       else await prisma.integrationSetting.delete({ where: { provider: 'email' } })
     }

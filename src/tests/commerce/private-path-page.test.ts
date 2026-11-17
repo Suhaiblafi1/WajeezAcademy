@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  cleanReason, firstNameAr, goPath, GO_CODE_RE, PATH_REASON_MAX, PATH_SUBTITLE_AR, privatePathPrice, REASON_LABEL_AR,
+  cleanReason, firstNameAr, goPath, GO_CODE_RE, PATH_REASON_MAX, PATH_SUBTITLE_AR, privatePathGrantLabelAr, privatePathPrice, REASON_LABEL_AR,
 } from '@/application/commerce/private-path'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -111,9 +111,17 @@ describe('صفحة المسار الخاص بقالب صفحة المسار', ()
 
   it('قراءة السعر من معاينة الخادم: الأصلي، وكل ما طرح منه، وما يدفع — بلا حساب غيره', () => {
     expect(privatePathPrice({
-      currency: 'JOD', subtotal: 400, couponDiscount: 150, bundleDiscount: 30, capDiscount: 10, planCredit: 5, total: 205, grantNameAr: 'منحة وجيز',
-    })).toEqual({ currency: 'JOD', before: 400, grant: 195, grantNameAr: 'منحة وجيز', total: 205 })
-    expect(privatePathPrice({ currency: 'JOD', subtotal: 100, couponDiscount: 0, bundleDiscount: 0, capDiscount: 0, planCredit: 0, total: 100 }).grantNameAr).toBeNull()
+      currency: 'JOD', subtotal: 400, couponDiscount: 150, bundleDiscount: 30, capDiscount: 10, planCredit: 5, total: 205, grantNameAr: 'منحة وجيز', grantPct: 70,
+    })).toEqual({ currency: 'JOD', before: 400, grant: 195, grantNameAr: 'منحة وجيز', grantPct: 70, total: 205 })
+    expect(privatePathPrice({ currency: 'JOD', subtotal: 100, couponDiscount: 0, bundleDiscount: 0, capDiscount: 0, planCredit: 0, total: 100 })).toMatchObject({ grantNameAr: null, grantPct: null })
+  })
+
+  /* والنسبةُ بجانب اسم المنحة (١٧ نوفمبر ٢٠٢٦، صاحب المنصّة: «لماذا لا تذكر النسبة هنا؟») */
+  it('⚠️ سطر المنحة يقول نسبتها في صندوق السعر — والزر الثابت الصغير باسمها وحده', () => {
+    expect(privatePathGrantLabelAr({ grantNameAr: 'بلاك فرايدي وجيز', grantPct: 70 })).toBe('بلاك فرايدي وجيز 70%')
+    expect(privatePathGrantLabelAr({ grantNameAr: null, grantPct: null })).toBe('الخصم')
+    expect(PAGE).toMatch(/<dt>\{privatePathGrantLabelAr\(current\.price\)\}<\/dt>/)
+    expect(PAGE, 'عاد اسم المنحة بلا نسبتها').not.toMatch(/<dt>\{current\.price\.grantNameAr \?\? "الخصم"\}<\/dt>/)
   })
 })
 

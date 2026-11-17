@@ -31,6 +31,11 @@ import { fmtDateLong } from '../../src/application/text/format-ar'
 import {
   BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr,
 } from '../../src/application/commerce/grant'
+import { goPath, PRIVATE_PATH_PURPOSE, type PrivatePathPayload } from '../../src/application/commerce/private-path'
+import { grantAdvisorTextAr, grantRecordLink } from '../../src/application/commerce/grant-landing'
+import { normalizeWhatsApp } from '../../src/application/site/whatsapp'
+import { BARE_HOST } from '../../src/application/site/origin'
+import { GRANT_ADVISOR_SEED, getWhatsAppNumbers } from './integrations.service'
 
 /** نسبةُ بلاك فرايدي لكلّ كود — قرارُ صاحب المنصّة (١٦ نوفمبر ٢٠٢٦) */
 export const BLACK_FRIDAY_MERGE_PERCENT = 70
@@ -102,6 +107,30 @@ export async function applyBlackFridayMerge(prisma: PrismaClient): Promise<{ mov
   return result
 }
 
+/* ═══ وأكوادُ بلاك فرايدي تتبع نسبتَها — كلُّها، لا ما يُعطى بعد الحفظ وحدَه (١٧ نوفمبر ٢٠٢٦) ═══
+
+   رفع صاحبُ المنصّة بلاك فرايدي إلى 80% من صفحتها، فبقي كلُّ من أخذ كودَه قبلُ — ومنهم كلُّ من انتقل إليها من «منحة وجيز»
+   و«العامة» — على 70%، وقال: «but the discount is now 80%!! why you don't sync». فنسبةُ كلّ كودٍ فيها نسبتُها هي: تُكتب
+   عند الحفظ (`GrantService.update`)، ويلحقها العاملُ كلَّ ساعةٍ لما سبق — رفعا أو خفضا. وما دُفع لا يُمسّ: الكوبونُ يقول
+   سعرَ ما يُشترى به بعدُ، والطلبُ يحفظ سعرَه. وكلُّ مزامنةٍ غيّرت شيئا تُكتب أثرا بسببها. */
+export const BLACK_FRIDAY_SYNC_REASON = 'قرار صاحب المنصة (17 نوفمبر 2026): كل أكواد بلاك فرايدي بنسبتها، لا ما يعطى بعد الحفظ وحده'
+
+export async function syncBlackFridayCodes(prisma: PrismaClient, actorId: string | null = null): Promise<{ changed: number; percentOff: number } | null> {
+  const bf = await prisma.grantCampaign.findUnique({ where: { slug: BLACK_FRIDAY_GRANT_SLUG }, select: { id: true, percentOff: true } })
+  if (!bf) return null
+  const out = await prisma.coupon.updateMany({
+    where: { grantCode: { campaignId: bf.id }, OR: [{ percentOff: { not: bf.percentOff } }, { percentOff: null }] },
+    data: { percentOff: bf.percentOff },
+  })
+  if (out.count > 0) {
+    await recordAudit(prisma, {
+      actorId, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: bf.id,
+      reason: BLACK_FRIDAY_SYNC_REASON, after: { percentOff: bf.percentOff }, meta: { codesSynced: out.count },
+    })
+  }
+  return { changed: out.count, percentOff: bf.percentOff }
+}
+
 /* ═══ ثمّ ثمانون لكلّ كود — القديمِ والجديد (١٧ نوفمبر ٢٠٢٦) ═══
 
    رفع صاحبُ المنصّة نسبةَ بلاك فرايدي إلى 80% من شاشتها، وتلك تقع على ما يُعطى بعدها وحدَه (`GrantService.issue`) — فيبقى من
@@ -139,6 +168,7 @@ export async function applyBlackFridayRaise(prisma: PrismaClient): Promise<{ rai
    كان كودُه في «منحة وجيز» (60%) أو «العامة» (50%) — يُعرف بأثر إعطائه (`coupon.grant_issue` بمعرّف حملته القديمة) — بنسبته
    القديمة في البريد، ويُعرف به من ذُكِّر (`coupon.grant_notice` بمرحلة `bf70`) فلا يصله ثانية. ولا يصل من ألغى رسائلَ التسويق،
    ولا من استعمل كودَه كلَّه، ولا يُكتب شيءٌ والبريدُ مفصول أو بلاك فرايدي مغلقة. */
+/* الخامسةُ عصرا بتوقيت عمّان (كان الثالثة) — لتصل مزامنةُ الـ80% قبله فيقول البريدُ نسبتَه الصحيحة (١٧ نوفمبر ٢٠٢٦) */
 export const BF_UPGRADE_SEND_AT = new Date('2026-11-17T14:00:00.000Z')
 export const BF_UPGRADE_STAGE = 'bf70'
 
@@ -169,15 +199,36 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
     where: { id: { in: [...oldPct.keys()] }, campaignId: bf.id, lead: { erasedAt: null, email: { not: null } } },
     select: {
       id: true,
-      lead: { select: { id: true, fullName: true, email: true } },
+      lead: { select: { id: true, fullName: true, email: true, userId: true } },
       coupon: { select: { id: true, code: true, percentOff: true, usedCount: true, maxUses: true } },
     },
   })
   const off = await optedOut(prisma, codes.map((c) => c.lead!.email!))
+  /* ومن قرأنا سيرتَه وأرسلنا له مسارا خاصّا (`/go/…`) يصله رابطُه مع رابط المنحة (١٧ نوفمبر ٢٠٢٦، صاحب المنصّة: «يجب أن يظهر
+     له رابطُ المنحة وأيضا رابطُ الدورات المقترحة التي اقترحناها له»). وأحدثُ مسارٍ له غيرُ مسحوبٍ ولا منسوخ — بكوده أو بنموذجه
+     أو بحسابه. وسعرُه في صفحته يُحسب من كوده، فيقول النسبةَ الجديدة وحدَه */
+  const paths = await prisma.shortLink.findMany({
+    where: { purpose: PRIVATE_PATH_PURPOSE, revokedAt: null }, orderBy: { createdAt: 'desc' }, select: { code: true, payload: true },
+  })
+  /* ورابطُ واتساب مستشار المنحة برسالةٍ جاهزة: من هو وبريدُه وكودُه وملفُّه — كزرّ صفحة المنحة (`grantAdvisorTextAr`) */
+  const advisorNumber = normalizeWhatsApp((await getWhatsAppNumbers(prisma)).grant_advisor || GRANT_ADVISOR_SEED.number)
+  const advisorHref = advisorNumber
+    /* والقوسان يُرمَّزان — يبقيهما `encodeURIComponent`، فيقطع بريدُ النصّ الخامّ الرابطَ عند أوّلهما */
+    ? (name: string, email: string, code: string) => `https://wa.me/${advisorNumber}?text=${encodeURIComponent(grantAdvisorTextAr({
+        name, email, code, recordLink: grantRecordLink(BARE_HOST, code), grantNameAr: BLACK_FRIDAY_GRANT_NAME_AR,
+      })).replace(/\(/g, '%28').replace(/\)/g, '%29')}`
+    : null
+  const pathOf = (lead: { id: string; userId: string | null }, code: string): string | null => {
+    for (const x of paths) {
+      const p = x.payload as unknown as PrivatePathPayload | null
+      if (!p || p.supersededBy) continue
+      if (p.code?.toUpperCase() === code.toUpperCase() || p.learnerKey === `lead:${lead.id}` || (lead.userId && p.learnerKey === `user:${lead.userId}`)) return x.code
+    }
+    return null
+  }
   const grants = new GrantService(prisma)
   const site = publicSiteUrl()
   const lastDay = bf.closesAt ? fmtDateLong(new Date(bf.closesAt.getTime() - 1)) : null
-  const closedDay = bf.closesAt ? fmtDateLong(bf.closesAt) : null
   let sent = 0
   for (const g of codes) {
     const lead = g.lead!
@@ -189,32 +240,49 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
     })
     if (left <= 0) continue
     const pct = g.coupon.percentOff ?? bf.percentOff
-    const subject = `خصمك صار ${pct}% — أكبر خصم لدينا${lastDay ? ` حتى ${lastDay}` : ''}`
+    /* بلغةٍ أبسطَ وأحيا (١٧ نوفمبر ٢٠٢٦: «اجعل اللغة أبسط وأكثر حيوية وتشجيع») */
+    const subject = `مفاجأة: خصمك صار ${pct}%`
+    const path = pathOf(lead, g.coupon.code)
     const links = unsubscribeLinks(lead.email!)
     await prisma.$transaction(async (tx) => {
       await recordAudit(tx, {
         action: 'coupon.grant_notice', entityType: 'lead', entityId: lead.id,
-        meta: { stage: BF_UPGRADE_STAGE, grantCodeId: g.id, from: was, to: pct },
+        meta: { stage: BF_UPGRADE_STAGE, grantCodeId: g.id, from: was, to: pct, path },
       })
       await enqueueMail(tx, {
         to: lead.email!, purpose: 'grant.reminder', subject, unsubscribeUrl: links.oneClick,
         ...renderMail({
           unsubscribeUrl: links.page,
           greetingName: lead.fullName ?? undefined,
-          heading: subject,
-          preheader: `كودك نفسه، وخصمه الآن ${pct}% على كل الدورات${lastDay ? ` حتى ${lastDay}` : ''}.`,
+          heading: `خصمك صار ${pct}%`,
+          preheader: `نفس كودك، وخصم أكبر${lastDay ? `. حتى ${lastDay} فقط` : ''}.`,
           blocks: [
-            { kind: 'p', text: `خبر جيد: انضمت منحتك إلى ${BLACK_FRIDAY_GRANT_NAME_AR}، فصار خصمك ${pct}% بدل ${was}%. وهذا أكبر خصم قدمناه.` },
-            { kind: 'p', text: `كودك هو نفسه، ويطبق وحده عند الشراء من حسابك. اختر حتى ${grantCoursesAr(left)}.` },
-            ...(lastDay && closedDay
-              ? [{ kind: 'p' as const, text: `آخر يوم ${lastDay}. ومن ${closedDay} يغلق التسجيل تماما حتى الفصل القادم، فسجل الآن.` }]
+            { kind: 'p', text: `رفعنا منحتك من ${was}% إلى ${pct}%، وهذا أكبر خصم قدمناه على الإطلاق.` },
+            { kind: 'p', text: `كودك نفسه، ويعمل وحده عند الدفع. اختر حتى ${grantCoursesAr(left)} وابدأ.` },
+            ...(lastDay
+              ? [{ kind: 'p' as const, text: `العرض حتى ${lastDay} فقط، وبعدها يغلق التسجيل حتى الفصل القادم.` }]
               : []),
             { kind: 'facts', rows: [
               { label: 'كود منحتك', value: g.coupon.code },
               { label: 'الخصم', value: `${pct}%` },
-              ...(lastDay ? [{ label: 'آخر يوم', value: lastDay }] : []),
             ] },
-            { kind: 'cta', label: 'سجل الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` },
+            ...(path
+              ? [
+                  /* «غيّر اسم دوراتك المقترحة.. أضف له المسار بحسب تحليل سيرتك الذاتية» (١٧ نوفمبر ٢٠٢٦) */
+                  { kind: 'cta' as const, label: 'مسارك بحسب تحليل سيرتك الذاتية', href: `${site}${goPath(path)}` },
+                  { kind: 'p' as const, text: ['اخترنا دوراته لك من سيرتك. أو اختر غيرها من ', { text: 'صفحة المنحة', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` }, '.'] },
+                ]
+              : [
+                  { kind: 'cta' as const, label: 'احجز دوراتك الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` },
+                  /* ومن لم نحلّل سيرتَه: يرسلها على واتساب فنحلّلها ونقول فجواتها وننصحه ونختار دوراته (١٧ نوفمبر ٢٠٢٦: «أضف لمن
+                     لم نقم بتحليل السيرة الذاتية خيارَ التواصل على الواتساب… نفّذ بإبداع») */
+                  ...(advisorHref
+                    ? [{ kind: 'callout' as const, text: [
+                        'مجانا لك: أرسل سيرتك الذاتية على واتساب. نحللها، ونحدد ما ينقصك، ونعطيك نصائح، ونختار لك مسارك. ',
+                        { text: 'أرسل سيرتك الآن', href: advisorHref(lead.fullName ?? '', lead.email!, g.coupon.code) },
+                      ] }]
+                    : []),
+                ]),
           ],
         }),
       })
