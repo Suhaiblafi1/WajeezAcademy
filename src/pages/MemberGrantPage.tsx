@@ -64,7 +64,7 @@ import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } f
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
-  type GrantPathOption, type GrantOutcomeLine, GRANT_OUTCOMES_TITLE_AR, grantOutcomeLinesAr, grantOutcomeTotalsAr, grantPerSession, grantSessionsAr, grantShortTitleAr, parsePicksParam,
+  type GrantPathOption, type GrantOutcomeLine, GRANT_OUTCOMES_TITLE_AR, grantOutcomeLinesAr, grantOutcomeTotalsAr, grantPerSession, grantSessionsAr, grantShortTitleAr, parseGrantCodeParam, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_HUMAN_DIAG_AR,
 } from "@/application/commerce/grant-landing";
 import { BLACK_FRIDAY_GRANT_STORE_KEY, GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -297,6 +297,28 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [resumed] = useState(() => (pickPath ? resumedCheckoutFor(pickPath) : null));
   /* وما اختاره من رابط بريد التذكير (`?picks=`) — يعود إلى اختياره ولو فتحه من جهازٍ آخر (٣١ أكتوبر ٢٠٢٦) */
   const [linkPicks] = useState(() => parsePicksParam(window.location.search));
+  /* ═══ وزرُّ بريد كوده يحمل كودَه (١٧ نوفمبر ٢٠٢٦، `grantCodeLink`) ═══
+     «شخصٌ وصله إيميلٌ بكوده، وعندما نقر على الرابط أخذه للتسجيل مرّةً أخرى» (صاحب المنصّة). فالكودُ يُحفظ على الجهاز الذي
+     عبّأ منه، ومن فتح البريدَ في غيره لم يجد شيئا. فإن جاء الرابطُ بكودٍ غيرِ المحفوظ يُسأل الخادمُ عنه، وتُفتح الصفحةُ على
+     اختيار دوراته بمنحته — وبريدُه لا يأتي معه: يكتبه هو عند الدفع (`resume`). */
+  const [mailedCode] = useState(() => (forBlackFriday ? parseGrantCodeParam(window.location.search) : null));
+  const storedCode = stored?.code ?? null;
+  useEffect(() => {
+    if (!mailedCode || storedCode === mailedCode) return;
+    let alive = true;
+    void apiGet<{ ref: string; code: string; name: string; percentOff: number | null; interests: string[]; workField: string }>(
+      `/api/public/grant/bf/code/${encodeURIComponent(mailedCode)}`,
+    ).then((r) => {
+      if (!alive) return;
+      const g = {
+        ref: r.ref, code: r.code, sentTo: null, name: r.name, email: "", interests: r.interests, workField: r.workField,
+        percentOff: r.percentOff, picks: [],
+      };
+      saveStoredGrant(g, storeKey);
+      setStored({ ...g, at: Date.now() });
+    }).catch(() => { /* كودٌ لا يُعرف: تبقى الصفحةُ على حالها */ });
+    return () => { alive = false };
+  }, [mailedCode, storedCode, storeKey]);
 
   /* ما نقترحه مرّةً واحدةً حين يصير له كود: خمسُ دوراتٍ لا تتعارض ولا يتكرّر فيها مدرّب، أوّلُها دوراتُ المسار الرئيسيّ
      الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، ثمّ ما يناسبهما (`suggestCourses`) — ويختار منها حتّى الحدّ. قرارُ صاحب

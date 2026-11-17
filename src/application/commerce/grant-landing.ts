@@ -302,6 +302,29 @@ export function grantPicksLink(base: string, courseIds: readonly string[]): stri
   return `${base}${base.includes('?') ? '&' : '?'}${GRANT_PICKS_PARAM}=${ids.join(',')}`
 }
 
+/* ═══ وزرُّ البريد يحمل كودَه (١٧ نوفمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «شخصٌ قام بالتسجيل ووصله إيميلٌ بكوده، وعندما نقر على الرابط أخذه للتسجيل مرّةً أخرى.. لماذا؟». فالكودُ
+   يُحفظ على الجهاز الذي عبّأ منه (`services/grant-landing.ts`)، وزرُّ البريد كان يفتح صفحةَ المنحة وحدَها — ومن فتحه في جهازٍ آخر،
+   أو في متصفّح تطبيق البريد نفسِه، لم يجد شيئا محفوظا فرأى النموذج. فالزرُّ يحمل كودَه (`?code=`)، والصفحةُ تسأل الخادمَ عنه
+   (`GrantLandingService.resume`) فتُفتح على اختيار دوراته بمنحته. والكودُ مكتوبٌ في البريد نفسِه، فلا يكشف الرابطُ جديدا. */
+export const GRANT_CODE_PARAM = 'code'
+/** شكلُ كود المنحة — `WG-` وثمانيةٌ من الأبجديّة (`grant.service.ts#issue`) */
+export const GRANT_CODE_RE = /^WG-[A-Z0-9]{8}$/
+
+/** رابطُ صفحة منحته وكودُه فيه — `…/grant/bf?code=WG-…`. وما ليس كودا بشكله لا يُكتب فيه */
+export function grantCodeLink(base: string, code: string | null | undefined): string {
+  const c = (code ?? '').trim().toUpperCase()
+  if (!GRANT_CODE_RE.test(c)) return base
+  return `${base}${base.includes('?') ? '&' : '?'}${GRANT_CODE_PARAM}=${c}`
+}
+
+/** كودُه من الرابط — بشكله وحدَه، وإلّا `null` */
+export function parseGrantCodeParam(search: string): string | null {
+  const c = (new URLSearchParams(search).get(GRANT_CODE_PARAM) ?? '').trim().toUpperCase()
+  return GRANT_CODE_RE.test(c) ? c : null
+}
+
 /** ما في الرابط من اختياره — معرّفاتٌ بشكلها وحدَها، بلا تكرار، وعشرون بحدٍّ أقصى. والصفحةُ تقصّها على حدّ المنحة */
 export function parsePicksParam(search: string): string[] {
   const raw = new URLSearchParams(search).get(GRANT_PICKS_PARAM) ?? ''
