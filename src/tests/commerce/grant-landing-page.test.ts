@@ -698,9 +698,10 @@ describe('بعد النموذج', () => {
     /* ومن لم يختر بعدُ ولا كودَ له — ومنحةُ المؤثّرين باسمها */
     expect(grantAdvisorTextAr({ name: 'سارة', grantNameAr: 'منحة مؤثرين وجيز' })).toBe('مرحبا، أنا سارة.\nسجلت في منحة مؤثرين وجيز، وأريد أن تحدد لي الدورات المناسبة. أرفقت لك سيرتي الذاتية.')
     expect(grantAdvisorTextAr({ name: ' ', email: 'sara@x.test' }).split('\n')[0]).toBe('مرحبا، بريدي sara@x.test.')
-    /* ومصدرُه في آخرها (١٧ نوفمبر ٢٠٢٦): «هل فيها اسمُ الشريك أو المؤثّر؟» — كودُ مؤثّره، ثمّ وسمُ رابطه في هذه الزيارة ثمّ أوّلِها */
-    expect(grantAdvisorTextAr({ name: 'سارة', code: 'WG-ABCD2345', source: 'kaseet' }).endsWith('كود منحتي: WG-ABCD2345\n\n(KASEET)')).toBe(true)
-    expect(grantAdvisorTextAr({ name: 'سارة', source: '<b>' }), 'وسم بغير شكله في الرسالة').not.toContain('(')
+    /* ومصدرُه في سطرها الأوّل وحدَه «KASEET Code» (١٧ نوفمبر ٢٠٢٦): «هل فيها اسمُ الشريك أو المؤثّر؟» — كودُ مؤثّره، ثمّ وسمُ
+       رابطه في هذه الزيارة ثمّ أوّلِها، بصيغة رابط `/wa?k=` نفسِها */
+    expect(grantAdvisorTextAr({ name: 'سارة', code: 'WG-ABCD2345', source: 'kaseet' }).startsWith('KASEET Code\nمرحبا، أنا سارة.')).toBe(true)
+    expect(grantAdvisorTextAr({ name: 'سارة', source: '<b>' }), 'وسم بغير شكله في الرسالة').not.toContain('Code')
     expect(advisorSourceOf({ influencer: 'CHATTREE', page: { channel: 'kaseet' } })).toBe('CHATTREE')
     expect(advisorSourceOf({ page: { channel: 'kaseet', utmSource: 'ig' }, first: { channel: 'email' } })).toBe('KASEET')
     expect(advisorSourceOf({ page: null, first: { utmSource: 'wajeez_app' } })).toBe('WAJEEZ_APP')
