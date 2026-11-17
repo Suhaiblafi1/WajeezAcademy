@@ -32,6 +32,10 @@ import {
   BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr,
 } from '../../src/application/commerce/grant'
 import { goPath, PRIVATE_PATH_PURPOSE, type PrivatePathPayload } from '../../src/application/commerce/private-path'
+import { grantAdvisorTextAr, grantRecordLink } from '../../src/application/commerce/grant-landing'
+import { normalizeWhatsApp } from '../../src/application/site/whatsapp'
+import { BARE_HOST } from '../../src/application/site/origin'
+import { GRANT_ADVISOR_SEED, getWhatsAppNumbers } from './integrations.service'
 
 /** نسبةُ بلاك فرايدي لكلّ كود — قرارُ صاحب المنصّة (١٦ نوفمبر ٢٠٢٦) */
 export const BLACK_FRIDAY_MERGE_PERCENT = 70
@@ -176,6 +180,14 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
   const paths = await prisma.shortLink.findMany({
     where: { purpose: PRIVATE_PATH_PURPOSE, revokedAt: null }, orderBy: { createdAt: 'desc' }, select: { code: true, payload: true },
   })
+  /* ورابطُ واتساب مستشار المنحة برسالةٍ جاهزة: من هو وبريدُه وكودُه وملفُّه — كزرّ صفحة المنحة (`grantAdvisorTextAr`) */
+  const advisorNumber = normalizeWhatsApp((await getWhatsAppNumbers(prisma)).grant_advisor || GRANT_ADVISOR_SEED.number)
+  const advisorHref = advisorNumber
+    /* والقوسان يُرمَّزان — يبقيهما `encodeURIComponent`، فيقطع بريدُ النصّ الخامّ الرابطَ عند أوّلهما */
+    ? (name: string, email: string, code: string) => `https://wa.me/${advisorNumber}?text=${encodeURIComponent(grantAdvisorTextAr({
+        name, email, code, recordLink: grantRecordLink(BARE_HOST, code), grantNameAr: BLACK_FRIDAY_GRANT_NAME_AR,
+      })).replace(/\(/g, '%28').replace(/\)/g, '%29')}`
+    : null
   const pathOf = (lead: { id: string; userId: string | null }, code: string): string | null => {
     for (const x of paths) {
       const p = x.payload as unknown as PrivatePathPayload | null
@@ -226,10 +238,21 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
             ] },
             ...(path
               ? [
-                  { kind: 'cta' as const, label: 'افتح دوراتك المقترحة', href: `${site}${goPath(path)}` },
-                  { kind: 'p' as const, text: ['اخترناها لك من سيرتك الذاتية. أو اختر غيرها من ', { text: 'صفحة المنحة', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` }, '.'] },
+                  /* «غيّر اسم دوراتك المقترحة.. أضف له المسار بحسب تحليل سيرتك الذاتية» (١٧ نوفمبر ٢٠٢٦) */
+                  { kind: 'cta' as const, label: 'مسارك بحسب تحليل سيرتك الذاتية', href: `${site}${goPath(path)}` },
+                  { kind: 'p' as const, text: ['اخترنا دوراته لك من سيرتك. أو اختر غيرها من ', { text: 'صفحة المنحة', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` }, '.'] },
                 ]
-              : [{ kind: 'cta' as const, label: 'احجز دوراتك الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` }]),
+              : [
+                  { kind: 'cta' as const, label: 'احجز دوراتك الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` },
+                  /* ومن لم نحلّل سيرتَه: يرسلها على واتساب فنحلّلها ونقول فجواتها وننصحه ونختار دوراته (١٧ نوفمبر ٢٠٢٦: «أضف لمن
+                     لم نقم بتحليل السيرة الذاتية خيارَ التواصل على الواتساب… نفّذ بإبداع») */
+                  ...(advisorHref
+                    ? [{ kind: 'callout' as const, text: [
+                        'مجانا لك: أرسل سيرتك الذاتية على واتساب. نحللها، ونحدد ما ينقصك، ونعطيك نصائح، ونختار لك مسارك. ',
+                        { text: 'أرسل سيرتك الآن', href: advisorHref(lead.fullName ?? '', lead.email!, g.coupon.code) },
+                      ] }]
+                    : []),
+                ]),
           ],
         }),
       })
