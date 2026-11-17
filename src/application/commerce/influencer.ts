@@ -111,6 +111,15 @@ export const KASEET_INFLUENCER = {
   email: 'jameelzatara@kaseet.com',
 } as const
 
+/* ═══ ومن يأخذ عمولتَه على بلاك فرايدي برابطه (١٧ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Yes, 5% on Black Friday») ═══
+   بلاك فرايدي بلا عمولة (#951/#953). وسأل صاحبُ المنصّة عن كاسيت ومن جاء برابطها `?ch=kaseet`: «Yes, 5% on Black Friday».
+   فمن ذُكر هنا يأخذ عمولتَه هو (`commissionPercent` في ملفّه) على كود بلاك فرايدي الذي جاء برابطه، ومن لم يُذكر يُنسب
+   إليه بلا عمولةٍ كما كان. وفحصُ الهامش يعدّها لهم (`grant-margins.service.ts`). */
+export const BLACK_FRIDAY_PAID_INFLUENCERS: readonly string[] = ['KASEET']
+/** عمولةُ كود بلاك فرايدي لمؤثّرٍ جاء الزائرُ برابطه — نسبتُه إن كان في القائمة، وإلّا صفر */
+export const blackFridayCommission = (code: string, commissionPercent: number): number =>
+  BLACK_FRIDAY_PAID_INFLUENCERS.includes(code) ? commissionPercent : 0
+
 /* ═══ شعاراتُ المؤثّرين مع الموقع — كشعارات الشركاء (`BUILT_IN_PARTNER_LOGOS`) ═══
 
    لا رفعَ لشعار المؤثّر في الإدارة، فما أرسله صاحبُ المنصّة يُشحن مع الموقع في `public/influencers` بكود المؤثّر.

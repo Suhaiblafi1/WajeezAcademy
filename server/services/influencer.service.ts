@@ -65,7 +65,7 @@ import { BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, INFLUENCER_GRANT_SLUGS 
 import {
   INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_DISCOUNT_BAD_AR, OWN_PURCHASE_AR, buyerNameAr,
   commissionStateAr, influencerCommission, influencerLink, influencerPercentOff, normalizeInfluencerCode,
-  INFLUENCER_PHONE_BAD_AR, KASEET_INFLUENCER, cleanInfluencerPhone, influencerClosesAt,
+  INFLUENCER_PHONE_BAD_AR, KASEET_INFLUENCER, blackFridayCommission, cleanInfluencerPhone, influencerClosesAt,
 } from '../../src/application/commerce/influencer'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
@@ -671,7 +671,7 @@ export async function applyInfluencerLaunch(prisma: PrismaClient): Promise<strin
     const ids = leads.map((l) => l.id)
     await prisma.lead.updateMany({ where: { id: { in: ids } }, data: { influencerId: made.id } })
     const codes = await prisma.grantCode.updateMany({
-      where: { leadId: { in: ids }, influencerId: null }, data: { influencerId: made.id, commissionPercent: 0 },
+      where: { leadId: { in: ids }, influencerId: null }, data: { influencerId: made.id, commissionPercent: blackFridayCommission(k.code, k.commissionPercent) },
     })
     await recordAudit(prisma, {
       actorId: null, action: 'influencer.update', entityType: 'influencer', entityId: made.id, reason: KASEET_LAUNCH_REASON,

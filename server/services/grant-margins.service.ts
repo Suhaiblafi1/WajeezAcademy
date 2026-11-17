@@ -19,7 +19,7 @@ import { GrantService } from './grant.service'
 import {
   BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, isInfluencerGrant, type CampaignSlug, type GrantSlug,
 } from '../../src/application/commerce/grant'
-import { INFLUENCER_COMMISSION_DEFAULT, influencerPercentOff } from '../../src/application/commerce/influencer'
+import { INFLUENCER_COMMISSION_DEFAULT, blackFridayCommission, influencerPercentOff } from '../../src/application/commerce/influencer'
 
 /** ترتيبُ المنح في الاختيار — كما يقرؤها صاحبُ المنصّة */
 const ORDER: readonly GrantSlug[] = [MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG]
@@ -64,6 +64,14 @@ export async function marginOptions(prisma: PrismaClient): Promise<MarginOption[
       active: infCampaign.active, percentOff: influencerPercentOff(infCampaign.percentOff, x.percentOff),
       commissionPercent: x.commissionPercent, sharePercent: 0,
     })),
+    /* ومن يأخذ عمولتَه على بلاك فرايدي برابطه (`BLACK_FRIDAY_PAID_INFLUENCERS`) صفٌّ له بنسبة بلاك فرايدي وعمولته */
+    ...influencers.filter((x) => blackFridayCommission(x.code, x.commissionPercent) > 0).map((x): MarginOption => {
+      const bf = settings.find((c) => c.slug === BLACK_FRIDAY_GRANT_SLUG)!
+      return {
+        key: `${BLACK_FRIDAY_GRANT_SLUG}:${x.id}`, group: 'influencer', nameAr: `${GRANT_CAMPAIGNS[BLACK_FRIDAY_GRANT_SLUG].nameAr} — ${x.nameAr}`, code: x.code,
+        slug: BLACK_FRIDAY_GRANT_SLUG, active: bf.active, percentOff: bf.percentOff, commissionPercent: blackFridayCommission(x.code, x.commissionPercent), sharePercent: 0,
+      }
+    }),
     ...partners.map((p): MarginOption => ({
       key: p.slug, group: 'partner', nameAr: p.nameAr, slug: p.slug as CampaignSlug, active: p.active,
       percentOff: p.percentOff, commissionPercent: 0, sharePercent: p.partnerSharePercent ?? 0,

@@ -55,7 +55,7 @@ import { courseDomain } from '../../src/application/catalog/course-domain'
 import { resolveCompletionRules } from '../../src/application/learning/completion-rules'
 import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
 import { PARTNER_SLUG_PREFIX } from '../../src/application/commerce/partner-grant'
-import { INFLUENCER_CODE_BAD_AR, influencerBrand, influencerClosesAt, influencerGrantPath, influencerLink, influencerPercentOff, influencerWhatsAppTextAr, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
+import { INFLUENCER_CODE_BAD_AR, blackFridayCommission, influencerBrand, influencerClosesAt, influencerGrantPath, influencerLink, influencerPercentOff, influencerWhatsAppTextAr, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
 import { influencerCodeWhere } from './influencer.service'
 import { shortLinkPath } from '../../src/application/links/short-link'
 import { fmtDate } from '../../src/application/text/format-ar'
@@ -350,10 +350,14 @@ export class GrantLandingService {
     })
     if (usedOther) reasonAr = GRANT_ONCE_AR
     else try {
+      /* ومن جاء بلاك فرايدي برابط مؤثّرٍ: عمولتُه إن كان ممّن يأخذها عليها (`blackFridayCommission`)، وإلّا صفر */
+      const viaLink = !forInfluencer && !credited && lead.influencerId && this.slug === BLACK_FRIDAY_GRANT_SLUG
+        ? await this.prisma.influencer.findUnique({ where: { id: lead.influencerId }, select: { code: true, commissionPercent: true } })
+        : null
       const g = await this.grants.issue({
         leadId: lead.id,
         influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent, percentOff: credited.percentOff, closesAt: credited.closesAt }
-          : !forInfluencer && lead.influencerId && this.slug === BLACK_FRIDAY_GRANT_SLUG ? { id: lead.influencerId, commissionPercent: 0, percentOff: null, closesAt: null }
+          : !forInfluencer && lead.influencerId && this.slug === BLACK_FRIDAY_GRANT_SLUG ? { id: lead.influencerId, commissionPercent: viaLink ? blackFridayCommission(viaLink.code, viaLink.commissionPercent) : 0, percentOff: null, closesAt: null }
           : null,
       }, now)
       const to = lead.email ?? email

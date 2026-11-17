@@ -120,7 +120,8 @@ describe('① تنشأ مرة من طريق إضافة المدير — بدور
 
     /* ومن سبقها برابطها نُسب إليها — بعمولةٍ صفر، فبلاك فرايدي بلا عمولة */
     expect((await prisma.lead.findUniqueOrThrow({ where: { id: earlyLead } })).influencerId, 'من سبقها برابطها لم ينسب إليها').toBe(k.id)
-    expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: earlyLead } })).toMatchObject({ influencerId: k.id, commissionPercent: 0 })
+    /* ومن جاء برابطها قبل زرعها يأخذ كودُه عمولتَها — «Yes, 5% on Black Friday» */
+    expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: earlyLead } })).toMatchObject({ influencerId: k.id, commissionPercent: 5 })
 
     expect((await getWhatsAppNumbers(prisma)).influencer_page, 'رقم واتساب صفحتها لم يكتب').toBe('962794050524')
   })
@@ -171,18 +172,24 @@ describe('④ عمولتها 5% في منحة المؤثرين', () => {
   })
 })
 
-describe('⑤ وفي بلاك فرايدي برابطها تنسب إليها بلا عمولة', () => {
-  it('⚠️ عميلها وكودها لها في لوحها — وعمولتها صفر', async () => {
+describe('⑤ وفي بلاك فرايدي برابطها تنسب إليها بعمولتها — «Yes, 5% on Black Friday»', () => {
+  it('⚠️ عميلها وكودها لها في لوحها — وعمولتها 5% (١٧ نوفمبر ٢٠٢٦)', async () => {
     const bf = new GrantLandingService(prisma, BLACK_FRIDAY_GRANT_SLUG)
     const k = await kaseet()
     const byLink = await bf.apply(person({ channel: 'kaseet' }))
     expect((await prisma.lead.findUniqueOrThrow({ where: { id: byLink.ref } })).influencerId, 'لم ينسب إليها').toBe(k.id)
-    expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: byLink.ref } })).toMatchObject({ influencerId: k.id, commissionPercent: 0 })
+    expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: byLink.ref } }), 'كودها بلا عمولتها').toMatchObject({ influencerId: k.id, commissionPercent: 5 })
     /* ومن جاء بلا رابطها لا يُنسب لأحد */
     const plain = await bf.apply(person({ channel: 'whatsapp' }))
     expect((await prisma.lead.findUniqueOrThrow({ where: { id: plain.ref } })).influencerId).toBeNull()
     const orderId = await pay(await buyer(), [await openCohort(100)], byLink.grant!.code!)
     const row = (await influencers.statement(k.id)).rows.find((r) => r.orderId === orderId)
-    expect(row, 'لا يظهر في لوحها').toMatchObject({ percent: 0, commission: 0, listTotal: 100 })
+    expect(row, 'لا يظهر في لوحها بعمولتها').toMatchObject({ percent: 5, commission: 5, listTotal: 100 })
+  })
+
+  it('⚠️ ومؤثر ليس في القائمة يأتي برابطه في بلاك فرايدي: ينسب إليه بلا عمولة كما كان', async () => {
+    const other = await prisma.influencer.create({ data: { nameAr: 'مؤثر آخر', code: `OTHERBF${STAMP % 100000}`, commissionPercent: 15 } })
+    const out = await new GrantLandingService(prisma, BLACK_FRIDAY_GRANT_SLUG).apply(person({ channel: other.code.toLowerCase() }))
+    expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: out.ref } })).toMatchObject({ influencerId: other.id, commissionPercent: 0 })
   })
 })
