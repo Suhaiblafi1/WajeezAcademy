@@ -312,7 +312,7 @@ export class CartService {
       include: {
         trainerCode: { select: { id: true, profileId: true, percentOff: true, amountOff: true } },
         trainerShareCode: { select: { profileId: true } },
-        grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true, nameAr: true } } } },
+        grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true, nameAr: true } }, influencer: { select: { closesAt: true } } } },
       },
     })
     /* كودُ المنحة يُسأل قبل الفحص العامّ — فيُقال سببُ ردّه بلغة المنحة («استعمل من قبل»)

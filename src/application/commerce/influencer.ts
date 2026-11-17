@@ -32,6 +32,18 @@ export const influencerLink = (siteUrl: string, code: string, slug: GrantSlug = 
     كلا على حدا». ويُكتب في كوبون كلّ كودٍ يومَ يُعطى، فتغييرُه يقع على ما بعده كالعمولة (`grant.service.ts#issue`) */
 export const influencerPercentOff = (campaignPercent: number, own: number | null | undefined): number => own ?? campaignPercent
 
+/* ═══ وآخرُ يومٍ لمنحة متابعيه — كلٌّ على حدة (١٧ نوفمبر ٢٠٢٦) ═══
+   قال صاحبُ المنصّة: «الإعدادات للكلّ.. أريد فقط لشات تري». فآخرُ يومِ المؤثّر — إن كُتب — يغلب نهايةَ الحملة لمتابعيه: به
+   تُفتح صفحتُه، وتُعطى أكوادُه، وتُستعمل عند الدفع، ولو انتهت الحملة أو امتدّت بعده. وفارغُه بنهاية الحملة كما كان.
+   وتشغيلُ الحملة نفسِها (`active`) يبقى شرطا: موقوفةٌ لا يفتحها يومُ أحد. */
+export const influencerClosesAt = (campaignClosesAt: Date | null, own: Date | null | undefined): Date | null =>
+  own ?? campaignClosesAt
+
+/** الحملةُ كما يراها متابعُ هذا المؤثّر — بآخر يومه إن كان له */
+export function withInfluencerEnd<C extends { closesAt: Date | null }>(campaign: C, influencer: { closesAt: Date | null } | null | undefined): C {
+  return influencer?.closesAt ? { ...campaign, closesAt: influencer.closesAt } : campaign
+}
+
 /** عمولتُه على طلب: نسبتُه من سعر الدورات قبل المنحة، ناقصا ما رُدّ من الثمن بنسبته */
 export function influencerCommission(listTotal: number, percent: number, refundedShare = 0): number {
   const kept = 1 - Math.min(1, Math.max(0, refundedShare))

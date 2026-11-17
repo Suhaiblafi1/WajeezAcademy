@@ -89,6 +89,8 @@ export function registerInfluencerRoutes(app: FastifyInstance, prisma: PrismaCli
       commissionPercent: z.number().int().min(0).max(100).optional(),
       /* خصمُ متابعيه — و`null` يعيده إلى نسبة الحملة (١٥ نوفمبر ٢٠٢٦) */
       percentOff: z.number().int().min(0).max(100).nullable().optional(),
+      /* وآخرُ يومٍ لمنحة متابعيه — و`null` بنهاية الحملة (١٧ نوفمبر ٢٠٢٦) */
+      closesAt: z.coerce.date().nullable().optional(),
       code: z.string().trim().min(3).max(40).optional(),
       /* ورقمُه — والفارغُ يمحوه (١٥ نوفمبر ٢٠٢٦) */
       phone: z.string().trim().max(40).nullable().optional(),
