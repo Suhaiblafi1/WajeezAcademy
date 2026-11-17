@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { BF_KIT_DESIGNS, bareLink, bfKitLink, bfKitTexts, bfLastDayAr } from '@/application/trainer/bf-kit'
+import { BF_KIT_DESIGNS, BF_KIT_WA, bareLink, bfKitLink, bfKitTexts, bfLastDayAr } from '@/application/trainer/bf-kit'
 
 const ROOT = join(__dirname, '..', '..', '..')
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8')
@@ -34,6 +34,9 @@ describe('② نصوصه', () => {
       expect(s).toContain('حتى السبت 21 نوفمبر')
     }
     expect(t.emailSubject).toContain('80%')
+    /* وواتساب الأكاديمية في نصوصه الثلاثة — «add the whatsapp link for their messages» (١٧ نوفمبر ٢٠٢٦) */
+    expect(BF_KIT_WA).toBe('wajeezacademy.com/wa')
+    for (const s of [t.social, t.email, t.whatsapp]) expect(s, 'نص بلا واتساب الأكاديمية').toContain(`\n${BF_KIT_WA}`)
     expect(t.email).toContain('حتى 4 دورات')
     expect(t.email.trim().endsWith('لين كنعان'), 'البريد بلا توقيعه').toBe(true)
     expect(bfKitTexts({ link, percentOff: 80, maxCourses: 4, lastDayAr: null }).social).not.toContain('حتى')
