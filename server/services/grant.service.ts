@@ -44,7 +44,7 @@ import {
   GRANT_CAMPAIGNS, GRANT_CLOSED_AR, GRANT_CODE_PREFIX, GRANT_ONCE_AR, GRANT_SOLD_OUT_AR,
   BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, isInfluencerGrant, type CampaignSlug,
 } from '../../src/application/commerce/grant'
-import { isPartnerCampaign, PARTNER_NOT_FOUND_AR, partnerShare } from '../../src/application/commerce/partner-grant'
+import { emailMatchesDomains, isPartnerCampaign, PARTNER_NOT_FOUND_AR, partnerCodeEmailAr, partnerShare, partnerTypeOf } from '../../src/application/commerce/partner-grant'
 import { influencerCommission, influencerPercentOff, withInfluencerEnd } from '../../src/application/commerce/influencer'
 
 /** ما يحسب منحةً مستعملة: طلبٌ ينتظر الدفعَ بها أو دُفع — والمردودُ كلُّه يُعيدها */
@@ -67,13 +67,20 @@ export interface GrantCoupon {
   usedCount: number
   maxUses: number | null
   grantCode: {
-    campaign: { id: string; active: boolean; closesAt: Date | null; maxCourses: number }
+    campaign: { id: string; slug: string; active: boolean; closesAt: Date | null; maxCourses: number }
     /** مؤثّرُه بآخر يومه إن كُتب له — يغلب نهايةَ الحملة (١٧ نوفمبر ٢٠٢٦، `withInfluencerEnd`) */
     influencer?: { closesAt: Date | null } | null
   } | null
 }
 
 const isOpen = (c: { active: boolean; closesAt: Date | null }, now: Date) => c.active && (c.closesAt === null || c.closesAt > now)
+
+/** أيُستعمل كودُ هذه المنحة الآن بحملته؟ — بآخر يوم مؤثّره في منحة المؤثّرين وحدَها (`withInfluencerEnd`). وبه يُسأل الدفعُ
+    (`assertUsable`) ومن يُعطى كودَه بحسابه (`learnerGrant` و`myCode`)، فلا يقول أحدُها «مفتوحة» والآخرُ «انتهت» (١٧ نوفمبر ٢٠٢٦) */
+export function grantCouponOpen(coupon: GrantCoupon, now = new Date()): boolean {
+  const campaign = coupon.grantCode?.campaign
+  return !!campaign && isOpen(withInfluencerEnd(campaign, coupon.grantCode?.influencer), now)
+}
 
 /* ═══ وحملتان لا واحدة (٢٦ أكتوبر ٢٠٢٦) ═══
 
@@ -168,8 +175,7 @@ export class GrantService {
     now = new Date(),
   ): Promise<{ code: string; percentOff: number; closesAt: Date | null; reused: boolean }> {
     /* وفي حملة المؤثّرين: آخرُ يومِ المؤثّر يغلب نهايتَها لمتابعيه (١٧ نوفمبر ٢٠٢٦، `withInfluencerEnd`) */
-    const own = isInfluencerGrant(this.slug) ? input.influencer?.closesAt ?? null : null
-    const c = withInfluencerEnd(await this.campaign(), own ? { closesAt: own } : null)
+    const c = withInfluencerEnd(await this.campaign(), input.influencer)
     for (let attempt = 0; attempt < 3; attempt += 1) {
       if (input.leadId) {
         const had = await this.prisma.grantCode.findUnique({
@@ -229,16 +235,31 @@ export class GrantService {
   async assertUsable(coupon: GrantCoupon, userId: string | null, now = new Date()): Promise<void> {
     const campaign = coupon.grantCode?.campaign
     if (!campaign) return
-    if (!isOpen(withInfluencerEnd(campaign, coupon.grantCode?.influencer), now)) throw new AuthError('grant_closed', GRANT_CLOSED_AR, 409)
+    if (!grantCouponOpen(coupon, now)) throw new AuthError('grant_closed', GRANT_CLOSED_AR, 409)
     if ((await this.coursesLeft(coupon)) <= 0) throw new AuthError('grant_used', grantUsedUpAr(campaign.maxCourses), 409)
     /* على الحملتين معا — من اشترى بمنحةٍ لا يأخذ فوقها كودَ منحةٍ آخر، وكودُه نفسُه يعود إليه حتى حدّه.
        وزائرٌ بلا حساب (معاينةُ رابط الشراء) لا مشترياتِ له تُعدّ — فيُسأل عنه بعد دخوله */
     if (userId === null) return
+    if (isPartnerCampaign(campaign.slug)) await this.assertPartnerEmail(campaign.id, userId)
     const once = await this.prisma.order.findFirst({
       where: { userId, status: { in: GRANT_HOLDS }, couponId: { not: coupon.id }, coupon: { grantCode: { isNot: null } } },
       select: { id: true },
     })
     if (once) throw new AuthError('grant_once', GRANT_ONCE_AR, 409)
+  }
+
+  /** ═══ وكودُ الشريك لحسابٍ بريدُه على نطاقاته (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): «Any HU email») ═══
+      أيُّ حسابٍ بريدُه على نطاقات الشريك اليومَ (وما تحتها، `emailMatchesDomains`) — لا من أكّد بريدَه وحدَه. وغيرُه يُردّ عند
+      التسعير بسببه، فلا يُهدى كودُ طالبٍ لمن ليس من جامعته. والنطاقاتُ تُقرأ الآن: نطاقٌ رفعه المديرُ لا يفتح الكود */
+  private async assertPartnerEmail(campaignId: string, userId: string): Promise<void> {
+    const p = await this.prisma.grantCampaign.findUnique({
+      where: { id: campaignId }, select: { nameAr: true, partnerType: true, emailDomains: true },
+    })
+    if (!p) return
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+    if (!emailMatchesDomains(user?.email, p.emailDomains)) {
+      throw new AuthError('partner_email', partnerCodeEmailAr(p.nameAr, partnerTypeOf(p.partnerType)), 409)
+    }
   }
 
   /** يُعاد فحصُ حدّ الكود و«منحةٌ واحدةٌ لكلّ متعلّم» في معاملة الطلب نفسِها، بعد قفل رقم الفاتورة (٤ نوفمبر ٢٠٢٦).
@@ -351,7 +372,7 @@ export interface LearnerGrant {
 const LEARNER_COUPON = {
   id: true, code: true, percentOff: true, usedCount: true, maxUses: true,
   grantCode: { select: {
-    campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true, nameAr: true } },
+    campaign: { select: { id: true, slug: true, active: true, closesAt: true, maxCourses: true, nameAr: true } },
     influencer: { select: { closesAt: true } },
   } },
 } as const

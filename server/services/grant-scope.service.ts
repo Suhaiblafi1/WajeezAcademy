@@ -45,9 +45,30 @@ export async function influencerScope(
   return liveGrantScope(camp, inf?.courseIds ?? null)
 }
 
-/** ما تعرضه صفحةُ حملةٍ اليوم — ومنحةُ المؤثّرين بمؤثّرها، وإن لم يبقَ له ما يُعرض فقائمةُ الحملة كلُّها */
+/* ═══ وما اختاره صاحبُ الكود قبلُ يبقى له (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): «Keep their picks») ═══
+   كان تغييرُ المدير قائمةَ الحملة يُسقط من اختيار كلّ من اختار ما خرج منها: صفحتُه لا تعرضه، وحفظُه التالي (`savePicks`)
+   يمحوه، وبريدُ تذكيره لا يذكره — وقد اختاره وهو في القائمة. فما اختاره (`keep`) يُعرض له مع القائمة ما دامت له شعبةٌ تُشترى
+   بشروط لوح الدفع (`openCourses` بلا نطاق). والاختيارُ الجديدُ يتبع القائمةَ اليوم كما كان: لا يُضاف إلّا من القائمة. */
+export async function withKeptPicks(
+  prisma: PrismaClient, shown: { termAr: string | null; courses: BuyableCohort[] }, keep: readonly string[], now = new Date(),
+): Promise<{ termAr: string | null; courses: BuyableCohort[] }> {
+  const have = new Set(shown.courses.map((c) => c.courseId))
+  const missing = new Set(keep.filter((id) => !have.has(id)))
+  if (missing.size === 0) return shown
+  const all = await new GrantCoursesService(prisma).openCourses(now, null)
+  return { termAr: shown.termAr, courses: [...shown.courses, ...all.courses.filter((c) => missing.has(c.courseId))] }
+}
+
+/** ما تعرضه صفحةُ حملةٍ اليوم — ومنحةُ المؤثّرين بمؤثّرها، وإن لم يبقَ له ما يُعرض فقائمةُ الحملة كلُّها.
+    ومعها ما اختاره صاحبُ الكود قبلُ إن مُرّر (`withKeptPicks`) */
 export async function pageCourses(
-  prisma: PrismaClient, slug: CampaignSlug, influencerId: string | null | undefined, now = new Date(),
+  prisma: PrismaClient, slug: CampaignSlug, influencerId: string | null | undefined, now = new Date(), keep: readonly string[] = [],
+): Promise<{ termAr: string | null; courses: BuyableCohort[] }> {
+  return withKeptPicks(prisma, await listedCourses(prisma, slug, influencerId, now), keep, now)
+}
+
+async function listedCourses(
+  prisma: PrismaClient, slug: CampaignSlug, influencerId: string | null | undefined, now: Date,
 ): Promise<{ termAr: string | null; courses: BuyableCohort[] }> {
   const pool = new GrantCoursesService(prisma)
   /* ═══ وصفحةُ الشريك بقائمته — وإن لم يبقَ منها ما يُشترى فكلُّ ما يُشترى (١٥ نوفمبر ٢٠٢٦) ═══

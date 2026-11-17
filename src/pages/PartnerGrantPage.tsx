@@ -31,7 +31,7 @@ import { GRANT_PHONE_REQUIRED_AR, intlPhone } from "@/application/advisor/guest-
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice } from "@/application/commerce/grant";
-import { campaignParams, grantSessionsAr, GRANT_ACADEMY_LINE_AR, seatsLeftAr, toggleCourse } from "@/application/commerce/grant-landing";
+import { campaignParams, grantSessionsAr, GRANT_ACADEMY_LINE_AR, seatsLeftAr, toggleCourse, withGrantRef } from "@/application/commerce/grant-landing";
 import {
   PARTNER_CONSENT_AR, PARTNER_TYPE_AR, partnerFaqAr, partnerHeadlineAr, partnerOfferAr, partnerPagePath, partnerStepsAr,
   emailMatchesDomains, partnerBadEmailAr, type PartnerType,
@@ -120,10 +120,12 @@ export default function PartnerGrantPage() {
   const [authOpen, setAuthOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
 
+  /* ومرجعُه — فتُعرض له دوراتٌ اختارها ثمّ خرجت من القائمة (١٧ نوفمبر ٢٠٢٦، «Keep their picks»، `withGrantRef`) */
+  const [firstRef] = useState(() => stored?.ref ?? null);
   const load = useCallback(async () => {
-    try { setView(await apiGet<View>(`/api/public/grant/p/${encodeURIComponent(slug)}`)); }
+    try { setView(await apiGet<View>(withGrantRef(`/api/public/grant/p/${encodeURIComponent(slug)}`, firstRef))); }
     catch (e) { setFailed(e instanceof ApiError ? e.message : "تعذر تحميل الصفحة"); }
-  }, [slug]);
+  }, [slug, firstRef]);
 
   /* رابطُ البريد: يُقرأ رمزُه ويُمحى من العنوان قبل أيّ شيء (بلا تنقّلٍ يعيد بناء الصفحة)، ثمّ يُرسَل مرّةً واحدة */
   const confirmedOnce = useRef(false);

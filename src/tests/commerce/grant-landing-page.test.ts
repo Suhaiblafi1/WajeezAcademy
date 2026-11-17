@@ -63,7 +63,7 @@ describe('الطريق والأبواب', () => {
     for (const path of ['/grant/bf', '/grant/bf/build']) {
       expect(APP).toContain(`<Route path="${path}" element={<MemberGrantPage variant="blackfriday" />} />`)
     }
-    expect(APP).toContain('<Route path="/grant/bf/:code" element={<KeepQuery to="/grant/bf" />} />')
+    expect(APP).toContain('<Route path="/grant/bf/:code" element={<KeepQueryAsChannel to="/grant/bf" />} />')
     expect((ROUTES.match(/assertNotBot\(req\.body\)/g) ?? []).length, 'باب بلا مصيدة').toBe(5)
   })
 })

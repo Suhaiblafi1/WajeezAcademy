@@ -37,6 +37,13 @@ const applyBody = z.object({
    والمصيدةُ (`assertNotBot`) والتحقّقُ وسقفُ الأكواد باقية. */
 export const GRANT_FORM_RATE_MAX = 120
 
+/* ومرجعُ نموذجه (`?ref=`) — فتُعرض له دوراتٌ اختارها ثمّ أخرجها المديرُ من القائمة (١٧ نوفمبر ٢٠٢٦، «Keep their picks»).
+   وما لا يشبه مرجعا يُترك كأنّه لم يُرسل */
+const refOf = (q: unknown): string | null => {
+  const r = z.object({ ref: z.string().uuid().optional() }).safeParse(q)
+  return r.success ? r.data.ref ?? null : null
+}
+
 export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const landing = new GrantLandingService(prisma)
   const influencers = new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG)
@@ -64,7 +71,7 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
 
   app.get('/api/public/grant', {
     schema: { tags: ['public'], summary: 'حال منحة وجيز ودوراتها بفصلها' },
-  }, async () => landing.view())
+  }, async (req) => landing.view(new Date(), null, refOf(req.query)))
 
   app.post('/api/public/grant', {
     config: { rateLimit: { max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' } },
@@ -80,7 +87,7 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     schema: { tags: ['public'], summary: 'حال منحة المؤثرين ودوراتها، واسم المؤثر إن كان كوده صحيحا' },
   }, async (req) => {
     const { code } = z.object({ code: z.string().max(40).optional() }).parse(req.query)
-    return influencers.influencerView(code)
+    return influencers.influencerView(code, new Date(), refOf(req.query))
   })
 
   app.post('/api/public/grant/influencer', {
@@ -97,7 +104,7 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     schema: { tags: ['public'], summary: 'حال منحة بلاك فرايدي ودوراتها بفصلها، ومؤثر الرابط إن كان له رأس مشترك (?ch=)' },
   }, async (req) => {
     const { ch } = z.object({ ch: z.string().max(40).optional() }).parse(req.query)
-    return blackfriday.channelView(ch)
+    return blackfriday.channelView(ch, new Date(), refOf(req.query))
   })
 
   app.post('/api/public/grant/bf', {
@@ -121,7 +128,7 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
   /* ═══ «منحة وجيز العامة» — نموذجُ الأولى بلا كود مؤثّر، بصفّها هي ═══ */
   app.get('/api/public/grant/open', {
     schema: { tags: ['public'], summary: 'حال منحة وجيز العامة ودوراتها بفصلها' },
-  }, async () => open.view())
+  }, async (req) => open.view(new Date(), null, refOf(req.query)))
 
   app.post('/api/public/grant/open', {
     config: { rateLimit: { max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' } },

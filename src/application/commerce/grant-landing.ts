@@ -296,6 +296,12 @@ const PICK_ID_RE = /^[A-Za-z0-9_-]{1,40}$/
 const PICKS_LINK_MAX = 20
 
 /** رابطُ صفحة منحته وما اختاره فيه — `…/grant?picks=C-1,C-2`. وما ليس معرّفا بشكله لا يُكتب فيه */
+/** بابُ الصفحة بمرجع نموذجه — فيعرض الخادمُ له ما اختاره قبلُ ولو أخرجه المديرُ من القائمة (١٧ نوفمبر ٢٠٢٦، «Keep their picks»).
+    وبلا مرجعٍ البابُ كما هو */
+export function withGrantRef(url: string, ref: string | null | undefined): string {
+  return ref ? `${url}${url.includes('?') ? '&' : '?'}ref=${encodeURIComponent(ref)}` : url
+}
+
 export function grantPicksLink(base: string, courseIds: readonly string[]): string {
   const ids = courseIds.filter((id) => PICK_ID_RE.test(id)).slice(0, PICKS_LINK_MAX)
   if (ids.length === 0) return base

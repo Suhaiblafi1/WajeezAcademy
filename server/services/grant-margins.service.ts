@@ -47,7 +47,7 @@ export async function marginOptions(prisma: PrismaClient): Promise<MarginOption[
     prisma.grantCampaign.findMany({ where: { kind: 'partner' }, orderBy: { createdAt: 'asc' } }),
     prisma.influencer.findMany({
       where: { active: true }, orderBy: { createdAt: 'asc' },
-      select: { id: true, nameAr: true, code: true, percentOff: true, commissionPercent: true },
+      select: { id: true, nameAr: true, code: true, formerCodes: true, percentOff: true, commissionPercent: true },
     }),
   ])
   const top = influencers.reduce<number | null>((m, x) => (m === null || x.commissionPercent > m ? x.commissionPercent : m), null)
@@ -65,11 +65,11 @@ export async function marginOptions(prisma: PrismaClient): Promise<MarginOption[
       commissionPercent: x.commissionPercent, sharePercent: 0,
     })),
     /* ومن يأخذ عمولتَه على بلاك فرايدي برابطه (`BLACK_FRIDAY_PAID_INFLUENCERS`) صفٌّ له بنسبة بلاك فرايدي وعمولته */
-    ...influencers.filter((x) => blackFridayCommission(x.code, x.commissionPercent) > 0).map((x): MarginOption => {
+    ...influencers.filter((x) => blackFridayCommission(x, x.commissionPercent) > 0).map((x): MarginOption => {
       const bf = settings.find((c) => c.slug === BLACK_FRIDAY_GRANT_SLUG)!
       return {
         key: `${BLACK_FRIDAY_GRANT_SLUG}:${x.id}`, group: 'influencer', nameAr: `${GRANT_CAMPAIGNS[BLACK_FRIDAY_GRANT_SLUG].nameAr} — ${x.nameAr}`, code: x.code,
-        slug: BLACK_FRIDAY_GRANT_SLUG, active: bf.active, percentOff: bf.percentOff, commissionPercent: blackFridayCommission(x.code, x.commissionPercent), sharePercent: 0,
+        slug: BLACK_FRIDAY_GRANT_SLUG, active: bf.active, percentOff: bf.percentOff, commissionPercent: blackFridayCommission(x, x.commissionPercent), sharePercent: 0,
       }
     }),
     ...partners.map((p): MarginOption => ({

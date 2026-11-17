@@ -154,6 +154,12 @@ export function partnerFaqAr(p: {
 
 export const partnerBadEmailAr = (type: PartnerType, domains: readonly string[]): string =>
   `اكتب ${PARTNER_TYPE_AR[type].email} الذي ينتهي بـ${domains.join(' أو ')}.`
+/* ═══ وكودُ الشريك لمن بريدُ حسابه على نطاقاته (١٧ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «Any HU email» — يعمل الكودُ لكلّ حسابٍ بريدُه على نطاقات الشريك (وما تحتها، `emailMatchesDomains`)، لا لمن
+   أكّد بريدَه وحدَه. وكان الدفعُ لا يسأل عن بريد المشتري، فكودُ طالبٍ يُهدى لأيّ أحدٍ فيأخذ منحةَ الجامعة. */
+export const partnerCodeEmailAr = (nameAr: string, type: PartnerType): string =>
+  type === 'company' ? `هذا الكود لموظفي ${nameAr} ببريد عملهم` : `هذا الكود لطلاب ${nameAr} ببريدهم الجامعي`
+
 /** بعد طلب الرابط — والجملةُ واحدةٌ لكلّ بريد: لا تقول أأخذ صاحبُه المنحةَ من قبل أم لا */
 export const partnerLinkSentAr = (masked: string): string =>
   `أرسلنا رابطا إلى ${masked}. افتحه من بريدك لتأخذ كود منحتك.`

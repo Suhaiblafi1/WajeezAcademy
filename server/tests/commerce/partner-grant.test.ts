@@ -414,3 +414,30 @@ describe('⑥ الحملات الأربع كما كانت، والجامعة ا�
     expect(kase.followUps[0].channel).toBe('phone')
   })
 })
+
+/* ═══ ⑧ وكودُ الشريك لحسابٍ بريدُه على نطاقاته (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): «Any HU email») ═══
+   العلّة: الدفعُ لم يكن يسأل عن بريد المشتري، فكودُ طالبٍ يُهدى لأيّ حسابٍ فيأخذ منحةَ الجامعة. والقرارُ: يعمل لكلّ حسابٍ بريدُه
+   على نطاقاتها (وما تحتها) — لا لمن أكّد وحدَه. ورابطُ تأكيدٍ طُلب ثمّ رفع المديرُ نطاقَه كان يعطي كودا. */
+describe('⑧ كود الشريك لحساب بريده على نطاقاته', () => {
+  it('⚠️ حساب من خارج الجامعة يرد عند التسعير بسببه — وحساب ببريد تحت نطاقها يقبل', async () => {
+    await partner('anydom')
+    const code = (await claim('anydom', `dom-${STAMP}@hu.edu.jo`)).grant!.code
+    const x = await cohort(100)
+    await expect(commerce.quote(await learner(`dom-out-${STAMP}@gmail.com`), [x.cohortId], code))
+      .rejects.toMatchObject({ code: 'partner_email', message: 'هذا الكود لطلاب جامعة anydom ببريدهم الجامعي' })
+    await expect(commerce.checkout(await learner(`dom-evil-${STAMP}@evilhu.edu.jo`), [x.cohortId], code)).rejects.toMatchObject({ code: 'partner_email' })
+    /* وأيُّ بريدٍ تحت نطاقها — لا من أكّد وحدَه */
+    const sub = await learner(`dom-sub-${STAMP}@std.hu.edu.jo`)
+    expect((await commerce.quote(sub, [x.cohortId], code)).couponDiscount).toBe(75)
+  })
+
+  it('⚠️ ورابط طلب ثم رفع المدير نطاقه لا يعطي كودا', async () => {
+    const p = await partner('domoff', { domains: ['hu.edu.jo', 'old.edu.jo'] })
+    const email = `domoff-${STAMP}@old.edu.jo`
+    await partners.requestLink('domoff', { fullName: 'سارة', email, phone: '+962791234567' })
+    const token = await lastToken(email)
+    await partners.update(p.id, { domains: ['hu.edu.jo'] }, ownerId)
+    await expect(partners.confirm('domoff', token)).rejects.toMatchObject({ code: 'bad_email_domain' })
+    expect(await prisma.lead.count({ where: { email, campaign: partnerCampaignSlug('domoff') } })).toBe(0)
+  })
+})

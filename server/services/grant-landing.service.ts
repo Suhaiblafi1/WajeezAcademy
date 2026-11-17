@@ -36,7 +36,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { AdvisorService } from './advisor.service'
-import { GRANT_HOLDS, GrantService } from './grant.service'
+import { GRANT_HOLDS, GrantService, grantCouponOpen } from './grant.service'
 import { pageCourses } from './grant-scope.service'
 import { enqueueMail } from './outbox.service'
 import { renderMail } from './mail-template'
@@ -83,13 +83,16 @@ const OPEN_CASE = { notIn: ['closed', 'enrolled', 'not_interested'] }
 const SHARE_PATH: Partial<Record<CampaignSlug, string>> = { [MEMBER_GRANT_SLUG]: GRANT_SHARE_PATH, [OPEN_GRANT_SLUG]: OPEN_GRANT_SHARE_PATH }
 /** غرضُ رابط الهديّة القصير — به يُعرف صفُّه فيُعاد ولا يُصنع ثانية */
 const GRANT_SHARE_PURPOSE = 'grant.share'
+/** مرجعُ النموذج بشكله — فلا يُسأل القاعدةُ بما ليس معرّفا */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 /** ما يُقرأ من المؤثّر في النموذج — وخصمُه يُكتب في كوده (`grant.service.ts#issue`) */
-const INFLUENCER_SELECT = { id: true, nameAr: true, code: true, commissionPercent: true, percentOff: true, closesAt: true } as const
+const INFLUENCER_SELECT = { id: true, nameAr: true, code: true, formerCodes: true, commissionPercent: true, percentOff: true, closesAt: true } as const
 
 /** المؤثّرُ كما تعرضه صفحتُه: اسمُه وكودُه — ومن له رأسٌ مشتركٌ (`BUILT_IN_INFLUENCER_LOGOS`) رأسُه بشعاره ورسالةُ واتساب
     تنتهي باسمه (١٧ نوفمبر ٢٠٢٦). ومن لا رأسَ له يبقى كما كان */
-const influencerFace = (i: { nameAr: string; code: string }) => {
-  const brand = influencerBrand(i.code)
+const influencerFace = (i: { nameAr: string; code: string; formerCodes?: readonly string[] }) => {
+  /* بأكواده كلِّها — فتغييرُ كوده لا يُسقط رأسَه (١٧ نوفمبر ٢٠٢٦، `InfluencerCodes`) */
+  const brand = influencerBrand(i)
   return { nameAr: i.nameAr, code: i.code, ...(brand ? { brand, whatsAppText: influencerWhatsAppTextAr(i.nameAr) } : {}) }
 }
 
@@ -123,9 +126,9 @@ export class GrantLandingService {
 
   /** صفحةُ حملة المؤثّرين: حالُها ودوراتُها، واسمُ المؤثّر إن كان كودُه في الرابط صحيحا — ودوراتُه هو إن اختيرت له،
       ونسبتُها ما يأخذه متابعُه هو */
-  async influencerView(raw: string | null | undefined, now = new Date()) {
+  async influencerView(raw: string | null | undefined, now = new Date(), ref: string | null = null) {
     const found = await this.influencerByCode(raw)
-    const v = await this.view(now, found?.id ?? null)
+    const v = await this.view(now, found?.id ?? null, ref)
     return {
       influencer: found ? influencerFace(found) : null, ...v,
       campaign: { ...v.campaign, percentOff: influencerPercentOff(v.campaign.percentOff, found?.percentOff) },
@@ -136,9 +139,9 @@ export class GrantLandingService {
 
   /** صفحةُ بلاك فرايدي برابط مؤثّرٍ ذي رأسٍ مشترك (`?ch=<كوده>`، ١٧ نوفمبر ٢٠٢٦) — حالُها ودوراتُها كما هي، ومعها المؤثّرُ
       لرأسه وزرّ واتسابه. ومن لا رأسَ له (`influencerBrand`) تبقى صفحتُه كما كانت */
-  async channelView(ch: string | null | undefined, now = new Date()) {
-    const [v, found] = await Promise.all([this.view(now), this.influencerByCode(ch)])
-    return { ...v, influencer: found && influencerBrand(found.code) ? influencerFace(found) : null }
+  async channelView(ch: string | null | undefined, now = new Date(), ref: string | null = null) {
+    const [v, found] = await Promise.all([this.view(now, null, ref), this.influencerByCode(ch)])
+    return { ...v, influencer: found && influencerBrand(found) ? influencerFace(found) : null }
   }
 
   /* ═══ رابطُ الهديّة القصير (٢٧ أكتوبر ٢٠٢٦) ═══
@@ -158,9 +161,9 @@ export class GrantLandingService {
   /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين.
       ودوراتُها ما اختاره المديرُ للحملة، ولمؤثّرها في منحة المؤثّرين — وبلا اختيارٍ تلقائيّة (١٥ نوفمبر ٢٠٢٦، `grant-scope.ts`).
       والقائمةُ للصفحة وحدَها: الكودُ يخصم على أيّ دورةٍ حتى حدّه */
-  async view(now = new Date(), influencerId: string | null = null) {
+  async view(now = new Date(), influencerId: string | null = null, ref: string | null = null) {
     const [s, open] = await Promise.all([
-      this.grants.settings(now), pageCourses(this.prisma, this.slug, influencerId, now),
+      this.grants.settings(now), pageCourses(this.prisma, this.slug, influencerId, now, await this.keptPicks(ref)),
     ])
     /* وصفحةُ المؤثّر بآخر يومه إن كُتب له — يغلب نهايةَ الحملة، وتشغيلُها شرطٌ باقٍ (١٧ نوفمبر ٢٠٢٦، `influencerClosesAt`) */
     const own = influencerId && isInfluencerGrant(this.slug)
@@ -191,6 +194,14 @@ export class GrantLandingService {
         ...(outcomes.get(c.cohortId) ?? { projectAr: null, tasks: 0, quizzes: 0, certificate: { rules: [] } }),
       })),
     }
+  }
+
+  /** ما اختاره صاحبُ المرجع قبلُ في هذه الحملة — يبقى في صفحته ولو خرج من قائمتها (١٧ نوفمبر ٢٠٢٦، `withKeptPicks`).
+      والمرجعُ لا يعرفه إلّا متصفّحُه (كـ`savePicks`)، وما يُعاد دوراتٌ بسعرها لا شيءَ من ملفّه */
+  private async keptPicks(ref: string | null | undefined): Promise<string[]> {
+    if (!ref || !UUID_RE.test(ref)) return []
+    const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: this.slug, erasedAt: null }, select: { grantPicks: true } })
+    return lead?.grantPicks ?? []
   }
 
   /** ما يخرج به من كلّ شعبةٍ معروضة (١٦ نوفمبر ٢٠٢٦) — والعلّةُ في `grant-landing.ts` («ما ستخرج به»):
@@ -352,12 +363,12 @@ export class GrantLandingService {
     else try {
       /* ومن جاء بلاك فرايدي برابط مؤثّرٍ: عمولتُه إن كان ممّن يأخذها عليها (`blackFridayCommission`)، وإلّا صفر */
       const viaLink = !forInfluencer && !credited && lead.influencerId && this.slug === BLACK_FRIDAY_GRANT_SLUG
-        ? await this.prisma.influencer.findUnique({ where: { id: lead.influencerId }, select: { code: true, commissionPercent: true } })
+        ? await this.prisma.influencer.findUnique({ where: { id: lead.influencerId }, select: { code: true, formerCodes: true, commissionPercent: true } })
         : null
       const g = await this.grants.issue({
         leadId: lead.id,
         influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent, percentOff: credited.percentOff, closesAt: credited.closesAt }
-          : !forInfluencer && lead.influencerId && this.slug === BLACK_FRIDAY_GRANT_SLUG ? { id: lead.influencerId, commissionPercent: viaLink ? blackFridayCommission(viaLink.code, viaLink.commissionPercent) : 0, percentOff: null, closesAt: null }
+          : !forInfluencer && lead.influencerId && this.slug === BLACK_FRIDAY_GRANT_SLUG ? { id: lead.influencerId, commissionPercent: viaLink ? blackFridayCommission(viaLink, viaLink.commissionPercent) : 0, percentOff: null, closesAt: null }
           : null,
       }, now)
       const to = lead.email ?? email
@@ -386,7 +397,7 @@ export class GrantLandingService {
      وعُرض عليه أثرُها: من سبق صاحبَ بريدٍ إلى حسابٍ ببريده أخذ منحتَه، ويستعيد صاحبُ البريد حسابَه ببريده. فيُكتب الأثر.
      ولا كودَ بلغ حدَّ دوراته — ودونه يُعطى ولو اشترى به قبلُ: الحدُّ على الكود في كلّ مشترياته (٢٨ أكتوبر ٢٠٢٦،
      `GrantService.coursesLeft`). */
-  async myCode(userId: string, ip?: string): Promise<{ code: string | null; percentOff?: number | null }> {
+  async myCode(userId: string, ip?: string, now = new Date()): Promise<{ code: string | null; percentOff?: number | null }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
     if (!user?.email) return { code: null }
     const lead = await this.prisma.lead.findFirst({
@@ -399,7 +410,7 @@ export class GrantLandingService {
             coupon: {
               select: {
                 id: true, code: true, percentOff: true, usedCount: true, maxUses: true,
-                grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } }, influencer: { select: { closesAt: true } } } },
+                grantCode: { select: { campaign: { select: { id: true, slug: true, active: true, closesAt: true, maxCourses: true } }, influencer: { select: { closesAt: true } } } },
               },
             },
           },
@@ -407,7 +418,10 @@ export class GrantLandingService {
       },
     })
     const coupon = lead?.grantCode?.coupon
-    if (!lead || !coupon || (await this.grants.coursesLeft(coupon)) <= 0) return { code: null }
+    /* ═══ ولا كودَ أُغلقت حملتُه (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): Fix all 6) ═══
+       كان يُقرأ تشغيلُها ونهايتُها وآخرُ يومِ مؤثّره ولا يُسأل عنها، فيُعطى كودُ حملةٍ مغلقةٍ فتسعّر به الصفحةُ ثمّ يردّه الدفع.
+       فالسؤالُ سؤالُ الدفع نفسُه (`grantCouponOpen`) */
+    if (!lead || !coupon || !grantCouponOpen(coupon, now) || (await this.grants.coursesLeft(coupon)) <= 0) return { code: null }
     /* ═══ ومن اشترى بكود منحةٍ غيرِه لا يُعطى هذا (٤ نوفمبر ٢٠٢٦) ═══
        منحةٌ واحدةٌ لكلّ متعلّم (`assertUsable`)، فهذا الكودُ يُردّ عند الدفع. وكان يُعطى فتسعّر به الصفحةُ ولوحُ الدفع، ثمّ
        يُردّ فيُعرض عليه الدفعُ بلا منحة — وكودُه الذي اشترى به باقٍ بدوراته. فلا يُعطى، ولوحُ الدفع يطبّق كودَه (`learnerGrant`) */
@@ -434,12 +448,13 @@ export class GrantLandingService {
     const lead = await this.prisma.lead.findFirst({
       /* ومن أكّد بريدَه في منحة شريكٍ يحفظ ما اختاره كذلك — فيراه المستشارُ في ملفّه (١٥ نوفمبر ٢٠٢٦) */
       where: { id: ref, OR: [{ campaign: { in: [...GRANT_SLUGS] } }, { campaign: { startsWith: PARTNER_SLUG_PREFIX } }], erasedAt: null },
-      select: { id: true, campaign: true, influencerId: true, grantCode: { select: { influencerId: true } } },
+      select: { id: true, campaign: true, influencerId: true, grantPicks: true, grantCode: { select: { influencerId: true } } },
     })
     if (!lead) throw new AuthError('not_found', 'عبئ النموذج أولا', 404)
     const own = lead.campaign === this.slug ? this : new GrantLandingService(this.prisma, lead.campaign as CampaignSlug)
-    /* ودوراتُ مؤثّر كوده — أو من جاء بكوده إن لم يأخذ كودا */
-    const v = await own.view(now, lead.grantCode?.influencerId ?? lead.influencerId)
+    /* ودوراتُ مؤثّر كوده — أو من جاء بكوده إن لم يأخذ كودا. وما اختاره قبلُ يبقى له ولو خرج من القائمة، والجديدُ منها وحدَها
+       (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): «Keep their picks»، `withKeptPicks`) */
+    const v = await own.view(now, lead.grantCode?.influencerId ?? lead.influencerId, lead.id)
     const open = new Set(v.openCourses.map((c) => c.courseId))
     const picks = [...new Set(courseIds)].filter((id) => open.has(id)).slice(0, v.campaign.maxCourses)
     await this.prisma.lead.update({ where: { id: lead.id }, data: { grantPicks: picks, grantPicksAt: now } })
