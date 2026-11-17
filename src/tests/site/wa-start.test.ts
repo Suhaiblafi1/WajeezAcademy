@@ -1,6 +1,6 @@
 /* `wajeezacademy.com/wa` — واتساب مستشار المنحة ورسالتُه جاهزة (١٧ نوفمبر ٢٠٢٦). والعلّةُ في `src/application/site/wa-start.ts`.
 
-   ① الرسالةُ الجاهزة: منحةُ بلاك فرايدي، ومساعدةٌ باختيار الدورات بحسب سيرته الذاتيّة المرفقة — وكودُ المصدر في آخرها بشكله وحدَه.
+   ① الرسالةُ الجاهزة: منحةُ بلاك فرايدي، ومساعدةٌ باختيار الدورات بحسب سيرته الذاتيّة المرفقة — وكودُ المصدر في سطرها الأوّل («KASEET Code») بشكله وحدَه.
    ② والصفحةُ على `/wa` تفتح رقمَ مستشار المنحة من الإعدادات (لا رقمٌ في الشيفرة) بالرسالة، وتنتقل وحدَها. */
 
 import { describe, expect, it } from 'vitest'
@@ -20,8 +20,10 @@ describe('① الرسالة الجاهزة', () => {
     expect(waStartText('')).toBe(WA_START_TEXT_AR)
   })
 
-  it('⚠️ وكود المصدر في آخرها بشكله وحده', () => {
-    expect(waStartText('?k=kaseet')).toBe(`${WA_START_TEXT_AR} (KASEET)`)
+  /* والكودُ في سطرها الأوّل بجانبه «Code» (١٧ نوفمبر ٢٠٢٦، «ChatTree Code») */
+  it('⚠️ وكود المصدر في سطرها الأول وحده بجانبه Code — بشكله وحده', () => {
+    expect(waStartText('?k=kaseet')).toBe(`KASEET Code\n${WA_START_TEXT_AR}`)
+    expect(waStartText('?k=CHATTREE').split('\n')[0]).toBe('CHATTREE Code')
     expect(waStartText('?k=<b>x</b>')).toBe(WA_START_TEXT_AR)
   })
 

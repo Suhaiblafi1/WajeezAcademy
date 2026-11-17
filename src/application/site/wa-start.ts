@@ -5,14 +5,16 @@
    on our site»: رابطٌ قصيرٌ من موقعنا يفتح واتساب على رقم مستشار المنحة (`grant_advisor`، لا رقمٌ في الشيفرة) والرسالةُ
    جاهزة. وقال فيها: «وأضف أنّي أريد مساعدةً باختيار الدورات لما يتناسب مع سيرتي الذاتيّة.. مرفقةٌ لكم».
 
-   و`?k=` كودُ من جاء به (`wa?k=KASEET`) — يُلحق بالرسالة فيعرف المستشارُ مصدرَه. والصفحةُ `src/pages/WaStart.tsx`. */
+   و`?k=` كودُ من جاء به (`wa?k=KASEET`) — في سطر الرسالة الأوّل («KASEET Code») فيعرف المستشارُ مصدرَه. والصفحةُ `src/pages/WaStart.tsx`. */
 
 export const WA_START_PATH = '/wa'
 export const WA_START_TEXT_AR = 'مرحبا، أريد منحة بلاك فرايدي، وأريد مساعدة في اختيار الدورات التي تناسب سيرتي الذاتية. مرفقة لكم.'
 const SOURCE_RE = /^[A-Z0-9_-]{1,20}$/
 
-/** الرسالةُ الجاهزة — وكودُ المصدر في آخرها إن كان بشكله */
+/** الرسالةُ الجاهزة — وكودُ المصدر في سطرها الأوّل وحدَه بجانبه «Code» إن كان بشكله.
+    قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): «اجعل الشريك ببداية الرسالة بسطر منفصل وضع كلمة كود بجانبه مثل ChatTree Code» —
+    فيراه المستشارُ أوّلَ ما يفتح المحادثة. والرابطُ نفسُه لا يتغيّر، فمن معه الرابطُ يصله السطرُ الجديد */
 export function waStartText(search: string): string {
   const k = (new URLSearchParams(search).get('k') ?? '').trim().toUpperCase()
-  return SOURCE_RE.test(k) ? `${WA_START_TEXT_AR} (${k})` : WA_START_TEXT_AR
+  return SOURCE_RE.test(k) ? `${k} Code\n${WA_START_TEXT_AR}` : WA_START_TEXT_AR
 }
