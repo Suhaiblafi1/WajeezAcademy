@@ -216,8 +216,10 @@ describe('بعد النموذج', () => {
     expect(openGrantLineAr(50), 'شكر قراء وجيز في المنحة العامة').not.toMatch(/قرّ?ائه|حصرية/)
     /* و«بلاك فرايدي وجيز» بسطرها: بلاك فرايدي ونسبةُ متابع المؤثّر، وباسمه إن جاء برابطه (١٥ نوفمبر ٢٠٢٦) */
     expect(PAGE).toMatch(/: forBlackFriday\s*\? blackFridayLineAr\(c\.percentOff, null\)/)
-    expect(blackFridayLineAr(70)).toBe('بلاك فرايدي في أكاديمية وجيز: خصم يصل إلى 70% من سعر دوراتك.')
-    expect(blackFridayLineAr(70, 'صهيب')).toBe('بلاك فرايدي في أكاديمية وجيز بدعوة من صهيب: خصم يصل إلى 70% من سعر دوراتك.')
+    /* بلا تكرار الاسم تحت عنوانه (١٧ نوفمبر ٢٠٢٦: «هناك تكرار كلمة بلاك فرايدي وأكاديمية وجيز») */
+    expect(blackFridayLineAr(70)).toBe('خصم حتى 70%')
+    expect(blackFridayLineAr(70, 'صهيب')).toBe('خصم حتى 70% · بدعوة من صهيب')
+    expect(blackFridayLineAr(70), 'عاد تكرار الاسم').not.toMatch(/بلاك فرايدي|أكاديمية وجيز/)
     expect(grantThanksAr(60)).toBe('تطبيق وجيز يشكرك لأنك من قرّائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى 60% لتستفيد من منتجنا الجديد: أكاديمية وجيز.')
     /* وفي منحة المؤثّرين باسم المؤثّر إن جاء برابطه (٢٦ أكتوبر ٢٠٢٦) */
     expect(PAGE).toContain('`بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
@@ -236,7 +238,10 @@ describe('بعد النموذج', () => {
   })
 
   it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة وفي كل دورة، وما يحصل عليه سطر صغير في صندوق الكود', () => {
-    expect(PAGE).toContain('دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.')
+    /* أيقوناتٌ بكلمتين لا جملة (١٧ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/<Video className="h-4 w-4 text-teal-light-ink" aria-hidden="true" \/> مباشرة على Zoom<\/li>/)
+    expect(PAGE).toMatch(/<GraduationCap className="h-4 w-4 text-teal-light-ink" aria-hidden="true" \/> حتى \{coursesAr\(c\.maxCourses\)\}<\/li>/)
+    expect(PAGE, 'عادت الجملة').not.toContain('دورات مباشرة على Zoom، تختار منها')
     /* البنودُ بقرار صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «لقاءات مباشرة + تطبيقات عملية + شهادة ورسالة توصية» — و«لمن يلتزم» باقٍ */
     expect(GRANT_GAINS_AR.map((g) => [g.id, g.title])).toEqual([
       ['live', 'لقاءات مباشرة'],

@@ -788,7 +788,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             <>
               {/* المنحةُ بنسبتها لا بما يبقى عليه — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من
                   أنّك تدفع ٤٠٪». وكذلك في بريد الكود وبريد التذكير */}
-              <p className="mt-3 text-lg font-bold">
+              <p className={forBlackFriday ? "mt-3 text-2xl font-black text-gold-ink" : "mt-3 text-lg font-bold"}>
                 {forOpen
                   ? openGrantLineAr(c.percentOff)
                   : forBlackFriday
@@ -799,7 +799,11 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
                     ? `بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`
                     : `منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`}
               </p>
-              <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.</p>
+              {/* وما كان جملةً صار أيقوناتٍ بكلمتين (١٧ نوفمبر ٢٠٢٦: «الدورات الزوم يجب أن تكون أيقونة») */}
+              <ul className="mt-4 flex flex-wrap justify-center gap-2 text-read">
+                <li className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1"><Video className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> مباشرة على Zoom</li>
+                <li className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1"><GraduationCap className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> حتى {coursesAr(c.maxCourses)}</li>
+              </ul>
               {c.closesAt
                 ? <GrantCountdown closesAt={c.closesAt} className="mt-4" />
                 : <p className="mt-3"><Chip tone="warn">المنح محدودة</Chip></p>}

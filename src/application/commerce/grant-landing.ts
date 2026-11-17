@@ -367,10 +367,10 @@ export const openGrantLineAr = (percentOff: number) =>
   `منحة من أكاديمية وجيز لكل من يريد أن يتعلم، تصل إلى ${percentOff}% من سعر دوراتك.`
 
 /** وسطرُ «بلاك فرايدي وجيز» — باسم المؤثّر إن جاء برابطه، وبالنسبة التي يأخذها متابعُه (١٥ نوفمبر ٢٠٢٦) */
+/* وبلا تكرار (١٧ نوفمبر ٢٠٢٦) — قال صاحبُ المنصّة: «هناك تكرارُ كلمة بلاك فرايدي وأكاديمية وجيز وجملةٌ طويلةٌ للخصم..
+   كن أكثرَ احترافيّة». فالعنوانُ يسمّيها، وتحته الخصمُ وحدَه */
 export const blackFridayLineAr = (percentOff: number, influencerNameAr?: string | null) =>
-  influencerNameAr
-    ? `بلاك فرايدي في أكاديمية وجيز بدعوة من ${influencerNameAr}: خصم يصل إلى ${percentOff}% من سعر دوراتك.`
-    : `بلاك فرايدي في أكاديمية وجيز: خصم يصل إلى ${percentOff}% من سعر دوراتك.`
+  influencerNameAr ? `خصم حتى ${percentOff}% · بدعوة من ${influencerNameAr}` : `خصم حتى ${percentOff}%`
 
 /** المستوى الوظيفيّ — سؤالٌ اختياريّ */
 export const CAREER_LEVELS: readonly string[] = [
