@@ -410,6 +410,7 @@ describe('⑥ الحملات الأربع كما كانت، والجامعة ا�
     await openGrantFollowups(prisma)
     const kase = await prisma.advisorCase.findFirstOrThrow({ where: { leadId: out.ref }, include: { followUps: true } })
     expect(kase.nextAction).toContain('جامعة follow')
-    expect(kase.followUps[0].channel).toBe('email')
+    /* وواتسابُ صار لازما في صفحة الشريك (١٧ نوفمبر ٢٠٢٦)، فالمتابعةُ بالهاتف لا بالبريد */
+    expect(kase.followUps[0].channel).toBe('phone')
   })
 })
