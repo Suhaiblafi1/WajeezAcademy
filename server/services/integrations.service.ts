@@ -636,6 +636,13 @@ export const GRANT_ADVISOR_SEED = {
   reason: 'قرار صاحب المنصة (24 أكتوبر 2026): مستشار المنحة على واتساب مباشرة',
 } as const
 
+/* ورقمُ زرّ صفحة المؤثّر — قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): «Use the same WhatsApp link we sent them»، أي رقمُنا
+   الذي أُرسل لكاسيت (`wa.me/962794050524`). مرّةً بالنمط نفسِه، ويغيّره من شاشة الربط */
+export const INFLUENCER_PAGE_WHATSAPP_SEED = {
+  key: 'influencer_page', number: '962794050524',
+  reason: 'قرار صاحب المنصة (17 نوفمبر 2026): واتساب صفحة المؤثر على رقمنا الذي أرسل لكاسيت',
+} as const
+
 export async function seedGrantAdvisorWhatsApp(
   prisma: PrismaClient, seed: { key: string; number: string; reason: string } = GRANT_ADVISOR_SEED,
 ): Promise<boolean> {

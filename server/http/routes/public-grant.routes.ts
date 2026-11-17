@@ -94,8 +94,11 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
 
   /* ═══ «بلاك فرايدي وجيز» — منحةُ وجيز للجميع بلا كود مؤثّر (١٦ نوفمبر ٢٠٢٦، `grant-merge.service.ts`) ═══ */
   app.get('/api/public/grant/bf', {
-    schema: { tags: ['public'], summary: 'حال منحة بلاك فرايدي ودوراتها بفصلها' },
-  }, async () => blackfriday.view())
+    schema: { tags: ['public'], summary: 'حال منحة بلاك فرايدي ودوراتها بفصلها، ومؤثر الرابط إن كان له رأس مشترك (?ch=)' },
+  }, async (req) => {
+    const { ch } = z.object({ ch: z.string().max(40).optional() }).parse(req.query)
+    return blackfriday.channelView(ch)
+  })
 
   app.post('/api/public/grant/bf', {
     config: { rateLimit: { max: GRANT_FORM_RATE_MAX, timeWindow: '15 minutes' } },
