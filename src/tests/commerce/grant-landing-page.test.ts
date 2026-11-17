@@ -807,7 +807,7 @@ describe('بعد النموذج', () => {
     /* وتحت الكود سطرٌ واحد — آخرُ يومها في سطر الترحيب (١٥ نوفمبر ٢٠٢٦) */
     expect(PAGE).toMatch(/\{grantOn && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} compact className="mt-3" \/>\}/)
     expect(PAGE).toMatch(/\{!compact && <p className="mt-0\.5 text-read text-muted-foreground">آخر يوم:/)
-    expect(PAGE.match(/<GrantCountdown /g)?.length, 'العداد في النموذج وتحت الكود وحدهما').toBe(2)
+    expect(PAGE.match(/<GrantCountdown\s/g)?.length, 'العداد في النموذج وتحت الكود وحدهما').toBe(2)
   })
 
   it('⚠️ حد المنحة يقال حدا — «بقي لك دورتان ضمن منحتك» حتى يكتمل', () => {
@@ -816,7 +816,10 @@ describe('بعد النموذج', () => {
   })
 
   it('⚠️ ولا عدد للمنح — العداد وآخر يوم وحدهما، والعدد لا يصل الزائر', () => {
-    expect(PAGE).toMatch(/\? <GrantCountdown closesAt=\{c\.closesAt\} className="mt-4" \/>\s*: <p className="mt-3"><Chip tone="warn">المنح محدودة<\/Chip><\/p>/)
+    /* وفي بلاك فرايدي تحته أنّ التسجيل يُغلق بعدها حتى الفصل القادم (١٧ نوفمبر ٢٠٢٦، «B») — بيومها التالي لآخر يوم */
+    expect(PAGE).toMatch(/\? <GrantCountdown\s+closesAt=\{c\.closesAt\} className="mt-4"\s+closingAr=\{forBlackFriday \? `ومن \$\{fmtDateLong\(new Date\(c\.closesAt\)\)\} يغلق التسجيل حتى الفصل القادم\.` : undefined\}\s+\/>\s*: <p className="mt-3"><Chip tone="warn">المنح محدودة<\/Chip><\/p>/)
+    expect(PAGE).toMatch(/\{!compact && closingAr && <p className="mt-1 text-read font-bold">\{closingAr\}<\/p>\}/)
+    expect('يغلق التسجيل حتى الفصل القادم.').toBe(plainAr('يغلق التسجيل حتى الفصل القادم.'))
     expect(PAGE, 'عاد عدد المنح إلى الصفحة').not.toMatch(/\.left\b|بقي \$\{/)
     expect(PAGE).toMatch(/campaign: \{ open: boolean; percentOff: number; maxCourses: number; closesAt: string \| null; soldOut\?: boolean \};/)
     expect(PAGE).toMatch(/>\{c\.open \? "احجز منحتي الآن" : "سجلني"\}<\/Button>/)

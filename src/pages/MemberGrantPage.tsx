@@ -121,8 +121,14 @@ const money = (n: number) => fmtMoney(n, USD);
 /** «دورة» و«دورتين» بلا رقم، و«4 دورات» */
 const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
 
-/** عدّادُ انتهاء المنحة وآخرُ يومٍ لها — سطرٌ واحدٌ بالأيّام، وتحت اليوم بالساعات (`grantLeftAr`) */
-function GrantCountdown({ closesAt, className = "", compact = false }: { closesAt: string; className?: string; compact?: boolean }) {
+/** عدّادُ انتهاء المنحة وآخرُ يومٍ لها — سطرٌ واحدٌ بالأيّام، وتحت اليوم بالساعات (`grantLeftAr`).
+
+    و`closingAr` سطرٌ تحته (١٧ نوفمبر ٢٠٢٦) — قرارُ صاحب المنصّة «B»: خُيّر بين مقاعدَ تنقص كلَّ يومٍ بلا حدٍّ حقيقيّ
+    — فلم تُبنَ لأنّها تقول للمشتري ما لم يقع — وحدٍّ حقيقيٍّ للأكواد وعدّادٍ لآخر يومٍ حقيقيّ، فاختار العدّاد. وهو هذا
+    بصيغته التي اختارها (٢٤ أكتوبر ٢٠٢٦، بالأيّام وحدَها)، وفي بلاك فرايدي يقول تحته إنّ التسجيل يُغلق بعدها حتى الفصل القادم. */
+function GrantCountdown({ closesAt, className = "", compact = false, closingAr }: {
+  closesAt: string; className?: string; compact?: boolean; closingAr?: string;
+}) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -134,6 +140,7 @@ function GrantCountdown({ closesAt, className = "", compact = false }: { closesA
     <div className={className} role="timer">
       <p className="inline-flex items-center gap-1.5 font-black"><Clock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> تنتهي المنحة بعد {left}</p>
       {!compact && <p className="mt-0.5 text-read text-muted-foreground">آخر يوم: {fmtDateLong(new Date(new Date(closesAt).getTime() - 1))}</p>}
+      {!compact && closingAr && <p className="mt-1 text-read font-bold">{closingAr}</p>}
     </div>
   );
 }
@@ -802,7 +809,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               </p>
               <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.</p>
               {c.closesAt
-                ? <GrantCountdown closesAt={c.closesAt} className="mt-4" />
+                ? <GrantCountdown
+                    closesAt={c.closesAt} className="mt-4"
+                    closingAr={forBlackFriday ? `ومن ${fmtDateLong(new Date(c.closesAt))} يغلق التسجيل حتى الفصل القادم.` : undefined}
+                  />
                 : <p className="mt-3"><Chip tone="warn">المنح محدودة</Chip></p>}
             </>
           ) : (
