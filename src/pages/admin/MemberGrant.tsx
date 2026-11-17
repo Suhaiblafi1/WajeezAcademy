@@ -36,6 +36,7 @@ import GrantRegistrants from "./GrantRegistrants";
 import InfluencersPanel from "./InfluencersPanel";
 import GrantSwitcher from "./GrantSwitcher";
 import GrantMarginCheck from "./GrantMarginCheck";
+import GrantMailHold from "./GrantMailHold";
 import type { GrantVariant } from "./grant-screens";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -147,6 +148,8 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
           من يعبئ نموذج الحملة يأخذ كودا شخصيا، ويمكن أن يعطيه لغيره. ويستعمل في أكثر من شراء حتى {s.maxCourses} دورات على الكود كله، ومنحة واحدة لكل متعلم. وصاحبه يدفع نسبة ثابتة من سعر الدورات بدل خصم الباقة، أو سعر الباقة إن كان أقل. ونسبة كل كود هي نسبة يوم إعطائه.
         </p>
       </Card>
+      {/* وبريدُ الحملات ممسوكٌ حتى يأمر صاحبُ المنصّة (١٧ نوفمبر ٢٠٢٦، `GrantMailHold`) — تحت حال المنحة، لا بينها وبين روابط المنح */}
+      <GrantMailHold />
 
       <h2 className="mt-6 text-lg font-black">الإعدادات</h2>
       <Card className="mt-3 flex flex-wrap items-end gap-3">

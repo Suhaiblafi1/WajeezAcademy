@@ -102,6 +102,36 @@ export async function applyBlackFridayMerge(prisma: PrismaClient): Promise<{ mov
   return result
 }
 
+/* ═══ ثمّ ثمانون لكلّ كود — القديمِ والجديد (١٧ نوفمبر ٢٠٢٦) ═══
+
+   رفع صاحبُ المنصّة نسبةَ بلاك فرايدي إلى 80% من شاشتها، وتلك تقع على ما يُعطى بعدها وحدَه (`GrantService.issue`) — فيبقى من
+   أخذ كودَه أمس على 70% ومن يأخذه اليوم على 80%، وبريدُ العصر يقول لأصحاب السبعين «أكبر خصم». فسُئل، واختار **«80% for
+   everyone»**: خصمٌ واحدٌ للجميع كما اختار أمس. فكلُّ كودٍ في بلاك فرايدي دون الثمانين يرتفع إليها — مرّةً واحدةً بأثرٍ يقول كم،
+   **وما دامت نسبةُ الحملة 80% وحدَها**: إن أعادها إلى 70% قبل أن يجري هذا لم يُرفع شيء. ويجري قبل بريد العصر (`jobs.ts`)،
+   فيقول البريدُ «صار خصمك 80% بدل 60%» من نسبة الكود نفسه. */
+export const BLACK_FRIDAY_RAISE_PERCENT = 80
+export const BLACK_FRIDAY_RAISE_REASON = 'قرار صاحب المنصة (17 نوفمبر 2026): بلاك فرايدي 80% لكل كود، القديم والجديد'
+
+export async function applyBlackFridayRaise(prisma: PrismaClient): Promise<{ raised: number } | null> {
+  const bf = await prisma.grantCampaign.findUnique({ where: { slug: BLACK_FRIDAY_GRANT_SLUG }, select: { id: true, active: true, percentOff: true } })
+  if (!bf?.active || bf.percentOff !== BLACK_FRIDAY_RAISE_PERCENT) return null
+  const done = await prisma.auditEvent.count({
+    where: { action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: bf.id, actorId: null, reason: BLACK_FRIDAY_RAISE_REASON },
+  })
+  if (done > 0) return null
+  return prisma.$transaction(async (tx) => {
+    const raised = await tx.coupon.updateMany({
+      where: { grantCode: { campaignId: bf.id }, OR: [{ percentOff: { lt: BLACK_FRIDAY_RAISE_PERCENT } }, { percentOff: null }] },
+      data: { percentOff: BLACK_FRIDAY_RAISE_PERCENT },
+    })
+    await recordAudit(tx, {
+      actorId: null, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: bf.id,
+      reason: BLACK_FRIDAY_RAISE_REASON, after: { percentOff: BLACK_FRIDAY_RAISE_PERCENT }, meta: { raised: raised.count },
+    })
+    return { raised: raised.count }
+  })
+}
+
 /* ═══ وبريدٌ لمن ارتفع كودُه إلى 70% — مرّةً، عصرَ ١٧ نوفمبر ٢٠٢٦ بتوقيت عمّان ═══
 
    قال صاحبُ المنصّة: «Yes send them tomorrow afternoon»، ووافق على نصّه بعد أن رآه، وقال في آخر يوم: «Keep 21 and tell them
@@ -109,7 +139,7 @@ export async function applyBlackFridayMerge(prisma: PrismaClient): Promise<{ mov
    كان كودُه في «منحة وجيز» (60%) أو «العامة» (50%) — يُعرف بأثر إعطائه (`coupon.grant_issue` بمعرّف حملته القديمة) — بنسبته
    القديمة في البريد، ويُعرف به من ذُكِّر (`coupon.grant_notice` بمرحلة `bf70`) فلا يصله ثانية. ولا يصل من ألغى رسائلَ التسويق،
    ولا من استعمل كودَه كلَّه، ولا يُكتب شيءٌ والبريدُ مفصول أو بلاك فرايدي مغلقة. */
-export const BF_UPGRADE_SEND_AT = new Date('2026-11-17T12:00:00.000Z')
+export const BF_UPGRADE_SEND_AT = new Date('2026-11-17T14:00:00.000Z')
 export const BF_UPGRADE_STAGE = 'bf70'
 
 export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = new Date()): Promise<{ sent: number }> {
