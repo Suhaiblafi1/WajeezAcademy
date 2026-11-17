@@ -69,6 +69,7 @@ export interface PrivatePathView {
     before: number
     grant: number
     grantNameAr: string | null
+    grantPct: number | null
     total: number
   } | null
   /** آخرُ يومٍ للمنحة أو الكود — بتوقيت عمّان (`grantLastDay`) */

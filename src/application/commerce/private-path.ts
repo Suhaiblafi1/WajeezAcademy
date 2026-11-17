@@ -124,6 +124,7 @@ export interface PathPreviewNumbers {
   planCredit: number
   total: number
   grantNameAr?: string | null
+  grantPct?: number | null
 }
 
 /** السعرُ الأصليّ، وقيمةُ المنحة، وما يدفعه */
@@ -132,6 +133,8 @@ export interface PrivatePathPrice {
   before: number
   grant: number
   grantNameAr: string | null
+  /** نسبةُ المنحة — تُقال بجانب اسمها (١٧ نوفمبر ٢٠٢٦: «لماذا لا تذكر النسبة هنا؟») */
+  grantPct: number | null
   total: number
 }
 
@@ -141,6 +144,7 @@ export function privatePathPrice(p: PathPreviewNumbers): PrivatePathPrice {
     before: p.subtotal,
     grant: p.couponDiscount + p.bundleDiscount + p.capDiscount + p.planCredit,
     grantNameAr: p.grantNameAr ?? null,
+    grantPct: p.grantPct ?? null,
     total: p.total,
   }
 }
@@ -222,3 +226,9 @@ export function privatePathHeadline(input: PathHeadlineInput): { titleAr: string
 
 /** عنوانُ السبب البارز تحت كلّ دورة */
 export const REASON_LABEL_AR = 'سبب اختيارها لك'
+
+/** سطرُ المنحة في سعر المسار: «بلاك فرايدي وجيز 70%» — والنسبةُ بجانب اسمها، وبلا اسمٍ «الخصم» */
+export function privatePathGrantLabelAr(p: Pick<PrivatePathPrice, 'grantNameAr' | 'grantPct'>): string {
+  const name = p.grantNameAr ?? 'الخصم'
+  return p.grantPct ? `${name} ${p.grantPct}%` : name
+}
