@@ -62,7 +62,11 @@ import { enqueueMail } from './outbox.service'
 import { fmtMoney } from '../../src/application/text/format-ar'
 import { PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS } from '../auth/permissions'
 import { BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, INFLUENCER_GRANT_SLUGS } from '../../src/application/commerce/grant'
-import { INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_DISCOUNT_BAD_AR, OWN_PURCHASE_AR, buyerNameAr, commissionStateAr, influencerCommission, influencerLink, influencerPercentOff, normalizeInfluencerCode, INFLUENCER_PHONE_BAD_AR, cleanInfluencerPhone, influencerClosesAt } from '../../src/application/commerce/influencer'
+import {
+  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_DISCOUNT_BAD_AR, OWN_PURCHASE_AR, buyerNameAr,
+  commissionStateAr, influencerCommission, influencerLink, influencerPercentOff, normalizeInfluencerCode,
+  INFLUENCER_PHONE_BAD_AR, KASEET_INFLUENCER, cleanInfluencerPhone, influencerClosesAt,
+} from '../../src/application/commerce/influencer'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 
@@ -218,8 +222,8 @@ export class InfluencerService {
   }
 
   /** يُضيفه المدير — بحسابه ببريده، وبريدِ ترحيبٍ كبريد من قُبل طلبُه (١٥ نوفمبر ٢٠٢٦) */
-  async create(input: InfluencerInput, actorId: string) {
-    const made = await this.addWithAccount(input, actorId)
+  async create(input: InfluencerInput, actorId: string | null, opts: { reason?: string; formerCodes?: readonly string[] } = {}) {
+    const made = await this.addWithAccount(input, actorId, opts)
     const emailDelivery = await notifyInfluencerWelcome(this.prisma, {
       to: made.email, nameAr: made.nameAr, code: made.code, commissionPercent: made.commissionPercent,
       account: made.welcome, subjectAr: ADMIN_WELCOME_SUBJECT_AR,
@@ -232,7 +236,7 @@ export class InfluencerService {
 
       كقبول الطلب (١٥ نوفمبر ٢٠٢٦): البريدُ لازم، والمؤرشفُ وحسابُ مؤثّرٍ آخر يُردّان قبل أن يُكتب شيء، والحسابُ القائمُ
       الذي لم يُفعَّل تصله دعوةٌ جديدة. وما سقط بعد كتابة المؤثّر — قبل أن يُربط حسابُه — يرفعه، فلا يبقى مؤثّرٌ بلا حساب. */
-  async addWithAccount(input: InfluencerInput, actorId: string) {
+  async addWithAccount(input: InfluencerInput, actorId: string | null, opts: { reason?: string; formerCodes?: readonly string[] } = {}) {
     const nameAr = input.nameAr.trim()
     if (nameAr.length < 2) throw new AuthError('bad_name', 'اكتب اسم المؤثر', 400)
     const code = normalizeInfluencerCode(input.code)
@@ -259,7 +263,7 @@ export class InfluencerService {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${CODE_LOCK}))`
       await assertCodeFree(tx, code)
       return tx.influencer.create({
-        data: { nameAr, code, commissionPercent: input.commissionPercent, percentOff, phone, createdBy: actorId },
+        data: { nameAr, code, commissionPercent: input.commissionPercent, percentOff, phone, createdBy: actorId, formerCodes: [...(opts.formerCodes ?? [])] },
       })
     })
     let account: { userId: string; created: boolean; inviteSent: boolean | null }
@@ -274,7 +278,7 @@ export class InfluencerService {
       throw e
     }
     await recordAudit(this.prisma, {
-      actorId, action: 'influencer.create', entityType: 'influencer', entityId: row.id,
+      actorId, action: 'influencer.create', entityType: 'influencer', entityId: row.id, reason: opts.reason,
       after: { nameAr, code, commissionPercent: row.commissionPercent, percentOff: row.percentOff, phone: row.phone },
     })
     const welcome: WelcomeAccount = account.created ? { kind: 'created' } : inviteToken ? { kind: 'invited', inviteToken } : { kind: 'active' }
@@ -362,7 +366,7 @@ export class InfluencerService {
 
   /** حسابُه: يُربط بحسابٍ قائمٍ ببريده ويُضاف له دورُ المؤثّر، أو يُنشأ له حسابٌ بدعوة.
       وإن كان له حسابٌ غيرُه فقد تغيّر بريدُه (١ب): يُنقل ملفُّه إلى هذا، ويُنزع دورُ المؤثّر وحدَه من القديم */
-  async attachAccount(id: string, rawEmail: string, actorId: string): Promise<{ userId: string; created: boolean; inviteSent: boolean | null }> {
+  async attachAccount(id: string, rawEmail: string, actorId: string | null): Promise<{ userId: string; created: boolean; inviteSent: boolean | null }> {
     const email = rawEmail.trim().toLowerCase()
     if (!EMAIL_RE.test(email)) throw new AuthError('invalid_email', 'صيغة البريد غير صحيحة', 400)
     const inf = await this.prisma.influencer.findUnique({ where: { id }, include: { user: { select: { id: true, email: true } } } })
@@ -390,7 +394,7 @@ export class InfluencerService {
       await this.prisma.user.update({ where: { id: userId }, data: { status: 'invited' } })
       created = true
       const { token } = await this.auth.issueInvite(userId)
-      const actor = await this.prisma.user.findUnique({ where: { id: actorId }, select: { displayName: true } })
+      const actor = actorId ? await this.prisma.user.findUnique({ where: { id: actorId }, select: { displayName: true } }) : null
       const mail = await sendStaffInviteEmail(this.prisma, {
         to: email, displayName: inf.nameAr, token,
         roleNamesAr: [ROLE_NAMES_AR[INFLUENCER_ROLE]],
@@ -636,4 +640,43 @@ export class InfluencerService {
       trainerTotal: trainers.length,
     }
   }
+}
+
+/* ═══ كاسيت — تُنشأ مرّةً عند بدء العامل (١٧ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «Influencer page + logo» — كاسيت مؤثّرٌ بكود KASEET وعمولة ٥٪، ورقمِه وبريدِه. وقاعدةُ الإنتاج لا تُبلَغ
+   من هنا، فتُنشأ بنمط الشركاء المزروعين (`applyPartnerLaunch`) ومن **الطريق نفسِه** الذي يضيف منه المديرُ مؤثّرا (`create`):
+   حسابٌ ببريدها ودعوتُه وبريدُ الترحيب، والمؤرشفُ يُردّ، والمدعوُّ تُعاد دعوتُه.
+   · **مرّةً واحدةً بأثره** — بسببه في أثر `influencer.create` بلا فاعل. فإن غيّرها صاحبُ المنصّة أو حذفها بقي ما فعل.
+   · **ولا تُنشأ إن كان كودُها لأحد** — اليومَ أو كان (`influencerCodeWhere`)، فمن أضافها من الشاشة قبلُ لم يُمسّ.
+   · **ومن جاء برابطها إلى بلاك فرايدي قبل أن تُنشأ يُنسب إليها** — `?ch=kaseet` أُرسل قبلها، فمن عبّأ به كُتبت له قناتُه
+     وحدَها. فيُنسب عميلُه وكودُه إليها مرّةً عند إنشائها، بعمولةٍ صفر كما يُنسب من بعدها (`grant-landing.service.ts#apply`). */
+export const KASEET_LAUNCH_REASON = 'قرار صاحب المنصة (17 نوفمبر 2026): كاسيت مؤثر بكود KASEET وعمولة 5%'
+
+/** يُنشئ كاسيت إن لم تُنشأ — ويعيد معرّفَها إن أُنشئت الآن، وإلّا `null` */
+export async function applyInfluencerLaunch(prisma: PrismaClient): Promise<string | null> {
+  const k = KASEET_INFLUENCER
+  for (const code of [k.code, ...k.formerCodes]) {
+    if (await prisma.influencer.findFirst({ where: influencerCodeWhere(code), select: { id: true } })) return null
+  }
+  if ((await prisma.auditEvent.count({ where: { action: 'influencer.create', actorId: null, reason: KASEET_LAUNCH_REASON } })) > 0) return null
+  const made = await new InfluencerService(prisma).create({
+    nameAr: k.nameAr, code: k.code, commissionPercent: k.commissionPercent, email: k.email, phone: k.phone,
+  }, null, { reason: KASEET_LAUNCH_REASON, formerCodes: k.formerCodes })
+  const channel = k.code.toLowerCase()
+  const leads = await prisma.lead.findMany({
+    where: { campaign: BLACK_FRIDAY_GRANT_SLUG, channel, influencerId: null }, select: { id: true },
+  })
+  if (leads.length > 0) {
+    const ids = leads.map((l) => l.id)
+    await prisma.lead.updateMany({ where: { id: { in: ids } }, data: { influencerId: made.id } })
+    const codes = await prisma.grantCode.updateMany({
+      where: { leadId: { in: ids }, influencerId: null }, data: { influencerId: made.id, commissionPercent: 0 },
+    })
+    await recordAudit(prisma, {
+      actorId: null, action: 'influencer.update', entityType: 'influencer', entityId: made.id, reason: KASEET_LAUNCH_REASON,
+      meta: { blackFridayLeads: ids.length, blackFridayCodes: codes.count, channel },
+    })
+  }
+  return made.id
 }

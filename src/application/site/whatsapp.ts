@@ -55,6 +55,13 @@ export const WHATSAPP_SPOTS: WhatsAppSpot[] = [
     labelAr: 'مستشار منحة وجيز',
     whereAr: 'صفحة المنحة · بعد النموذج',
   },
+  /* زرُّ واتساب في صفحة المؤثّر ذي الرأس المشترك (١٧ نوفمبر ٢٠٢٦، `BUILT_IN_INFLUENCER_LOGOS`) — ورسالتُه تنتهي باسمه.
+     وكُتب رقمُه مرّةً بقرار صاحب المنصّة (`INFLUENCER_PAGE_WHATSAPP_SEED`) */
+  {
+    key: 'influencer_page',
+    labelAr: 'تواصل من صفحة المؤثر',
+    whereAr: 'صفحة المؤثر برأسه · وبلاك فرايدي برابطه',
+  },
 ]
 
 export type WhatsAppNumbers = Record<string, string>

@@ -1638,6 +1638,13 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   await applyBlackFridayRaise(prisma)
   /* وكلُّ كودٍ فيها بنسبتها بعدُ — ما تغيّرت نسبتُها تتبعها أكوادُها قبل أيّ بريد (١٧ نوفمبر ٢٠٢٦: «why you don't sync») */
   await syncBlackFridayCodes(prisma)
+  /* و«كاسيت» مؤثّرٌ بكود KASEET وعمولة 5% — مرّةً بأثره من طريق إضافة المدير نفسِه، ورقمُ واتساب صفحتها (١٧ نوفمبر ٢٠٢٦).
+     وبعد دمج بلاك فرايدي — فإيقافُه المؤثّرين مرّةً لا يقع عليها إن جريا في دورةٍ واحدة */
+  const { applyInfluencerLaunch } = await import('../services/influencer.service')
+  /* وما ردّه طريقُ الإضافة (بريدٌ لحسابٍ مؤرشف) لا يوقف تذكيرات المنح — يُقال في السجلّ ويُعاد في الدورة التالية */
+  await applyInfluencerLaunch(prisma).catch((e) => { console.error('[influencer_launch] تعذر إنشاء كاسيت', e) })
+  const { INFLUENCER_PAGE_WHATSAPP_SEED } = await import('../services/integrations.service')
+  await seedGrantAdvisorWhatsApp(prisma, INFLUENCER_PAGE_WHATSAPP_SEED)
   /* وبريدُ من ارتفع كودُه إلى 70% — مرّةً، عصرَ ١٧ نوفمبر (١٦ نوفمبر ٢٠٢٦: «send them tomorrow afternoon») */
   if (!held) await sendBlackFridayUpgradeNotice(prisma, now)
   const seeded = await seedGrantAdvisorWhatsApp(prisma)
