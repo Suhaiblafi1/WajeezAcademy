@@ -633,16 +633,37 @@ export const GRANT_GIFT_AR = { title: 'يحق لك أن تهدي هذه المن
 export function grantAdvisorTextAr(m: {
   name: string; email?: string | null; code?: string | null; courses?: readonly string[]
   recordLink?: string | null; grantNameAr?: string
+  /** من أين جاء — كودُ مؤثّره أو وسمُ رابطه (`advisorSourceOf`) */
+  source?: string | null
 }): string {
   const name = m.name.trim(), email = m.email?.trim() ?? ''
   const who = name ? `مرحبا، أنا ${name}${email ? ` (${email})` : ''}.` : email ? `مرحبا، بريدي ${email}.` : 'مرحبا،'
   const courses = m.courses ?? []
   const refs = [m.code ? `كود منحتي: ${m.code}` : null, m.recordLink ? `ملفي: ${m.recordLink}` : null].filter(Boolean)
-  return [
+  const source = m.source && SOURCE_TAG_RE.test(m.source) ? m.source.toUpperCase() : null
+  const body = [
     `${who}\nسجلت في ${m.grantNameAr ?? MEMBER_GRANT_NAME_AR}، وأريد أن تحدد لي الدورات المناسبة. أرفقت لك سيرتي الذاتية.`,
     ...(courses.length > 0 ? [`الدورات التي اخترتها:\n${courseLinesAr([...courses])}`] : []),
     ...(refs.length > 0 ? [refs.join('\n')] : []),
   ].join('\n\n')
+  return source ? `${source} Code\n${body}` : body
+}
+
+/* ═══ ومصدرُه في سطر الرسالة الأوّل (١٧ نوفمبر ٢٠٢٦) ═══
+   سأل صاحبُ المنصّة: «ماذا لو شخصٌ دخل الرابطَ وسجّل ومن هناك دخل الواتساب؟ هل فيها اسمُ الشريك أو المؤثّر؟»، وقيل له إنّ
+   «ملفّي» يفتح صفَّه بمصدره — فاختار أن يُكتب المصدرُ في الرسالة نفسِها أيضا. وبصيغة رابط `‎/wa?k=` نفسِها: سطرٌ أوّلُ وحدَه
+   «KASEET Code» — قرارُه في اليوم نفسه: «اجعل الشريك ببداية الرسالة بسطر منفصل وضع كلمة كود بجانبه». فيراه المستشارُ
+   أوّلَ ما يفتح المحادثة بلا أن يفتح ملفّا. والمصدرُ كودُ المؤثّر إن جاء من صفحته، وإلّا وسمُ رابطه (`?ch=` ثمّ `utm_source`) في هذه الزيارة، ثمّ في
+   أوّل زيارة — وبلا وسمٍ لا قوسين. */
+const SOURCE_TAG_RE = /^[A-Za-z0-9_.-]{1,40}$/
+
+export function advisorSourceOf(t: {
+  influencer?: string | null
+  page?: { channel?: string; utmSource?: string } | null
+  first?: { channel?: string; utmSource?: string } | null
+}): string | null {
+  const s = t.influencer || t.page?.channel || t.page?.utmSource || t.first?.channel || t.first?.utmSource || null
+  return s && SOURCE_TAG_RE.test(s) ? s.toUpperCase() : null
 }
 
 /** طريقُ ملفّ صاحب المنحة — `/g/<كوده>` يفتح صفَّه في قائمة المنحة للإدارة (`pages/GrantRecordLink.tsx`) */
