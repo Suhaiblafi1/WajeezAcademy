@@ -55,7 +55,7 @@ import { courseDomain } from '../../src/application/catalog/course-domain'
 import { resolveCompletionRules } from '../../src/application/learning/completion-rules'
 import { GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
 import { PARTNER_SLUG_PREFIX } from '../../src/application/commerce/partner-grant'
-import { INFLUENCER_CODE_BAD_AR, influencerGrantPath, influencerLink, influencerPercentOff, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
+import { INFLUENCER_CODE_BAD_AR, influencerClosesAt, influencerGrantPath, influencerLink, influencerPercentOff, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
 import { influencerCodeWhere } from './influencer.service'
 import { shortLinkPath } from '../../src/application/links/short-link'
 import { fmtDate } from '../../src/application/text/format-ar'
@@ -84,7 +84,7 @@ const SHARE_PATH: Partial<Record<CampaignSlug, string>> = { [MEMBER_GRANT_SLUG]:
 /** غرضُ رابط الهديّة القصير — به يُعرف صفُّه فيُعاد ولا يُصنع ثانية */
 const GRANT_SHARE_PURPOSE = 'grant.share'
 /** ما يُقرأ من المؤثّر في النموذج — وخصمُه يُكتب في كوده (`grant.service.ts#issue`) */
-const INFLUENCER_SELECT = { id: true, nameAr: true, code: true, commissionPercent: true, percentOff: true } as const
+const INFLUENCER_SELECT = { id: true, nameAr: true, code: true, commissionPercent: true, percentOff: true, closesAt: true } as const
 
 export class GrantLandingService {
   private prisma: PrismaClient
@@ -148,6 +148,12 @@ export class GrantLandingService {
     const [s, open] = await Promise.all([
       this.grants.settings(now), pageCourses(this.prisma, this.slug, influencerId, now),
     ])
+    /* وصفحةُ المؤثّر بآخر يومه إن كُتب له — يغلب نهايةَ الحملة، وتشغيلُها شرطٌ باقٍ (١٧ نوفمبر ٢٠٢٦، `influencerClosesAt`) */
+    const own = influencerId && isInfluencerGrant(this.slug)
+      ? (await this.prisma.influencer.findUnique({ where: { id: influencerId }, select: { closesAt: true } }))?.closesAt ?? null
+      : null
+    const closesAt = influencerClosesAt(s.closesAt, own)
+    const isOpenNow = own ? s.active && (closesAt === null || closesAt > now) : s.open
     const [summaries, sessions, outcomes] = await Promise.all([
       this.summaries(open.courses.map((c) => c.courseId)), this.sessions(open.courses.map((c) => c.cohortId)),
       this.outcomes(open.courses),
@@ -155,7 +161,7 @@ export class GrantLandingService {
     return {
       /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
       /* و`soldOut`: نفدت أكوادُها والمنحةُ مفتوحة — فمن عبّأ ولم يأخذ كودا يبقى عند سببه، ويعود إلى النموذج حين تُزاد (٢٨ أكتوبر ٢٠٢٦) */
-      campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt, soldOut: s.left === 0 },
+      campaign: { open: isOpenNow, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt, soldOut: s.left === 0 },
       sharePath: SHARE_PATH[this.slug] ? await this.shareLink(SHARE_PATH[this.slug]!) : null,
       termAr: open.termAr,
       openCourses: open.courses.map((c) => ({
@@ -326,7 +332,7 @@ export class GrantLandingService {
     else try {
       const g = await this.grants.issue({
         leadId: lead.id,
-        influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent, percentOff: credited.percentOff } : null,
+        influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent, percentOff: credited.percentOff, closesAt: credited.closesAt } : null,
       }, now)
       const to = lead.email ?? email
       await this.mailCode(to, lead.fullName, g.code, g.percentOff, g.closesAt, credited?.code ?? null)
@@ -367,7 +373,7 @@ export class GrantLandingService {
             coupon: {
               select: {
                 id: true, code: true, percentOff: true, usedCount: true, maxUses: true,
-                grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } } } },
+                grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } }, influencer: { select: { closesAt: true } } } },
               },
             },
           },

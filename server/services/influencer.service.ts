@@ -62,11 +62,7 @@ import { enqueueMail } from './outbox.service'
 import { fmtMoney } from '../../src/application/text/format-ar'
 import { PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS } from '../auth/permissions'
 import { BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, INFLUENCER_GRANT_SLUGS } from '../../src/application/commerce/grant'
-import {
-  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_DISCOUNT_BAD_AR, OWN_PURCHASE_AR, buyerNameAr,
-  commissionStateAr, influencerCommission, influencerLink, influencerPercentOff, normalizeInfluencerCode,
-  INFLUENCER_PHONE_BAD_AR, cleanInfluencerPhone,
-} from '../../src/application/commerce/influencer'
+import { INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_DISCOUNT_BAD_AR, OWN_PURCHASE_AR, buyerNameAr, commissionStateAr, influencerCommission, influencerLink, influencerPercentOff, normalizeInfluencerCode, INFLUENCER_PHONE_BAD_AR, cleanInfluencerPhone, influencerClosesAt } from '../../src/application/commerce/influencer'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 
@@ -95,6 +91,8 @@ export interface InfluencerUpdate {
   commissionPercent?: number
   /** خصمُ متابعيه — و`null` يعيده إلى نسبة الحملة */
   percentOff?: number | null
+  /** آخرُ يومٍ لمنحة متابعيه (نهايةُ اليوم: أوّلُ اليوم التالي بتوقيت عمّان) — و`null` يعيده إلى نهاية الحملة (١٧ نوفمبر ٢٠٢٦) */
+  closesAt?: Date | null
   /** كودُه الجديد — والقديمُ ينتقل إلى أكواده السابقة */
   code?: string
   /** رقمُه — و`null` أو الفارغُ يمحوه */
@@ -209,7 +207,7 @@ export class InfluencerService {
       const st = await this.statement(r.id)
       return {
         id: r.id, nameAr: r.nameAr, code: r.code, formerCodes: r.formerCodes, commissionPercent: r.commissionPercent,
-        percentOff: r.percentOff, active: r.active, phone: r.phone,
+        percentOff: r.percentOff, closesAt: r.closesAt?.toISOString() ?? null, active: r.active, phone: r.phone,
         link: influencerLink(site, r.code),
         /* ورابطاه في حملتَي المؤثّرين — منحةِ المؤثّرين و«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) */
         links: { influencer: influencerLink(site, r.code), blackFriday: influencerLink(site, r.code, BLACK_FRIDAY_GRANT_SLUG) },
@@ -287,7 +285,7 @@ export class InfluencerService {
   async update(id: string, input: InfluencerUpdate, actorId: string) {
     const exists = await this.prisma.influencer.findUnique({ where: { id }, select: { id: true } })
     if (!exists) throw new AuthError('not_found', 'المؤثر غير موجود', 404)
-    const data: { nameAr?: string; commissionPercent?: number; percentOff?: number | null; phone?: string | null; active?: boolean } = {}
+    const data: { nameAr?: string; commissionPercent?: number; percentOff?: number | null; closesAt?: Date | null; phone?: string | null; active?: boolean } = {}
     if (input.nameAr !== undefined) {
       const n = input.nameAr.trim()
       if (n.length < 2) throw new AuthError('bad_name', 'اكتب اسم المؤثر', 400)
@@ -295,6 +293,7 @@ export class InfluencerService {
     }
     if (input.commissionPercent !== undefined) { assertPercent(input.commissionPercent); data.commissionPercent = input.commissionPercent }
     if (input.percentOff !== undefined) { assertDiscount(input.percentOff); data.percentOff = input.percentOff }
+    if (input.closesAt !== undefined) data.closesAt = input.closesAt
     if (input.phone !== undefined) data.phone = phoneOf(input.phone)
     if (input.active !== undefined) data.active = input.active
     let code: string | null = null
@@ -324,6 +323,13 @@ export class InfluencerService {
       await recordAudit(this.prisma, {
         actorId, action: 'influencer.discount.set', entityType: 'influencer', entityId: id,
         before: { percentOff: before.percentOff }, after: { percentOff: after.percentOff },
+      })
+    }
+    /* وآخرُ يومِ متابعيه بأثرٍ يسمّي من غيّره (١٧ نوفمبر ٢٠٢٦) */
+    if ((after.closesAt?.getTime() ?? null) !== (before.closesAt?.getTime() ?? null)) {
+      await recordAudit(this.prisma, {
+        actorId, action: 'influencer.closes.set', entityType: 'influencer', entityId: id,
+        before: { closesAt: before.closesAt?.toISOString() ?? null }, after: { closesAt: after.closesAt?.toISOString() ?? null },
       })
     }
     if (after.code !== before.code) {
@@ -591,7 +597,12 @@ export class InfluencerService {
       link: influencerLink(publicSiteUrl(), inf.code),
       photoUrl: key ? `/api/v1/avatars/${key}` : null,
       /* والنسبةُ ما يأخذه متابعُه هو — خصمُه إن كُتب له (١٥ نوفمبر ٢٠٢٦) */
-      grant: { nameAr: s.nameAr, open: s.open, percentOff: influencerPercentOff(s.percentOff, inf.percentOff), maxCourses: s.maxCourses, closesAt: s.closesAt },
+      /* وآخرُ يومه إن كُتب له — يغلب نهايةَ الحملة لمتابعيه (١٧ نوفمبر ٢٠٢٦، `influencerClosesAt`) */
+      grant: {
+        nameAr: s.nameAr, percentOff: influencerPercentOff(s.percentOff, inf.percentOff), maxCourses: s.maxCourses,
+        closesAt: influencerClosesAt(s.closesAt, inf.closesAt),
+        open: inf.closesAt ? s.active && inf.closesAt > new Date() : s.open,
+      },
       /* و«بلاك فرايدي وجيز» برابطه هو — حين تُشغَّل */
       blackFriday: {
         nameAr: bf.nameAr, open: bf.open, percentOff: influencerPercentOff(bf.percentOff, inf.percentOff), maxCourses: bf.maxCourses,

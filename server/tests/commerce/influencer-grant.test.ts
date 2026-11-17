@@ -445,3 +445,52 @@ describe('⑫ مدربو التصاميم بلا صاحب المنصة', () => {
   })
 })
 
+
+/* «الإعدادات للكلّ.. أريد فقط لشات تري» (صاحب المنصّة، ١٧ نوفمبر ٢٠٢٦): لكلّ مؤثّرٍ آخرُ يومٍ لمتابعيه يغلب نهايةَ الحملة —
+   به تُفتح صفحتُه وتُعطى أكوادُه وتُستعمل عند الدفع، ولو انتهت الحملة لغيره. والتشغيلُ شرطٌ باقٍ (`influencerClosesAt`) */
+describe('⑪ آخر يوم لكل مؤثر', () => {
+  it('⚠️ انتهت المنحة: مؤثر بيومه تفتح صفحته ويعطى ويدفع بكوده حتى يومه، وغيره مغلق — وبأثر يسمي من غيره', async () => {
+    const DAY = 86_400_000
+    const now = new Date()
+    const own = await addInfluencer('OWNEND')
+    const other = await addInfluencer('NOEND')
+    await grant.update({ active: true, closesAt: new Date(now.getTime() - DAY) }, ownerId)
+    try {
+      expect((await landing.view(now, own)).campaign.open, 'فتحت صفحته قبل يومه').toBe(false)
+      expect((await landing.apply(person({ influencerCode: 'OWNEND' }))).grant, 'أعطي كود والمنحة منتهية').toBeNull()
+
+      const until = new Date(now.getTime() + 3 * DAY)
+      await influencers.update(own, { closesAt: until }, ownerId)
+      expect(await prisma.auditEvent.count({ where: { action: 'influencer.closes.set', entityId: own, actorId: ownerId } })).toBe(1)
+
+      const page = await landing.view(now, own)
+      expect(page.campaign.open, 'لم تفتح صفحته بيومه').toBe(true)
+      expect(page.campaign.closesAt?.toISOString()).toBe(until.toISOString())
+      expect((await landing.view(now, other)).campaign.open, 'فتح يومه صفحة غيره').toBe(false)
+      expect((await landing.apply(person({ influencerCode: 'NOEND' }))).grant, 'أعطي غيره كودا').toBeNull()
+
+      const out = await landing.apply(person({ influencerCode: 'OWNEND' }))
+      const code = out.grant?.code
+      expect(code, 'لم يعط متابعه كودا بيومه').toBeTruthy()
+      const buyer = await learner()
+      const orderId = await pay(buyer, [await openCohort(200)], code!)
+      expect((await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).status, 'لم يدفع بكوده').toBe('paid')
+
+      /* وبعد يومه يغلق كودُه كما تغلق الحملة */
+      const coupon = await prisma.coupon.findUniqueOrThrow({
+        where: { code: code! },
+        select: { id: true, usedCount: true, maxUses: true, grantCode: { select: {
+          campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } }, influencer: { select: { closesAt: true } },
+        } } },
+      })
+      await expect(grant.assertUsable(coupon, null, new Date(until.getTime() + 1000))).rejects.toMatchObject({ code: 'grant_closed' })
+      await expect(grant.assertUsable(coupon, null, now)).resolves.toBeUndefined()
+
+      /* وفارغُه يعيده إلى نهاية الحملة */
+      await influencers.update(own, { closesAt: null }, ownerId)
+      expect((await landing.view(now, own)).campaign.open).toBe(false)
+    } finally {
+      await grant.update({ closesAt: null }, ownerId)
+    }
+  })
+})

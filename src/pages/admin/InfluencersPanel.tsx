@@ -31,7 +31,7 @@ import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
 import { INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_KEEPS_AR, INFLUENCER_DISCOUNT_BAD_AR, INFLUENCER_PHONE_BAD_AR, cleanInfluencerPhone, normalizeInfluencerCode } from "@/application/commerce/influencer";
-import { BLACK_FRIDAY_GRANT_NAME_AR, INFLUENCER_GRANT_NAME_AR } from "@/application/commerce/grant";
+import { INFLUENCER_GRANT_NAME_AR, grantClosesAt, grantLastDay } from "@/application/commerce/grant";
 import { staffControlCls } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -44,6 +44,8 @@ interface Influencer {
   id: string; nameAr: string; code: string; commissionPercent: number; active: boolean; link: string;
   /** خصمُ متابعيه — وفارغٌ بنسبة الحملة */
   percentOff: number | null;
+  /** آخرُ يومٍ لمنحة متابعيه — وفارغٌ بنهاية الحملة (١٧ نوفمبر ٢٠٢٦) */
+  closesAt: string | null;
   /** أكوادُه السابقة — روابطُها تعمل */
   formerCodes: string[];
   /** رابطاه في حملتَي المؤثّرين */
@@ -174,13 +176,14 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
   const [st, setSt] = useState<Statement | null>(null);
   const [commission, setCommission] = useState(String(x.commissionPercent));
   const [discount, setDiscount] = useState(x.percentOff === null ? "" : String(x.percentOff));
+  const [lastDay, setLastDay] = useState(x.closesAt ? grantLastDay(x.closesAt) : "");
   const [newCode, setNewCode] = useState(x.code);
   const [name, setName] = useState(x.nameAr);
   const [phone, setPhone] = useState(x.phone ?? "");
   const [email, setEmail] = useState(x.email ?? "");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [confirm, setConfirm] = useState<null | "name" | "phone" | "email" | "commission" | "discount" | "code" | "active" | "payout">(null);
+  const [confirm, setConfirm] = useState<null | "name" | "phone" | "email" | "commission" | "discount" | "closes" | "code" | "active" | "payout">(null);
   /* ما قاله الخادمُ حين زاد المبلغُ على رصيده — وتحته الخياران: سلفةٌ أو تعديلُ المبلغ */
   const [over, setOver] = useState<string | null>(null);
   const amountRef = useRef<HTMLInputElement>(null);
@@ -232,12 +235,12 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
             {x.nameAr} <bdi dir="ltr" className="text-muted-foreground">{x.code}</bdi>{" "}
             {!x.active && <Chip tone="warn">موقوف</Chip>}
           </p>
-          {/* رابطاه في حملتَي المؤثّرين (١٥ نوفمبر ٢٠٢٦) */}
+          {/* رابطُه في منحة المؤثّرين. ورابطُ بلاك فرايدي خرج من هنا (١٧ نوفمبر ٢٠٢٦): صارت منحةً للجميع لا تقرأ كودَ مؤثّر
+              (`grant-merge.service.ts`)، فكان يوحي بأنّه يُحسب له وهو لا يُحسب */}
           <p className="mt-0.5 truncate text-read text-muted-foreground">{INFLUENCER_GRANT_NAME_AR}: <bdi dir="ltr">{x.links.influencer}</bdi></p>
-          <p className="mt-0.5 truncate text-read text-muted-foreground">{BLACK_FRIDAY_GRANT_NAME_AR}: <bdi dir="ltr">{x.links.blackFriday}</bdi></p>
           <p className="mt-0.5 text-read text-muted-foreground">
             {x.phone && <>رقمه <bdi dir="ltr">{x.phone}</bdi> · </>}
-            عمولته {x.commissionPercent}% · خصم متابعيه {x.percentOff === null ? "نسبة المنحة" : `${x.percentOff}%`} · {x.email ? `حسابه ${x.email}${x.accountStatus === "invited" ? " (لم يفعله بعد)" : ""}` : "بلا حساب"}
+            عمولته {x.commissionPercent}% · خصم متابعيه {x.percentOff === null ? "نسبة المنحة" : `${x.percentOff}%`} · آخر يوم {x.closesAt ? fmtDate(new Date(new Date(x.closesAt).getTime() - 1)) : "نهاية المنحة"} · {x.email ? `حسابه ${x.email}${x.accountStatus === "invited" ? " (لم يفعله بعد)" : ""}` : "بلا حساب"}
             {x.formerCodes.length > 0 && <> · كان كوده <bdi dir="ltr">{x.formerCodes.join("، ")}</bdi></>}
           </p>
         </div>
@@ -293,6 +296,15 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
             </label>
             <Button size="sm" disabled={busy || discountNum === undefined || discountNum === x.percentOff} onClick={() => setConfirm("discount")}>احفظ الخصم</Button>
             <p className="w-full text-read text-muted-foreground">فارغ يعني نسبة المنحة. والخصم الجديد على من يأخذ كودا بعد الحفظ فقط.</p>
+          </div>
+
+          {/* وآخرُ يومٍ لمتابعيه — يغلب نهايةَ المنحة له وحدَه (١٧ نوفمبر ٢٠٢٦، `influencerClosesAt`) */}
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1 text-read">آخر يوم لمتابعيه
+              <input type="date" value={lastDay} onChange={(e) => setLastDay(e.target.value)} className={staffControlCls} />
+            </label>
+            <Button size="sm" disabled={busy || (lastDay || null) === (x.closesAt ? grantLastDay(x.closesAt) : null)} onClick={() => setConfirm("closes")}>احفظ آخر يوم</Button>
+            <p className="w-full text-read text-muted-foreground">فارغ يعني نهاية المنحة. وبه وحده تفتح صفحته ويأخذ متابعوه أكوادهم ويدفعون بها، ولو انتهت المنحة لغيره.</p>
           </div>
 
           {/* وكودُه — والرابطُ القديمُ يبقى يعمل */}
@@ -404,6 +416,15 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
         <ConfirmAction tone="default" titleAr="تغيير خصم متابعي المؤثر" confirmLabelAr="احفظ" busy={busy} onCancel={() => setConfirm(null)}
           onConfirm={() => void run(() => apiPatch(`/api/admin/influencers/${x.id}`, { percentOff: discountNum ?? null }), "حفظ الخصم", "تعذر حفظ الخصم")}>
           <p>{discountNum === null || discountNum === undefined ? "يأخذ متابعوه نسبة المنحة" : `يأخذ متابعوه ${discountNum}%`} على أكواد المنحة التي تعطى بكوده بعد الحفظ. وما أعطي قبله يبقى بخصمه.</p>
+        </ConfirmAction>
+      )}
+      {confirm === "closes" && (
+        <ConfirmAction tone="default" titleAr="آخر يوم لمتابعي المؤثر" confirmLabelAr="احفظ" busy={busy} onCancel={() => setConfirm(null)}
+          onConfirm={() => void run(() => apiPatch(`/api/admin/influencers/${x.id}`, { closesAt: lastDay ? grantClosesAt(lastDay) : null }), "حفظ آخر يوم", "تعذر حفظ آخر يوم")}>
+          <p>{lastDay
+            ? `تبقى صفحته مفتوحة حتى آخر يوم ${fmtDate(new Date(`${lastDay}T00:00:00`))}: يأخذ متابعوه أكوادهم ويدفعون بها حتى نهايته، ولو انتهت المنحة لغيره.`
+            : "تتبع صفحته نهاية المنحة كغيره."}</p>
+          <p className="mt-2">ويبقى شرطا أن تكون المنحة مشغلة.</p>
         </ConfirmAction>
       )}
       {confirm === "code" && (

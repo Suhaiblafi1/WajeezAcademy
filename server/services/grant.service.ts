@@ -45,7 +45,7 @@ import {
   BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, isInfluencerGrant, type CampaignSlug,
 } from '../../src/application/commerce/grant'
 import { isPartnerCampaign, PARTNER_NOT_FOUND_AR, partnerShare } from '../../src/application/commerce/partner-grant'
-import { influencerCommission, influencerPercentOff } from '../../src/application/commerce/influencer'
+import { influencerCommission, influencerPercentOff, withInfluencerEnd } from '../../src/application/commerce/influencer'
 
 /** ما يحسب منحةً مستعملة: طلبٌ ينتظر الدفعَ بها أو دُفع — والمردودُ كلُّه يُعيدها */
 export const GRANT_HOLDS = ['pending_payment', 'paid', 'partially_refunded']
@@ -66,7 +66,11 @@ export interface GrantCoupon {
   id: string
   usedCount: number
   maxUses: number | null
-  grantCode: { campaign: { id: string; active: boolean; closesAt: Date | null; maxCourses: number } } | null
+  grantCode: {
+    campaign: { id: string; active: boolean; closesAt: Date | null; maxCourses: number }
+    /** مؤثّرُه بآخر يومه إن كُتب له — يغلب نهايةَ الحملة (١٧ نوفمبر ٢٠٢٦، `withInfluencerEnd`) */
+    influencer?: { closesAt: Date | null } | null
+  } | null
 }
 
 const isOpen = (c: { active: boolean; closesAt: Date | null }, now: Date) => c.active && (c.closesAt === null || c.closesAt > now)
@@ -160,10 +164,12 @@ export class GrantService {
       (`Influencer.percentOff`) يحمل خصمَه لا نسبةَ الحملة — ويُكتب في كوبونه يومَ يُعطى كالعمولة، فتغييرُه يقع على ما بعده.
       وفي غير حملات المؤثّرين لا يُقرأ. */
   async issue(
-    input: { leadId?: string | null; influencer?: { id: string; commissionPercent: number; percentOff?: number | null } | null } = {},
+    input: { leadId?: string | null; influencer?: { id: string; commissionPercent: number; percentOff?: number | null; closesAt?: Date | null } | null } = {},
     now = new Date(),
   ): Promise<{ code: string; percentOff: number; closesAt: Date | null; reused: boolean }> {
-    const c = await this.campaign()
+    /* وفي حملة المؤثّرين: آخرُ يومِ المؤثّر يغلب نهايتَها لمتابعيه (١٧ نوفمبر ٢٠٢٦، `withInfluencerEnd`) */
+    const own = isInfluencerGrant(this.slug) ? input.influencer?.closesAt ?? null : null
+    const c = withInfluencerEnd(await this.campaign(), own ? { closesAt: own } : null)
     for (let attempt = 0; attempt < 3; attempt += 1) {
       if (input.leadId) {
         const had = await this.prisma.grantCode.findUnique({
@@ -181,7 +187,7 @@ export class GrantService {
           const rows = await tx.$queryRaw<{ percentOff: number; kind: string; partnerSharePercent: number | null }[]>`
             UPDATE "GrantCampaign" SET "issuedCount" = "issuedCount" + 1
             WHERE "id" = ${c.id}::uuid AND "active" = true
-              AND ("closesAt" IS NULL OR "closesAt" > ${now})
+              AND (${c.closesAt}::timestamp IS NULL OR ${c.closesAt}::timestamp > ${now})
               AND ("maxCodes" IS NULL OR "issuedCount" < "maxCodes")
             RETURNING "percentOff", "kind", "partnerSharePercent"`
           if (rows.length === 0) {
@@ -189,8 +195,8 @@ export class GrantService {
               ? new AuthError('grant_sold_out', GRANT_SOLD_OUT_AR, 409)
               : new AuthError('grant_closed', GRANT_CLOSED_AR, 409)
           }
-          const own = isInfluencerGrant(this.slug) ? input.influencer?.percentOff ?? null : null
-          const percentOff = influencerPercentOff(rows[0].percentOff, own)
+          const ownPct = isInfluencerGrant(this.slug) ? input.influencer?.percentOff ?? null : null
+          const percentOff = influencerPercentOff(rows[0].percentOff, ownPct)
           const code = `${GRANT_CODE_PREFIX}${randomUnambiguousCode(8)}`
           /* بلا حدّ استعمال — حدُّه عددُ دوراته (`coursesLeft`) */
           const coupon = await tx.coupon.create({ data: { code, percentOff, maxUses: null, active: true } })
@@ -206,7 +212,7 @@ export class GrantService {
             actorId: null, action: 'coupon.grant_issue', entityType: 'grant_campaign', entityId: c.id,
             meta: {
               grantCodeId: row.id, code, percentOff, leadId: input.leadId ?? null, influencerId: input.influencer?.id ?? null,
-              ...(own !== null ? { campaignPercentOff: rows[0].percentOff } : {}),
+              ...(ownPct !== null ? { campaignPercentOff: rows[0].percentOff } : {}),
             },
           })
           return { code, percentOff, closesAt: c.closesAt, reused: false }
@@ -223,7 +229,7 @@ export class GrantService {
   async assertUsable(coupon: GrantCoupon, userId: string | null, now = new Date()): Promise<void> {
     const campaign = coupon.grantCode?.campaign
     if (!campaign) return
-    if (!isOpen(campaign, now)) throw new AuthError('grant_closed', GRANT_CLOSED_AR, 409)
+    if (!isOpen(withInfluencerEnd(campaign, coupon.grantCode?.influencer), now)) throw new AuthError('grant_closed', GRANT_CLOSED_AR, 409)
     if ((await this.coursesLeft(coupon)) <= 0) throw new AuthError('grant_used', grantUsedUpAr(campaign.maxCourses), 409)
     /* على الحملتين معا — من اشترى بمنحةٍ لا يأخذ فوقها كودَ منحةٍ آخر، وكودُه نفسُه يعود إليه حتى حدّه.
        وزائرٌ بلا حساب (معاينةُ رابط الشراء) لا مشترياتِ له تُعدّ — فيُسأل عنه بعد دخوله */
@@ -344,7 +350,10 @@ export interface LearnerGrant {
 
 const LEARNER_COUPON = {
   id: true, code: true, percentOff: true, usedCount: true, maxUses: true,
-  grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true, nameAr: true } } } },
+  grantCode: { select: {
+    campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true, nameAr: true } },
+    influencer: { select: { closesAt: true } },
+  } },
 } as const
 
 export async function learnerGrant(prisma: PrismaClient, userId: string, now = new Date()): Promise<LearnerGrant> {
@@ -371,7 +380,7 @@ export async function learnerGrant(prisma: PrismaClient, userId: string, now = n
     for (const l of leads) {
       const c = l.grantCode?.coupon
       const camp = c?.grantCode?.campaign
-      if (!c || !camp || !isOpen(camp, now)) continue
+      if (!c || !camp || !isOpen(withInfluencerEnd(camp, c.grantCode?.influencer), now)) continue
       if ((await new GrantService(prisma).coursesLeft(c)) <= 0) continue
       if (!lead || (c.percentOff ?? 0) > (lead.grantCode?.coupon?.percentOff ?? 0)) lead = l
     }
@@ -384,7 +393,8 @@ export async function learnerGrant(prisma: PrismaClient, userId: string, now = n
       }
     }
   }
-  const campaign = coupon?.grantCode?.campaign
+  const found = coupon?.grantCode?.campaign
+  const campaign = found ? withInfluencerEnd(found, coupon?.grantCode?.influencer) : undefined
   if (!coupon || !campaign || !isOpen(campaign, now)) return { code: null }
   const left = await new GrantService(prisma).coursesLeft(coupon)
   if (left <= 0) return { code: null }
@@ -400,7 +410,8 @@ export async function grantLeftForCoupon(
   prisma: PrismaClient, couponId: string, now = new Date(),
 ): Promise<{ left: number; percentOff: number; closesAt: Date | null } | null> {
   const coupon = await prisma.coupon.findUnique({ where: { id: couponId }, select: LEARNER_COUPON })
-  const campaign = coupon?.grantCode?.campaign
+  const found = coupon?.grantCode?.campaign
+  const campaign = found ? withInfluencerEnd(found, coupon?.grantCode?.influencer) : undefined
   if (!coupon || !campaign || !isOpen(campaign, now)) return null
   const left = await new GrantService(prisma).coursesLeft(coupon)
   return left > 0 ? { left, percentOff: coupon.percentOff ?? 0, closesAt: campaign.closesAt } : null
