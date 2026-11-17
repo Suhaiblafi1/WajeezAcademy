@@ -37,6 +37,7 @@ import { staffControlCls, StaffField } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 import { fmtDateAr } from "@/utils/format";
 import ShareKit from "@/components/trainer/ShareKit";
+import BlackFridayKit from "@/components/trainer/BlackFridayKit";
 import { previewFaceOf, previewLinksOf, syncLinkPreviews } from "@/components/trainer/link-preview";
 import { bestCode } from "@/application/trainer/share-kit";
 import { VIA_AR } from "@/application/links/share-via";
@@ -608,6 +609,9 @@ export default function Referral() {
 
       {referral && (
         <>
+          {/* ═══ وبلاك فرايدي فوقها ما دامت المنحةُ مفتوحة (١٧ نوفمبر ٢٠٢٦، `bf-kit.ts`) ═══
+              «المطلوب منكم نشرُها عبر صفحاتكم بالرابط المخصّص… وتجدون التصميمَ والنصوصَ في صفحة التسويق الخاصّة بكم» */}
+          <BlackFridayKit refCode={referral.code} name={kit?.name ?? null} />
           {/* ═══ «صمّم منشورك» أوّلا، ومفتوحا للجميع (٢٦ أكتوبر ٢٠٢٦) ═══
               قال صاحبُ المنصّة: «صمّم منشورك هو الأهمّ، اتركها مفتوحة للجميع». فكانت زرّا يُفتح في لوحةٍ ثالثة،
               وصارت أوّلَ ما في الصفحة مفتوحةً بلا نقرة — بدوراته كلِّها ورابطه العامّ، وكاروسيلٌ بشريحةٍ لكلّ دورة.
