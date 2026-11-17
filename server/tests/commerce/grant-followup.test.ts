@@ -26,6 +26,7 @@ import { INFLUENCER_GRANT_SLUG, grantClosesAt } from '../../../src/application/c
 import { shortCourseTitleAr } from '../../../src/application/text/course-lines'
 import { fmtDateLong } from '../../../src/application/text/format-ar'
 import { runJob } from '../../worker/jobs'
+import { grantMailHold, setGrantMailHold } from '../../services/grant-mail-hold.service'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
@@ -74,6 +75,8 @@ beforeAll(async () => {
   await makeAdvisor(prisma, auth, adv)
   pool = (await prisma.course.findMany({ where: { status: 'published' }, select: { id: true }, orderBy: { id: 'asc' } })).map((c) => c.id)
   await new GrantService(prisma).update({ active: true, percentOff: 60, maxCodes: null, maxCourses: 4, closesAt: null }, ownerId)
+  /* بريدُ الحملات ممسوكٌ حتى يأمر صاحبُ المنصّة (١٧ نوفمبر ٢٠٢٦) — وهنا يُطلَق لتُختبر مراحلُه، وإمساكُه في ⑤ */
+  await setGrantMailHold(prisma, false, ownerId)
 }, 240_000)
 
 describe('① القائمة تقول ما فعل كل واحد', () => {
@@ -260,6 +263,26 @@ describe('⑤ تذكير قبل انتهاء المنحة', () => {
     const idle = await member()
     await runJob(prisma, 'grant_reminders', at(14.9))
     expect(await mails(idle.email)).toHaveLength(1)
+  })
+
+  /* «don't let the system send any email until i say we are done with everything .. then i order to send!»
+     (صاحب المنصّة، ١٧ نوفمبر ٢٠٢٦) — والتذكيرُ الحالُّ لا يُكتب له «ذُكِّر»، فيخرج حين يُطلَق */
+  it('⚠️ وبريد الحملات ممسوك لا يخرج حتى يأمر صاحب المنصة — ثم يخرج بمرحلته، ومن أطلقه مكتوب', async () => {
+    await mailChannel(true)
+    await setGrantMailHold(prisma, true, ownerId)
+    try {
+      const idle = await member()
+      await runJob(prisma, 'grant_reminders', at(14.9))
+      expect(await mails(idle.email), 'خرج البريد وهو ممسوك').toHaveLength(0)
+      expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_reminder', entityId: idle.ref } }), 'كتب «ذكّر» وهو ممسوك').toBe(0)
+      const released = await setGrantMailHold(prisma, false, ownerId)
+      expect(released.held).toBe(false)
+      expect(released.changedBy, 'لا يقول من أطلقه').toBe('صاحب المنصة')
+      await runJob(prisma, 'grant_reminders', at(14.9))
+      expect(await mails(idle.email), 'لم يخرج بعد الإطلاق').toHaveLength(1)
+    } finally {
+      if ((await grantMailHold(prisma)).held) await setGrantMailHold(prisma, false, ownerId)
+    }
   })
 })
 

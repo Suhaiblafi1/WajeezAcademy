@@ -36,6 +36,7 @@ import GrantRegistrants from "./GrantRegistrants";
 import InfluencersPanel from "./InfluencersPanel";
 import GrantSwitcher from "./GrantSwitcher";
 import GrantMarginCheck from "./GrantMarginCheck";
+import GrantMailHold from "./GrantMailHold";
 import type { GrantVariant } from "./grant-screens";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -131,6 +132,8 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
     <AdminLayout title={nameAr}>
       {/* المنحُ الثلاثُ وروابطُها العامّة — في رأس الصفحة دائما، لا ألسنةٌ في شريط «المال» (`GrantSwitcher`) */}
       <GrantSwitcher current={variant} />
+      {/* وبريدُ الحملات ممسوكٌ حتى يأمر صاحبُ المنصّة (١٧ نوفمبر ٢٠٢٦، `GrantMailHold`) */}
+      <GrantMailHold />
       <Card className="mt-6">
         <p className="text-read font-bold">
           {s.open ? "المنحة مشغلة" : s.active ? "المنحة انتهت" : "المنحة موقوفة"}

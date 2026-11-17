@@ -17,6 +17,7 @@ import { GRANT_KINDS, GRANT_KIND_SLUG, OPEN_GRANT_SLUG } from '../../../src/appl
 import { GrantCourseChoiceService, campaignScope } from '../../services/grant-scope.service'
 import { marginOptions, marginsFor } from '../../services/grant-margins.service'
 import { AuthError } from '../../services/auth.service'
+import { grantMailHold, setGrantMailHold } from '../../services/grant-mail-hold.service'
 
 const settingsBody = z.object({
   percentOff: z.number().int().min(1).max(100).optional(),
@@ -42,6 +43,21 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
   }, async (req) => {
     const body = settingsBody.parse(req.body ?? {})
     return grants.update(body, req.auth!.userId)
+  })
+
+  /* ═══ بريدُ الحملات ممسوكٌ حتى يأمر صاحبُ المنصّة (١٧ نوفمبر ٢٠٢٦، `grant-mail-hold.service.ts`) ═══
+     «then i order to send» — فالإطلاقُ والإمساكُ بصلاحيّة إعدادات المنحة، والأثرُ يسمّي من فعل */
+  app.get('/api/admin/grants/mail-hold', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'هل بريد حملات المنح ممسوك، ومن غيره آخر مرة' },
+  }, async () => grantMailHold(prisma))
+
+  app.put('/api/admin/grants/mail-hold', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'إطلاق بريد حملات المنح أو إمساكه' },
+  }, async (req) => {
+    const { held } = z.object({ held: z.boolean() }).parse(req.body ?? {})
+    return setGrantMailHold(prisma, held, req.auth!.userId)
   })
 
   /* ═══ «فحص الهامش» لأيّ منحة — يُختار فوق جدوله (١٦ نوفمبر ٢٠٢٦، `grant-margins.service.ts`) ═══
