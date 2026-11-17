@@ -394,7 +394,7 @@ describe('⑥ الحملات الأربع كما كانت، والجامعة ا�
     expect((await inject('DELETE', `/api/admin/partners/${meu.id}/logo`, boss)).statusCode).toBe(200)
     expect((await inject('GET', '/api/public/grant/p/meu')).json().partner.logoUrl).toBe('/partners/meu.svg')
 
-    /* والهاشميّةُ وغيرُها بلا شعارٍ مشحون — كما كانت */
+    /* وشريكٌ بلا شعارٍ مشحون — كما كان (والهاشميّةُ صار لها شعارٌ مشحونٌ في ١٧ نوفمبر) */
     const other = await partner('nologo')
     expect(other).toMatchObject({ hasLogo: false, builtInLogo: null })
     expect((await inject('GET', '/api/public/grant/p/nologo')).json().partner.logoUrl).toBeNull()

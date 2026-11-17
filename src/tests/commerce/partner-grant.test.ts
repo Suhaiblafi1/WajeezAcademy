@@ -111,8 +111,12 @@ describe('⑤ جامعة الشرق الأوسط وشعارها مع الموق�
   it('⚠️ بخمسين على أربع دورات ونطاقها، وشعارها ملف في public صور لا شيفرة', () => {
     expect(MEU_PARTNER).toMatchObject({ slug: 'meu', nameAr: 'جامعة الشرق الأوسط', nameEn: 'Middle East University', type: 'university', domains: ['meu.edu.jo'], percentOff: 50, maxCourses: 4 })
     expect(builtInPartnerLogo('meu')).toBe('/partners/meu.svg')
-    expect(builtInPartnerLogo('hu'), 'شعار مشحون لم يرسل').toBeNull()
-    for (const path of Object.values(BUILT_IN_PARTNER_LOGOS)) {
+    /* والهاشميةُ صار لها شعارٌ مع الموقع (١٧ نوفمبر ٢٠٢٦) — PNG بتوقيعه، لا SVG */
+    expect(builtInPartnerLogo('hu')).toBe('/partners/hu.png')
+    const png = readFileSync(join(process.cwd(), 'public/partners/hu.png'))
+    expect(png.subarray(0, 8).toString('hex'), 'ليس PNG').toBe('89504e470d0a1a0a')
+    expect(png.length, 'الشعار أثقل من ١٠٠ ك.ب').toBeLessThan(100_000)
+    for (const path of Object.values(BUILT_IN_PARTNER_LOGOS).filter((p) => p.endsWith('.svg'))) {
       const svg = read(`public${path}`)
       expect(svg.startsWith('<svg'), path).toBe(true)
       expect(svg, `${path} فيه شيفرة أو رابط`).not.toMatch(/<script|<foreignObject|<image|\son[a-z]+=|javascript:|href=|@import|url\(/i)
