@@ -242,20 +242,26 @@ describe('بلاك فرايدي وجيز ومؤثروها', () => {
     expect(GRANT.BLACK_FRIDAY_GRANT_DEFAULTS).toEqual({ percentOff: 70, maxCodes: 1000, maxCourses: 4 })
   })
 
-  it('⚠️ لكل مؤثر رابطاه وخصمه وكوده — والكود بسطر يقول إن الرابط القديم يعمل، والخصم على ما بعد الحفظ', () => {
+  it('⚠️ لكل مؤثر رابطه وخصمه وآخر يومه وكوده — والكود بسطر يقول إن الرابط القديم يعمل، والخصم على ما بعد الحفظ', () => {
     expect(PANEL).toMatch(/<bdi dir="ltr">\{x\.links\.influencer\}<\/bdi>/)
-    expect(PANEL).toMatch(/<bdi dir="ltr">\{x\.links\.blackFriday\}<\/bdi>/)
+    /* ورابطُ «بلاك فرايدي» خرج من صفّه (١٧ نوفمبر ٢٠٢٦): صارت منحةً للجميع لا تقرأ كودَ مؤثّر (١٦ نوفمبر ٢٠٢٦، `grant-merge.service.ts`)،
+       فكان يوحي بأنّه يُحسب له وهو لا يُحسب */
+    expect(PANEL, 'عاد رابط بلاك فرايدي إلى صف المؤثر').not.toMatch(/x\.links\.blackFriday/)
+    /* وآخرُ يومٍ لمتابعيه — يغلب نهايةَ المنحة له وحدَه (١٧ نوفمبر ٢٠٢٦، `influencerClosesAt`) */
+    expect(PANEL).toMatch(/apiPatch\(`\/api\/admin\/influencers\/\$\{x\.id\}`, \{ closesAt: lastDay \? grantClosesAt\(lastDay\) : null \}\)/)
+    expect(INF_ROUTES).toMatch(/closesAt: z\.coerce\.date\(\)\.nullable\(\)\.optional\(\),/)
     expect(PANEL).toMatch(/apiPatch\(`\/api\/admin\/influencers\/\$\{x\.id\}`, \{ percentOff: discountNum \?\? null \}\)/)
     expect(PANEL).toMatch(/apiPatch\(`\/api\/admin\/influencers\/\$\{x\.id\}`, \{ code: codeNorm \}\)/)
     expect(PANEL).toMatch(/: INFLUENCER_CODE_KEEPS_AR\}<\/p>/)
-    expect(INF_ROUTES).toMatch(/percentOff: z\.number\(\)\.int\(\)\.min\(0\)\.max\(100\)\.nullable\(\)\.optional\(\),\s*code: z\.string\(\)/)
+    expect(INF_ROUTES).toMatch(/percentOff: z\.number\(\)\.int\(\)\.min\(0\)\.max\(100\)\.nullable\(\)\.optional\(\),[\s\S]{0,200}?code: z\.string\(\)/)
     const texts = [
       INFLUENCER.INFLUENCER_CODE_KEEPS_AR, INFLUENCER.INFLUENCER_DISCOUNT_BAD_AR, 'خصم متابعيه %', 'احفظ الخصم', 'غير الكود',
       'فارغ يعني نسبة المنحة. والخصم الجديد على من يأخذ كودا بعد الحفظ فقط.', 'نسبة المنحة',
+      'آخر يوم لمتابعيه', 'احفظ آخر يوم', 'نهاية المنحة',
     ]
     for (const t of texts.slice(2)) expect(PANEL).toContain(t)
     for (const t of texts) expect(t).toBe(plainAr(t))
-    for (const k of ['influencer.discount.set', 'influencer.code.change']) expect(auditActionAr(k), `«${k}» بلا عنوان`).not.toBe(k)
+    for (const k of ['influencer.discount.set', 'influencer.code.change', 'influencer.closes.set']) expect(auditActionAr(k), `«${k}» بلا عنوان`).not.toBe(k)
   })
 })
 
