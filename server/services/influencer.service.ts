@@ -609,7 +609,9 @@ export class InfluencerService {
       },
       /* و«بلاك فرايدي وجيز» برابطه هو — حين تُشغَّل */
       blackFriday: {
-        nameAr: bf.nameAr, open: bf.open, percentOff: influencerPercentOff(bf.percentOff, inf.percentOff), maxCourses: bf.maxCourses,
+        /* ونسبتُها نسبةُ الحملة: أكوادُها تُعطى بها لكلّ أحد، وخصمُ المؤثّر لمنحة المؤثّرين وحدَها (`grant.service.ts#issue`،
+           و`syncBlackFridayCodes` يعيدها إليها) — فلا يُقال لمتابعه رقمٌ لا يأخذه (١٧ نوفمبر ٢٠٢٦) */
+        nameAr: bf.nameAr, open: bf.open, percentOff: bf.percentOff, maxCourses: bf.maxCourses,
         closesAt: bf.closesAt, link: influencerLink(publicSiteUrl(), inf.code, BLACK_FRIDAY_GRANT_SLUG),
       },
       designs,
@@ -663,19 +665,21 @@ export async function applyInfluencerLaunch(prisma: PrismaClient): Promise<strin
   const made = await new InfluencerService(prisma).create({
     nameAr: k.nameAr, code: k.code, commissionPercent: k.commissionPercent, email: k.email, phone: k.phone,
   }, null, { reason: KASEET_LAUNCH_REASON, formerCodes: k.formerCodes })
+  /* وقنواتُ أكوادها السابقة أيضا (١٧ نوفمبر ٢٠٢٦، Fix all 6): `?ch=kasset` كُتب بكودها القديم، وكان لا يُنسب إليها */
   const channel = k.code.toLowerCase()
+  const channels = [k.code, ...k.formerCodes].map((c) => c.toLowerCase())
   const leads = await prisma.lead.findMany({
-    where: { campaign: BLACK_FRIDAY_GRANT_SLUG, channel, influencerId: null }, select: { id: true },
+    where: { campaign: BLACK_FRIDAY_GRANT_SLUG, channel: { in: channels }, influencerId: null }, select: { id: true },
   })
   if (leads.length > 0) {
     const ids = leads.map((l) => l.id)
     await prisma.lead.updateMany({ where: { id: { in: ids } }, data: { influencerId: made.id } })
     const codes = await prisma.grantCode.updateMany({
-      where: { leadId: { in: ids }, influencerId: null }, data: { influencerId: made.id, commissionPercent: blackFridayCommission(k.code, k.commissionPercent) },
+      where: { leadId: { in: ids }, influencerId: null }, data: { influencerId: made.id, commissionPercent: blackFridayCommission(k, k.commissionPercent) },
     })
     await recordAudit(prisma, {
       actorId: null, action: 'influencer.update', entityType: 'influencer', entityId: made.id, reason: KASEET_LAUNCH_REASON,
-      meta: { blackFridayLeads: ids.length, blackFridayCodes: codes.count, channel },
+      meta: { blackFridayLeads: ids.length, blackFridayCodes: codes.count, channel, channels },
     })
   }
   return made.id

@@ -480,7 +480,7 @@ describe('⑪ آخر يوم لكل مؤثر', () => {
       const coupon = await prisma.coupon.findUniqueOrThrow({
         where: { code: code! },
         select: { id: true, usedCount: true, maxUses: true, grantCode: { select: {
-          campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } }, influencer: { select: { closesAt: true } },
+          campaign: { select: { id: true, slug: true, active: true, closesAt: true, maxCourses: true } }, influencer: { select: { closesAt: true } },
         } } },
       })
       await expect(grant.assertUsable(coupon, null, new Date(until.getTime() + 1000))).rejects.toMatchObject({ code: 'grant_closed' })

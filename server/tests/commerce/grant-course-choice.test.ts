@@ -71,7 +71,7 @@ async function pay(userId: string, cohortIds: string[], code: string) {
 const shown = async (slug: GrantSlug = MEMBER_GRANT_SLUG) => (await new GrantLandingService(prisma, slug).view()).openCourses.map((c) => c.courseId)
 async function coursesLeft(code: string) {
   const coupon = await prisma.coupon.findUniqueOrThrow({
-    where: { code }, include: { grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } } } } },
+    where: { code }, include: { grantCode: { select: { campaign: { select: { id: true, slug: true, active: true, closesAt: true, maxCourses: true } } } } },
   })
   return new GrantService(prisma).coursesLeft(coupon)
 }

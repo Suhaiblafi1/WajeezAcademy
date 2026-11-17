@@ -5,7 +5,7 @@
    والعلّةُ في `server/services/influencer.service.ts`، والحارس: `server/tests/commerce/influencer-grant.test.ts`. */
 
 import { money } from './discount-policy'
-import { BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, type GrantSlug } from './grant'
+import { BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, isInfluencerGrant, type GrantSlug } from './grant'
 
 /** عمولةُ المؤثّر حين يُضاف — ويغيّرها صاحبُ المنصّة لكلّ مؤثّرٍ على ما يُعطى بعدها */
 export const INFLUENCER_COMMISSION_DEFAULT = 15
@@ -24,9 +24,28 @@ export const INFLUENCER_GRANT_PATH = '/grant/i'
 /** صفحةُ حملة المؤثّرين بلا كود — `/grant/i` لمنحة المؤثّرين و`/grant/bf` لـ«بلاك فرايدي وجيز» (١٥ نوفمبر ٢٠٢٦) */
 export const influencerGrantPath = (slug: GrantSlug = INFLUENCER_GRANT_SLUG): string =>
   slug === BLACK_FRIDAY_GRANT_SLUG ? BLACK_FRIDAY_GRANT_PATH : INFLUENCER_GRANT_PATH
-/** رابطُ المؤثّر في حملته — والحملةُ منحةُ المؤثّرين ما لم تُسمَّ */
+/* ═══ ورابطُه في «بلاك فرايدي وجيز» بقناته `?ch=` لا بمسارٍ (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): Fix all 6) ═══
+   كان رابطُه فيها `/grant/bf/<كوده>`، والموقعُ يحوّل هذا المسارَ إلى `/grant/bf` بما بعد «؟» وحدَه — فيسقط الكودُ ولا يُنسب
+   إلى المؤثّر من جاء برابطه الذي نسخه من حسابه. والنسبةُ فيها بالقناة وحدَها (`grant-landing.service.ts#apply` و`channelView`)،
+   والقناةُ تُقرأ بلا فرقٍ بين كبير الحروف وصغيرها (`normalizeInfluencerCode`) وتُحفظ صغيرة (`campaignTag`) — فتُكتب صغيرةً كما
+   أُرسل لكاسيت: `?ch=kaseet`. */
+export const influencerChannel = (code: string): string => code.toLowerCase()
+
+/** ورابطٌ قديمٌ `/grant/bf/<كوده>` نُشر قبلُ يُحوَّل بكوده قناةً — ما بعد «؟» كما هو، وقناةٌ فيه تبقى ولا تُبدَّل.
+    وما لا يشبه كودا (`normalizeInfluencerCode`) لا يُكتب قناةً */
+export function channelSearch(search: string, code: string | null | undefined): string {
+  const q = new URLSearchParams(search)
+  const c = normalizeInfluencerCode(code)
+  if (c && !q.get('ch')) q.set('ch', influencerChannel(c))
+  const out = q.toString()
+  return out ? `?${out}` : ''
+}
+
+/** رابطُ المؤثّر في حملته — والحملةُ منحةُ المؤثّرين ما لم تُسمَّ. وفي بلاك فرايدي بقناته (`influencerChannel`) */
 export const influencerLink = (siteUrl: string, code: string, slug: GrantSlug = INFLUENCER_GRANT_SLUG): string =>
-  `${siteUrl}${influencerGrantPath(slug)}/${encodeURIComponent(code)}`
+  slug === BLACK_FRIDAY_GRANT_SLUG
+    ? `${siteUrl}${BLACK_FRIDAY_GRANT_PATH}?ch=${encodeURIComponent(influencerChannel(code))}`
+    : `${siteUrl}${influencerGrantPath(slug)}/${encodeURIComponent(code)}`
 
 /** ما يأخذه متابعُه: خصمُه هو إن كُتب له، وإلّا نسبةُ الحملة — قرارُ صاحب المنصّة (١٥ نوفمبر ٢٠٢٦): «قيمة الخصم للمؤثر
     كلا على حدا». ويُكتب في كوبون كلّ كودٍ يومَ يُعطى، فتغييرُه يقع على ما بعده كالعمولة (`grant.service.ts#issue`) */
@@ -39,9 +58,13 @@ export const influencerPercentOff = (campaignPercent: number, own: number | null
 export const influencerClosesAt = (campaignClosesAt: Date | null, own: Date | null | undefined): Date | null =>
   own ?? campaignClosesAt
 
-/** الحملةُ كما يراها متابعُ هذا المؤثّر — بآخر يومه إن كان له */
-export function withInfluencerEnd<C extends { closesAt: Date | null }>(campaign: C, influencer: { closesAt: Date | null } | null | undefined): C {
-  return influencer?.closesAt ? { ...campaign, closesAt: influencer.closesAt } : campaign
+/* ═══ وفي منحة المؤثّرين وحدَها (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): Fix all 6) ═══
+   كودُ بلاك فرايدي جاء برابط مؤثّرٍ يحمل مؤثّرَه (`?ch=`)، فكان الدفعُ يقرأ آخرَ يومِ المؤثّر عليه — وإعطاؤه وصفحتُه لا يقرآنه
+   (`isInfluencerGrant` في `grant.service.ts#issue` و`grant-landing.service.ts#view`). فمن أخذ كودَ بلاك فرايدي وهي مفتوحةٌ رُدّ
+   عند الدفع «انتهت المنحة» لأنّ يومَ مؤثّره في منحةٍ أخرى مضى. فالقاعدةُ واحدةٌ هنا: يومُه يغلب في حملته هو وحدَها. */
+/** الحملةُ كما يراها متابعُ هذا المؤثّر — بآخر يومه إن كان له، في منحة المؤثّرين وحدَها */
+export function withInfluencerEnd<C extends { slug: string; closesAt: Date | null }>(campaign: C, influencer: { closesAt?: Date | null } | null | undefined): C {
+  return influencer?.closesAt && isInfluencerGrant(campaign.slug) ? { ...campaign, closesAt: influencer.closesAt } : campaign
 }
 
 /** عمولتُه على طلب: نسبتُه من سعر الدورات قبل المنحة، ناقصا ما رُدّ من الثمن بنسبته */
@@ -116,9 +139,18 @@ export const KASEET_INFLUENCER = {
    فمن ذُكر هنا يأخذ عمولتَه هو (`commissionPercent` في ملفّه) على كود بلاك فرايدي الذي جاء برابطه، ومن لم يُذكر يُنسب
    إليه بلا عمولةٍ كما كان. وفحصُ الهامش يعدّها لهم (`grant-margins.service.ts`). */
 export const BLACK_FRIDAY_PAID_INFLUENCERS: readonly string[] = ['KASEET']
-/** عمولةُ كود بلاك فرايدي لمؤثّرٍ جاء الزائرُ برابطه — نسبتُه إن كان في القائمة، وإلّا صفر */
-export const blackFridayCommission = (code: string, commissionPercent: number): number =>
-  BLACK_FRIDAY_PAID_INFLUENCERS.includes(code) ? commissionPercent : 0
+
+/* ═══ والمؤثّرُ يُعرف بكوده اليومَ أو بكودٍ كان له (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): Fix all 6) ═══
+   كانت القائمتان (`BLACK_FRIDAY_PAID_INFLUENCERS` و`BUILT_IN_INFLUENCER_LOGOS`) تُطابَقان بكوده الحاليّ وحدَه، فإن غيّر المديرُ
+   كودَ كاسيت سقطت عمولتُها ٥٪ على بلاك فرايدي ورأسُ صفحتها بلا أثرٍ يقول. والكودُ القديمُ لا يضيع: ينتقل إلى `formerCodes`
+   (`influencer.service.ts`)، ولا يأخذه مؤثّرٌ غيرُه أبدا (`assertCodeFree`). فالمطابقةُ بأكواده كلِّها — ما كان منها وما هو —
+   بلا عمودٍ جديدٍ ولا منعٍ لتغيير الكود. ومن مُرّر كودُه نصّا وحدَه يُطابَق به كما كان. */
+export type InfluencerCodes = string | { code: string; formerCodes?: readonly string[] | null }
+const codesOf = (i: InfluencerCodes): readonly string[] => (typeof i === 'string' ? [i] : [i.code, ...(i.formerCodes ?? [])])
+
+/** عمولةُ كود بلاك فرايدي لمؤثّرٍ جاء الزائرُ برابطه — نسبتُه إن كان في القائمة بأحد أكواده، وإلّا صفر */
+export const blackFridayCommission = (influencer: InfluencerCodes, commissionPercent: number): number =>
+  codesOf(influencer).some((c) => BLACK_FRIDAY_PAID_INFLUENCERS.includes(c)) ? commissionPercent : 0
 
 /* ═══ شعاراتُ المؤثّرين مع الموقع — كشعارات الشركاء (`BUILT_IN_PARTNER_LOGOS`) ═══
 
@@ -129,9 +161,10 @@ export const blackFridayCommission = (code: string, commissionPercent: number): 
 export const BUILT_IN_INFLUENCER_LOGOS: Readonly<Record<string, string | null>> = {
   KASEET: null,
 }
-/** رأسُ صفحة المؤثّر المشتركُ بشعاره (أو `null` فاسمُه) — أو `null` لمن لا رأسَ له */
-export function influencerBrand(code: string): { logoUrl: string | null } | null {
-  return Object.prototype.hasOwnProperty.call(BUILT_IN_INFLUENCER_LOGOS, code) ? { logoUrl: BUILT_IN_INFLUENCER_LOGOS[code] ?? null } : null
+/** رأسُ صفحة المؤثّر المشتركُ بشعاره (أو `null` فاسمُه) — أو `null` لمن لا رأسَ له. ويُعرف بأحد أكواده (`InfluencerCodes`) */
+export function influencerBrand(influencer: InfluencerCodes): { logoUrl: string | null } | null {
+  const key = codesOf(influencer).find((c) => Object.prototype.hasOwnProperty.call(BUILT_IN_INFLUENCER_LOGOS, c))
+  return key === undefined ? null : { logoUrl: BUILT_IN_INFLUENCER_LOGOS[key] ?? null }
 }
 
 /* ═══ رسالةُ واتساب من صفحة المؤثّر (١٧ نوفمبر ٢٠٢٦) ═══

@@ -38,18 +38,31 @@ export function normalizePhone(raw: string): string | null {
    إلّا رقما يبدأ برمز دولة (`normalizeIntlPhone`)، فلا يمرّ رقمٌ محلّيٌّ من نسخةٍ قديمةٍ للصفحة. */
 export const GRANT_PHONE_REQUIRED_AR = 'اختر الدولة واكتب رقم واتساب'
 
+/* ═══ ومن كتب رقمَه دوليّا في خانة المحلّيّ لا يتكرّر مفتاحُه (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): Fix all 6) ═══
+   كان يُركَّب ما كُتب على رمز الدولة كما هو: «+962 79 123 4567» و«00962…» و«962…» مع الأردنّ تصير «+962962791234567» —
+   رقمٌ لا يصل صاحبَه، ويمرّ لأنّ طولَه في الحدّ. فما بدأ بـ+ أو 00 دوليٌّ بنفسه يُؤخذ كما هو. وما بدأ بأرقام رمز الدولة
+   نفسِها وبعدها رقمٌ محلّيٌّ بطوله (سبعةٌ فأكثر) كتب صاحبُه المفتاحَ بلا + فيُحذف — ولا رقمَ محلّيٌّ يبدأ برمز دولته بهذا
+   الطول (الأمريكيُّ لا يبدأ بـ1، والأردنيُّ لا يبدأ بـ962). وصفرُ البداية المحلّيُّ يسقط كما كان. */
+const NATIONAL_MIN_DIGITS = 7
+
 /** رمزُ الدولة والرقمُ المحلّيّ → رقمٌ دوليّ، أو `null` إن لم يصحّ */
 export function intlPhone(dial: string, national: string): string | null {
   const code = dial.replace(/[^\d+]/g, '')
-  const local = (normalizePhone(national) ?? '').replace(/^\+/, '').replace(/^0+/, '')
-  if (!/^\+\d{1,4}$/.test(code) || local.length < 5) return null
-  return normalizePhone(`${code}${local}`)
+  if (!/^\+\d{1,4}$/.test(code)) return null
+  const n = normalizePhone(national) ?? ''
+  if (n.startsWith('+')) return normalizeIntlPhone(n)
+  let local = n.replace(/^0+/, '')
+  const digits = code.slice(1)
+  if (local.startsWith(digits) && local.length - digits.length >= NATIONAL_MIN_DIGITS) local = local.slice(digits.length).replace(/^0+/, '')
+  if (local.length < 5) return null
+  return normalizeIntlPhone(`${code}${local}`)
 }
 
-/** رقمٌ دوليٌّ وحدَه — ما لا يبدأ برمز دولةٍ يُردّ */
+/** رقمٌ دوليٌّ وحدَه — ما لا يبدأ برمز دولةٍ يُردّ. ولا رمزَ دولةٍ يبدأ بصفر، فـ«+0…» رقمٌ محلّيٌّ كُتبت قبله + فيُردّ.
+    وصفرُ ما بعد رمز الدولة لا يُردّ: بعضُ الدول تُبقيه في الرقم الدوليّ (إيطاليا +39 06…) */
 export function normalizeIntlPhone(raw: string | null | undefined): string | null {
   const n = raw ? normalizePhone(raw) : null
-  return n && n.startsWith('+') ? n : null
+  return n && /^\+[1-9]/.test(n) ? n : null
 }
 
 /** أقصى حجمٍ لنتيجة التشخيص المرسَلة من بابٍ عامّ — والعلّةُ عند `guestSnapshot` (`advisor.service.ts`) */

@@ -308,9 +308,9 @@ export class PartnerGrantService {
   /* ═══ الصفحةُ العامّة ═══ */
 
   /** ما تعرضه صفحةُ الشريك: هو وشعارُه، وحالُ منحته، ودوراتُها بسعرها — كصفحات المنح (`GrantLandingService.view`) */
-  async view(rawSlug: string, now = new Date()) {
+  async view(rawSlug: string, now = new Date(), ref: string | null = null) {
     const c = await this.liveBySlug(rawSlug)
-    const v = await new GrantLandingService(this.prisma, c.slug as `partner-${string}`).view(now)
+    const v = await new GrantLandingService(this.prisma, c.slug as `partner-${string}`).view(now, null, ref)
     return {
       partner: {
         slug: partnerSlugOf(c.slug), nameAr: c.nameAr, nameEn: c.partnerNameEn, type: partnerTypeOf(c.partnerType),
@@ -384,6 +384,10 @@ export class PartnerGrantService {
     if (!row || row.campaignId !== c.id) throw new AuthError('bad_link', PARTNER_LINK_BAD_AR, 400)
     if (row.usedAt) throw new AuthError('link_used', PARTNER_LINK_USED_AR, 410)
     if (row.expiresAt <= now) throw new AuthError('link_expired', PARTNER_LINK_EXPIRED_AR, 410)
+    /* ونطاقُه يُسأل ثانيةً عند فتح الرابط (١٧ نوفمبر ٢٠٢٦): رابطٌ طُلب ثمّ رفع المديرُ نطاقَه من الشريك كان يعطي كودا */
+    if (!emailMatchesDomains(row.email, c.emailDomains)) {
+      throw new AuthError('bad_email_domain', partnerBadEmailAr(partnerTypeOf(c.partnerType), c.emailDomains), 400)
+    }
     /* مرّةً واحدة: الكتابةُ مشروطةٌ بأنّه لم يُستعمل — فنقرتان متزامنتان تمرّ إحداهما */
     const took = await this.prisma.partnerEmailLink.updateMany({ where: { id: row.id, usedAt: null }, data: { usedAt: now } })
     if (took.count === 0) throw new AuthError('link_used', PARTNER_LINK_USED_AR, 410)

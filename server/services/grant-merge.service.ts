@@ -236,7 +236,7 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
     if (told.has(lead.id) || off.has(lead.email!.toLowerCase())) continue
     if (was >= (g.coupon.percentOff ?? 0)) continue
     const left = await grants.coursesLeft({
-      ...g.coupon, grantCode: { campaign: { id: bf.id, active: bf.active, closesAt: bf.closesAt, maxCourses: bf.maxCourses } },
+      ...g.coupon, grantCode: { campaign: { id: bf.id, slug: BLACK_FRIDAY_GRANT_SLUG, active: bf.active, closesAt: bf.closesAt, maxCourses: bf.maxCourses } },
     })
     if (left <= 0) continue
     const pct = g.coupon.percentOff ?? bf.percentOff
