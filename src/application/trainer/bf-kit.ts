@@ -16,6 +16,11 @@
    والعرضُ في `src/components/trainer/BlackFridayKit.tsx`، والحارس: `src/tests/trainer/bf-kit.test.ts`. */
 
 import { fmtDateWith } from '../text/format-ar'
+import { BARE_HOST } from '../site/origin'
+import { WA_START_PATH } from '../site/wa-start'
+
+/** واتساب الأكاديمية ورسالتُه جاهزة — في نصوصه الثلاثة (١٧ نوفمبر ٢٠٢٦: «add the whatsapp link for their messages»، `wa-start.ts`) */
+export const BF_KIT_WA = `${BARE_HOST}${WA_START_PATH}`
 
 /** التصميمُ المرفق — كما أُرسل لصاحب المنصّة ووافق عليه */
 export const BF_KIT_DESIGNS = [
@@ -58,14 +63,17 @@ export function bfKitTexts(k: BfKitInput): BfKitTexts {
     `منحة بلاك فرايدي من أكاديمية وجيز: ${k.percentOff}% على كل دورة${until}.`,
     'أدرّب في أكاديمية وجيز مع مدربين ومدربات من أهل الميدان، في دورات مباشرة تبني مسارك المهني.',
     `خذ كودك من رابطي:\n${k.link}`,
+    `أو أرسل سيرتك الذاتية للأكاديمية على واتساب، ويختارون معك الأنسب:\n${BF_KIT_WA}`,
   ].join('\n\n')
   const email = [
     'مرحبا،',
     `أدرّب في أكاديمية وجيز، وأحببت أن أشاركك منحة بلاك فرايدي: ${k.percentOff}% على كل دورة، حتى ${k.maxCourses} دورات${until}.`,
     'دورات مباشرة يقودها مدربون ومدربات من أهل الميدان: لقاءات حية، ومهام من واقع العمل، وشهادة عند الإتمام.',
     `خذ كودك من رابطي، يصلك فور تعبئة نموذج قصير:\n${k.link}`,
+    `محتار من أين تبدأ؟ أرسل سيرتك الذاتية للأكاديمية على واتساب، ويختارون معك الأنسب:\n${BF_KIT_WA}`,
     k.name ? `مع التقدير،\n${k.name}` : 'مع التقدير،',
   ].join('\n\n')
   const whatsapp = `منحة بلاك فرايدي من أكاديمية وجيز: ${k.percentOff}% على كل دورة${until}.\nخذ كودك من رابطي:\n${k.link}`
+    + `\n\nأو أرسل سيرتك الذاتية للأكاديمية على واتساب:\n${BF_KIT_WA}`
   return { social, emailSubject: `منحة ${k.percentOff}% على دورات أكاديمية وجيز`, email, whatsapp }
 }
