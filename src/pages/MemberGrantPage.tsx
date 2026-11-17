@@ -53,6 +53,8 @@ import BuyPanel from "@/components/BuyPanel";
 import ResumeCheckout from "@/components/ResumeCheckout";
 import SeoHead from "@/components/SeoHead";
 import { controlCls } from "@/components/FormKit";
+import { PhoneCodePicker } from "@/components/CountryPicker";
+import { GRANT_PHONE_REQUIRED_AR, intlPhone } from "@/application/advisor/guest-contact";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
@@ -247,6 +249,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const was = readStoredGrant(storeKey);
     return { fullName: was?.name ?? "", phone: "", email: was?.email ?? "", workField: was?.workField ?? "", careerLevel: "" };
   });
+  /* ورمزُ الدولة يُختار ولا يُكتب — «هناك من يكتب رقمه بدون مفتاح الدولة» (١٧ نوفمبر ٢٠٢٦، `intlPhone`) */
+  const [dial, setDial] = useState("+962");
+  const phoneIntl = intlPhone(dial, form.phone);
   /* كودُ المؤثّر — من رابطه، ويكتبه من جاء بلا رابط */
   const [influencerCode, setInfluencerCode] = useState(urlCode ?? "");
   /* ومن حُسب له: مؤثّرُ ما حُفظ إن أخذ كودا، وإلّا مؤثّرُ الرابط */
@@ -357,7 +362,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     setBusy(true);
     try {
       const out = await apiPost<ApplyResult>(forInfluencer ? influencerApi : forBlackFriday ? "/api/public/grant/bf" : forOpen ? "/api/public/grant/open" : "/api/public/grant", {
-        ...form, careerLevel: form.careerLevel || null, interests, ...campaignParams(window.location.search), website: hp.value,
+        ...form, phone: phoneIntl ?? "", careerLevel: form.careerLevel || null, interests, ...campaignParams(window.location.search), website: hp.value,
         source: { page: opened, first: firstTouch() }, visitorId: visitor,
         ...(forInfluencer ? { influencerCode: influencerCode.trim() } : {}),
       });
@@ -772,7 +777,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   }
 
   /* ─── الخطوة ١: النموذج — قليلٌ هادئ ─── */
-  const ready = form.fullName.trim().length >= 2 && form.phone.trim().length >= 5 && /\S+@\S+\.\S+/.test(form.email) && form.workField !== ""
+  const ready = form.fullName.trim().length >= 2 && phoneIntl !== null && /\S+@\S+\.\S+/.test(form.email) && form.workField !== ""
     && (!forInfluencer || normalizeInfluencerCode(influencerCode) !== null);
   const domains = [...new Set(view.openCourses.map((x) => x.domainAr).filter((d): d is string => !!d && d !== OTHER_DOMAIN))]
     .sort((a, b) => a.localeCompare(b, "ar"));
@@ -826,9 +831,14 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           <label className="grid gap-1 text-read">الاسم الكامل
             <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} autoComplete="name" placeholder="كما تريده على شهادتك" className={controlCls} />
           </label>
-          <label className="grid gap-1 text-read">رقم الواتساب
-            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} inputMode="tel" autoComplete="tel" dir="ltr" placeholder="+962 7X XXX XXXX" className={controlCls} />
-          </label>
+          <div className="grid gap-1 text-read">
+            <label htmlFor="mg-phone">رقم الواتساب</label>
+            <div className="flex gap-2" dir="ltr">
+              <PhoneCodePicker id="mg-cc" value={dial} onChange={setDial} className={`${controlCls.replace("w-full", "")} w-32 shrink-0 px-2`} />
+              <input id="mg-phone" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} inputMode="tel" autoComplete="tel-national" dir="ltr" placeholder="7X XXX XXXX" className={`${controlCls} min-w-0 flex-1`} />
+            </div>
+            {form.phone.trim() !== "" && phoneIntl === null && <span className="text-red-300">{GRANT_PHONE_REQUIRED_AR}</span>}
+          </div>
           <label className="grid gap-1 text-read">البريد الإلكتروني
             <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="email" dir="ltr" placeholder="name@example.com" className={controlCls} />
           </label>

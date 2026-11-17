@@ -32,6 +32,26 @@ export function normalizePhone(raw: string): string | null {
   return /^\+?\d{7,15}$/.test(s) ? s : null
 }
 
+/* ═══ رقمُ واتساب في نماذج المنح دوليٌّ دائما (١٧ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة) ═══
+   «هناك من يكتب رقمه بدون مفتاح الدولة.. اجعل رقم الواتس اب اجباري ويختار الدولة لكافة المنح». فالنموذجُ يختار الدولةَ
+   ويكتب الرقمَ المحلّيّ، ويُركَّبان هنا (`intlPhone`) — وصفرُ البداية المحلّيُّ يسقط (٠٧٩… ← +٩٦٢٧٩…). والخادمُ لا يقبل
+   إلّا رقما يبدأ برمز دولة (`normalizeIntlPhone`)، فلا يمرّ رقمٌ محلّيٌّ من نسخةٍ قديمةٍ للصفحة. */
+export const GRANT_PHONE_REQUIRED_AR = 'اختر الدولة واكتب رقم واتساب'
+
+/** رمزُ الدولة والرقمُ المحلّيّ → رقمٌ دوليّ، أو `null` إن لم يصحّ */
+export function intlPhone(dial: string, national: string): string | null {
+  const code = dial.replace(/[^\d+]/g, '')
+  const local = (normalizePhone(national) ?? '').replace(/^\+/, '').replace(/^0+/, '')
+  if (!/^\+\d{1,4}$/.test(code) || local.length < 5) return null
+  return normalizePhone(`${code}${local}`)
+}
+
+/** رقمٌ دوليٌّ وحدَه — ما لا يبدأ برمز دولةٍ يُردّ */
+export function normalizeIntlPhone(raw: string | null | undefined): string | null {
+  const n = raw ? normalizePhone(raw) : null
+  return n && n.startsWith('+') ? n : null
+}
+
 /** أقصى حجمٍ لنتيجة التشخيص المرسَلة من بابٍ عامّ — والعلّةُ عند `guestSnapshot` (`advisor.service.ts`) */
 export const GUEST_SNAPSHOT_MAX_CHARS = 200_000
 
