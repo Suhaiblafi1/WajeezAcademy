@@ -48,7 +48,7 @@ import { cleanTouch } from '../../src/application/marketing/signup-source'
 import { linkGrantVisit } from './grant-visit.service'
 import {
   type GrantCourseOutcome, grantProjectLineAr,
-  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, OPEN_GRANT_SHARE_PATH, WORK_FIELDS, campaignTag, grantCourseSummary, leadProfileAr,
+  CAREER_LEVELS, GRANT_CODE_RE, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, GRANT_SHARE_PATH, GRANT_SUMMARY_GOALS, OPEN_GRANT_SHARE_PATH, WORK_FIELDS, campaignTag, grantCodeLink, grantCourseSummary, leadProfileAr,
   type GrantCourseSummary,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
@@ -413,6 +413,23 @@ export class GrantLandingService {
     return { picks }
   }
 
+  /* ═══ من فتح زرَّ بريد كوده في جهازٍ آخر (١٧ نوفمبر ٢٠٢٦، `grantCodeLink`) ═══
+     يُعاد ما تحتاجه الصفحةُ لتُفتح على اختيار دوراته: مرجعُه، واسمُه الأوّلُ للتحيّة، ونسبةُ كوده، وما اختاره في النموذج.
+     **ولا بريدَه ولا رقمَه**: الكودُ يُهدى، ومن أُهدي إليه لا يُكشف له بريدُ صاحبه — يكتب بريدَه هو عند الدفع.
+     وكودٌ من حملةٍ غيرِ هذه، أو لعميلٍ مُحي، لا يُعرف هنا. */
+  async resume(code: string): Promise<{ ref: string; code: string; name: string; percentOff: number | null; interests: string[]; workField: string }> {
+    const c = code.trim().toUpperCase()
+    const g = !GRANT_CODE_RE.test(c) ? null : await this.prisma.grantCode.findFirst({
+      where: { coupon: { code: c }, campaign: { slug: this.slug }, lead: { erasedAt: null } },
+      select: { coupon: { select: { percentOff: true } }, lead: { select: { id: true, fullName: true, interests: true, workField: true } } },
+    })
+    if (!g?.lead) throw new AuthError('not_found', 'لا منحة بهذا الكود', 404)
+    return {
+      ref: g.lead.id, code: c, name: g.lead.fullName.trim().split(/\s+/)[0] ?? '',
+      percentOff: g.coupon.percentOff, interests: g.lead.interests, workField: g.lead.workField ?? '',
+    }
+  }
+
   async askAdvisor(ref: string, noteAr?: string | null, ip?: string) {
     const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: { in: [...GRANT_SLUGS] }, erasedAt: null } })
     if (!lead) throw new AuthError('not_found', 'عبئ النموذج أولا', 404)
@@ -439,7 +456,8 @@ export class GrantLandingService {
      ولا «عضو» ولا «مستخدم»: «قرّاءُ وجيز» (قرارُه في اليوم نفسِه). ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
   private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
     /* وصاحبُ «منحة وجيز العامة» يعود إلى صفحتها هي — فيها نسبتُها ودوراتُها (`grantPagePath`) */
-    const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode, this.formSlug) : `${publicSiteUrl()}${grantPagePath(this.slug)}`
+    /* وزرُّه يحمل كودَه، فيُفتح على اختيار دوراته ولو في جهازٍ آخر (١٧ نوفمبر ٢٠٢٦، `grantCodeLink`) */
+    const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode, this.formSlug) : grantCodeLink(`${publicSiteUrl()}${grantPagePath(this.slug)}`, code)
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
     const member = this.slug === MEMBER_GRANT_SLUG
     /* والنموذجُ للحملات الأربع وحدَها — منحةُ الشريك لا تمرّ بـ`apply` */

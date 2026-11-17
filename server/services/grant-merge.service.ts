@@ -32,7 +32,7 @@ import {
   BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr,
 } from '../../src/application/commerce/grant'
 import { goPath, PRIVATE_PATH_PURPOSE, type PrivatePathPayload } from '../../src/application/commerce/private-path'
-import { grantAdvisorTextAr, grantRecordLink } from '../../src/application/commerce/grant-landing'
+import { grantAdvisorTextAr, grantCodeLink, grantRecordLink } from '../../src/application/commerce/grant-landing'
 import { normalizeWhatsApp } from '../../src/application/site/whatsapp'
 import { BARE_HOST } from '../../src/application/site/origin'
 import { GRANT_ADVISOR_SEED, getWhatsAppNumbers } from './integrations.service'
@@ -270,10 +270,11 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
               ? [
                   /* «غيّر اسم دوراتك المقترحة.. أضف له المسار بحسب تحليل سيرتك الذاتية» (١٧ نوفمبر ٢٠٢٦) */
                   { kind: 'cta' as const, label: 'مسارك بحسب تحليل سيرتك الذاتية', href: `${site}${goPath(path)}` },
-                  { kind: 'p' as const, text: ['اخترنا دوراته لك من سيرتك. أو اختر غيرها من ', { text: 'صفحة المنحة', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` }, '.'] },
+                  { kind: 'p' as const, text: ['اخترنا دوراته لك من سيرتك. أو اختر غيرها من ', { text: 'صفحة المنحة', href: grantCodeLink(`${site}${BLACK_FRIDAY_GRANT_PATH}`, g.coupon.code) }, '.'] },
                 ]
               : [
-                  { kind: 'cta' as const, label: 'احجز دوراتك الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` },
+                  /* وزرُّه يحمل كودَه فيُفتح على اختيار دوراته ولو في جهازٍ آخر (١٧ نوفمبر ٢٠٢٦، `grantCodeLink`) */
+                  { kind: 'cta' as const, label: 'احجز دوراتك الآن', href: grantCodeLink(`${site}${BLACK_FRIDAY_GRANT_PATH}`, g.coupon.code) },
                   /* ومن لم نحلّل سيرتَه: يرسلها على واتساب فنحلّلها ونقول فجواتها وننصحه ونختار دوراته (١٧ نوفمبر ٢٠٢٦: «أضف لمن
                      لم نقم بتحليل السيرة الذاتية خيارَ التواصل على الواتساب… نفّذ بإبداع») */
                   ...(advisorHref

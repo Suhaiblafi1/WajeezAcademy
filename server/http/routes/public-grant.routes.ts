@@ -106,6 +106,15 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
     return reply.status(201).send(await blackfriday.apply(body, req.ip))
   })
 
+  /* ومن فتح زرَّ بريد كوده في جهازٍ آخر — ما تُفتح به الصفحةُ على اختيار دوراته (١٧ نوفمبر ٢٠٢٦، `resume`) */
+  app.get('/api/public/grant/bf/code/:code', {
+    config: { rateLimit: { max: 30, timeWindow: '15 minutes' } },
+    schema: { tags: ['public'], summary: 'كود منحة بلاك فرايدي من رابط البريد: مرجعه واسمه الأول ونسبته' },
+  }, async (req) => {
+    const { code } = z.object({ code: z.string().min(1).max(40) }).parse(req.params)
+    return blackfriday.resume(code)
+  })
+
   /* ═══ «منحة وجيز العامة» — نموذجُ الأولى بلا كود مؤثّر، بصفّها هي ═══ */
   app.get('/api/public/grant/open', {
     schema: { tags: ['public'], summary: 'حال منحة وجيز العامة ودوراتها بفصلها' },

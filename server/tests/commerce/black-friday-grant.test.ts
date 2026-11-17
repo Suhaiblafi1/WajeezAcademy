@@ -139,6 +139,23 @@ describe('③ نموذجها منحة وجيز بلا كود مؤثر (١٦ نو
     expect(mail.text, 'بريده إلى رابط مؤثر').not.toMatch(/\/grant\/bf\/[A-Z]/)
   })
 
+  /* «شخصٌ وصله إيميلٌ بكوده، وعندما نقر على الرابط أخذه للتسجيل مرّةً أخرى» (صاحب المنصّة، ١٧ نوفمبر ٢٠٢٦): الكودُ يُحفظ على
+     جهازه، فزرُّ البريد يحمله، والصفحةُ تسأل عنه فتُفتح على اختيار دوراته ولو في جهازٍ آخر (`grantCodeLink` · `resume`) */
+  it('⚠️ زر بريد الكود يحمل كوده، والكود يعيد ما تفتح به الصفحة — بلا بريده، ولا كود حملة أخرى ولا كودا لا يعرف', async () => {
+    const p = person()
+    const out = await landing.apply(p)
+    const code = out.grant!.code!
+    const mail = await prisma.outboxMail.findFirstOrThrow({ where: { to: p.email, purpose: 'grant.code' }, orderBy: { createdAt: 'desc' } })
+    expect(mail.html, 'زر البريد بلا كوده').toContain(`/grant/bf?code=${code}`)
+    const r = await landing.resume(code.toLowerCase())
+    expect(r).toMatchObject({ ref: out.ref, code, name: p.fullName.split(' ')[0], percentOff: 70 })
+    expect(JSON.stringify(r), 'كشف بريده لمن معه كوده').not.toContain(p.email)
+    await expect(landing.resume('WG-ZZZZZZZZ')).rejects.toMatchObject({ code: 'not_found' })
+    await expect(landing.resume('not-a-code')).rejects.toMatchObject({ code: 'not_found' })
+    const other = await new GrantLandingService(prisma, OPEN_GRANT_SLUG).resume(code).catch((e) => e)
+    expect(other, 'عرفت حملةٌ أخرى كودَه').toMatchObject({ code: 'not_found' })
+  })
+
   it('⚠️ وكود مؤثر يكتب في النموذج لا يحسب له — لا عمولة ولا خصمه', async () => {
     await addInfluencer('BFSEVENTY', 75, 15)
     const out = await landing.apply(person({ influencerCode: 'BFSEVENTY' }))
@@ -278,6 +295,7 @@ describe('⑦ المتابعة والتذكير بلا مؤثر (١٦ نوفمب
       expect(m, 'لم يذكر من لم يشتر').toHaveLength(1)
       expect(m[0].text).toContain(out.grant!.code!)
       expect(m[0].text).toContain('/grant/bf')
+      expect(m[0].html, 'زر التذكير بلا كوده').toContain(`/grant/bf?code=${out.grant!.code!}`)
       expect(m[0].text).toContain('70%')
       /* ويقول إنّ التسجيل يُغلق بعدها حتى الفصل القادم — الخميسَ بآخر يوم، وصباحَ السبت «اليوم آخر يوم» */
       expect(m[0].text, 'لا يقول إغلاق التسجيل').toContain('يغلق التسجيل تماما حتى الفصل القادم، فسجل الآن.')
