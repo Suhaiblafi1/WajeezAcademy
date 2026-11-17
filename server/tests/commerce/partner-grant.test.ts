@@ -73,7 +73,7 @@ async function lastToken(email: string): Promise<string> {
   return decodeURIComponent(m[1])
 }
 async function claim(slug: string, email: string) {
-  await partners.requestLink(slug, { fullName: 'طالب الجامعة', email })
+  await partners.requestLink(slug, { fullName: 'طالب الجامعة', email, phone: '+962791234567' })
   return partners.confirm(slug, await lastToken(email))
 }
 const inject = (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, cookie?: string, payload?: unknown) =>
@@ -110,12 +110,15 @@ describe('① البريد على نطاق الشريك بحدود المقاط�
   it('⚠️ يقبل النطاق نفسه وما تحته، ويرد الشبيه — ولا يرسل له شيئا', async () => {
     await partner('dom')
     for (const ok of ['a@hu.edu.jo', 'b@std.hu.edu.jo', 'C@STD.HU.EDU.JO']) {
-      await expect(partners.requestLink('dom', { fullName: 'طالب', email: ok }), ok).resolves.toMatchObject({ sentTo: expect.any(String) })
+      await expect(partners.requestLink('dom', { fullName: 'طالب', email: ok, phone: '+962791234567' }), ok).resolves.toMatchObject({ sentTo: expect.any(String) })
     }
     for (const bad of ['x@hu.edu.jo.evil.com', 'x@evilhu.edu.jo', 'x@hu.edu.jom', 'x@gmail.com', 'hu.edu.jo', 'x@@hu.edu.jo']) {
-      await expect(partners.requestLink('dom', { fullName: 'طالب', email: bad }), bad).rejects.toMatchObject({ code: 'bad_email_domain' })
+      await expect(partners.requestLink('dom', { fullName: 'طالب', email: bad, phone: '+962791234567' }), bad).rejects.toMatchObject({ code: 'bad_email_domain' })
       expect(await prisma.outboxMail.count({ where: { to: bad.toLowerCase() } }), `أرسل إلى ${bad}`).toBe(0)
     }
+    /* وواتسابُ لازمٌ برمز دولته — لا غائبٌ ولا محلّيّ (١٧ نوفمبر ٢٠٢٦) */
+    await expect(partners.requestLink('dom', { fullName: 'طالب', email: `ph-${STAMP}@hu.edu.jo` }), 'قبل بلا واتساب').rejects.toMatchObject({ code: 'bad_phone' })
+    await expect(partners.requestLink('dom', { fullName: 'طالب', email: `ph2-${STAMP}@hu.edu.jo`, phone: '0791234567' }), 'قبل رقما محليا').rejects.toMatchObject({ code: 'bad_phone' })
   })
 })
 
@@ -123,7 +126,7 @@ describe('② رابط ثم كود — مرة، وكود واحد لكل بري�
   it('⚠️ الرمز مجزأ في القاعدة، ويستعمل مرة، ويعطي كودا يرسل إلى بريده', async () => {
     await partner('flow')
     const email = `flow-${STAMP}@std.hu.edu.jo`
-    const sent = await partners.requestLink('flow', { fullName: 'سارة', email })
+    const sent = await partners.requestLink('flow', { fullName: 'سارة', email, phone: '+962791234567' })
     expect(sent.sentTo).toBe(`f•••@std.hu.edu.jo`)
     const token = await lastToken(email)
     const row = await prisma.partnerEmailLink.findFirstOrThrow({ where: { email } })
@@ -149,9 +152,9 @@ describe('② رابط ثم كود — مرة، وكود واحد لكل بري�
     const email = `again-${STAMP}@hu.edu.jo`
     const first = await claim('again', email)
     const c = await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: partnerCampaignSlug('again') } })
-    const reply1 = await partners.requestLink('again', { fullName: 'سارة', email })
+    const reply1 = await partners.requestLink('again', { fullName: 'سارة', email, phone: '+962791234567' })
     const fresh = `new-${STAMP}@hu.edu.jo`
-    const reply2 = await partners.requestLink('again', { fullName: 'سارة', email: fresh })
+    const reply2 = await partners.requestLink('again', { fullName: 'سارة', email: fresh, phone: '+962791234567' })
     /* لا يقول الجوابُ أأخذ البريدُ منحتَه قبلُ: الشكلُ نفسُه لبريدٍ أخذ ولبريدٍ لم يأخذ */
     expect(Object.keys(reply1).sort()).toEqual(Object.keys(reply2).sort())
     expect(reply1.messageAr.replace(reply1.sentTo, '')).toBe(reply2.messageAr.replace(reply2.sentTo, ''))
@@ -167,7 +170,7 @@ describe('② رابط ثم كود — مرة، وكود واحد لكل بري�
   it('⚠️ الرابط ينتهي بمهلته', async () => {
     await partner('late')
     const email = `late-${STAMP}@hu.edu.jo`
-    await partners.requestLink('late', { fullName: 'سارة', email })
+    await partners.requestLink('late', { fullName: 'سارة', email, phone: '+962791234567' })
     const token = await lastToken(email)
     await expect(partners.confirm('late', token, undefined, new Date(Date.now() + 25 * 3_600_000))).rejects.toMatchObject({ code: 'link_expired' })
   })
@@ -176,7 +179,7 @@ describe('② رابط ثم كود — مرة، وكود واحد لكل بري�
     await partner('cap')
     const email = `cap-${STAMP}@hu.edu.jo`
     const replies = []
-    for (let i = 0; i < PARTNER_LINKS_PER_HOUR + 2; i += 1) replies.push(await partners.requestLink('cap', { fullName: 'سارة', email }))
+    for (let i = 0; i < PARTNER_LINKS_PER_HOUR + 2; i += 1) replies.push(await partners.requestLink('cap', { fullName: 'سارة', email, phone: '+962791234567' }))
     expect(new Set(replies.map((r) => JSON.stringify(r))).size).toBe(1)
     expect(await prisma.partnerEmailLink.count({ where: { email } })).toBe(PARTNER_LINKS_PER_HOUR)
     expect(await prisma.outboxMail.count({ where: { to: email, purpose: 'grant.partner_link' } })).toBe(PARTNER_LINKS_PER_HOUR)
@@ -184,9 +187,9 @@ describe('② رابط ثم كود — مرة، وكود واحد لكل بري�
 
   it('وعبر الباب العام: النطاق الخطأ 400، والصحيح 202 بلا كود في الجواب', async () => {
     await partner('http')
-    const bad = await inject('POST', '/api/public/grant/p/http/link', undefined, { fullName: 'سارة', email: 'x@evilhu.edu.jo' })
+    const bad = await inject('POST', '/api/public/grant/p/http/link', undefined, { fullName: 'سارة', email: 'x@evilhu.edu.jo', phone: '+962791234567' })
     expect(bad.statusCode).toBe(400)
-    const ok = await inject('POST', '/api/public/grant/p/http/link', undefined, { fullName: 'سارة', email: `http-${STAMP}@hu.edu.jo` })
+    const ok = await inject('POST', '/api/public/grant/p/http/link', undefined, { fullName: 'سارة', email: `http-${STAMP}@hu.edu.jo`, phone: '+962791234567' })
     expect(ok.statusCode).toBe(202)
     expect(ok.body).not.toMatch(/WG-/)
     const token = await lastToken(`http-${STAMP}@hu.edu.jo`)
@@ -237,11 +240,11 @@ describe('④ الموقوف لا صفحة له ولا رابط ولا كود', 
     const p = await partner('off')
     const email = `off-${STAMP}@hu.edu.jo`
     const code = (await claim('off', email)).grant!.code
-    await partners.requestLink('off', { fullName: 'سارة', email })
+    await partners.requestLink('off', { fullName: 'سارة', email, phone: '+962791234567' })
     const pendingToken = await lastToken(email)
     await partners.update(p.id, { active: false }, ownerId)
     expect((await inject('GET', '/api/public/grant/p/off')).statusCode).toBe(404)
-    expect((await inject('POST', '/api/public/grant/p/off/link', undefined, { fullName: 'سارة', email: `off2-${STAMP}@hu.edu.jo` })).statusCode).toBe(404)
+    expect((await inject('POST', '/api/public/grant/p/off/link', undefined, { fullName: 'سارة', email: `off2-${STAMP}@hu.edu.jo`, phone: '+962791234567' })).statusCode).toBe(404)
     expect((await inject('POST', '/api/public/grant/p/off/confirm', undefined, { token: pendingToken })).statusCode).toBe(404)
     const x = await cohort(100)
     await expect(commerce.checkout(await learner(), [x.cohortId], code)).rejects.toMatchObject({ code: 'grant_closed' })
@@ -252,7 +255,7 @@ describe('④ الموقوف لا صفحة له ولا رابط ولا كود', 
     await partner('ended', { closesAt: new Date(Date.now() - DAY) })
     const v = await partners.view('ended')
     expect(v.campaign.open).toBe(false)
-    await expect(partners.requestLink('ended', { fullName: 'سارة', email: `ended-${STAMP}@hu.edu.jo` })).rejects.toMatchObject({ code: 'grant_closed' })
+    await expect(partners.requestLink('ended', { fullName: 'سارة', email: `ended-${STAMP}@hu.edu.jo`, phone: '+962791234567' })).rejects.toMatchObject({ code: 'grant_closed' })
   })
 })
 

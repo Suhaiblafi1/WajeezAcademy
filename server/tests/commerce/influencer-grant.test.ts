@@ -57,7 +57,7 @@ async function learner(name = `متابعة ${seq} مؤثر`) {
   return (await auth.register(`inf-${seq}-${STAMP}@test.local`, 'Learner#12345', name)).userId
 }
 const person = (over: Record<string, unknown> = {}) => ({
-  fullName: `متابع ${++seq}`, phone: `0792${String(600000 + seq)}`, email: `follower-${seq}-${STAMP}@test.local`,
+  fullName: `متابع ${++seq}`, phone: `+962792${String(600000 + seq)}`, email: `follower-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
 async function pay(userId: string, cohortIds: string[], code: string) {
@@ -209,7 +209,7 @@ describe('⑦ منحة واحدة لكل متعلم على الحملتين', ()
   it('⚠️ من اشترى بمنحة وجيز لا يشتري بمنحة المؤثرين', async () => {
     await members.update({ active: true, maxCodes: null, closesAt: null }, ownerId)
     const buyer = await learner()
-    const lead = (await prisma.lead.create({ data: { fullName: 'عضو', phone: `0793${String(700000 + ++seq)}` } })).id
+    const lead = (await prisma.lead.create({ data: { fullName: 'عضو', phone: `+962793${String(700000 + ++seq)}` } })).id
     const memberCode = (await members.issue({ leadId: lead })).code
     await pay(buyer, [await openCohort(100)], memberCode)
     await addInfluencer('ONCE')

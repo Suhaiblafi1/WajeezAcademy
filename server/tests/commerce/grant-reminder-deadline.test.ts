@@ -37,7 +37,7 @@ const mails = (to: string) => prisma.outboxMail.findMany({ where: { to, purpose:
 async function member() {
   seq += 1
   const email = `grd-${seq}-${STAMP}@test.local`
-  const out = await landing.apply({ fullName: `عضو ${seq}`, phone: `0793${String(500000 + seq)}`, email, workField: 'الهندسة' })
+  const out = await landing.apply({ fullName: `عضو ${seq}`, phone: `+962793${String(500000 + seq)}`, email, workField: 'الهندسة' })
   await prisma.lead.update({ where: { id: out.ref }, data: { createdAt: new Date(FIRST.getTime() - 14 * DAY) } })
   return { ref: out.ref, email }
 }

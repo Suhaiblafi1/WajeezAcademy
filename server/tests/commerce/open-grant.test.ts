@@ -56,7 +56,7 @@ async function learner() {
   return (await auth.register(`open-${seq}-${STAMP}@test.local`, 'Learner#12345', `متعلم ${seq}`)).userId
 }
 const person = (over: Record<string, unknown> = {}) => ({
-  fullName: `زائر ${++seq}`, phone: `0794${String(800000 + seq)}`, email: `open-visitor-${seq}-${STAMP}@test.local`,
+  fullName: `زائر ${++seq}`, phone: `+962794${String(800000 + seq)}`, email: `open-visitor-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
 async function pay(userId: string, cohortIds: string[], code: string) {
@@ -132,7 +132,7 @@ describe('⑤ منحة واحدة لكل متعلم على الحملات كله
   it('⚠️ من اشترى بمنحة وجيز لا يأخذ كود العامة ولا يشتري بها', async () => {
     await members.update({ active: true, maxCodes: null, closesAt: null }, ownerId)
     const buyer = await learner()
-    const lead = (await prisma.lead.create({ data: { fullName: 'قارئ', phone: `0795${String(900000 + ++seq)}` } })).id
+    const lead = (await prisma.lead.create({ data: { fullName: 'قارئ', phone: `+962795${String(900000 + ++seq)}` } })).id
     await pay(buyer, [await openCohort(100)], (await members.issue({ leadId: lead })).code)
 
     const code = (await landing.apply(person())).grant!.code!

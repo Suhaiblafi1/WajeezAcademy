@@ -142,7 +142,7 @@ describe('⑤ ورد الزائدة لا ينقص أجر المدرب ولا ع�
     const influencers = new InfluencerService(prisma)
     const inf = (await influencers.create({ nameAr: 'مؤثر الزائدة', code: `XTRA${STAMP % 100000}`, commissionPercent: 15, email: `xtra-inf-${STAMP}@test.local` }, finance)).id
     const applied = await new GrantLandingService(prisma, INFLUENCER_GRANT_SLUG).apply({
-      fullName: 'متابع الزائدة', phone: `0793${String(STAMP).slice(-6)}`, email: `extra-follower-${STAMP}@test.local`,
+      fullName: 'متابع الزائدة', phone: `+962793${String(STAMP).slice(-6)}`, email: `extra-follower-${STAMP}@test.local`,
       workField: 'الموارد البشرية', influencerCode: `XTRA${STAMP % 100000}`,
     })
     const code = applied.grant!.code!

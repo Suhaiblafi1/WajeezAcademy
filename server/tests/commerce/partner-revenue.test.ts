@@ -54,7 +54,7 @@ async function lastToken(email: string) {
 /** طالبٌ يؤكّد بريدَه فيأخذ كودَه، ثمّ حسابٌ ببريده يشتري به */
 async function studentBuys(slug: string, price = 100) {
   const email = `rev-${++seq}-${STAMP}@std.hu.edu.jo`
-  await partners.requestLink(slug, { fullName: `سارة ${seq}`, email })
+  await partners.requestLink(slug, { fullName: `سارة ${seq}`, email, phone: '+962791234567' })
   const out = await partners.confirm(slug, await lastToken(email))
   const userId = (await auth.register(email, PASS, `سارة ${seq}`)).userId
   const o = await commerce.checkout(userId, [await cohort(price)], out.grant!.code)

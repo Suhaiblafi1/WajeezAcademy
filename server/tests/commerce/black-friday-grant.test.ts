@@ -65,7 +65,7 @@ async function learner() {
 }
 const emailOf = async (userId: string) => (await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } })).email
 const person = (over: Record<string, unknown> = {}) => ({
-  fullName: `متابع ${++seq}`, phone: `0796${String(300000 + seq)}`, email: `bf-visitor-${seq}-${STAMP}@test.local`,
+  fullName: `متابع ${++seq}`, phone: `+962796${String(300000 + seq)}`, email: `bf-visitor-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
 async function pay(userId: string, cohortIds: string[], code: string) {
@@ -235,7 +235,7 @@ describe('⑥ منحة واحدة لكل متعلم على الحملات الأ
     const buyer = await learner()
     const bfCode = (await landing.apply(person({ influencerCode: 'BFPLAIN' }))).grant!.code!
     await pay(buyer, [await openCohort(100)], bfCode)
-    const lead = async () => (await prisma.lead.create({ data: { fullName: 'زائر', phone: `0797${String(400000 + ++seq)}` } })).id
+    const lead = async () => (await prisma.lead.create({ data: { fullName: 'زائر', phone: `+962797${String(400000 + ++seq)}` } })).id
     for (const other of [members, open, infGrant]) {
       const code = (await other.issue({ leadId: await lead() })).code
       await expect(commerce.checkout(buyer, [await openCohort(100)], code), `اشترى بكود ${other.slug} بعد بلاك فرايدي`)

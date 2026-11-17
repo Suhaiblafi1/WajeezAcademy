@@ -62,7 +62,7 @@ async function cohort(courseId: string, over: Record<string, unknown> = {}) {
 const person = (over: Partial<{
   fullName: string; phone: string; email: string; workField: string; channel: string; wave: string; careerLevel: string | null; interests: string[]
 }> = {}) => ({
-  fullName: `قارئ وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
+  fullName: `قارئ وجيز ${++seq}`, phone: `+962791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
 
@@ -193,6 +193,8 @@ describe('③ب ومن عبأه ثانية والمنحة مغلقة', () => {
 describe('④ وما لا يقبل يرد', () => {
   it('⚠️ رقم ليس رقما، ومجال من غير القائمة', async () => {
     await expect(landing.apply(person({ phone: 'abc' }))).rejects.toMatchObject({ code: 'bad_phone' })
+    /* ورقمٌ محلّيٌّ بلا رمز دولة — «هناك من يكتب رقمه بدون مفتاح الدولة» (١٧ نوفمبر ٢٠٢٦) */
+    await expect(landing.apply(person({ phone: '0791234567' })), 'قبل رقما بلا رمز دولة').rejects.toMatchObject({ code: 'bad_phone' })
     await expect(landing.apply(person({ workField: 'مجال مختلق' }))).rejects.toMatchObject({ code: 'bad_field' })
   })
 })

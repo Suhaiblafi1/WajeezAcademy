@@ -45,7 +45,7 @@ interface Row {
 async function person(source?: unknown) {
   seq += 1
   const email = `gr-${seq}-${STAMP}@test.local`
-  const out = await landing.apply({ fullName: `زائر ${seq}`, phone: `0793${String(500000 + seq)}`, email, workField: 'الهندسة', source: source as never })
+  const out = await landing.apply({ fullName: `زائر ${seq}`, phone: `+962793${String(500000 + seq)}`, email, workField: 'الهندسة', source: source as never })
   return { ref: out.ref, code: out.grant!.code!, email }
 }
 const list = async () => {
@@ -79,7 +79,7 @@ describe('① النموذج يحفظ زيارتيه منظفتين', () => {
     const res = await app.inject({
       method: 'POST', url: '/api/public/grant',
       payload: {
-        fullName: 'زائرة من فيسبوك', phone: `0794${String(100000 + (STAMP % 800000))}`, email: `gr-http-${STAMP}@test.local`, workField: 'الهندسة',
+        fullName: 'زائرة من فيسبوك', phone: `+962794${String(100000 + (STAMP % 800000))}`, email: `gr-http-${STAMP}@test.local`, workField: 'الهندسة',
         channel: null, wave: null, website: '',
         source: {
           page: { utmSource: 'Facebook', utmMedium: 'cpc', landingPath: '/grant?ch=x', at: opened, evil: '<script>' },

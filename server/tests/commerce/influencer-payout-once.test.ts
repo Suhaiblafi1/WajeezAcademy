@@ -45,7 +45,7 @@ async function learner(name = `متابعة ${seq} مؤثر`) {
   return (await auth.register(`inf-${seq}-${STAMP}@test.local`, 'Learner#12345', name)).userId
 }
 const person = (over: Record<string, unknown> = {}) => ({
-  fullName: `متابع ${++seq}`, phone: `0792${String(600000 + seq)}`, email: `follower-${seq}-${STAMP}@test.local`,
+  fullName: `متابع ${++seq}`, phone: `+962792${String(600000 + seq)}`, email: `follower-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
 async function pay(userId: string, cohortIds: string[], code: string) {
