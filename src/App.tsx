@@ -27,6 +27,7 @@ const SkillCheck = lazy(() => import('./pages/SkillCheck'))
 const Mirror = lazy(() => import('./pages/Mirror'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
 const MemberGrantPage = lazy(() => import('./pages/MemberGrantPage'))
+const WaStart = lazy(() => import('./pages/WaStart'))
 const PartnerGrantPage = lazy(() => import('./pages/PartnerGrantPage'))
 const InfluencerHome = lazy(() => import('./pages/InfluencerHome'))
 const PartnerHome = lazy(() => import('./pages/partner/PartnerHome'))
@@ -216,6 +217,8 @@ export default function App() {
           <Route path="/pathways/:id" element={<PathwayPage />} />
           {/* «منحة وجيز» و«العامة» صارتا «بلاك فرايدي وجيز» (١٦ نوفمبر ٢٠٢٦، `grant-merge.service.ts`): روابطُهما القديمةُ في
               كلّ بريدٍ ومنشورٍ تفتحها، بما بعد «؟» كما هو — والكودُ المحفوظُ على الجهاز يُقرأ هناك */}
+          {/* ورابطٌ قصيرٌ يفتح واتساب مستشار المنحة ورسالتُه جاهزة (١٧ نوفمبر ٢٠٢٦، `wa-start.ts`) */}
+          <Route path="/wa" element={<WaStart />} />
           <Route path="/grant" element={<KeepQuery to="/grant/bf" />} />
           <Route path="/grant/build" element={<KeepQuery to="/grant/bf/build" />} />
           {/* «منحة مؤثرين وجيز» — صفحتُها برابط المؤثّر وكودُه مكتوب، غيرُ `/grant` (٢٦ أكتوبر ٢٠٢٦) */}
