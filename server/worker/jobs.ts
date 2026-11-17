@@ -1628,6 +1628,9 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
      و«جامعة الشرق الأوسط» مشغَّلةً بشعارها (١٦ نوفمبر ٢٠٢٦) — كلٌّ مرّةً بأثره */
   const { applyPartnerLaunch } = await import('../services/partner-grant.service')
   const partnered = await applyPartnerLaunch(prisma)
+  /* وأسعارُ الشعب القائمة ترتفع ١٠٪ مع سعر القائمة — مرّةً بلا إعلان (١٧ نوفمبر ٢٠٢٦، `cohort-price-raise.service.ts`) */
+  const { applyCohortPriceRaise } = await import('../services/cohort-price-raise.service')
+  await applyCohortPriceRaise(prisma)
   /* و«منحة وجيز» و«العامة» تصيران «بلاك فرايدي وجيز» بـ70% لكلّ كود، ويوقف المؤثّرون — مرّةً واحدة (١٦ نوفمبر ٢٠٢٦) */
   const { applyBlackFridayMerge, applyBlackFridayRaise, sendBlackFridayUpgradeNotice } = await import('../services/grant-merge.service')
   await applyBlackFridayMerge(prisma)

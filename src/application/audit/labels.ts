@@ -307,6 +307,7 @@ const PHRASES: Record<string, string> = {
   'catalog.cohorts.open_all': 'تهيئة الشعب جملة',
   'cohort.delivery_plan.set': 'كتابة خطّة تقديم شعبة',
   'catalog.cohorts.align_prices': 'محاذاة أسعار الشعب',
+  'catalog.cohorts.price_raise': 'رفع أسعار الشعب مع سعر القائمة',
   'integration.payment.save': 'حفظ إعداد مزوّد الدفع',
   'integration.email.save': 'حفظ إعداد البريد',
   'integration.email.test': 'اختبار إرسال بريد',
