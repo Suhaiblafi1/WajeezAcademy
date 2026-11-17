@@ -53,9 +53,9 @@ import {
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
 import { resolveCompletionRules } from '../../src/application/learning/completion-rules'
-import { GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
+import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
 import { PARTNER_SLUG_PREFIX } from '../../src/application/commerce/partner-grant'
-import { INFLUENCER_CODE_BAD_AR, influencerClosesAt, influencerGrantPath, influencerLink, influencerPercentOff, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
+import { INFLUENCER_CODE_BAD_AR, blackFridayCommission, influencerBrand, influencerClosesAt, influencerGrantPath, influencerLink, influencerPercentOff, influencerWhatsAppTextAr, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
 import { influencerCodeWhere } from './influencer.service'
 import { shortLinkPath } from '../../src/application/links/short-link'
 import { fmtDate } from '../../src/application/text/format-ar'
@@ -85,6 +85,13 @@ const SHARE_PATH: Partial<Record<CampaignSlug, string>> = { [MEMBER_GRANT_SLUG]:
 const GRANT_SHARE_PURPOSE = 'grant.share'
 /** ما يُقرأ من المؤثّر في النموذج — وخصمُه يُكتب في كوده (`grant.service.ts#issue`) */
 const INFLUENCER_SELECT = { id: true, nameAr: true, code: true, commissionPercent: true, percentOff: true, closesAt: true } as const
+
+/** المؤثّرُ كما تعرضه صفحتُه: اسمُه وكودُه — ومن له رأسٌ مشتركٌ (`BUILT_IN_INFLUENCER_LOGOS`) رأسُه بشعاره ورسالةُ واتساب
+    تنتهي باسمه (١٧ نوفمبر ٢٠٢٦). ومن لا رأسَ له يبقى كما كان */
+const influencerFace = (i: { nameAr: string; code: string }) => {
+  const brand = influencerBrand(i.code)
+  return { nameAr: i.nameAr, code: i.code, ...(brand ? { brand, whatsAppText: influencerWhatsAppTextAr(i.nameAr) } : {}) }
+}
 
 export class GrantLandingService {
   private prisma: PrismaClient
@@ -120,11 +127,18 @@ export class GrantLandingService {
     const found = await this.influencerByCode(raw)
     const v = await this.view(now, found?.id ?? null)
     return {
-      influencer: found ? { nameAr: found.nameAr, code: found.code } : null, ...v,
+      influencer: found ? influencerFace(found) : null, ...v,
       campaign: { ...v.campaign, percentOff: influencerPercentOff(v.campaign.percentOff, found?.percentOff) },
       /* وهديّتُها برابط مؤثّرها في حملتها — قصيرا كهديّة «منحة وجيز» */
       sharePath: found ? await this.shareLink(`${influencerGrantPath(this.formSlug)}/${found.code}`) : null,
     }
+  }
+
+  /** صفحةُ بلاك فرايدي برابط مؤثّرٍ ذي رأسٍ مشترك (`?ch=<كوده>`، ١٧ نوفمبر ٢٠٢٦) — حالُها ودوراتُها كما هي، ومعها المؤثّرُ
+      لرأسه وزرّ واتسابه. ومن لا رأسَ له (`influencerBrand`) تبقى صفحتُه كما كانت */
+  async channelView(ch: string | null | undefined, now = new Date()) {
+    const [v, found] = await Promise.all([this.view(now), this.influencerByCode(ch)])
+    return { ...v, influencer: found && influencerBrand(found.code) ? influencerFace(found) : null }
   }
 
   /* ═══ رابطُ الهديّة القصير (٢٧ أكتوبر ٢٠٢٦) ═══
@@ -274,6 +288,12 @@ export class GrantLandingService {
     const forInfluencer = isInfluencerGrant(this.slug)
     const named = forInfluencer ? await this.influencerByCode(input.influencerCode) : null
     if (forInfluencer && !named) throw new AuthError('bad_influencer_code', INFLUENCER_CODE_BAD_AR, 400)
+    /* ═══ ومن جاء بلاك فرايدي برابط مؤثّرٍ يُنسب إليه — بلا عمولة (١٧ نوفمبر ٢٠٢٦) ═══
+       بلاك فرايدي ليست حملةَ مؤثّرين (١٦ نوفمبر): لا كودَ مؤثّرٍ في نموذجها ولا عمولةَ على أكوادها، وفحصُ الهامش يحسبها كذلك.
+       وأُرسل لكاسيت رابطُها `?ch=kaseet`، فمن جاء بقناةٍ هي كودُ مؤثّرٍ نشطٍ يُكتب عميلُه وكودُه له فيراه في لوحه، وعمولةُ كوده
+       صفر — والعمولةُ عليها قرارٌ لصاحب المنصّة لم يُتّخذ. والقناةُ وحدَها: كودُ مؤثّرٍ يُكتب في النموذج لا يُحسب له (١٦ نوفمبر).
+       والأوّلُ يبقى: من عبّأ قبلُ لا يُنقل */
+    const tagged = this.slug === BLACK_FRIDAY_GRANT_SLUG ? await this.influencerByCode(input.channel) : null
 
     const had = await this.prisma.lead.findFirst({
       where: { campaign: this.slug, erasedAt: null, OR: [{ phone }, { email }] },
@@ -286,7 +306,7 @@ export class GrantLandingService {
       data: {
         fullName, email, phone, source: 'campaign', campaign: this.slug, consentAr: GRANT_CONSENT_AR,
         channel: named ? campaignTag(named.code) : campaignTag(input.channel), wave: campaignTag(input.wave), workField: input.workField,
-        careerLevel, interests, influencerId: named?.id ?? null,
+        careerLevel, interests, influencerId: named?.id ?? tagged?.id ?? null,
         pageTouch: pageTouch ? { ...pageTouch } : undefined, firstTouch: firstTouch ? { ...firstTouch } : undefined,
         pageOpenedAt: pageTouch?.at && Date.parse(pageTouch.at) <= now.getTime() ? new Date(pageTouch.at) : null,
       },
@@ -330,9 +350,15 @@ export class GrantLandingService {
     })
     if (usedOther) reasonAr = GRANT_ONCE_AR
     else try {
+      /* ومن جاء بلاك فرايدي برابط مؤثّرٍ: عمولتُه إن كان ممّن يأخذها عليها (`blackFridayCommission`)، وإلّا صفر */
+      const viaLink = !forInfluencer && !credited && lead.influencerId && this.slug === BLACK_FRIDAY_GRANT_SLUG
+        ? await this.prisma.influencer.findUnique({ where: { id: lead.influencerId }, select: { code: true, commissionPercent: true } })
+        : null
       const g = await this.grants.issue({
         leadId: lead.id,
-        influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent, percentOff: credited.percentOff, closesAt: credited.closesAt } : null,
+        influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent, percentOff: credited.percentOff, closesAt: credited.closesAt }
+          : !forInfluencer && lead.influencerId && this.slug === BLACK_FRIDAY_GRANT_SLUG ? { id: lead.influencerId, commissionPercent: viaLink ? blackFridayCommission(viaLink.code, viaLink.commissionPercent) : 0, percentOff: null, closesAt: null }
+          : null,
       }, now)
       const to = lead.email ?? email
       await this.mailCode(to, lead.fullName, g.code, g.percentOff, g.closesAt, credited?.code ?? null)

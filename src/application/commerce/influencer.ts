@@ -94,3 +94,47 @@ export function cleanInfluencerPhone(raw: string | null | undefined): string | n
 }
 /** تحت خانة تغيير الكود — الرابطُ القديمُ يبقى يعمل (`formerCodes`) */
 export const INFLUENCER_CODE_KEEPS_AR = 'الرابط القديم يبقى يعمل ويوصل إلى الكود الجديد.'
+
+/* ═══ كاسيت — مؤثّرٌ بصفحته وشعاره (١٧ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «Influencer page + logo». كاسيت كودُ مؤثّرٍ لا صفحةُ شريك (قرارُه ١٦ نوفمبر)، بعمولة ٥٪ لا ١٥٪،
+   وتُنشأ في الإنتاج مرّةً بلا نقرةٍ في الإدارة (`applyInfluencerLaunch` في `server/services/influencer.service.ts`).
+   وكودُها **KASEET** كما أُرسل لها: «wajeezacademy.com/grant/bf?ch=kaseet — أو راسل الأكاديمية بالكود KASEET». و`KASSET`
+   كودٌ سابقٌ لها (`formerCodes`) فيوصل `/grant/i/KASSET` إليها أيضا. */
+export const KASEET_INFLUENCER = {
+  nameAr: 'كاسيت',
+  nameEn: 'Kaseet',
+  code: 'KASEET',
+  formerCodes: ['KASSET'],
+  commissionPercent: 5,
+  phone: '+962781010288',
+  email: 'jameelzatara@kaseet.com',
+} as const
+
+/* ═══ ومن يأخذ عمولتَه على بلاك فرايدي برابطه (١٧ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Yes, 5% on Black Friday») ═══
+   بلاك فرايدي بلا عمولة (#951/#953). وسأل صاحبُ المنصّة عن كاسيت ومن جاء برابطها `?ch=kaseet`: «Yes, 5% on Black Friday».
+   فمن ذُكر هنا يأخذ عمولتَه هو (`commissionPercent` في ملفّه) على كود بلاك فرايدي الذي جاء برابطه، ومن لم يُذكر يُنسب
+   إليه بلا عمولةٍ كما كان. وفحصُ الهامش يعدّها لهم (`grant-margins.service.ts`). */
+export const BLACK_FRIDAY_PAID_INFLUENCERS: readonly string[] = ['KASEET']
+/** عمولةُ كود بلاك فرايدي لمؤثّرٍ جاء الزائرُ برابطه — نسبتُه إن كان في القائمة، وإلّا صفر */
+export const blackFridayCommission = (code: string, commissionPercent: number): number =>
+  BLACK_FRIDAY_PAID_INFLUENCERS.includes(code) ? commissionPercent : 0
+
+/* ═══ شعاراتُ المؤثّرين مع الموقع — كشعارات الشركاء (`BUILT_IN_PARTNER_LOGOS`) ═══
+
+   لا رفعَ لشعار المؤثّر في الإدارة، فما أرسله صاحبُ المنصّة يُشحن مع الموقع في `public/influencers` بكود المؤثّر.
+   ومن ذُكر هنا له رأسُ صفحةٍ مشترك «<اسمه> × أكاديمية وجيز» وزرُّ واتساب برسالته — في صفحته `/grant/i/<كوده>` وفي بلاك فرايدي
+   برابطه `?ch=<كوده>`. وقيمتُه `null` حتى يصل ملفُّه، فيظهر اسمُه مكانَ الشعار. ومن لم يُذكر بقيت صفحتُه كما هي.
+   وإضافةُ الشعار: الملفُّ في `public/influencers/` وقيمتُه هنا مسارُه (`'/influencers/kaseet.png'`). */
+export const BUILT_IN_INFLUENCER_LOGOS: Readonly<Record<string, string | null>> = {
+  KASEET: null,
+}
+/** رأسُ صفحة المؤثّر المشتركُ بشعاره (أو `null` فاسمُه) — أو `null` لمن لا رأسَ له */
+export function influencerBrand(code: string): { logoUrl: string | null } | null {
+  return Object.prototype.hasOwnProperty.call(BUILT_IN_INFLUENCER_LOGOS, code) ? { logoUrl: BUILT_IN_INFLUENCER_LOGOS[code] ?? null } : null
+}
+
+/* ═══ رسالةُ واتساب من صفحة المؤثّر (١٧ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: طلبُ عميلٍ عمليّ، واسمُ المؤثّر في آخرها وحدَه فنعرف من أين جاء — لا كودَ ولا «جئت من طرف». */
+export const influencerWhatsAppTextAr = (nameAr: string): string =>
+  `مرحبا، أحتاج مساعدتكم في اختيار الدورات المناسبة لي - ${nameAr}`

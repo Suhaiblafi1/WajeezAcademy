@@ -99,10 +99,15 @@ interface View {
   termAr: string | null;
   openCourses: GrantCourse[];
   /** مؤثّرُ الرابط في منحة المؤثّرين — إن كان كودُه صحيحا */
-  influencer?: { nameAr: string; code: string } | null;
+  influencer?: { nameAr: string; code: string; brand?: InfluencerBrand | null; whatsAppText?: string } | null;
   /** رابطُ الهديّة القصير (`/s/…`) يصنعه الخادم مرّةً لكلّ وجهة — وبدونه الطويلُ كما كان */
   sharePath?: string | null;
 }
+/** رأسُ صفحة المؤثّر المشترك — شعارُه مع الموقع أو اسمُه مكانَه (`BUILT_IN_INFLUENCER_LOGOS`) */
+type InfluencerBrand = { logoUrl: string | null };
+/** المؤثّرُ ذو الرأس المشترك في هذه الصفحة — يبقى بعد النموذج، فما يردّه النموذجُ لا يحمل رأسَه */
+type Cobrand = { nameAr: string; brand: InfluencerBrand; whatsAppText: string };
+
 interface ApplyResult extends View {
   ref: string;
   grant: { code: string | null; sentTo: string | null; percentOff: number } | null;
@@ -290,11 +295,19 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [authOpen, setAuthOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
 
+  /* ورأسُ المؤثّر المشترك — في صفحته، وفي بلاك فرايدي برابطه `?ch=<كوده>` (١٧ نوفمبر ٢٠٢٦، `channelView` في الخادم) */
+  const [cobrand, setCobrand] = useState<Cobrand | null>(null);
   const load = useCallback(async () => {
+    const ch = forBlackFriday ? campaignParams(window.location.search).channel : null;
     const url = forInfluencer
       ? `${influencerApi}${urlCode ? `?code=${encodeURIComponent(urlCode)}` : ""}`
-      : forBlackFriday ? "/api/public/grant/bf" : forOpen ? "/api/public/grant/open" : "/api/public/grant";
-    try { setView(await apiGet<View>(url)); }
+      : forBlackFriday ? `/api/public/grant/bf${ch ? `?ch=${encodeURIComponent(ch)}` : ""}` : forOpen ? "/api/public/grant/open" : "/api/public/grant";
+    try {
+      const v = await apiGet<View>(url);
+      setView(v);
+      const i = v.influencer;
+      setCobrand(i?.brand && i.whatsAppText ? { nameAr: i.nameAr, brand: i.brand, whatsAppText: i.whatsAppText } : null);
+    }
     catch (e) { setFailed(e instanceof ApiError ? e.message : "تعذر تحميل الصفحة"); }
   }, [forInfluencer, forBlackFriday, forOpen, influencerApi, urlCode]);
   useEffect(() => { void load(); }, [load]);
@@ -583,6 +596,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     };
     return (
       <Shell {...shell}>
+        {cobrand && <InfluencerCobrand cobrand={cobrand} className="mb-4" />}
         {/* صندوقُ الكود — عمودٌ واحدٌ في الوسط: الكودُ ثمّ العدّادُ وآخرُ يومٍ والحدّ، وتحتها سطرٌ صغيرٌ بما يحصل عليه.
             قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «تنتهي المنحة بعد… وآخر يوم واختر حتى ٤ يجب أن تكون في المنتصف،
             وأسفلها سطرٌ صغير». وكان عمودين على الحاسوب، وما يحصل عليه قائمةٌ بأيقونات (٢٤ أكتوبر) */}
@@ -810,8 +824,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   return (
     <Shell {...shell}>
       <div className="mx-auto max-w-lg">
+        {cobrand && <InfluencerCobrand cobrand={cobrand} className="mb-6" />}
         <div className="text-center">
-          <Gift className="mx-auto h-10 w-10 text-gold-ink" aria-hidden="true" />
+          {!cobrand && <Gift className="mx-auto h-10 w-10 text-gold-ink" aria-hidden="true" />}
           <h1 className="mt-2 text-3xl font-black">{nameAr}</h1>
           {c.open ? (
             <>
@@ -907,6 +922,15 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           <Button type="submit" tone="primary" className="w-full" disabled={busy || !ready}>{c.open ? "احجز منحتي الآن" : "سجلني"}</Button>
           <p className="text-read leading-6 text-muted-foreground">{GRANT_CONSENT_AR}</p>
         </Card>
+        {/* وزرُّ واتساب لمن جاء من مؤثّرٍ برأسه — رسالتُه طلبٌ عمليٌّ ينتهي باسمه، ورقمُه موضعُه في شاشة الربط (`influencer_page`) */}
+        {cobrand && (() => {
+          const href = waHref(numbers, "influencer_page", CONTACT.whatsapp, cobrand.whatsAppText);
+          return href ? (
+            <p className="mt-4 text-center">
+              <Button as="a" href={href} target="_blank" rel="noreferrer" icon={MessageCircle}>تحتاج مساعدة؟ راسلنا على واتساب</Button>
+            </p>
+          ) : null;
+        })()}
         {/* «لماذا هذه المنحة؟» في الصفحة الأولى تحت النموذج — في كلّ أنواع المنح (٨ نوفمبر ٢٠٢٦) */}
         {c.open && <GrantWhy />}
         {/* وجوهُ مدرّبي الموسم تحت النموذج — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، والعلّةُ عند `grantTrainerFaces` */}
@@ -969,6 +993,25 @@ function Shell({
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-5 py-8">{children}</main>
+    </div>
+  );
+}
+
+/* ═══ رأسُ صفحة المؤثّر المشترك (١٧ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «Influencer page + logo». كرأس صفحة الشريك (`CoBrand` في `PartnerGrantPage.tsx`): شعارُه على أرضيّةٍ بيضاء
+   فيُقرأ في الليليّ، و«×» وعلامةُ الأكاديمية. وحتى يصل شعارُه يُكتب اسمُه في مكانه */
+function InfluencerCobrand({ cobrand, className = "" }: { cobrand: Cobrand; className?: string }) {
+  return (
+    <div className={`flex items-center justify-center gap-4 sm:gap-6 ${className}`} data-testid="influencer-cobrand">
+      <span className="grid h-20 min-w-20 max-w-[11rem] place-items-center rounded-2xl bg-white px-3 shadow-sm ring-1 ring-black/10 sm:h-24">
+        {cobrand.brand.logoUrl
+          ? <img src={cobrand.brand.logoUrl} alt={`شعار ${cobrand.nameAr}`} className="max-h-16 w-auto object-contain sm:max-h-20" />
+          : <span className="text-center text-lg font-black leading-6 text-teal-deep">{cobrand.nameAr}</span>}
+      </span>
+      <span aria-hidden="true" className="text-2xl font-black text-muted-foreground">×</span>
+      <span className="grid h-20 w-20 place-items-center rounded-2xl bg-white shadow-sm ring-1 ring-black/10 sm:h-24 sm:w-24">
+        <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-12 w-12 object-contain sm:h-14 sm:w-14" />
+      </span>
     </div>
   );
 }
