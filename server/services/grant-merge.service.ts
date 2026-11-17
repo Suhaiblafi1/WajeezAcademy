@@ -31,6 +31,7 @@ import { fmtDateLong } from '../../src/application/text/format-ar'
 import {
   BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantCoursesAr,
 } from '../../src/application/commerce/grant'
+import { goPath, PRIVATE_PATH_PURPOSE, type PrivatePathPayload } from '../../src/application/commerce/private-path'
 
 /** نسبةُ بلاك فرايدي لكلّ كود — قرارُ صاحب المنصّة (١٦ نوفمبر ٢٠٢٦) */
 export const BLACK_FRIDAY_MERGE_PERCENT = 70
@@ -164,11 +165,25 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
     where: { id: { in: [...oldPct.keys()] }, campaignId: bf.id, lead: { erasedAt: null, email: { not: null } } },
     select: {
       id: true,
-      lead: { select: { id: true, fullName: true, email: true } },
+      lead: { select: { id: true, fullName: true, email: true, userId: true } },
       coupon: { select: { id: true, code: true, percentOff: true, usedCount: true, maxUses: true } },
     },
   })
   const off = await optedOut(prisma, codes.map((c) => c.lead!.email!))
+  /* ومن قرأنا سيرتَه وأرسلنا له مسارا خاصّا (`/go/…`) يصله رابطُه مع رابط المنحة (١٧ نوفمبر ٢٠٢٦، صاحب المنصّة: «يجب أن يظهر
+     له رابطُ المنحة وأيضا رابطُ الدورات المقترحة التي اقترحناها له»). وأحدثُ مسارٍ له غيرُ مسحوبٍ ولا منسوخ — بكوده أو بنموذجه
+     أو بحسابه. وسعرُه في صفحته يُحسب من كوده، فيقول النسبةَ الجديدة وحدَه */
+  const paths = await prisma.shortLink.findMany({
+    where: { purpose: PRIVATE_PATH_PURPOSE, revokedAt: null }, orderBy: { createdAt: 'desc' }, select: { code: true, payload: true },
+  })
+  const pathOf = (lead: { id: string; userId: string | null }, code: string): string | null => {
+    for (const x of paths) {
+      const p = x.payload as unknown as PrivatePathPayload | null
+      if (!p || p.supersededBy) continue
+      if (p.code?.toUpperCase() === code.toUpperCase() || p.learnerKey === `lead:${lead.id}` || (lead.userId && p.learnerKey === `user:${lead.userId}`)) return x.code
+    }
+    return null
+  }
   const grants = new GrantService(prisma)
   const site = publicSiteUrl()
   const lastDay = bf.closesAt ? fmtDateLong(new Date(bf.closesAt.getTime() - 1)) : null
@@ -185,11 +200,12 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
     const pct = g.coupon.percentOff ?? bf.percentOff
     /* بلغةٍ أبسطَ وأحيا (١٧ نوفمبر ٢٠٢٦: «اجعل اللغة أبسط وأكثر حيوية وتشجيع») */
     const subject = `مفاجأة: خصمك صار ${pct}%`
+    const path = pathOf(lead, g.coupon.code)
     const links = unsubscribeLinks(lead.email!)
     await prisma.$transaction(async (tx) => {
       await recordAudit(tx, {
         action: 'coupon.grant_notice', entityType: 'lead', entityId: lead.id,
-        meta: { stage: BF_UPGRADE_STAGE, grantCodeId: g.id, from: was, to: pct },
+        meta: { stage: BF_UPGRADE_STAGE, grantCodeId: g.id, from: was, to: pct, path },
       })
       await enqueueMail(tx, {
         to: lead.email!, purpose: 'grant.reminder', subject, unsubscribeUrl: links.oneClick,
@@ -208,7 +224,12 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
               { label: 'كود منحتك', value: g.coupon.code },
               { label: 'الخصم', value: `${pct}%` },
             ] },
-            { kind: 'cta', label: 'احجز دوراتك الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` },
+            ...(path
+              ? [
+                  { kind: 'cta' as const, label: 'افتح دوراتك المقترحة', href: `${site}${goPath(path)}` },
+                  { kind: 'p' as const, text: ['اخترناها لك من سيرتك الذاتية. أو اختر غيرها من ', { text: 'صفحة المنحة', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` }, '.'] },
+                ]
+              : [{ kind: 'cta' as const, label: 'احجز دوراتك الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` }]),
           ],
         }),
       })

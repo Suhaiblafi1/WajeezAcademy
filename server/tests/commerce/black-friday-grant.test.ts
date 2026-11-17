@@ -399,9 +399,23 @@ describe('⑩ الدمج في بلاك فرايدي', () => {
       expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_settings', reason: BLACK_FRIDAY_SYNC_REASON } })).toBeGreaterThanOrEqual(2)
       expect((await syncBlackFridayCodes(prisma))!.changed, 'غير ما لم يتغير').toBe(0)
 
+      /* ⑬ ومن أرسلنا له مسارا خاصّا بعد قراءة سيرته: رابطُه في البريد مع رابط المنحة — أحدثُه، لا المنسوخ (١٧ نوفمبر ٢٠٢٦) */
+      const pathPayload = (code: string, extra: Record<string, unknown> = {}) => ({
+        v: 1, linkId: 'x', token: 'x', kind: 'advisor', learnerKey: `lead:${mOut.ref}`, firstName: 'م', courses: [], code: mOut.grant!.code, whatsapp: false, ...extra,
+      })
+      const tag = String(Date.now()).slice(-6)
+      /* والمنسوخُ أحدثُ صفّا هنا عمدا — فلا يُختار بتاريخه، بل يُترك لأنّه منسوخ */
+      await prisma.shortLink.create({ data: { code: `NEWP${tag}`, target: `/go/NEWP${tag}`, purpose: 'private_path', payload: pathPayload('x') as never } })
+      await prisma.shortLink.create({ data: { code: `OLDP${tag}`, target: `/go/OLDP${tag}`, purpose: 'private_path', payload: pathPayload('x', { supersededBy: `NEWP${tag}` }) as never, createdAt: new Date(Date.now() + 60_000) } })
+
       const after = new Date(BF_UPGRADE_SEND_AT.getTime() + 3_600_000)
       await sendBlackFridayUpgradeNotice(prisma, after)
       const mm = await notices(m.email)
+      expect(mm[0]?.text, 'لا رابط دوراته المقترحة').toContain(`/go/NEWP${tag}`)
+      expect(mm[0].text, 'رابط مسار منسوخ').not.toContain(`/go/OLDP${tag}`)
+      expect(mm[0].text, 'لا رابط المنحة معه').toContain('/grant/bf')
+      expect(mm[0].text).toContain('افتح دوراتك المقترحة')
+      expect((await notices(o.email))[0]?.text, 'رابط مسار لمن لا مسار له').not.toContain('/go/')
       expect(mm, 'لم يصل صاحب الستين').toHaveLength(1)
       expect(mm[0].subject, 'البريد بغير نسبتها').toContain('خصمك صار 80%')
       expect(mm[0].text).toContain('رفعنا منحتك من 60% إلى 80%')
