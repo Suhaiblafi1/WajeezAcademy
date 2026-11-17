@@ -172,7 +172,6 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
   const grants = new GrantService(prisma)
   const site = publicSiteUrl()
   const lastDay = bf.closesAt ? fmtDateLong(new Date(bf.closesAt.getTime() - 1)) : null
-  const closedDay = bf.closesAt ? fmtDateLong(bf.closesAt) : null
   let sent = 0
   for (const g of codes) {
     const lead = g.lead!
@@ -184,7 +183,8 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
     })
     if (left <= 0) continue
     const pct = g.coupon.percentOff ?? bf.percentOff
-    const subject = `خصمك صار ${pct}% — أكبر خصم لدينا${lastDay ? ` حتى ${lastDay}` : ''}`
+    /* بلغةٍ أبسطَ وأحيا (١٧ نوفمبر ٢٠٢٦: «اجعل اللغة أبسط وأكثر حيوية وتشجيع») */
+    const subject = `مفاجأة: خصمك صار ${pct}%`
     const links = unsubscribeLinks(lead.email!)
     await prisma.$transaction(async (tx) => {
       await recordAudit(tx, {
@@ -196,20 +196,19 @@ export async function sendBlackFridayUpgradeNotice(prisma: PrismaClient, now = n
         ...renderMail({
           unsubscribeUrl: links.page,
           greetingName: lead.fullName ?? undefined,
-          heading: subject,
-          preheader: `كودك نفسه، وخصمه الآن ${pct}% على كل الدورات${lastDay ? ` حتى ${lastDay}` : ''}.`,
+          heading: `خصمك صار ${pct}%`,
+          preheader: `نفس كودك، وخصم أكبر${lastDay ? `. حتى ${lastDay} فقط` : ''}.`,
           blocks: [
-            { kind: 'p', text: `خبر جيد: انضمت منحتك إلى ${BLACK_FRIDAY_GRANT_NAME_AR}، فصار خصمك ${pct}% بدل ${was}%. وهذا أكبر خصم قدمناه.` },
-            { kind: 'p', text: `كودك هو نفسه، ويطبق وحده عند الشراء من حسابك. اختر حتى ${grantCoursesAr(left)}.` },
-            ...(lastDay && closedDay
-              ? [{ kind: 'p' as const, text: `آخر يوم ${lastDay}. ومن ${closedDay} يغلق التسجيل تماما حتى الفصل القادم، فسجل الآن.` }]
+            { kind: 'p', text: `رفعنا منحتك من ${was}% إلى ${pct}%، وهذا أكبر خصم قدمناه على الإطلاق.` },
+            { kind: 'p', text: `كودك نفسه، ويعمل وحده عند الدفع. اختر حتى ${grantCoursesAr(left)} وابدأ.` },
+            ...(lastDay
+              ? [{ kind: 'p' as const, text: `العرض حتى ${lastDay} فقط، وبعدها يغلق التسجيل حتى الفصل القادم.` }]
               : []),
             { kind: 'facts', rows: [
               { label: 'كود منحتك', value: g.coupon.code },
               { label: 'الخصم', value: `${pct}%` },
-              ...(lastDay ? [{ label: 'آخر يوم', value: lastDay }] : []),
             ] },
-            { kind: 'cta', label: 'سجل الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` },
+            { kind: 'cta', label: 'احجز دوراتك الآن', href: `${site}${BLACK_FRIDAY_GRANT_PATH}` },
           ],
         }),
       })

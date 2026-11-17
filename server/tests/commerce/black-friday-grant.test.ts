@@ -383,7 +383,7 @@ describe('⑩ الدمج في بلاك فرايدي', () => {
     const close = new Date(BF_UPGRADE_SEND_AT.getTime() + 5 * 24 * 3_600_000)
     await bf.update({ closesAt: close }, ownerId)
     try {
-      const notices = (to: string) => prisma.outboxMail.findMany({ where: { to, purpose: 'grant.reminder', subject: { contains: 'أكبر خصم' } } })
+      const notices = (to: string) => prisma.outboxMail.findMany({ where: { to, purpose: 'grant.reminder', subject: { contains: 'مفاجأة' } } })
       expect((await sendBlackFridayUpgradeNotice(prisma, new Date(BF_UPGRADE_SEND_AT.getTime() - 60_000))).sent, 'أرسل قبل موعده').toBe(0)
       /* ⑫ ورفعُها إلى ثمانين يجرّ أكوادَها كلَّها — ما أُعطي قبل الحفظ وما انتقل إليها — فيقول البريدُ ثمانين (١٧ نوفمبر ٢٠٢٦:
          «but the discount is now 80%!! why you don't sync») */
@@ -404,10 +404,10 @@ describe('⑩ الدمج في بلاك فرايدي', () => {
       const mm = await notices(m.email)
       expect(mm, 'لم يصل صاحب الستين').toHaveLength(1)
       expect(mm[0].subject, 'البريد بغير نسبتها').toContain('خصمك صار 80%')
-      expect(mm[0].text).toContain('بدل 60%')
+      expect(mm[0].text).toContain('رفعنا منحتك من 60% إلى 80%')
       expect(mm[0].text).toContain(mOut.grant!.code!)
-      expect(mm[0].text, 'لا يقول إغلاق التسجيل').toContain('يغلق التسجيل تماما حتى الفصل القادم')
-      expect((await notices(o.email))[0]?.text, 'لم يصل صاحب الخمسين').toContain('بدل 50%')
+      expect(mm[0].text, 'لا يقول إغلاق التسجيل').toContain('فقط، وبعدها يغلق التسجيل حتى الفصل القادم.')
+      expect((await notices(o.email))[0]?.text, 'لم يصل صاحب الخمسين').toContain('من 50% إلى 80%')
       expect(await notices(e.email), 'وصل من نزل كوده بريد الارتفاع').toHaveLength(0)
       await sendBlackFridayUpgradeNotice(prisma, after)
       expect(await notices(m.email), 'وصله مرتين').toHaveLength(1)
