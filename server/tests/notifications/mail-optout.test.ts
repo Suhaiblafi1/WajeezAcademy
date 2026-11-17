@@ -28,7 +28,7 @@ const STAMP = Date.now()
 const HOUR = 3_600_000
 
 const person = () => ({
-  fullName: `قارئ ${++seq}`, phone: `0796${String(300000 + seq)}`, email: `optout-${seq}-${STAMP}@test.local`, workField: 'الموارد البشرية',
+  fullName: `قارئ ${++seq}`, phone: `+962796${String(300000 + seq)}`, email: `optout-${seq}-${STAMP}@test.local`, workField: 'الموارد البشرية',
 })
 
 beforeAll(async () => {
