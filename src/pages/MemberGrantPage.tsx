@@ -121,14 +121,8 @@ const money = (n: number) => fmtMoney(n, USD);
 /** «دورة» و«دورتين» بلا رقم، و«4 دورات» */
 const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
 
-/** عدّادُ انتهاء المنحة وآخرُ يومٍ لها — سطرٌ واحدٌ بالأيّام، وتحت اليوم بالساعات (`grantLeftAr`).
-
-    و`closingAr` سطرٌ تحته (١٧ نوفمبر ٢٠٢٦) — قرارُ صاحب المنصّة «B»: خُيّر بين مقاعدَ تنقص كلَّ يومٍ بلا حدٍّ حقيقيّ
-    — فلم تُبنَ لأنّها تقول للمشتري ما لم يقع — وحدٍّ حقيقيٍّ للأكواد وعدّادٍ لآخر يومٍ حقيقيّ، فاختار العدّاد. وهو هذا
-    بصيغته التي اختارها (٢٤ أكتوبر ٢٠٢٦، بالأيّام وحدَها)، وفي بلاك فرايدي يقول تحته إنّ التسجيل يُغلق بعدها حتى الفصل القادم. */
-function GrantCountdown({ closesAt, className = "", compact = false, closingAr }: {
-  closesAt: string; className?: string; compact?: boolean; closingAr?: string;
-}) {
+/** عدّادُ انتهاء المنحة — سطرٌ واحدٌ باليوم وحدَه (`grantLeftAr`، ١٧ نوفمبر ٢٠٢٦: «كثير الكلام.. العدّادُ يكون باليوم فقط») */
+function GrantCountdown({ closesAt, className = "" }: { closesAt: string; className?: string }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -137,11 +131,9 @@ function GrantCountdown({ closesAt, className = "", compact = false, closingAr }
   const left = grantLeftAr(grantCountdown(closesAt, now));
   if (!left) return <p className={`text-read font-bold ${className}`}>انتهت المنحة</p>;
   return (
-    <div className={className} role="timer">
-      <p className="inline-flex items-center gap-1.5 font-black"><Clock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> تنتهي المنحة بعد {left}</p>
-      {!compact && <p className="mt-0.5 text-read text-muted-foreground">آخر يوم: {fmtDateLong(new Date(new Date(closesAt).getTime() - 1))}</p>}
-      {!compact && closingAr && <p className="mt-1 text-read font-bold">{closingAr}</p>}
-    </div>
+    <p className={`inline-flex items-center gap-1.5 font-black ${className}`} role="timer">
+      <Clock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> {left}
+    </p>
   );
 }
 /* المساراتُ العامّةُ بترتيب مختارات صاحب المنصّة — ومنها الرئيسيُّ والبديل (`suggestPaths`) */
@@ -592,7 +584,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           {/* وصاحبُ الكود بعد يومها الأخير يُقال له إنّها أُغلقت — فلا يظنّ كودَه يُخصم عند الدفع */}
           {(stored.code || stored.sentTo) && !c.open && <p className="mt-2 text-read font-bold">{GRANT_CLOSED_AR}</p>}
           {/* والعدّادُ لمن له منحةٌ يستعملها — سطرٌ واحد، وآخرُ يومها في السطر فوقه */}
-          {grantOn && c.closesAt && <GrantCountdown closesAt={c.closesAt} compact className="mt-3" />}
+          {grantOn && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
         </Card>
 
 
@@ -809,10 +801,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               </p>
               <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.</p>
               {c.closesAt
-                ? <GrantCountdown
-                    closesAt={c.closesAt} className="mt-4"
-                    closingAr={forBlackFriday ? `ومن ${fmtDateLong(new Date(c.closesAt))} يغلق التسجيل حتى الفصل القادم.` : undefined}
-                  />
+                ? <GrantCountdown closesAt={c.closesAt} className="mt-4" />
                 : <p className="mt-3"><Chip tone="warn">المنح محدودة</Chip></p>}
             </>
           ) : (

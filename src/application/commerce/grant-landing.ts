@@ -794,14 +794,15 @@ export function grantSections<T extends { domainAr?: string | null }>(
 /* ثمّ قال (٢٤ أكتوبر ٢٠٢٦): «لا داعي للدقيقة والساعة والثانية، فقط اجعلها يوما، وإن قلّت عن يومٍ تصبح ساعة.. وابقِه
    بالأعلى وحدَه». فسطرٌ واحد: «تنتهي المنحة بعد 6 أيام»، وتحت اليوم «بعد 9 ساعات» (`grantLeftAr`). */
 
-/** «6 أيام» — وتحت اليوم «9 ساعات» — والعددُ مع معدوده */
-export function grantLeftAr(left: { days: number; hours: number } | null): string | null {
+/* ثمّ قال (١٧ نوفمبر ٢٠٢٦): «كثير الكلام.. الناس الآن لا تقرأ ولا تحبّ كثيرَ النصوص. العدّادُ يكون باليوم فقط بدون
+   ساعةٍ وثانية». فسطرٌ واحدٌ بلا تاريخٍ تحته: «تنتهي المنحة بعد 4 أيام»، وتحت اليوم «تنتهي المنحة اليوم» — لا ساعات. */
+
+/** «تنتهي المنحة بعد 4 أيام» — وتحت اليوم «تنتهي المنحة اليوم» — والعددُ مع معدوده */
+export function grantLeftAr(left: { days: number } | null): string | null {
   if (!left) return null
-  const count = (n: number, one: string, two: string, few: string, many: string) =>
-    n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${many}`
-  if (left.days >= 1) return count(left.days, 'يوم واحد', 'يومين', 'أيام', 'يوما')
-  if (left.hours >= 1) return count(left.hours, 'ساعة واحدة', 'ساعتين', 'ساعات', 'ساعة')
-  return 'أقل من ساعة'
+  const n = left.days
+  if (n < 1) return 'تنتهي المنحة اليوم'
+  return `تنتهي المنحة بعد ${n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n <= 10 ? `${n} أيام` : `${n} يوما`}`
 }
 
 /** ما بقي حتّى نهاية المنحة — أو `null` إن انتهت أو بلا نهاية */

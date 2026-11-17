@@ -795,18 +795,17 @@ describe('بعد النموذج', () => {
     expect(grantCountdown(end, new Date('2026-10-30T19:58:57.000Z'))).toEqual({ days: 2, hours: 1, minutes: 1, seconds: 3 })
     expect(grantCountdown(end, new Date(end)), 'انتهت').toBeNull()
     expect(grantCountdown(null, new Date())).toBeNull()
-    expect([1, 2, 6, 11].map((days) => grantLeftAr({ days, hours: 5 }))).toEqual(['يوم واحد', 'يومين', '6 أيام', '11 يوما'])
-    expect([1, 2, 9, 23].map((hours) => grantLeftAr({ days: 0, hours }))).toEqual(['ساعة واحدة', 'ساعتين', '9 ساعات', '23 ساعة'])
-    expect(grantLeftAr({ days: 0, hours: 0 })).toBe('أقل من ساعة')
+    /* باليوم وحدَه (١٧ نوفمبر ٢٠٢٦: «كثير الكلام.. العدّاد يكون باليوم فقط بدون ساعة وثانية») — وتحت اليوم «اليوم» لا ساعات */
+    expect([1, 2, 6, 11].map((days) => grantLeftAr({ days }))).toEqual(['تنتهي المنحة بعد يوم واحد', 'تنتهي المنحة بعد يومين', 'تنتهي المنحة بعد 6 أيام', 'تنتهي المنحة بعد 11 يوما'])
+    expect(grantLeftAr({ days: 0 }), 'عادت الساعات').toBe('تنتهي المنحة اليوم')
     expect(grantLeftAr(null)).toBeNull()
     expect(PAGE).toMatch(/const left = grantLeftAr\(grantCountdown\(closesAt, now\)\);/)
     expect(PAGE, 'لا ثوان ولا دقائق').toMatch(/setInterval\(\(\) => setNow\(new Date\(\)\), 60_000\)/)
-    expect(PAGE).not.toMatch(/"دقيقة"|"ثانية"/)
-    expect(PAGE).toContain('تنتهي المنحة بعد {left}')
-    expect(PAGE).toContain('آخر يوم: {fmtDateLong(')
-    /* وتحت الكود سطرٌ واحد — آخرُ يومها في سطر الترحيب (١٥ نوفمبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/\{grantOn && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} compact className="mt-3" \/>\}/)
-    expect(PAGE).toMatch(/\{!compact && <p className="mt-0\.5 text-read text-muted-foreground">آخر يوم:/)
+    expect(PAGE).not.toMatch(/"دقيقة"|"ثانية"|"ساعة"/)
+    /* وسطرٌ واحد: لا تاريخَ ولا سطرَ تحته */
+    const fn = PAGE.slice(PAGE.indexOf('function GrantCountdown'), PAGE.indexOf('function GrantCountdown') + 900)
+    expect(fn, 'عاد سطر تحت العداد').not.toMatch(/آخر يوم|closingAr|يغلق التسجيل/)
+    expect(PAGE).toMatch(/\{grantOn && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}/)
     expect(PAGE.match(/<GrantCountdown\s/g)?.length, 'العداد في النموذج وتحت الكود وحدهما').toBe(2)
   })
 
@@ -816,10 +815,7 @@ describe('بعد النموذج', () => {
   })
 
   it('⚠️ ولا عدد للمنح — العداد وآخر يوم وحدهما، والعدد لا يصل الزائر', () => {
-    /* وفي بلاك فرايدي تحته أنّ التسجيل يُغلق بعدها حتى الفصل القادم (١٧ نوفمبر ٢٠٢٦، «B») — بيومها التالي لآخر يوم */
-    expect(PAGE).toMatch(/\? <GrantCountdown\s+closesAt=\{c\.closesAt\} className="mt-4"\s+closingAr=\{forBlackFriday \? `ومن \$\{fmtDateLong\(new Date\(c\.closesAt\)\)\} يغلق التسجيل حتى الفصل القادم\.` : undefined\}\s+\/>\s*: <p className="mt-3"><Chip tone="warn">المنح محدودة<\/Chip><\/p>/)
-    expect(PAGE).toMatch(/\{!compact && closingAr && <p className="mt-1 text-read font-bold">\{closingAr\}<\/p>\}/)
-    expect('يغلق التسجيل حتى الفصل القادم.').toBe(plainAr('يغلق التسجيل حتى الفصل القادم.'))
+    expect(PAGE).toMatch(/\? <GrantCountdown closesAt=\{c\.closesAt\} className="mt-4" \/>\s*: <p className="mt-3"><Chip tone="warn">المنح محدودة<\/Chip><\/p>/)
     expect(PAGE, 'عاد عدد المنح إلى الصفحة').not.toMatch(/\.left\b|بقي \$\{/)
     expect(PAGE).toMatch(/campaign: \{ open: boolean; percentOff: number; maxCourses: number; closesAt: string \| null; soldOut\?: boolean \};/)
     expect(PAGE).toMatch(/>\{c\.open \? "احجز منحتي الآن" : "سجلني"\}<\/Button>/)
@@ -872,7 +868,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'نقترحها لك', 'نقترح لك', 'تناسبك', ' ولا تتعارض مواعيدها', ' ابدأ بالأولى، وكودك يبقى لباقيها بنفس الخصم.', 'ابدأ بها', 'يناسب ما تريد تطويره', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'افتح أي مجال لترى دوراته ومدربيها.', 'كودك في بريدك ', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
+      'نقترحها لك', 'نقترح لك', 'تناسبك', ' ولا تتعارض مواعيدها', ' ابدأ بالأولى، وكودك يبقى لباقيها بنفس الخصم.', 'ابدأ بها', 'يناسب ما تريد تطويره', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'افتح أي مجال لترى دوراته ومدربيها.', 'كودك في بريدك ', 'نبذة عن الدورة', 'إخفاء النبذة', 'أهدافها', 'لمن هي: ', 'المزيد عن الدورة']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')
