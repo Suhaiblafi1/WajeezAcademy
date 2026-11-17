@@ -1611,9 +1611,15 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   /* ثمّ مُدّت الحملتان إلى ١٢ نوفمبر (١ نوفمبر ٢٠٢٦) — بعد تصحيح ٣٠ أكتوبر، فلا يردّها ذاك إن وقع أوّلا */
   const extended = await applyGrantExtendFix(prisma)
   const extendedInfluencers = await applyGrantExtendFix(prisma, INFLUENCER_GRANT_SLUG)
+  /* وكلُّ بريدٍ تبعثه هذه الوظيفة ممسوكٌ حتى يأمر صاحبُ المنصّة (١٧ نوفمبر ٢٠٢٦: «don't let the system send any
+     email until i say … then i order to send») — والتصحيحاتُ تمضي، وما أُمسك يخرج بمراحله حين يُطلَق
+     (`grant-mail-hold.service.ts`) */
+  const { grantMailHeld } = await import('../services/grant-mail-hold.service')
+  const held = await grantMailHeld(prisma)
+  const none = { sent: 0, stage: null, mailOff: false } as const
   /* وبريدُ «مددنا منحتك» لمن أخذ كودَه قبل التمديد ولم يشترِ — مرّةً لكلٍّ (١ نوفمبر ٢٠٢٦) */
-  const toldMembers = await sendGrantExtendedNotice(prisma, now)
-  const toldInfluencers = await sendGrantExtendedNotice(prisma, now, INFLUENCER_GRANT_SLUG)
+  const toldMembers = held ? none : await sendGrantExtendedNotice(prisma, now)
+  const toldInfluencers = held ? none : await sendGrantExtendedNotice(prisma, now, INFLUENCER_GRANT_SLUG)
   const told = toldMembers.sent + toldInfluencers.sent
   const limited = await applyGrantCoursesFix(prisma)
   /* و«منحة وجيز العامة» تُشغَّل حتى ٣٠ نوفمبر — مرّةً واحدة، قبل تذكيرها فيتبع نهايتَها (١ نوفمبر ٢٠٢٦) */
@@ -1622,26 +1628,33 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
      و«جامعة الشرق الأوسط» مشغَّلةً بشعارها (١٦ نوفمبر ٢٠٢٦) — كلٌّ مرّةً بأثره */
   const { applyPartnerLaunch } = await import('../services/partner-grant.service')
   const partnered = await applyPartnerLaunch(prisma)
+  /* وأسعارُ الشعب القائمة ترتفع ١٠٪ مع سعر القائمة — مرّةً بلا إعلان (١٧ نوفمبر ٢٠٢٦، `cohort-price-raise.service.ts`) */
+  const { applyCohortPriceRaise } = await import('../services/cohort-price-raise.service')
+  await applyCohortPriceRaise(prisma)
   /* و«منحة وجيز» و«العامة» تصيران «بلاك فرايدي وجيز» بـ70% لكلّ كود، ويوقف المؤثّرون — مرّةً واحدة (١٦ نوفمبر ٢٠٢٦) */
-  const { applyBlackFridayMerge, sendBlackFridayUpgradeNotice, syncBlackFridayCodes } = await import('../services/grant-merge.service')
+  const { applyBlackFridayMerge, applyBlackFridayRaise, sendBlackFridayUpgradeNotice, syncBlackFridayCodes } = await import('../services/grant-merge.service')
   await applyBlackFridayMerge(prisma)
-  /* وكلُّ كودٍ فيها بنسبتها قبل أيّ بريد — فيقول البريدُ ما يُخصم حقّا (١٧ نوفمبر ٢٠٢٦) */
+  /* ثمّ 80% لكلّ كود ما دامت نسبتُها 80% — قبل بريد العصر، فيقول البريدُ الثمانين (١٧ نوفمبر ٢٠٢٦: «80% for everyone») */
+  await applyBlackFridayRaise(prisma)
+  /* وكلُّ كودٍ فيها بنسبتها بعدُ — ما تغيّرت نسبتُها تتبعها أكوادُها قبل أيّ بريد (١٧ نوفمبر ٢٠٢٦: «why you don't sync») */
   await syncBlackFridayCodes(prisma)
   /* وبريدُ من ارتفع كودُه إلى 70% — مرّةً، عصرَ ١٧ نوفمبر (١٦ نوفمبر ٢٠٢٦: «send them tomorrow afternoon») */
-  await sendBlackFridayUpgradeNotice(prisma, now)
+  if (!held) await sendBlackFridayUpgradeNotice(prisma, now)
   const seeded = await seedGrantAdvisorWhatsApp(prisma)
   /* ولكلّ حملةٍ بنهايتها: «منحة وجيز» و«منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) و«منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
-  const members = await sendGrantReminders(prisma, now)
-  const influencers = await sendGrantReminders(prisma, now, INFLUENCER_GRANT_SLUG)
-  const open = await sendGrantReminders(prisma, now, OPEN_GRANT_SLUG)
+  const remind = (slug?: Parameters<typeof sendGrantReminders>[2]) => held ? Promise.resolve(none) : sendGrantReminders(prisma, now, slug)
+  const remindLeft = (slug: Parameters<typeof sendGrantLeftReminders>[2]) => held ? Promise.resolve(none) : sendGrantLeftReminders(prisma, now, slug)
+  const members = await remind()
+  const influencers = await remind(INFLUENCER_GRANT_SLUG)
+  const open = await remind(OPEN_GRANT_SLUG)
   /* و«بلاك فرايدي وجيز» بنهايتها هي ورابطِ مؤثّرها فيها (١٥ نوفمبر ٢٠٢٦) */
-  const blackFriday = await sendGrantReminders(prisma, now, BLACK_FRIDAY_GRANT_SLUG)
+  const blackFriday = await remind(BLACK_FRIDAY_GRANT_SLUG)
   /* ومن اشترى ببعض كوده: تذكيرٌ واحدٌ قبل النهاية بما بقي عليه — لكلّ حملة (١٣ نوفمبر ٢٠٢٦) */
   const leftBySlug = [
-    await sendGrantLeftReminders(prisma, now, MEMBER_GRANT_SLUG),
-    await sendGrantLeftReminders(prisma, now, INFLUENCER_GRANT_SLUG),
-    await sendGrantLeftReminders(prisma, now, OPEN_GRANT_SLUG),
-    await sendGrantLeftReminders(prisma, now, BLACK_FRIDAY_GRANT_SLUG),
+    await remindLeft(MEMBER_GRANT_SLUG),
+    await remindLeft(INFLUENCER_GRANT_SLUG),
+    await remindLeft(OPEN_GRANT_SLUG),
+    await remindLeft(BLACK_FRIDAY_GRANT_SLUG),
   ]
   /* ومنحُ الشركاء بنهاية كلٍّ إن كُتبت له — تذكيراها وتذكيرُ ما بقي، كالحملات (١٥ نوفمبر ٢٠٢٦). وبلا نهايةٍ لا تذكير */
   const partnerSlugs = (await prisma.grantCampaign.findMany({
@@ -1649,8 +1662,8 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   })).map((p) => p.slug as `partner-${string}`)
   const byPartner: { sent: number; stage: string | null; mailOff: boolean }[] = []
   for (const slug of partnerSlugs) {
-    byPartner.push(await sendGrantReminders(prisma, now, slug))
-    leftBySlug.push(await sendGrantLeftReminders(prisma, now, slug))
+    byPartner.push(await remind(slug))
+    leftBySlug.push(await remindLeft(slug))
   }
   const leftSent = leftBySlug.reduce((n, r) => n + r.sent, 0)
   const sent = members.sent + influencers.sent + open.sent + blackFriday.sent + byPartner.reduce((n, r) => n + r.sent, 0)
@@ -1661,7 +1674,8 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
     job: 'grant_reminders',
     summaryAr: (fixed ? 'صار آخر يوم للمنحة 30 أكتوبر · ' : '') + (extended ? 'مدت المنحة إلى 12 نوفمبر · ' : '') + (extendedInfluencers ? 'مدت منحة المؤثرين إلى 12 نوفمبر · ' : '') + (told > 0 ? `أخبر ${told} ممن لم يشتر بتمديد المنحة · ` : '') + (limited ? 'صار حد المنحة 4 دورات · ' : '')
       + (launched ? 'شغلت منحة وجيز العامة حتى 30 نوفمبر · ' : '') + (partnered.length > 0 ? `أضيف شريكا: ${partnered.join('، ')} · ` : '') + (seeded ? 'ضبط رقم واتساب مستشار المنحة · ' : '')
-      + (leftSent > 0 ? `ذكّر ${leftSent} ممن اشترى ببعض كوده بما بقي عليه · ` : '') + (mailOff
+      + (leftSent > 0 ? `ذكّر ${leftSent} ممن اشترى ببعض كوده بما بقي عليه · ` : '') + (held
+      ? 'بريد المنح ممسوك حتى يأمر صاحب المنصة بإرساله' : mailOff
       ? 'حلّ تذكير المنحة وقناة البريد غير موصولة — لا يذكّر أحد حتى توصل'
       : sent === 0 ? 'لا تذكير منحة مستحق' : `ذكّر ${sent} ممن لم يشتر بأن المنحة تنتهي (${stage === '1d' ? 'آخر يوم' : 'قبل ثلاثة أيام'})`),
     done: sent + told + leftSent + (fixed ? 1 : 0) + (extended ? 1 : 0) + (extendedInfluencers ? 1 : 0) + (limited ? 1 : 0) + (launched ? 1 : 0) + partnered.length + (seeded ? 1 : 0), failed: 0, ms: Date.now() - started,

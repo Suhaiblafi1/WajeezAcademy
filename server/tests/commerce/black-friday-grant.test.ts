@@ -375,6 +375,19 @@ describe('⑩ الدمج في بلاك فرايدي', () => {
     expect(again.ref).toBe(mOut.ref)
     expect(await applyBlackFridayMerge(prisma), 'دمج مرتين').toBeNull()
 
+    /* ⑩ب ثمّ 80% لكلّ كود — القديمِ والجديد — ما دامت نسبتُها 80%، مرّةً (١٧ نوفمبر ٢٠٢٦: «80% for everyone») */
+    const { applyBlackFridayRaise } = await import('../../services/grant-merge.service')
+    expect(await applyBlackFridayRaise(prisma), 'رفع والنسبة 70%').toBeNull()
+    await bf.update({ percentOff: 80 }, ownerId)
+    /* وفي الإنتاج حُفظت الثمانون قبل أن يجرّ الحفظُ أكوادَها (`syncBlackFridayCodes`) — فتُعاد إلى سبعين هنا يدا ليُرى الرفعُ يرفعها */
+    await prisma.coupon.updateMany({ where: { code: { in: [mOut, oOut, eOut].map((x) => x.grant!.code!) } }, data: { percentOff: 70 } })
+    const up = await applyBlackFridayRaise(prisma)
+    expect(up?.raised, 'لم يرفع').toBeGreaterThanOrEqual(3)
+    for (const out of [mOut, oOut, eOut]) {
+      expect((await prisma.grantCode.findFirstOrThrow({ where: { leadId: out.ref }, include: { coupon: true } })).coupon.percentOff, 'كود لم يصر ثمانين').toBe(80)
+    }
+    expect(await applyBlackFridayRaise(prisma), 'رفع مرتين').toBeNull()
+
     /* ⑪ وبريد من ارتفع كوده — عصر ١٧ نوفمبر، بنسبته القديمة، وآخر يوم، وإغلاق التسجيل بعده، ومرة */
     const { sendBlackFridayUpgradeNotice, BF_UPGRADE_SEND_AT } = await import('../../services/grant-merge.service')
     const had = await prisma.integrationSetting.findUnique({ where: { provider: 'email' }, select: { enabled: true, config: true } })

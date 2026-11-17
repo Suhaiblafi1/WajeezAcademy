@@ -175,6 +175,9 @@ const PHRASES: Record<string, string> = {
   'coupon.update': 'تعديل كوبون أو إيقافه',
   'coupon.delete': 'حذف كوبون لم يستعمل',
   'coupon.grant_settings': 'تغيير إعدادات منحة وجيز أو منحة المؤثرين',
+  /* وبريدُ الحملات ممسوكٌ حتى يأمر صاحبُ المنصّة (١٧ نوفمبر ٢٠٢٦، `grant-mail-hold.service.ts`) */
+  'coupon.grant_mail_hold': 'إمساك بريد حملات المنح',
+  'coupon.grant_mail_release': 'إطلاق بريد حملات المنح',
   'coupon.grant_issue': 'إعطاء كود منحة لمن عبأ نموذج الحملة',
   /* ودوراتُ كلّ منحةٍ يختارها المدير، ودوراتُ كلّ مؤثّرٍ منها (١٥ نوفمبر ٢٠٢٦، `grant-scope.service.ts`) */
   'coupon.grant_courses': 'تغيير دورات حملة منحة',
@@ -304,6 +307,7 @@ const PHRASES: Record<string, string> = {
   'catalog.cohorts.open_all': 'تهيئة الشعب جملة',
   'cohort.delivery_plan.set': 'كتابة خطّة تقديم شعبة',
   'catalog.cohorts.align_prices': 'محاذاة أسعار الشعب',
+  'catalog.cohorts.price_raise': 'رفع أسعار الشعب مع سعر القائمة',
   'integration.payment.save': 'حفظ إعداد مزوّد الدفع',
   'integration.email.save': 'حفظ إعداد البريد',
   'integration.email.test': 'اختبار إرسال بريد',
