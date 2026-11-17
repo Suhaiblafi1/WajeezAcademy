@@ -132,8 +132,6 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
     <AdminLayout title={nameAr}>
       {/* المنحُ الثلاثُ وروابطُها العامّة — في رأس الصفحة دائما، لا ألسنةٌ في شريط «المال» (`GrantSwitcher`) */}
       <GrantSwitcher current={variant} />
-      {/* وبريدُ الحملات ممسوكٌ حتى يأمر صاحبُ المنصّة (١٧ نوفمبر ٢٠٢٦، `GrantMailHold`) */}
-      <GrantMailHold />
       <Card className="mt-6">
         <p className="text-read font-bold">
           {s.open ? "المنحة مشغلة" : s.active ? "المنحة انتهت" : "المنحة موقوفة"}
@@ -150,6 +148,8 @@ export default function AdminMemberGrant({ variant = "members" }: { variant?: Gr
           من يعبئ نموذج الحملة يأخذ كودا شخصيا، ويمكن أن يعطيه لغيره. ويستعمل في أكثر من شراء حتى {s.maxCourses} دورات على الكود كله، ومنحة واحدة لكل متعلم. وصاحبه يدفع نسبة ثابتة من سعر الدورات بدل خصم الباقة، أو سعر الباقة إن كان أقل. ونسبة كل كود هي نسبة يوم إعطائه.
         </p>
       </Card>
+      {/* وبريدُ الحملات ممسوكٌ حتى يأمر صاحبُ المنصّة (١٧ نوفمبر ٢٠٢٦، `GrantMailHold`) — تحت حال المنحة، لا بينها وبين روابط المنح */}
+      <GrantMailHold />
 
       <h2 className="mt-6 text-lg font-black">الإعدادات</h2>
       <Card className="mt-3 flex flex-wrap items-end gap-3">
