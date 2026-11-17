@@ -36,7 +36,8 @@ export default function BlackFridayKit({ refCode, name }: { refCode: string; nam
       setTimeout(() => setCopied((c) => (c === key ? null : c)), 2000);
     });
   };
-  const CopyBtn = ({ k, text }: { k: string; text: string }) => (
+  /* دالّةٌ ترسم الزرّ لا مكوّنٌ داخل مكوّن — فلا يُعاد إنشاؤه في كلّ رسم */
+  const copyBtn = (k: string, text: string) => (
     <Button size="sm" icon={copied === k ? Check : Copy} onClick={() => copy(k, text)}>
       {copied === k ? "تم النسخ" : "انسخ"}
     </Button>
@@ -54,7 +55,7 @@ export default function BlackFridayKit({ refCode, name }: { refCode: string; nam
 
       <Inset className="mt-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <span dir="ltr" className="break-all font-bold">{link}</span>
-        <CopyBtn k="link" text={link} />
+        {copyBtn("link", link)}
       </Inset>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -78,7 +79,7 @@ export default function BlackFridayKit({ refCode, name }: { refCode: string; nam
           <div key={k}>
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-read font-bold">{label}</h3>
-              <CopyBtn k={k} text={text} />
+              {copyBtn(k, text)}
             </div>
             <Inset as="p" className="mt-2 whitespace-pre-line px-4 py-3 text-read leading-7">{text}</Inset>
           </div>
