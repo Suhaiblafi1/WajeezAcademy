@@ -40,7 +40,7 @@ import {
   assertFileUploadsEnabled, MAX_PHOTO_BYTES, newStorageKey, PHOTO_MIMES, signKey, SIGNED_URL_TTL_MS,
 } from './storage.service'
 import { deleteObject, objectExists } from './object-store'
-import { normalizePhone } from '../../src/application/advisor/guest-contact'
+import { GRANT_PHONE_REQUIRED_AR, normalizeIntlPhone } from '../../src/application/advisor/guest-contact'
 import { campaignTag } from '../../src/application/commerce/grant-landing'
 import { GRANT_ONCE_AR } from '../../src/application/commerce/grant'
 import {
@@ -332,9 +332,9 @@ export class PartnerGrantService {
     const email = input.email.trim().toLowerCase()
     if (fullName.length < 2) throw new AuthError('bad_name', 'اكتب اسمك', 400)
     if (!emailMatchesDomains(email, c.emailDomains)) throw new AuthError('bad_email_domain', partnerBadEmailAr(type, c.emailDomains), 400)
-    const phoneRaw = input.phone?.trim() || null
-    const phone = phoneRaw ? normalizePhone(phoneRaw) : null
-    if (phoneRaw && !phone) throw new AuthError('bad_phone', 'رقم واتساب غير صحيح، اكتبه بالأرقام', 400)
+    /* واتسابُ لازمٌ ودوليٌّ برمز دولته (١٧ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «اجعل رقم الواتس اب اجباري ويختار الدولة») */
+    const phone = normalizeIntlPhone(input.phone)
+    if (!phone) throw new AuthError('bad_phone', GRANT_PHONE_REQUIRED_AR, 400)
     if (!isOpen(c, now)) throw new AuthError('grant_closed', 'المنحة مغلقة الآن', 409)
 
     const sentTo = maskEmail(email)

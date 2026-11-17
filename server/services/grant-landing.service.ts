@@ -43,7 +43,7 @@ import { renderMail } from './mail-template'
 import { mintShortLink } from './short-link.service'
 import { publicSiteUrl } from './site-url'
 import { PUBLIC_SESSIONS_CAP, PUBLIC_SESSION_WHERE } from './public-catalog.service'
-import { normalizePhone } from '../../src/application/advisor/guest-contact'
+import { GRANT_PHONE_REQUIRED_AR, normalizeIntlPhone } from '../../src/application/advisor/guest-contact'
 import { cleanTouch } from '../../src/application/marketing/signup-source'
 import { linkGrantVisit } from './grant-visit.service'
 import {
@@ -254,9 +254,10 @@ export class GrantLandingService {
   async apply(input: GrantApplyInput, ip?: string, now = new Date()) {
     const fullName = input.fullName.trim()
     const email = input.email.trim().toLowerCase()
-    const phone = normalizePhone(input.phone)
+    /* دوليٌّ برمز دولته — لا رقمٌ محلّيٌّ بلا مفتاح (١٧ نوفمبر ٢٠٢٦، `normalizeIntlPhone`) */
+    const phone = normalizeIntlPhone(input.phone)
     if (fullName.length < 2) throw new AuthError('bad_name', 'اكتب اسمك', 400)
-    if (!phone) throw new AuthError('bad_phone', 'رقم واتساب غير صحيح، اكتبه بالأرقام', 400)
+    if (!phone) throw new AuthError('bad_phone', GRANT_PHONE_REQUIRED_AR, 400)
     if (!WORK_FIELDS.includes(input.workField)) throw new AuthError('bad_field', 'اختر مجال عملك من القائمة', 400)
     const careerLevel = input.careerLevel?.trim() || null
     if (careerLevel && !CAREER_LEVELS.includes(careerLevel)) throw new AuthError('bad_level', 'اختر مستواك من القائمة', 400)

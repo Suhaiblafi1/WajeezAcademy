@@ -29,7 +29,7 @@ const rowOf = (visitorId: string) => prisma.grantVisit.findUniqueOrThrow({ where
 const fill = (visitorId: string | null, page: Record<string, unknown> = {}) => {
   seq += 1
   return landing.apply({
-    fullName: `زائر الرابط ${seq}`, phone: `0795${String(300000 + seq)}`, email: `gv-${seq}-${STAMP}@test.local`, workField: 'الهندسة',
+    fullName: `زائر الرابط ${seq}`, phone: `+962795${String(300000 + seq)}`, email: `gv-${seq}-${STAMP}@test.local`, workField: 'الهندسة',
     visitorId, source: { page: { at: new Date().toISOString(), ...page } },
   })
 }

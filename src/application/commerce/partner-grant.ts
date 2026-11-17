@@ -209,6 +209,8 @@ export const MEU_PARTNER = {
    فيظهر من أوّل يوم — والمرفوعُ يعلوه إن رُفع. ومن المصدر نفسِه (`img-src 'self'`)، وملفُّه صورٌ ومسارات لا شيفرة فيه. */
 export const BUILT_IN_PARTNER_LOGOS: Readonly<Record<string, string>> = {
   meu: '/partners/meu.svg',
+  /* شعارُ الجامعة الهاشمية كما أرسله صاحبُ المنصّة (١٧ نوفمبر ٢٠٢٦، «اضف اللوقو الخاص بهم») — PNG مصغَّرٌ ٣٢٠×٣٢٠ */
+  hu: '/partners/hu.png',
 }
 /** شعارُ الشريك المشحونُ مع الموقع برابطه — أو `null` */
 export const builtInPartnerLogo = (slug: string): string | null => BUILT_IN_PARTNER_LOGOS[slug] ?? null

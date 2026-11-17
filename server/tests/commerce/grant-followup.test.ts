@@ -57,7 +57,7 @@ async function cohort() {
 async function member(hoursAgo = GRANT_FOLLOWUP_HOURS + 1, now?: Date) {
   seq += 1
   const email = `fu-${seq}-${STAMP}@test.local`
-  const out = await landing.apply({ fullName: `عضو ${seq}`, phone: `0792${String(600000 + seq)}`, email, workField: 'الهندسة' }, undefined, now)
+  const out = await landing.apply({ fullName: `عضو ${seq}`, phone: `+962792${String(600000 + seq)}`, email, workField: 'الهندسة' }, undefined, now)
   await prisma.lead.update({ where: { id: out.ref }, data: { createdAt: new Date(Date.now() - hoursAgo * HOUR) } })
   return { ref: out.ref, code: out.grant!.code!, email }
 }

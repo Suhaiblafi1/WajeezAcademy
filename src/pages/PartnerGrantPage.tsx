@@ -26,6 +26,8 @@ import SeoHead from "@/components/SeoHead";
 import { controlCls } from "@/components/FormKit";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { PhoneCodePicker } from "@/components/CountryPicker";
+import { GRANT_PHONE_REQUIRED_AR, intlPhone } from "@/application/advisor/guest-contact";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice } from "@/application/commerce/grant";
@@ -107,6 +109,8 @@ export default function PartnerGrantPage() {
   const [failed, setFailed] = useState<string | null>(null);
   const [stored, setStored] = useState<StoredPartnerGrant | null>(() => readStoredPartnerGrant(slug));
   const [form, setForm] = useState({ fullName: stored?.name ?? "", email: stored?.email ?? "", phone: "" });
+  /* وواتسابُ لازمٌ برمز دولته يُختار ولا يُكتب (١٧ نوفمبر ٢٠٢٦، `intlPhone`) */
+  const [dial, setDial] = useState("+962");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
   const [reasonAr, setReasonAr] = useState<string | null>(null);
@@ -188,7 +192,8 @@ export default function PartnerGrantPage() {
   const helpHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, `مرحبا، أريد منحة ${p.nameAr} وليس لدي ${t.email}.`);
   const closedNote = !c.open ? GRANT_CLOSED_AR : c.soldOut && !code ? GRANT_SOLD_OUT_AR : null;
   const emailOk = emailMatchesDomains(form.email, p.domains);
-  const ready = form.fullName.trim().length >= 2 && emailOk;
+  const phoneIntl = intlPhone(dial, form.phone);
+  const ready = form.fullName.trim().length >= 2 && emailOk && phoneIntl !== null;
 
   const requestLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,7 +201,7 @@ export default function PartnerGrantPage() {
     setBusy(true);
     try {
       const out = await apiPost<{ sentTo: string; messageAr: string }>(`/api/public/grant/p/${encodeURIComponent(slug)}/link`, {
-        fullName: form.fullName.trim(), email: form.email.trim(), phone: form.phone.trim() || null,
+        fullName: form.fullName.trim(), email: form.email.trim(), phone: phoneIntl,
         ...campaignParams(window.location.search), website: hp.value,
       });
       setSent(out.messageAr);
@@ -266,10 +271,15 @@ export default function PartnerGrantPage() {
                   onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={`name@${p.domains[0] ?? ""}`} />
                 <span className="font-normal text-muted-foreground">{t.emailHint}، وينتهي بـ<bdi dir="ltr">{p.domains.join(" / ")}</bdi></span>
               </label>
-              <label className="grid gap-1 text-read font-bold">رقم واتساب <span className="font-normal text-muted-foreground">(اختياري)</span>
-                <input className={controlCls} type="tel" dir="ltr" value={form.phone} autoComplete="tel" maxLength={30}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="07XXXXXXXX" />
-              </label>
+              <div className="grid gap-1 text-read font-bold">
+                <label htmlFor="pg-phone">رقم واتساب</label>
+                <div className="flex gap-2" dir="ltr">
+                  <PhoneCodePicker id="pg-cc" value={dial} onChange={setDial} className={`${controlCls.replace("w-full", "")} w-32 shrink-0 px-2`} />
+                  <input id="pg-phone" className={`${controlCls} min-w-0 flex-1`} type="tel" dir="ltr" value={form.phone} autoComplete="tel-national" required maxLength={30}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="7X XXX XXXX" />
+                </div>
+                {form.phone.trim() !== "" && phoneIntl === null && <span className="font-normal text-red-300">{GRANT_PHONE_REQUIRED_AR}</span>}
+              </div>
               {hp.field}
               <Button type="submit" tone="confirm" size="lg" className="w-full" loading={busy} disabled={!ready || !c.open}>أرسل رابط التأكيد</Button>
               <p className="text-read leading-6 text-muted-foreground">{PARTNER_CONSENT_AR}</p>
