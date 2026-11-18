@@ -134,11 +134,22 @@ export const KASEET_INFLUENCER = {
   email: 'jameelzatara@kaseet.com',
 } as const
 
+/* ═══ صهيب — مؤثّرٌ بكود SUHAIB وعمولة ٥٪ (١٨ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «ضع فيه كود suhaib كانفلونسر بالنظام وفعّل حسابه suhaiblafi2@gmail.com رقم 0797708080 والنسبة ٥٪».
+   فيُنشأ أو يُشغَّل مرّةً بلا نقرةٍ في الإدارة (`applySuhaibLaunch`)، ويأخذ ٥٪ على بلاك فرايدي برابطه `?ch=SUHAIB` كما تأخذ كاسيت. */
+export const SUHAIB_INFLUENCER = {
+  nameAr: 'صهيب لافي',
+  code: 'SUHAIB',
+  commissionPercent: 5,
+  phone: '+962797708080',
+  email: 'suhaiblafi2@gmail.com',
+} as const
+
 /* ═══ ومن يأخذ عمولتَه على بلاك فرايدي برابطه (١٧ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة «Yes, 5% on Black Friday») ═══
    بلاك فرايدي بلا عمولة (#951/#953). وسأل صاحبُ المنصّة عن كاسيت ومن جاء برابطها `?ch=kaseet`: «Yes, 5% on Black Friday».
    فمن ذُكر هنا يأخذ عمولتَه هو (`commissionPercent` في ملفّه) على كود بلاك فرايدي الذي جاء برابطه، ومن لم يُذكر يُنسب
    إليه بلا عمولةٍ كما كان. وفحصُ الهامش يعدّها لهم (`grant-margins.service.ts`). */
-export const BLACK_FRIDAY_PAID_INFLUENCERS: readonly string[] = ['KASEET']
+export const BLACK_FRIDAY_PAID_INFLUENCERS: readonly string[] = ['KASEET', 'SUHAIB']
 
 /* ═══ والمؤثّرُ يُعرف بكوده اليومَ أو بكودٍ كان له (قرارُ صاحب المنصّة (١٧ نوفمبر ٢٠٢٦): Fix all 6) ═══
    كانت القائمتان (`BLACK_FRIDAY_PAID_INFLUENCERS` و`BUILT_IN_INFLUENCER_LOGOS`) تُطابَقان بكوده الحاليّ وحدَه، فإن غيّر المديرُ

@@ -1643,6 +1643,9 @@ export async function runGrantReminders(prisma: PrismaClient, now = new Date()):
   const { applyInfluencerLaunch } = await import('../services/influencer.service')
   /* وما ردّه طريقُ الإضافة (بريدٌ لحسابٍ مؤرشف) لا يوقف تذكيرات المنح — يُقال في السجلّ ويُعاد في الدورة التالية */
   await applyInfluencerLaunch(prisma).catch((e) => { console.error('[influencer_launch] تعذر إنشاء كاسيت', e) })
+  /* و«صهيب» مؤثّرٌ بكود SUHAIB وعمولة 5% وحسابه — يُنشأ أو يُشغَّل مرّةً بأثره (١٨ نوفمبر ٢٠٢٦، `applySuhaibLaunch`) */
+  const { applySuhaibLaunch } = await import('../services/influencer.service')
+  await applySuhaibLaunch(prisma).catch((e) => { console.error('[influencer_launch] تعذر إنشاء SUHAIB', e) })
   const { INFLUENCER_PAGE_WHATSAPP_SEED } = await import('../services/integrations.service')
   await seedGrantAdvisorWhatsApp(prisma, INFLUENCER_PAGE_WHATSAPP_SEED)
   /* وبريدُ من ارتفع كودُه إلى 70% — مرّةً، عصرَ ١٧ نوفمبر (١٦ نوفمبر ٢٠٢٦: «send them tomorrow afternoon») */

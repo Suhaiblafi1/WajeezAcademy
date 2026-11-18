@@ -65,7 +65,7 @@ import { BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, INFLUENCER_GRANT_SLUGS 
 import {
   INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_DISCOUNT_BAD_AR, OWN_PURCHASE_AR, buyerNameAr,
   commissionStateAr, influencerCommission, influencerLink, influencerPercentOff, normalizeInfluencerCode,
-  INFLUENCER_PHONE_BAD_AR, KASEET_INFLUENCER, blackFridayCommission, cleanInfluencerPhone, influencerClosesAt,
+  INFLUENCER_PHONE_BAD_AR, KASEET_INFLUENCER, SUHAIB_INFLUENCER, blackFridayCommission, cleanInfluencerPhone, influencerClosesAt,
 } from '../../src/application/commerce/influencer'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
@@ -683,4 +683,41 @@ export async function applyInfluencerLaunch(prisma: PrismaClient): Promise<strin
     })
   }
   return made.id
+}
+
+/* ═══ صهيب — يُنشأ أو يُشغَّل مرّةً عند بدء العامل (١٨ نوفمبر ٢٠٢٦، `SUHAIB_INFLUENCER`) ═══
+
+   قرارُ صاحب المنصّة: «ضع فيه كود suhaib كانفلونسر بالنظام وفعّل حسابه». وقد يكون له صفٌّ موقوفٌ بكوده منذ أوقف بلاك فرايدي
+   المؤثّرين (١٦ نوفمبر ٢٠٢٦، `grant-merge.service.ts`). فطريقان، مرّةً واحدةً بأثرٍ بسببه بلا فاعل:
+   · **بلا صفٍّ بكوده** — يُنشأ من طريق إضافة المدير نفسِه (`create`): حسابٌ ببريده ودعوتُه وبريدُ الترحيب.
+   · **وبصفٍّ** — يُشغَّل بعمولته ورقمه، ويُربط بحسابه ببريده إن لم يكن (`attachAccount`). واسمُه وخصمُ متابعيه كما كانا.
+   فإن غيّره صاحبُ المنصّة بعدُ أو أوقفه بقي ما فعل. */
+export const SUHAIB_LAUNCH_REASON = 'قرار صاحب المنصة (18 نوفمبر 2026): SUHAIB مؤثر بعمولة 5% وحسابه وهاتفه'
+
+/** يُنشئ صهيب أو يشغّله — ويعيد معرّفَه إن فعل الآن، وإلّا `null` */
+export async function applySuhaibLaunch(prisma: PrismaClient): Promise<string | null> {
+  const s = SUHAIB_INFLUENCER
+  const once = await prisma.auditEvent.count({
+    where: { action: { in: ['influencer.create', 'influencer.update'] }, actorId: null, reason: SUHAIB_LAUNCH_REASON },
+  })
+  if (once > 0) return null
+  const service = new InfluencerService(prisma)
+  const had = await prisma.influencer.findFirst({
+    where: influencerCodeWhere(s.code),
+    select: { id: true, active: true, commissionPercent: true, phone: true, user: { select: { email: true } } },
+  })
+  if (!had) {
+    const made = await service.create({
+      nameAr: s.nameAr, code: s.code, commissionPercent: s.commissionPercent, email: s.email, phone: s.phone,
+    }, null, { reason: SUHAIB_LAUNCH_REASON })
+    return made.id
+  }
+  const before = { active: had.active, commissionPercent: had.commissionPercent, phone: had.phone }
+  const after = { active: true, commissionPercent: s.commissionPercent, phone: s.phone }
+  await prisma.influencer.update({ where: { id: had.id }, data: after })
+  await recordAudit(prisma, {
+    actorId: null, action: 'influencer.update', entityType: 'influencer', entityId: had.id, reason: SUHAIB_LAUNCH_REASON, before, after,
+  })
+  if ((had.user?.email ?? '').toLowerCase() !== s.email) await service.attachAccount(had.id, s.email, null)
+  return had.id
 }
