@@ -62,6 +62,11 @@
   (`ADVISOR_DEFAULT_COMMISSION_PCT` في `src/application/advisor/application.ts`، والقبولُ في
   `server/services/advisor-application.service.ts`).
 
+- **مساحةُ صاحب المنصّة الخاصّة منفصلةٌ عن الأكاديميّة.** قرارُه (١٩ نوفمبر ٢٠٢٦): «خانةٌ داخل موقع الأكاديميّة كشيءٍ
+  منفصل فقط لأستفيد من السيرفر لشيءٍ شخصيٍّ لي.. فقط أنا suhaib@wajeez.co». فدورتُه `/ai-jobs` ولوحتُه `/private`
+  لا تمرّان بجداول الأكاديميّة ولا أثرِها ولا بريدِها: الدفعُ CliQ بصورة حوالة، والتأكيدُ منه، والبريدُ من Gmail حسابه
+  بلا شعار وجيز (`server/services/private-course/`). والبابُ `super_admin` **وبريدُه** معا (`owner.ts`).
+
 - **لا أسرارَ في Git مطلقا** — `.env` و`deploy/.env.production` و
   `storage/private/` و`.pgdata/` مستثناةٌ دائما. ولا يُنقل مفتاحٌ في محادثة.
 

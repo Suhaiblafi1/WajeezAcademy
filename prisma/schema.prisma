@@ -5256,3 +5256,58 @@ model WhatsAppOptOut {
   createdBy String?  @db.Uuid
 }
 
+/**
+ * ═══════════ دورةُ صاحب المنصّة الخاصّة (١٩ نوفمبر ٢٠٢٦) ═══════════
+ * قرارُه: «خانةٌ داخل موقع الأكاديميّة كشيءٍ منفصل فقط لأستفيد من السيرفر لشيءٍ شخصيٍّ لي».
+ * فلا علاقةَ لها بشيءٍ من جداول الأكاديميّة: لا مستخدمَ ولا شعبةَ ولا طلبَ ولا أثر. ولا يقرؤها إلّا هو
+ * (`server/services/private-course/owner.ts`). وثوابتُ الدورة في `src/application/private-course/ai-jobs.ts`.
+ */
+
+/// ما يضبطه صاحبُ الدورة من لوحته — صفٌّ لكلّ دورةٍ بمعرّفها في الثوابت
+model PrivateCourse {
+  slug      String   @id
+  /// التسجيلُ مفتوحٌ من الصفحة — يغلقه حين يمتلئ
+  open      Boolean  @default(true)
+  /// رابطُ Zoom لكلّ شعبة: `{ morning: { url, passcode? }, evening: … }`
+  zoom      Json     @default("{}")
+  /// ملفُّ الدورة المرفقُ ببريد التأكيد — وفارغُه بالملفّ المضمَّن في الشيفرة (`server/assets/private`)
+  fileKey   String?
+  fileName  String?
+  fileMime  String?
+  updatedAt DateTime @updatedAt
+
+  registrations PrivateRegistration[]
+}
+
+/// تسجيلُ متعلّمٍ من الصفحة — باسمه وبريده ورقمه بمفتاح دولته، وصورةِ حوالته
+model PrivateRegistration {
+  id           String    @id @default(uuid()) @db.Uuid
+  courseSlug   String
+  /// الشعبةُ بمفتاحها في الثوابت — `morning` أو `evening`
+  sectionKey   String
+  fullName     String
+  /// بحروفٍ صغيرة — وتسجيلٌ ثانٍ بالبريد نفسِه يحدّث الأوّلَ ما دام قيدَ المراجعة
+  email        String
+  /// بمفتاح الدولة: `+962797708080`
+  phone        String
+  phoneCountry String
+  note         String?
+  proofKey     String
+  proofName    String
+  proofMime    String
+  proofSize    Int
+  status       String    @default("pending") // pending | confirmed | rejected
+  confirmedAt  DateTime?
+  rejectedAt   DateTime?
+  /// آخرُ بريدِ تأكيدٍ وصل — ورابطُ Zoom الذي كان فيه، فيُعرف من لم يصله الرابطُ بعد تغييره
+  mailSentAt   DateTime?
+  mailZoomUrl  String?
+  mailError    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  course PrivateCourse @relation(fields: [courseSlug], references: [slug], onDelete: Cascade)
+
+  @@unique([courseSlug, email])
+  @@index([courseSlug, status])
+}

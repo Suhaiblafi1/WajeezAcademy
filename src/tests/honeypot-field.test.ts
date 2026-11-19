@@ -24,6 +24,7 @@ const css = read('src/index.css')
 const FORMS: Array<{ file: string; whatAr: string }> = [
   { file: 'src/components/AuthGate.tsx', whatAr: 'الحساب الجديد واستعادة كلمة المرور' },
   { file: 'src/pages/JoinTrainer.tsx', whatAr: 'طلب انضمام المدرّب' },
+  { file: 'src/pages/ai-jobs/RegisterForm.tsx', whatAr: 'التسجيل في دورة صاحب المنصّة الخاصّة' },
 ]
 
 describe('حقل الفخّ في النماذج العامّة', () => {

@@ -40,6 +40,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CANONICAL_ORIGIN } from '../src/application/site/origin'
 import { PUBLIC_PAGES, type PublicPage } from '../src/application/site/public-pages'
+import { AI_JOBS_PATH, renderAiJobsPage } from '../src/application/private-course/landing-seo'
 import { courseSeo, pathwaySeo, type SeoMeta } from '../src/application/site/catalog-pages'
 import { llmsTxt, sitemapXml } from '../src/application/site/seo-feeds'
 import {
@@ -441,6 +442,8 @@ export function main() {
   }
 
   for (const page of PUBLIC_PAGES) write(page.path, render(template, page))
+  /* دورةُ صاحب المنصّة الخاصّة — ليست في `PUBLIC_PAGES` ولا خريطةِ الموقع ولا روابطِ الأكاديميّة، ولها معاينتُها هي */
+  write(AI_JOBS_PATH, renderAiJobsPage(template, ORIGIN))
   const catalog = catalogPages()
   for (const page of catalog) write(page.meta.path, renderPage(template, page.meta, page.graph, page.body))
 
