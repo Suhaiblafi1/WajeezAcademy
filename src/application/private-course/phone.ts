@@ -10,6 +10,7 @@
    ويقرؤه الخادمُ والصفحةُ معا، فلا يقبل أحدُهما ما يردّه الآخر. */
 
 import { COUNTRIES, MOBILE_FORMATS, type Country } from '../../data/countries'
+import { waToPerson } from '../site/whatsapp'
 
 export type PhoneCheck =
   | { ok: true; e164: string; country: Country }
@@ -53,8 +54,7 @@ export function normalizePhone(iso2: string, local: string): PhoneCheck {
   return { ok: true, e164: `+${dial}${digits}`, country }
 }
 
-/** رابطُ واتساب للرقم المحفوظ — `wa.me` يقبل الأرقامَ وحدَها */
-export function whatsappLink(e164: string, text?: string): string {
-  const base = `https://wa.me/${e164.replace(/\D/g, '')}`
-  return text ? `${base}?text=${encodeURIComponent(text)}` : base
+/** رابطُ واتساب للرقم المحفوظ — يبنيه `waToPerson` وحدَه، كسائر روابط المنصّة إلى إنسان (`whatsapp-numbers.test.ts`) */
+export function whatsappLink(e164: string, text = ''): string {
+  return waToPerson(e164, text) ?? ''
 }

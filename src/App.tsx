@@ -259,10 +259,6 @@ export default function App() {
           <Route path="/join-influencer" element={<JoinInfluencer />} />
           {/* دورةُ صاحب المنصّة الخاصّة — صفحةٌ عامّةٌ بلا رأس الموقع، والتسجيلُ بصورة حوالة CliQ */}
           <Route path="/ai-jobs" element={<AiJobsPage />} />
-          {/* ومساحتُه هو: مديرُ النظام بهذا البريد وحدَه — والحارسُ الحقيقيُّ في الخادم (`private-course/owner.ts`) */}
-          <Route element={<RequireRole allow={['super_admin']} />}>
-            <Route path="/private" element={<PrivateWorkspace />} />
-          </Route>
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
           {/* رابطُ بريد التأكيد يوثّق العنوان — صفحةٌ عامّة بلا جلسة */}
           <Route path="/join-trainer/verify" element={<JoinTrainerVerify />} />
@@ -356,6 +352,10 @@ export default function App() {
             <Route path="/influencer/account" element={<AccountPage />} />
           </Route>
           {/* لوحةُ الشريك — حصّتُه ممّا يدفعه من جاء برابط منحته */}
+          {/* ومساحتُه هو: مديرُ النظام بهذا البريد وحدَه — والحارسُ الحقيقيُّ في الخادم (`private-course/owner.ts`) */}
+          <Route element={<RequireRole allow={['super_admin']} />}>
+            <Route path="/private" element={<PrivateWorkspace />} />
+          </Route>
           <Route element={<RequireRole allow={PARTNER_ROLES} />}>
             <Route path="/partner" element={<PartnerHome />} />
           </Route>

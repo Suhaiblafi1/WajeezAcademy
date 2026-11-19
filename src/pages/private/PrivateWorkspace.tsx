@@ -18,6 +18,7 @@ import {
 import { ApiError, apiDelete, apiDownload, apiGet, apiPatch, apiPost, apiPut, apiUpload } from '@/services/api'
 import { toast, toastError } from '@/components/Toast'
 import Button from '@/components/ui/Button'
+import TabBar from '@/components/ui/TabBar'
 import { Card, Inset, Panel } from '@/components/ui/Surface'
 import { staffControlCls as inputCls } from '@/components/FormKit'
 import { fmtDateTime, fmtNum } from '@/application/text/format-ar'
@@ -114,7 +115,7 @@ function ZoomEditor({ section, onSaved, missing, onSendMissing, sending }: {
         </label>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button tone="primary" size="sm" loading={saving} disabled={!dirty} onClick={() => void save()}>احفظ الرابط</Button>
+        <Button tone="confirm" size="sm" loading={saving} disabled={!dirty} onClick={() => void save()}>احفظ الرابط</Button>
         {missing > 0 && !dirty && (
           <Button tone="confirm" size="sm" icon={Send} loading={sending} onClick={onSendMissing}>
             أرسله إلى {fmtNum(missing)} مؤكدين لم يصلهم
@@ -235,7 +236,7 @@ function GmailSettings({ gmail, onSaved }: { gmail: Overview['gmail']; onSaved: 
         </label>
       </div>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <Button tone="primary" size="sm" loading={saving} disabled={gmail.source === 'env'} onClick={() => void save()}>احفظ</Button>
+        <Button tone="confirm" size="sm" loading={saving} disabled={gmail.source === 'env'} onClick={() => void save()}>احفظ</Button>
         <label className="block">
           <span className={labelCls}>رسالة تجربة إلى</span>
           <input dir="ltr" className={`${inputCls} mt-1 w-64`} value={testTo} onChange={(e) => setTestTo(e.target.value)} />
@@ -353,7 +354,7 @@ function RegistrationCard({ r, onChange, onRemove }: {
         )}
         {r.status === 'confirmed' && (
           <>
-            <Button tone="primary" size="sm" icon={Send} loading={busy === 'send'} disabled={busy !== null}
+            <Button size="sm" icon={Send} loading={busy === 'send'} disabled={busy !== null}
               onClick={() => void act('send', () => apiPost(`/api/v1/private/registrations/${r.id}/send`), 'أرسلنا البريد من جديد')}>
               {r.mailSentAt ? 'أرسل البريد من جديد' : 'أرسل البريد الآن'}
             </Button>
@@ -569,12 +570,13 @@ export default function PrivateWorkspace() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2" role="tablist" aria-label="حالة التسجيل">
-            {tabs.map((t) => (
-              <Button key={t.key} role="tab" aria-selected={filter === t.key} size="sm" tone={filter === t.key ? 'primary' : 'ghost'} onClick={() => setFilter(t.key)}>
-                {t.label} ({fmtNum(t.n)})
-              </Button>
-            ))}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <TabBar<Filter>
+              ariaLabel="حالة التسجيل"
+              items={tabs.map((t) => ({ id: t.key, label: `${t.label} (${fmtNum(t.n)})` }))}
+              value={filter}
+              onChange={setFilter}
+            />
             <div className="w-44">
               <select className={`${inputCls} py-1`} aria-label="الشعبة" value={section} onChange={(e) => setSection(e.target.value)}>
                 <option value="">كل الشعب</option>
