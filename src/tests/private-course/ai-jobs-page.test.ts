@@ -10,7 +10,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { normalizePhone } from '@/application/private-course/phone'
 import { renderAiJobsPage } from '@/application/private-course/landing-seo'
-import { AI_JOBS, AI_JOBS_SEO } from '@/application/private-course/ai-jobs'
+import { AI_JOBS, AI_JOBS_SEO, seatsLabel, seatsLeft } from '@/application/private-course/ai-jobs'
 import { allSections } from '@/pages/admin/nav-map'
 import { PUBLIC_PAGES } from '@/application/site/public-pages'
 import { markedTexts } from '../helpers/marked-text'
@@ -97,5 +97,41 @@ describe('④ المساحة الخاصة خارج شريط الإدارة', () 
   it('والشعبتان بتوقيت عمّان (+3): 11 صباحا و6 مساء', () => {
     expect(AI_JOBS.sections.map((s) => new Date(s.startsAt).getUTCHours() + 3)).toEqual([11, 18])
     expect(AI_JOBS.sections.map((s) => new Date(s.endsAt).getUTCHours() + 3)).toEqual([15, 22])
+  })
+})
+
+/* ═══ ⑤ المقاعد المتبقية — «كل يوم تقل المقاعد مقعدين، الصباحية من 24 والمسائية 26» (١٩ نوفمبر ٢٠٢٦) ═══ */
+describe('⑤ المقاعد المتبقية بدل عداد الوقت', () => {
+  /* الساعةُ بتوقيت عمّان (+3): اليومُ يتبدّل عند منتصف ليلها لا ليل غرينتش */
+  const at = (iso: string) => Date.parse(iso)
+
+  it('يوم القرار: 24 للصباحية و26 للمسائية', () => {
+    expect(seatsLeft('morning', at('2026-11-19T10:00:00+03:00'))).toBe(24)
+    expect(seatsLeft('evening', at('2026-11-19T23:59:00+03:00'))).toBe(26)
+  })
+
+  it('⚠️ وتنقص مقعدين عند منتصف ليل عمّان — لا ليل غرينتش', () => {
+    /* 22:30 بتوقيت غرينتش يوم ١٩ = 01:30 بتوقيت عمّان يوم ٢٠ */
+    expect(seatsLeft('morning', at('2026-11-19T22:30:00Z'))).toBe(22)
+    expect(seatsLeft('evening', at('2026-11-20T12:00:00+03:00'))).toBe(24)
+  })
+
+  it('⚠️ ولا تبلغ الصفر والتسجيل مفتوح — تقف عند مقعدين', () => {
+    expect(seatsLeft('morning', at('2026-11-30T12:00:00+03:00'))).toBe(2)
+    expect(seatsLeft('evening', at('2026-11-30T12:00:00+03:00'))).toBe(4)
+    expect(seatsLeft('morning', at('2026-12-05T09:00:00+03:00'))).toBe(2)
+    expect(seatsLeft('evening', at('2026-12-05T09:00:00+03:00'))).toBe(2)
+  })
+
+  it('والعدد بصيغته', () => {
+    expect(seatsLabel(24)).toBe('متوفر 24 مقعد')
+    expect(seatsLabel(4)).toBe('متوفر 4 مقاعد')
+    expect(seatsLabel(2)).toBe('آخر مقعدين')
+  })
+
+  it('ولا عداد وقت باق في الصفحة، والخصم «حتى نفاد المقاعد»', () => {
+    const page = read('src/pages/ai-jobs/AiJobs.tsx')
+    expect(page).not.toMatch(/موعد الدورة/)
+    expect(page).toMatch(/<b>حتى نفاد المقاعد<\/b>/)
   })
 })

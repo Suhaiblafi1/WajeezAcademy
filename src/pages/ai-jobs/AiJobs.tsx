@@ -6,7 +6,7 @@
 
    فالصفحةُ منشورُه نفسُه مبسوطا: شرائحُه بترتيبها وألوانُها وخطوطُها (Readex Pro وMarhey وAref Ruqaa)، وبينها أزرارُ
    «سجّل الآن» تنزل إلى النموذج — في الشريط الأعلى، والافتتاح، وبعد الألم، وبعد النتائج، وفي التفاصيل، وفي العرض، وشريطٍ
-   ثابتٍ تحت الإبهام في الهاتف. وشريطُ بلاك فرايدي فيه عدّادٌ حتى بداية الدورة: «الخصم حتى موعد الدورة».
+   ثابتٍ تحت الإبهام في الهاتف. وشريطُ بلاك فرايدي فيه المقاعدُ المتبقّيةُ لكلّ شعبة: «الخصم حتى نفاد المقاعد».
 
    ولا رأسَ للموقع ولا ذيلَ له هنا: الصفحةُ دورتُه هو، لا صفحةٌ من صفحات الأكاديميّة. */
 
@@ -15,43 +15,11 @@ import { AI_JOBS, AI_JOBS_SEO } from '@/application/private-course/ai-jobs'
 import { whatsappLink } from '@/application/private-course/phone'
 import { BONUS, DOORS, FACTS, FAQS, FEATURES, PAINS, RESULTS, SKILLS, STEPS, TIPS } from './content'
 import RegisterForm from './RegisterForm'
+import { SeatPill, Seats } from './Seats'
 import './ai-jobs.css'
 
 const PHOTO = '/campaigns/ai-jobs/suhaib.jpg'
 const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=Marhey:wght@600;700&display=swap'
-
-/* ── العدّاد ── */
-
-function useNow(): number {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [])
-  return now
-}
-
-function parts(ms: number) {
-  const s = Math.max(0, Math.floor(ms / 1000))
-  return { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 }
-}
-
-const pad = (n: number) => String(n).padStart(2, '0')
-
-function Clock({ large = false }: { large?: boolean }) {
-  const now = useNow()
-  const left = new Date(AI_JOBS.discountEndsAt).getTime() - now
-  if (left <= 0) return null
-  const p = parts(left)
-  return (
-    <span className={`aij-clock${large ? ' aij-clock-lg' : ''}`} role="timer" aria-label={`ينتهي الخصم بعد ${p.d} يوم و${p.h} ساعة`}>
-      <span><b>{pad(p.d)}</b><i>يوم</i></span>
-      <span><b>{pad(p.h)}</b><i>ساعة</i></span>
-      <span><b>{pad(p.m)}</b><i>دقيقة</i></span>
-      <span><b>{pad(p.s)}</b><i>ثانية</i></span>
-    </span>
-  )
-}
 
 /* ── قطعٌ صغيرة ── */
 
@@ -163,8 +131,8 @@ export default function AiJobs() {
             <span className="aij-bf-off">خصم <bdi dir="ltr">80%</bdi></span>
           </div>
           <div className="aij-bf-mid">
-            <span>ينتهي الخصم مع بداية الدورة</span>
-            <Clock />
+            <span>الخصم حتى نفاد المقاعد</span>
+            <Seats />
           </div>
           <a href="#register" className="aij-cta">سجّل الآن</a>
         </div>
@@ -186,7 +154,7 @@ export default function AiJobs() {
               <div className="aij-facts">
                 <div className="aij-fact"><small>الموعد</small><b>{AI_JOBS.dateLabel}</b></div>
                 <div className="aij-fact"><small>الطريقة</small><b>مباشر على Zoom</b></div>
-                <div className="aij-fact"><small>الخصم</small><b>حتى موعد الدورة</b></div>
+                <div className="aij-fact"><small>الخصم</small><b>حتى نفاد المقاعد</b></div>
               </div>
               <div className="aij-row">
                 <Cta large label={<>احجز مقعدك بـ <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi></>} />
@@ -362,14 +330,14 @@ export default function AiJobs() {
               <small>نظرا لنجاح الدورات السابقة فتحنا شعبتين إضافيتين · بتوقيت عمّان</small>
               <div className="aij-secs">
                 {AI_JOBS.sections.map((s) => (
-                  <div key={s.key}><small>{s.title}</small><b>{s.timeLabel}</b></div>
+                  <div key={s.key}><small>{s.title}</small><b>{s.timeLabel}</b><SeatPill sectionKey={s.key} /></div>
                 ))}
               </div>
             </div>
             <div className="aij-box aij-detail"><small>الطريقة</small><b>مباشر على Zoom</b></div>
             <div className="aij-box aij-detail"><small>المستوى</small><b>من الصفر، دون خبرة</b></div>
             <div className="aij-box aij-detail wide">
-              <small>رسوم الدورة · الخصم حتى موعد الدورة أو نفاد المقاعد · المقاعد محدودة</small>
+              <small>رسوم الدورة · الخصم حتى نفاد المقاعد · المقاعد محدودة</small>
               <b><s style={{ color: '#3c4a66', textDecorationColor: '#ff4b4b' }} dir="ltr">{AI_JOBS.listPriceUsd}$</s> <span dir="ltr">{AI_JOBS.priceUsd}$</span> <span style={{ fontSize: 16, fontWeight: 500 }}>({AI_JOBS.priceJod} دينار فقط)</span></b>
             </div>
             <div className="aij-box aij-detail green wide"><small>بعد الدورة</small><b>أسبوع متابعة مجانية على واتساب</b></div>
@@ -391,8 +359,8 @@ export default function AiJobs() {
               <span className="now">{AI_JOBS.priceUsd}$</span>
               <span className="per">فقط<br />= {AI_JOBS.priceJod} دينار</span>
             </div>
-            <p className="aij-hand">الخصم ساري حتى موعد الدورة أو نفاد المقاعد</p>
-            <div style={{ marginTop: 14 }}><Clock large /></div>
+            <p className="aij-hand">الخصم ساري حتى نفاد المقاعد</p>
+            <div style={{ marginTop: 14 }}><Seats large /></div>
 
             <div className="aij-pay">
               <small>الدفع بتحويل CliQ على الاسم المستعار</small>
@@ -441,7 +409,7 @@ export default function AiJobs() {
       <div className={`aij-mobile-bar${barHidden ? ' hide' : ''}`} aria-hidden={barHidden}>
         <div className="p">
           <s>{AI_JOBS.listPriceUsd}$</s><b>{AI_JOBS.priceUsd}$</b>
-          <small>بلاك فرايدي · حتى موعد الدورة</small>
+          <small>بلاك فرايدي · حتى نفاد المقاعد</small>
         </div>
         <a href="#register" className="aij-cta" tabIndex={barHidden ? -1 : 0}>سجّل الآن</a>
       </div>

@@ -42,9 +42,36 @@ export const AI_JOBS = {
     { key: 'morning', title: 'الشعبة الصباحية', timeLabel: '11 صباحا – 3 عصرا', startsAt: '2026-12-05T08:00:00.000Z', endsAt: '2026-12-05T12:00:00.000Z' },
     { key: 'evening', title: 'الشعبة المسائية', timeLabel: '6 – 10 مساء', startsAt: '2026-12-05T15:00:00.000Z', endsAt: '2026-12-05T19:00:00.000Z' },
   ] as const satisfies readonly PrivateSection[],
-  /** الخصمُ «حتى موعد الدورة» — يقف العدّادُ عند بداية أولى الشعبتين */
-  discountEndsAt: '2026-12-05T08:00:00.000Z',
+  /* ═══ المقاعدُ المتبقّية — بدل عدّاد الوقت (١٩ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «اجعله حتى نفاد المقاعد، واستبدلها بعدد المقاعد المتبقّية لكلّ شعبة، وتعتمد بأنّ كلَّ يومٍ
+     تقلّ المقاعدُ مقعدين، وابدأ للصباحيّة من ٢٤ والمسائيّة ٢٦». فالعددُ جدولٌ معلَنٌ يبدأ يومَ القرار بتوقيت عمّان،
+     لا عدُّ المسجَّلين. ويقف عند مقعدين ولا يبلغ الصفر: «لا مقاعد» والتسجيلُ مفتوحٌ تناقضٌ يراه الزائر. */
+  seats: {
+    from: '2026-11-19',
+    perDay: 2,
+    floor: 2,
+    start: { morning: 24, evening: 26 },
+  },
 } as const
+
+/** يومُ عمّان (+3 طوال السنة) لتاريخٍ ما — رقمُ اليوم منذ ١٩٧٠ */
+function ammanDay(at: number): number {
+  return Math.floor((at + 3 * 3_600_000) / 86_400_000)
+}
+
+/** المقاعدُ المتبقّية لشعبةٍ في لحظة — تنقص مقعدين كلَّ يومٍ من يوم البدء، ولا تنزل عن الحدّ */
+export function seatsLeft(key: AiJobsSectionKey, at: number = Date.now()): number {
+  const { from, perDay, floor, start } = AI_JOBS.seats
+  const days = Math.max(0, ammanDay(at) - ammanDay(Date.parse(`${from}T00:00:00+03:00`)))
+  return Math.max(floor, start[key] - perDay * days)
+}
+
+/** «متوفر 24 مقعد» — والعددُ بصيغته: «3 مقاعد» و«مقعدان» */
+export function seatsLabel(n: number): string {
+  if (n <= 2) return 'آخر مقعدين'
+  if (n <= 10) return `متوفر ${n} مقاعد`
+  return `متوفر ${n} مقعد`
+}
 
 /** عنوانُ الصفحة ووصفُها — في لسان المتصفّح وفي معاينة الرابط (`landing-seo.ts`) */
 export const AI_JOBS_SEO = {
