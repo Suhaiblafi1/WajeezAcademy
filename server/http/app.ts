@@ -62,6 +62,7 @@ import { registerSearchRoutes } from './routes/search.routes'
 import { registerIntegrationRoutes } from './routes/integrations.routes'
 import { registerDemoRoutes } from './routes/demo.routes'
 import { registerAnalyticsRoutes } from './routes/analytics.routes'
+import { registerPrivateCourseRoutes } from './routes/private-course.routes'
 import { buildStamp, commitOfSnapshotLabel, runtimeEnvLabel, snapshotInSync } from '../build-stamp'
 import { lastVerifiedCommit } from '../catalog/snapshot-verified'
 import { beatReport } from '../worker/heartbeat'
@@ -313,6 +314,8 @@ export async function buildApp(prisma: PrismaClient) {
   registerAdminAdvisorPayoutRoutes(app, prisma)
   registerAdminGrantRoutes(app, prisma)
   registerPublicGrantRoutes(app, prisma)
+  /* دورةُ صاحب المنصّة الخاصّة — صفحتُها `/ai-jobs` ولوحتُه `/private` (١٩ نوفمبر ٢٠٢٦) */
+  registerPrivateCourseRoutes(app, prisma)
   /* منحُ الشركاء — الجامعاتُ والشركات (١٥ نوفمبر ٢٠٢٦، `partner-grant.service.ts`) */
   registerPartnerGrantRoutes(app, prisma)
   registerUnsubscribeRoutes(app, prisma)

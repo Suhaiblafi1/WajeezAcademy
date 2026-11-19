@@ -40,6 +40,9 @@ const ShortLinkPage = lazy(() => import('./pages/ShortLink'))
 /* «مسار {الاسم الأوّل}» — صفحةُ المسار الخاصّ الذي يولّده المستشارُ أو السوبر أدمن (٥ نوفمبر ٢٠٢٦) */
 const PrivatePathPage = lazy(() => import('./pages/PrivatePath'))
 const GrantRecordLinkPage = lazy(() => import('./pages/GrantRecordLink'))
+/* دورةُ صاحب المنصّة الخاصّة — صفحتُها ومساحتُه (١٩ نوفمبر ٢٠٢٦، `application/private-course/ai-jobs.ts`) */
+const AiJobsPage = lazy(() => import('./pages/ai-jobs/AiJobs'))
+const PrivateWorkspace = lazy(() => import('./pages/private/PrivateWorkspace'))
 
 /* البوابات الداخلية تُحمَّل عند الطلب فقط — لا تبطئ الصفحات العامة */
 const StudentDashboard = lazy(() => import('./pages/student/Dashboard'))
@@ -254,6 +257,12 @@ export default function App() {
           <Route path="/join-trainer" element={<JoinTrainer />} />
           <Route path="/join-advisor" element={<JoinAdvisor />} />
           <Route path="/join-influencer" element={<JoinInfluencer />} />
+          {/* دورةُ صاحب المنصّة الخاصّة — صفحةٌ عامّةٌ بلا رأس الموقع، والتسجيلُ بصورة حوالة CliQ */}
+          <Route path="/ai-jobs" element={<AiJobsPage />} />
+          {/* ومساحتُه هو: مديرُ النظام بهذا البريد وحدَه — والحارسُ الحقيقيُّ في الخادم (`private-course/owner.ts`) */}
+          <Route element={<RequireRole allow={['super_admin']} />}>
+            <Route path="/private" element={<PrivateWorkspace />} />
+          </Route>
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
           {/* رابطُ بريد التأكيد يوثّق العنوان — صفحةٌ عامّة بلا جلسة */}
           <Route path="/join-trainer/verify" element={<JoinTrainerVerify />} />

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { Crown } from "lucide-react";
+import { Crown, Lock } from "lucide-react";
+import { PRIVATE_OWNER_EMAIL } from "@/application/private-course/ai-jobs";
 import { placeOf, sectionTabs, sectionsFor, tabOf, waitingCounts, type AdminNavItem, type WaitingInput } from "./nav-map";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -157,6 +158,12 @@ export default function AdminLayout({ children, title }: { children: React.React
               بلا ذلك كان اسم الحساب يفيض ٣٨ بكسل خارج الشاشة فيظهر تمرير أفقي
               على مستوى المستند — والقراءة تصير سطرا سطرا بتمرير يمينا ويسارا. */}
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            {/* مساحةُ صاحب المنصّة الخاصّة — له وحدَه، ولا بندَ لها في الشريط (١٩ نوفمبر ٢٠٢٦، `pages/private`) */}
+            {user?.roles.includes("super_admin") && user.email.toLowerCase() === PRIVATE_OWNER_EMAIL && (
+              <Link to="/private" className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-gold/30 px-2.5 py-1.5 text-fine font-bold text-gold-ink hover:bg-gold/[0.06] sm:flex">
+                <Lock className="h-3.5 w-3.5" aria-hidden="true" />مساحتي
+              </Link>
+            )}
             <SearchChip hintAr="ابحث في الحسابات والشعب" />
             <NotificationBell audience="staff" />
             <ThemeToggle />

@@ -103,11 +103,15 @@ function eventLines(e: IcsEvent, stamp: string): string[] {
   return lines
 }
 
-function calendar(method: 'REQUEST' | 'CANCEL' | 'PUBLISH', events: string[][]): string {
+/** مُنتِجُ الملفّ — الأكاديميّةُ افتراضا. ودعوةُ دورة صاحب المنصّة الخاصّة لا تحمل اسمَها: «لا تُدرج أحدا من
+    أكاديميّة وجيز فيها» (١٩ نوفمبر ٢٠٢٦، `private-course/confirmation-mail.ts`) */
+const ACADEMY_PRODID = '-//Wajeez Academy//AR//'
+
+function calendar(method: 'REQUEST' | 'CANCEL' | 'PUBLISH', events: string[][], prodId = ACADEMY_PRODID): string {
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Wajeez Academy//AR//',
+    `PRODID:${prodId}`,
     'CALSCALE:GREGORIAN',
     `METHOD:${method}`,
     ...events.flat(),
@@ -116,8 +120,8 @@ function calendar(method: 'REQUEST' | 'CANCEL' | 'PUBLISH', events: string[][]):
   return lines.map(foldIcsLine).join('\r\n') + '\r\n'
 }
 
-export function buildIcs(e: IcsEvent): string {
-  return calendar(e.cancelled ? 'CANCEL' : 'REQUEST', [eventLines(e, toIcsDate(e.now ?? new Date()))])
+export function buildIcs(e: IcsEvent, prodId?: string): string {
+  return calendar(e.cancelled ? 'CANCEL' : 'REQUEST', [eventLines(e, toIcsDate(e.now ?? new Date()))], prodId)
 }
 
 /* ═══ مواعيدُ كثيرةٌ في ملفٍّ واحد — نشرٌ لا دعوة (٢٩ سبتمبر ٢٠٢٦) ═══
