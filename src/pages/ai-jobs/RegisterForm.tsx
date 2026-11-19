@@ -10,6 +10,7 @@ import { COUNTRIES_SORTED, MOBILE_FORMATS, flagOf } from '@/data/countries'
 import { AI_JOBS, PROOF_ACCEPT, PROOF_MAX_BYTES, type AiJobsSectionKey } from '@/application/private-course/ai-jobs'
 import { normalizePhone, whatsappLink } from '@/application/private-course/phone'
 import { useHoneypot } from '@/components/HoneypotField'
+import { SeatPill } from './Seats'
 
 interface Proof {
   name: string
@@ -262,6 +263,7 @@ export default function RegisterForm() {
                 checked={section === s.key} onChange={() => setSection(s.key)} />
               <b>{s.title}</b>
               <span>{s.timeLabel}</span>
+              <SeatPill sectionKey={s.key} />
             </label>
           ))}
         </div>
