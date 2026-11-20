@@ -1,92 +1,23 @@
-/* نموذجُ التسجيل في الدورة الخاصّة — الاسمُ والبريدُ والرقمُ بمفتاح الدولة والشعبةُ وصورةُ الحوالة (١٩ نوفمبر ٢٠٢٦).
+/* نموذجُ الحجز في الدورة الخاصّة — الخطوةُ الأولى: الاسمُ والبريدُ والرقمُ بمفتاح الدولة والشعبة (٢٠ نوفمبر ٢٠٢٦).
 
-   والصورةُ تُصغَّر في المتصفّح قبل أن تُرسل: لقطةُ هاتفٍ حديثٍ أربعةُ ميغابايتات، ورفعُها على شبكةٍ ضعيفةٍ يُبقي
-   صاحبَها أمام زرٍّ يدور. فما زاد عن ١٨٠٠ نقطةٍ أو ميغابايتٍ ونصف يُعاد رسمُه JPEG — والحوالةُ تُقرأ كما هي.
-   والـPDF يُرسل كما هو. والخادمُ يسأل البايتاتِ عن نوعها في الحالتين (`registration.service.ts`). */
+   كانت صورةُ الحوالة شرطا في النموذج نفسِه: يترك الزائرُ الصفحةَ إلى تطبيق بنكه، ويحوّل، ويعود فيرفع — وكثيرٌ لا يعود.
+   فقال صاحبُ المنصّة «ابدأ بالأوّل»: يحجز أوّلا فيُحفظ اسمُه ورقمُه ومقعدُه، ثمّ تأتي الخطوةُ الثانية (`PayStep`) في
+   المكان نفسِه: الاسمُ المستعار في CliQ ورفعُ الصورة — الآنَ أو لاحقا من رابطٍ باسمه. ومن لم يدفع يذكّره صاحبُ الدورة
+   برابطه من لوحته. ومصدرُ الزائر (`source.ts`) يُرسل مع الحجز ليُعرف أيُّ منشورٍ يبيع. */
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ApiError, apiGet, apiPost } from '@/services/api'
 import { COUNTRIES_SORTED, MOBILE_FORMATS, flagOf } from '@/data/countries'
-import { AI_JOBS, PROOF_ACCEPT, PROOF_MAX_BYTES, type AiJobsSectionKey } from '@/application/private-course/ai-jobs'
+import { AI_JOBS, type AiJobsSectionKey } from '@/application/private-course/ai-jobs'
 import { normalizePhone, whatsappLink } from '@/application/private-course/phone'
+import { storedSource } from '@/application/private-course/source'
 import { useHoneypot } from '@/components/HoneypotField'
 import { SeatPill } from './Seats'
+import PayStep, { type PayInfo } from './PayStep'
 
-interface Proof {
-  name: string
-  base64: string
-  /** معاينةٌ للصورة — `data:` لا `blob:`: سياسةُ المحتوى تسمح بالأولى وحدَها */
-  preview: string | null
-  pdf: boolean
-}
-
-interface Done {
-  reference: string
-  updated: boolean
-  sectionTitle: string
-  email: string
-}
-
-const MAX_SIDE = 1800
-const SHRINK_ABOVE = 1.5 * 1024 * 1024
-
-function readDataUrl(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader()
-    r.onload = () => resolve(String(r.result))
-    r.onerror = () => reject(new Error('read'))
-    r.readAsDataURL(file)
-  })
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('decode'))
-    img.src = src
-  })
-}
-
-function base64Bytes(dataUrl: string): number {
-  const b64 = dataUrl.slice(dataUrl.indexOf(',') + 1)
-  return Math.floor((b64.length * 3) / 4)
-}
-
-async function prepareProof(file: File): Promise<Proof> {
-  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
-  if (isPdf) {
-    if (file.size > PROOF_MAX_BYTES) throw new Error('ملف PDF أكبر من 8MB')
-    const url = await readDataUrl(file)
-    return { name: file.name, base64: url, preview: null, pdf: true }
-  }
-  if (!file.type.startsWith('image/') && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) {
-    throw new Error('ارفع صورة الحوالة أو ملف PDF')
-  }
-  const original = await readDataUrl(file)
-  let img: HTMLImageElement
-  try {
-    img = await loadImage(original)
-  } catch {
-    throw new Error('تعذر فتح الصورة — التقط لقطة شاشة للحوالة وارفعها')
-  }
-  const big = Math.max(img.naturalWidth, img.naturalHeight)
-  const plain = /^image\/(jpeg|png|webp)$/.test(file.type)
-  if (plain && big <= MAX_SIDE && file.size <= SHRINK_ABOVE) {
-    return { name: file.name, base64: original, preview: original, pdf: false }
-  }
-  const scale = Math.min(1, MAX_SIDE / big)
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.round(img.naturalWidth * scale)
-  canvas.height = Math.round(img.naturalHeight * scale)
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return { name: file.name, base64: original, preview: original, pdf: false }
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-  const jpeg = canvas.toDataURL('image/jpeg', 0.86)
-  const name = file.name.replace(/\.[^.]+$/, '') + '.jpg'
-  return { name, base64: jpeg, preview: jpeg, pdf: false }
+interface Reserved {
+  token: string
+  info: PayInfo
 }
 
 const ARAB = COUNTRIES_SORTED.filter((c) => c.arab)
@@ -99,16 +30,11 @@ export default function RegisterForm() {
   const [country, setCountry] = useState('JO')
   const [phone, setPhone] = useState('')
   const [section, setSection] = useState<AiJobsSectionKey | ''>('')
-  const [note, setNote] = useState('')
   const hp = useHoneypot()
-  const [proof, setProof] = useState<Proof | null>(null)
-  const [proofBusy, setProofBusy] = useState(false)
-  const [over, setOver] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [sending, setSending] = useState(false)
   const [alert, setAlert] = useState('')
-  const [done, setDone] = useState<Done | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [reserved, setReserved] = useState<Reserved | null>(null)
   const doneRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -120,26 +46,10 @@ export default function RegisterForm() {
   }, [])
 
   useEffect(() => {
-    if (done) doneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [done])
+    if (reserved) doneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [reserved])
 
   const example = useMemo(() => MOBILE_FORMATS[country]?.example ?? '', [country])
-
-  async function pick(file: File | undefined) {
-    if (!file) return
-    setProofBusy(true)
-    setErrors((e) => ({ ...e, proof: '' }))
-    try {
-      const p = await prepareProof(file)
-      if (base64Bytes(p.base64) > PROOF_MAX_BYTES) throw new Error('الملف أكبر من 8MB — التقط لقطة شاشة للحوالة')
-      setProof(p)
-    } catch (e) {
-      setProof(null)
-      setErrors((x) => ({ ...x, proof: e instanceof Error ? e.message : 'تعذر قراءة الملف' }))
-    } finally {
-      setProofBusy(false)
-    }
-  }
 
   function validate(): Record<string, string> {
     const e: Record<string, string> = {}
@@ -148,7 +58,6 @@ export default function RegisterForm() {
     const p = normalizePhone(country, phone)
     if (!p.ok) e.phone = p.error
     if (!section) e.section = 'اختر الشعبة'
-    if (!proof) e.proof = 'ارفع صورة الحوالة'
     return e
   }
 
@@ -164,16 +73,18 @@ export default function RegisterForm() {
     }
     setSending(true)
     try {
-      const r = await apiPost<{ reference: string; updated: boolean; sectionTitle: string }>(
+      const r = await apiPost<{ reference: string; updated: boolean; sectionTitle: string; payToken: string; hasProof: boolean }>(
         `/api/v1/public/private-courses/${AI_JOBS.slug}/registrations`,
         {
           fullName, email, phoneCountry: country, phone, sectionKey: section,
-          note: note.trim() || undefined,
-          proof: { name: proof!.name, base64: proof!.base64 },
+          source: storedSource() ?? undefined,
           website: hp.value,
         },
       )
-      setDone({ ...r, email: email.trim() })
+      setReserved({
+        token: r.payToken,
+        info: { firstName: fullName.trim().split(/\s+/)[0], reference: r.reference, sectionTitle: r.sectionTitle, status: 'pending', hasProof: r.hasProof },
+      })
     } catch (err) {
       setAlert(err instanceof ApiError ? err.message : 'تعذر الإرسال — تأكد من الاتصال وأعد المحاولة')
     } finally {
@@ -181,24 +92,10 @@ export default function RegisterForm() {
     }
   }
 
-  if (done) {
+  if (reserved) {
     return (
-      <div ref={doneRef} className="aij-box aij-done" role="status">
-        <div className="tick" aria-hidden="true">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-        </div>
-        <h2>{done.updated ? 'حدّثنا تسجيلك' : 'وصل تسجيلك'}</h2>
-        <p>
-          نراجع الحوالة ونرسل التأكيد ورابط Zoom ({done.sectionTitle}) إلى <b dir="ltr">{done.email}</b>.
-          تفقد بريدك، ومجلد الرسائل غير المرغوبة كذلك.
-        </p>
-        <div className="aij-ref" aria-label={`رقم المرجع ${done.reference}`}>{done.reference}</div>
-        <p className="aij-small">احتفظ برقم المرجع. لأي سؤال راسلنا على واتساب.</p>
-        <div className="aij-row" style={{ justifyContent: 'center' }}>
-          <a className="aij-cta aij-cta-y" href={whatsappLink(AI_JOBS.whatsapp, `مرحبا، سجلت في دورة التقديم على الوظائف بالذكاء الاصطناعي. رقم المرجع ${done.reference}`)} target="_blank" rel="noopener noreferrer">
-            راسلنا على واتساب
-          </a>
-        </div>
+      <div ref={doneRef} style={{ scrollMarginTop: 110 }}>
+        <PayStep token={reserved.token} info={reserved.info} fresh onChange={(info) => setReserved({ ...reserved, info })} />
       </div>
     )
   }
@@ -217,8 +114,8 @@ export default function RegisterForm() {
 
   return (
     <form className="aij-box aij-form" onSubmit={submit} noValidate aria-labelledby="aij-form-title">
-      <h2 id="aij-form-title">سجّل مقعدك</h2>
-      <p className="aij-small" style={{ marginTop: 6 }}>بعد التحويل عبّئ النموذج وارفع صورة الحوالة. دقيقة واحدة.</p>
+      <h2 id="aij-form-title">احجز مقعدك</h2>
+      <p className="aij-small" style={{ marginTop: 6 }}>اكتب بياناتك واختر شعبتك، ثم حوّل وارفع صورة الحوالة — الآن أو لاحقا.</p>
 
       <div className="aij-field">
         <label className="aij-label" htmlFor="aij-fullName">الاسم الكامل</label>
@@ -270,46 +167,15 @@ export default function RegisterForm() {
         {errors.section && <p className="aij-err">{errors.section}</p>}
       </fieldset>
 
-      <div className="aij-field">
-        <span className="aij-label" id="aij-proof-label">صورة الحوالة <em>— صورة أو لقطة شاشة أو PDF</em></span>
-        <label className={`aij-drop${over ? ' over' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setOver(true) }}
-          onDragLeave={() => setOver(false)}
-          onDrop={(e) => { e.preventDefault(); setOver(false); void pick(e.dataTransfer.files?.[0]) }}>
-          <input id="aij-proof" ref={fileRef} type="file" accept={`${PROOF_ACCEPT},image/*`}
-            aria-labelledby="aij-proof-label" aria-invalid={Boolean(errors.proof)}
-            onChange={(e) => void pick(e.target.files?.[0])} />
-          <span className="thumb" aria-hidden="true">
-            {proof?.preview
-              ? <img src={proof.preview} alt="" />
-              : proof?.pdf
-                ? <b style={{ fontSize: 14 }}>PDF</b>
-                : (
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#142240" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
-                )}
-          </span>
-          <span className="txt">
-            <b>{proofBusy ? 'نجهّز الملف…' : proof ? 'تم اختيار الملف — اضغط لتغييره' : 'اضغط لاختيار صورة الحوالة'}</b>
-            <small>{proof ? proof.name : 'من الهاتف أو الكمبيوتر'}</small>
-          </span>
-        </label>
-        {errors.proof && <p className="aij-err">{errors.proof}</p>}
-      </div>
-
-      <div className="aij-field">
-        <label className="aij-label" htmlFor="aij-note">ملاحظة <em>— اختياري، مثل اسم صاحب الحساب المحوّل إن اختلف</em></label>
-        <textarea id="aij-note" className="aij-textarea" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
-      </div>
-
       {hp.field}
 
       {alert && <div className="aij-alert" role="alert">{alert}</div>}
 
-      <button type="submit" className="aij-cta aij-cta-lg aij-submit" disabled={sending || proofBusy}>
-        {sending ? 'نرسل تسجيلك…' : 'أرسل التسجيل'}
+      <button type="submit" className="aij-cta aij-cta-lg aij-submit" disabled={sending}>
+        {sending ? 'نحجز مقعدك…' : 'احجز مقعدي'}
       </button>
       <p className="aij-small" style={{ marginTop: 12, textAlign: 'center' }}>
-        يصلك التأكيد ورابط Zoom على بريدك بعد مراجعة الحوالة.
+        بعدها تحوّل {AI_JOBS.priceJod} دينار عبر CliQ وترفع صورة الحوالة، ويصلك التأكيد ورابط Zoom على بريدك.
       </p>
     </form>
   )

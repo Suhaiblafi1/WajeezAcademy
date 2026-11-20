@@ -14,7 +14,7 @@ import { requirePrivateOwner } from '../../services/private-course/owner'
 import { saveGmailConfig } from '../../services/private-course/mailer'
 import {
   clearCourseFile, confirmRegistration, courseFile, deleteRegistration, exportXlsx, moveSection, ownerOverview,
-  proofOf, publicCourseState, registerPublic, rejectRegistration, reopenRegistration, sendConfirmation, sendTestMail,
+  payInfo, proofOf, publicCourseState, submitProof, registerPublic, rejectRegistration, reopenRegistration, sendConfirmation, sendTestMail,
   setCourseFile, updateCourse,
 } from '../../services/private-course/registration.service'
 import { COURSE_FILE_MAX_BYTES, PROOF_MAX_BYTES } from '../../../src/application/private-course/ai-jobs'
@@ -23,6 +23,10 @@ import { COURSE_FILE_MAX_BYTES, PROOF_MAX_BYTES } from '../../../src/application
 const REGISTER_BODY_LIMIT = Math.ceil(PROOF_MAX_BYTES * 1.4) + 64 * 1024
 
 const slugParam = z.object({ slug: z.string().min(1).max(60) })
+const proofSchema = z.object({
+  name: z.string().max(300),
+  base64: z.string().min(10, 'ارفع صورة الحوالة'),
+}, { message: 'ارفع صورة الحوالة' })
 const idParam = z.object({ id: z.string().uuid() })
 
 /** الملفُّ يُعرض في المتصفّح نفسِه — صورةً أو PDF — لا يُنزَّل */
@@ -54,13 +58,35 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
       phone: z.string().min(4, 'اكتب رقم الهاتف').max(30, 'رقم الهاتف غير صحيح'),
       sectionKey: z.string().min(1, 'اختر الشعبة').max(20),
       note: z.string().max(500, 'الملاحظة أطول من 500 حرف').optional(),
-      proof: z.object({
-        name: z.string().max(300),
-        base64: z.string().min(10, 'ارفع صورة الحوالة'),
-      }, { message: 'ارفع صورة الحوالة' }),
+      /* اختياريّةٌ منذ «احجز أوّلا وادفع بعد» — تُرفع من رابط الدفع */
+      proof: proofSchema.optional(),
+      source: z.string().max(300).optional(),
     }).parse(req.body)
     const r = await registerPublic(prisma, slug, body)
     return reply.status(201).send(r)
+  })
+
+  /* ═══ رابطُ الدفع باسمه — يرفع منه الحوالةَ متى حوّل (٢٠ نوفمبر ٢٠٢٦) ═══ */
+
+  app.get('/api/v1/public/private-courses/:slug/pay/:token', {
+    config: { rateLimit: { max: 30, timeWindow: '15 minutes' } },
+    schema: { tags: ['private-course'], summary: 'حال الحجز من رابط الدفع: الاسم الأول والشعبة وهل وصلت الحوالة' },
+  }, async (req) => {
+    const { slug, token } = z.object({ slug: z.string().min(1).max(60), token: z.string().min(1).max(200) }).parse(req.params)
+    return payInfo(prisma, slug, token)
+  })
+
+  app.post('/api/v1/public/private-courses/:slug/pay/:token', {
+    bodyLimit: REGISTER_BODY_LIMIT,
+    config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
+    schema: { tags: ['private-course'], summary: 'رفع صورة الحوالة من رابط الدفع' },
+  }, async (req) => {
+    const { slug, token } = z.object({ slug: z.string().min(1).max(60), token: z.string().min(1).max(200) }).parse(req.params)
+    const body = z.object({
+      proof: proofSchema,
+      note: z.string().max(500, 'الملاحظة أطول من 500 حرف').optional(),
+    }).parse(req.body)
+    return submitProof(prisma, slug, token, body)
   })
 
   /* ═══ الخاصّ — صاحبُ المنصّة وحدَه ═══ */

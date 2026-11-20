@@ -42,6 +42,7 @@ const PrivatePathPage = lazy(() => import('./pages/PrivatePath'))
 const GrantRecordLinkPage = lazy(() => import('./pages/GrantRecordLink'))
 /* دورةُ صاحب المنصّة الخاصّة — صفحتُها ومساحتُه (١٩ نوفمبر ٢٠٢٦، `application/private-course/ai-jobs.ts`) */
 const AiJobsPage = lazy(() => import('./pages/ai-jobs/AiJobs'))
+const AiJobsPayPage = lazy(() => import('./pages/ai-jobs/PayPage'))
 const PrivateWorkspace = lazy(() => import('./pages/private/PrivateWorkspace'))
 
 /* البوابات الداخلية تُحمَّل عند الطلب فقط — لا تبطئ الصفحات العامة */
@@ -259,6 +260,8 @@ export default function App() {
           <Route path="/join-influencer" element={<JoinInfluencer />} />
           {/* دورةُ صاحب المنصّة الخاصّة — صفحةٌ عامّةٌ بلا رأس الموقع، والتسجيلُ بصورة حوالة CliQ */}
           <Route path="/ai-jobs" element={<AiJobsPage />} />
+          {/* ورابطُ الدفع باسم الحاجز — يرفع منه صورةَ الحوالة متى حوّل (٢٠ نوفمبر ٢٠٢٦) */}
+          <Route path="/ai-jobs/pay/:token" element={<AiJobsPayPage />} />
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
           {/* رابطُ بريد التأكيد يوثّق العنوان — صفحةٌ عامّة بلا جلسة */}
           <Route path="/join-trainer/verify" element={<JoinTrainerVerify />} />
