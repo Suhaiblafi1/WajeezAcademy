@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
-  CheckCircle2, Download, ExternalLink, FileText, Loader2, Lock, LockOpen, Mail, RefreshCw, RotateCcw, Search, Send,
+  CheckCircle2, Copy, Download, ExternalLink, FileText, Loader2, Lock, LockOpen, Mail, MessageCircle, RefreshCw, RotateCcw, Search, Send,
   Trash2, Upload, Video, XCircle,
 } from 'lucide-react'
 import { ApiError, apiDelete, apiDownload, apiGet, apiPatch, apiPost, apiPut, apiUpload } from '@/services/api'
@@ -36,7 +36,11 @@ interface Registration {
   phoneCountry: string
   sectionKey: string
   note: string | null
-  proof: { name: string; mime: string; size: number }
+  /** `null` حتى يرفعها — «حجز ولم يدفع بعد» (٢٠ نوفمبر ٢٠٢٦) */
+  proof: { name: string; mime: string; size: number } | null
+  proofUploadedAt: string | null
+  payToken: string
+  source: string | null
   status: Status
   createdAt: string
   confirmedAt: string | null
@@ -255,9 +259,13 @@ function RegistrationCard({ r, onChange, onRemove }: {
   onRemove: (id: string) => void
 }) {
   const [busy, setBusy] = useState<string | null>(null)
-  const isImage = r.proof.mime.startsWith('image/')
+  const isImage = r.proof?.mime.startsWith('image/') ?? false
   const proofUrl = `/api/v1/private/registrations/${r.id}/proof`
   const section = AI_JOBS.sections.find((s) => s.key === r.sectionKey)
+  /* رابطُ الدفع باسمه — يذكّره به على واتساب من حجز ولم يرفع الحوالة */
+  const payLink = `${window.location.origin}/ai-jobs/pay/${r.payToken}`
+  const reminder = whatsappLink(r.phone,
+    `مرحبا ${r.fullName.split(' ')[0]}، حجزنا لك مقعدا في ${section?.title ?? 'الدورة'} يوم ${AI_JOBS.dateLabel}. لتأكيده حوّل ${AI_JOBS.priceJod} دينار عبر CliQ إلى ${AI_JOBS.cliqAlias} وارفع صورة الحوالة من هنا: ${payLink}`)
 
   async function act(key: string, run: () => Promise<{ registration: Registration; mail?: MailResult }>, okText?: string) {
     setBusy(key)
@@ -292,13 +300,14 @@ function RegistrationCard({ r, onChange, onRemove }: {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-black">{r.fullName}</h3>
-            <Inset tone={STATUS_TONE[r.status]} className="px-2 py-0.5 text-fine font-bold">{STATUS_AR[r.status]}</Inset>
+            <Inset tone={STATUS_TONE[r.status]} className="px-2 py-0.5 text-fine font-bold">{r.status === 'pending' && !r.proof ? 'بانتظار الدفع' : STATUS_AR[r.status]}</Inset>
             <span dir="ltr" className="font-mono text-fine text-muted-foreground">#{r.reference}</span>
           </div>
           <div className="mt-2 grid gap-1 text-read leading-6">
             <a dir="ltr" className="w-fit text-teal-ink hover:underline" href={`mailto:${r.email}`}>{r.email}</a>
             <a dir="ltr" className="w-fit text-teal-ink hover:underline" href={whatsappLink(r.phone)} target="_blank" rel="noopener noreferrer">{r.phone} · واتساب</a>
-            <span className="text-muted-foreground">سجل {fmtDateTime(r.createdAt)}</span>
+            <span className="text-muted-foreground">سجل {fmtDateTime(r.createdAt)}{r.proofUploadedAt && r.proofUploadedAt !== r.createdAt ? ` · رفع الحوالة ${fmtDateTime(r.proofUploadedAt)}` : ''}</span>
+            <span className="text-muted-foreground">المصدر: <b className="text-foreground">{r.source ?? 'مباشر'}</b></span>
             {r.note && <span>ملاحظته: {r.note}</span>}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -323,16 +332,27 @@ function RegistrationCard({ r, onChange, onRemove }: {
           )}
         </div>
 
-        <a href={proofUrl} target="_blank" rel="noopener" className="block w-full md:w-40" title="افتح صورة الحوالة">
-          {isImage
-            ? <img src={proofUrl} alt={`حوالة ${r.fullName}`} loading="lazy" className="h-40 w-full rounded-lg border border-white/10 bg-white object-contain md:w-40" />
-            : (
-              <Inset className="flex h-40 flex-col items-center justify-center gap-2 text-read">
-                <FileText className="h-8 w-8 text-teal-ink" aria-hidden="true" />
-                افتح الحوالة (PDF)
-              </Inset>
-            )}
-        </a>
+        {r.proof
+          ? (
+            <a href={proofUrl} target="_blank" rel="noopener" className="block w-full md:w-40" title="افتح صورة الحوالة">
+              {isImage
+                ? <img src={proofUrl} alt={`حوالة ${r.fullName}`} loading="lazy" className="h-40 w-full rounded-lg border border-white/10 bg-white object-contain md:w-40" />
+                : (
+                  <Inset className="flex h-40 flex-col items-center justify-center gap-2 text-read">
+                    <FileText className="h-8 w-8 text-teal-ink" aria-hidden="true" />
+                    افتح الحوالة (PDF)
+                  </Inset>
+                )}
+            </a>
+          )
+          : (
+            <Inset tone="warn" className="flex w-full flex-col items-start gap-2 p-3 text-read md:w-56">
+              <b>لم يرفع الحوالة بعد</b>
+              <span className="text-fine leading-5 text-muted-foreground">حجز مقعده ولم يدفع. ذكّره برابط الدفع باسمه:</span>
+              <Button as="a" href={reminder} target="_blank" rel="noopener noreferrer" size="sm" icon={MessageCircle}>ذكّره على واتساب</Button>
+              <Button size="sm" tone="ghost" icon={Copy} onClick={() => { void navigator.clipboard?.writeText(payLink).then(() => toast('نسخنا رابط الدفع')) }}>انسخ رابط الدفع</Button>
+            </Inset>
+          )}
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
@@ -385,12 +405,18 @@ function RegistrationCard({ r, onChange, onRemove }: {
 
 /* ═══ الصفحة ═══ */
 
-type Filter = Status | 'all'
+/* «بانتظار الدفع»: حجز ولم يرفع الحوالة — و«قيد المراجعة»: رفعها ولم تُؤكَّد (٢٠ نوفمبر ٢٠٢٦) */
+type Filter = 'unpaid' | 'review' | 'confirmed' | 'rejected' | 'all'
+
+function filterOf(r: Registration): Exclude<Filter, 'all'> {
+  if (r.status === 'pending') return r.proof ? 'review' : 'unpaid'
+  return r.status
+}
 
 export default function PrivateWorkspace() {
   const [data, setData] = useState<Overview | null>(null)
   const [state, setState] = useState<'loading' | 'ok' | 'missing' | 'error'>('loading')
-  const [filter, setFilter] = useState<Filter>('pending')
+  const [filter, setFilter] = useState<Filter>('review')
   const [section, setSection] = useState<string>('')
   const [q, setQ] = useState('')
   const [onlyConfirmed, setOnlyConfirmed] = useState(true)
@@ -414,15 +440,29 @@ export default function PrivateWorkspace() {
 
   const regs = useMemo(() => data?.registrations ?? [], [data])
   const counts = useMemo(() => ({
-    pending: regs.filter((r) => r.status === 'pending').length,
+    unpaid: regs.filter((r) => filterOf(r) === 'unpaid').length,
+    review: regs.filter((r) => filterOf(r) === 'review').length,
     confirmed: regs.filter((r) => r.status === 'confirmed').length,
     rejected: regs.filter((r) => r.status === 'rejected').length,
   }), [regs])
 
+  /* من أين جاؤوا — بأوّل مقطعٍ من المصدر («Instagram · bf1» ← Instagram)، الحاجزون والمؤكَّدون */
+  const sources = useMemo(() => {
+    const m = new Map<string, { all: number; confirmed: number }>()
+    for (const r of regs) {
+      const k = (r.source ?? 'مباشر').split(' · ')[0]
+      const v = m.get(k) ?? { all: 0, confirmed: 0 }
+      v.all += 1
+      if (r.status === 'confirmed') v.confirmed += 1
+      m.set(k, v)
+    }
+    return [...m.entries()].sort((a, b) => b[1].all - a[1].all)
+  }, [regs])
+
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase()
     return regs.filter((r) =>
-      (filter === 'all' || r.status === filter)
+      (filter === 'all' || filterOf(r) === filter)
       && (!section || r.sectionKey === section)
       && (!term || r.fullName.toLowerCase().includes(term) || r.email.includes(term) || r.phone.includes(term.replace(/\s/g, '')) || r.reference.toLowerCase().includes(term)))
   }, [regs, filter, section, q])
@@ -497,7 +537,8 @@ export default function PrivateWorkspace() {
 
   const income = counts.confirmed * data.course.priceJod
   const tabs: { key: Filter; label: string; n: number }[] = [
-    { key: 'pending', label: 'قيد المراجعة', n: counts.pending },
+    { key: 'review', label: 'قيد المراجعة', n: counts.review },
+    { key: 'unpaid', label: 'بانتظار الدفع', n: counts.unpaid },
     { key: 'confirmed', label: 'مؤكد', n: counts.confirmed },
     { key: 'rejected', label: 'مرفوض', n: counts.rejected },
     { key: 'all', label: 'الكل', n: regs.length },
@@ -529,8 +570,9 @@ export default function PrivateWorkspace() {
               {data.course.open ? 'التسجيل مفتوح — أغلقه' : 'التسجيل مغلق — افتحه'}
             </Button>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Inset tone="warn" className="p-3"><p className="text-fine text-muted-foreground">قيد المراجعة</p><p className="text-2xl font-black">{fmtNum(counts.pending)}</p></Inset>
+          <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+            <Inset tone="warn" className="p-3"><p className="text-fine text-muted-foreground">قيد المراجعة</p><p className="text-2xl font-black">{fmtNum(counts.review)}</p></Inset>
+            <Inset className="p-3"><p className="text-fine text-muted-foreground">بانتظار الدفع</p><p className="text-2xl font-black">{fmtNum(counts.unpaid)}</p></Inset>
             <Inset tone="positive" className="p-3"><p className="text-fine text-muted-foreground">مؤكد</p><p className="text-2xl font-black">{fmtNum(counts.confirmed)}</p></Inset>
             {data.course.sections.map((s) => (
               <Inset key={s.key} className="p-3">
@@ -540,6 +582,21 @@ export default function PrivateWorkspace() {
             ))}
           </div>
           <p className="mt-3 text-read text-muted-foreground">إيراد المؤكدين: <b className="text-foreground">{fmtNum(income)} دينار</b></p>
+          {sources.length > 0 && (
+            <div className="mt-4">
+              <p className="text-fine font-bold text-muted-foreground">من أين جاؤوا — حجزوا / تأكدوا</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {sources.map(([name, v]) => (
+                  <Inset key={name} className="px-3 py-1.5 text-read">
+                    {name} <b className="text-foreground">{fmtNum(v.all)}</b> / <span className="text-emerald-300">{fmtNum(v.confirmed)}</span>
+                  </Inset>
+                ))}
+              </div>
+              <p className="mt-2 text-fine leading-5 text-muted-foreground">
+                أضف <span dir="ltr" className="font-mono">?src=instagram</span> أو <span dir="ltr" className="font-mono">?src=linkedin&amp;utm_campaign=post1</span> إلى الرابط الذي تنشره، فيظهر هنا باسمه.
+              </p>
+            </div>
+          )}
         </Panel>
 
         <Panel as="section" className="p-5" aria-labelledby="pv-settings">
@@ -591,7 +648,7 @@ export default function PrivateWorkspace() {
 
           <div className="mt-4 space-y-3">
             {shown.length === 0
-              ? <Inset className="p-6 text-center text-read text-muted-foreground">لا أحد هنا {filter === 'pending' ? '— لا تسجيلات تنتظر المراجعة' : ''}</Inset>
+              ? <Inset className="p-6 text-center text-read text-muted-foreground">لا أحد هنا {filter === 'review' ? '— لا حوالات تنتظر المراجعة' : filter === 'unpaid' ? '— كل من حجز رفع حوالته' : ''}</Inset>
               : shown.map((r) => <RegistrationCard key={r.id} r={r} onChange={patchReg} onRemove={dropReg} />)}
           </div>
         </Panel>

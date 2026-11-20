@@ -300,3 +300,97 @@ describe('④ التحميل', () => {
     expect(res.statusCode).toBe(404)
   })
 })
+
+/* ═══ ⑤ احجز أوّلا وادفع بعد — ومن أين جاء (٢٠ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة «ابدأ بالأوّل»: الحجزُ بلا صورة حوالة، ورابطُ دفعٍ باسمه يرفع منه متى حوّل،
+   ولوحتُه ترى «بانتظار الدفع» ومصدرَ كلّ حجز. */
+describe('⑤ الحجز أولا والدفع بعد', () => {
+  const reserve = (email: string, over: Record<string, unknown> = {}) => {
+    ip += 1
+    return app.inject({
+      method: 'POST',
+      url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}/registrations`,
+      remoteAddress: `10.78.0.${ip}`,
+      payload: { fullName: 'ليلى حسن', email, phoneCountry: 'AE', phone: '0501234567', sectionKey: 'morning', ...over },
+    })
+  }
+  const payUrl = (token: string) => `/api/v1/public/private-courses/${AI_JOBS_SLUG}/pay/${token}`
+
+  it('⚠️ يحجز بلا صورة حوالة ويعيد رابط دفعه — ويحفظ مصدره', async () => {
+    const res = await reserve('layla@test.local', { source: 'Instagram · story · bf1' })
+    expect(res.statusCode, res.body).toBe(201)
+    const body = res.json()
+    expect(body.hasProof).toBe(false)
+    expect(body.payToken).toMatch(/^[A-Za-z0-9_-]{16,}$/)
+    const row = await prisma.privateRegistration.findUniqueOrThrow({ where: { payToken: body.payToken } })
+    expect(row.proofKey).toBeNull()
+    expect(row.status).toBe('pending')
+    expect(row.source).toBe('Instagram · story · bf1')
+  })
+
+  it('ورابط الدفع يقول الاسم الأول والشعبة — لا البريد ولا الرقم', async () => {
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'layla@test.local' } })
+    const res = await app.inject({ method: 'GET', url: payUrl(row.payToken) })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toMatchObject({ firstName: 'ليلى', sectionTitle: 'الشعبة الصباحية', status: 'pending', hasProof: false })
+    expect(res.body).not.toContain('layla@test.local')
+    expect(res.body).not.toContain('501234567')
+  })
+
+  it('⚠️ ورابط لا وجود له ٤٠٤', async () => {
+    expect((await app.inject({ method: 'GET', url: payUrl('x'.repeat(32)) })).statusCode).toBe(404)
+    expect((await app.inject({ method: 'GET', url: payUrl('../../etc') })).statusCode).toBe(404)
+  })
+
+  it('⚠️ والرفع من الرابط يحفظ الصورة — وHTML المسمى صورة يرد', async () => {
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'layla@test.local' } })
+    const bad = await app.inject({ method: 'POST', url: payUrl(row.payToken), payload: { proof: { name: 'x.png', base64: HTML_AS_PNG.toString('base64') } } })
+    expect(bad.statusCode).toBe(415)
+    const ok = await app.inject({
+      method: 'POST', url: payUrl(row.payToken),
+      payload: { proof: { name: 'cliq.png', base64: PNG.toString('base64') }, note: 'باسم أخي' },
+    })
+    expect(ok.statusCode, ok.body).toBe(200)
+    expect(ok.json()).toMatchObject({ hasProof: true, status: 'pending' })
+    const after = await prisma.privateRegistration.findUniqueOrThrow({ where: { id: row.id } })
+    expect(after.proofMime).toBe('image/png')
+    expect(after.proofUploadedAt).not.toBeNull()
+    expect(after.note).toBe('باسم أخي')
+  })
+
+  it('وحجز ثان بالبريد نفسه يبقي رابطه وحوالته ومصدره الأول', async () => {
+    const before = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'layla@test.local' } })
+    const res = await reserve('layla@test.local', { sectionKey: 'evening' })
+    expect(res.json().payToken).toBe(before.payToken)
+    const after = await prisma.privateRegistration.findUniqueOrThrow({ where: { id: before.id } })
+    expect(after.proofKey).toBe(before.proofKey)
+    expect(after.source).toBe('Instagram · story · bf1')
+    expect(after.sectionKey).toBe('evening')
+  })
+
+  it('واللوحة ترى من لم يدفع ورابطه ومصدره، وExcel فيه الحوالة والمصدر', async () => {
+    await reserve('nopay@test.local')
+    const o = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json()
+    const nopay = o.registrations.find((x: { email: string }) => x.email === 'nopay@test.local')
+    expect(nopay.proof).toBeNull()
+    expect(nopay.payToken).toBeTruthy()
+    expect(nopay.source).toBeNull()
+    const x = await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}/export.xlsx`)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(x.rawPayload as never)
+    const all = wb.getWorksheet('الكل')!
+    const header = (all.getRow(1).values as unknown[]).filter(Boolean)
+    expect(header).toContain('المصدر')
+    const col = (name: string) => (all.getRow(1).values as unknown[]).indexOf(name)
+    const rowOf = (email: string) => all.getRows(2, all.rowCount - 1)!.find((r) => r.getCell(2).value === email)!
+    expect(rowOf('nopay@test.local').getCell(col('الحوالة')).value).toBe('لم يرفعها بعد')
+    expect(rowOf('nopay@test.local').getCell(col('المصدر')).value).toBe('مباشر')
+    expect(rowOf('layla@test.local').getCell(col('المصدر')).value).toBe('Instagram · story · bf1')
+  })
+
+  it('ومن تأكد لا يرفع من الرابط', async () => {
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'sara@test.local' } })
+    const res = await app.inject({ method: 'POST', url: payUrl(row.payToken), payload: { proof: { name: 'p.png', base64: PNG.toString('base64') } } })
+    expect(res.statusCode).toBe(409)
+  })
+})

@@ -135,3 +135,45 @@ describe('⑤ المقاعد المتبقية بدل عداد الوقت', () =>
     expect(page).toMatch(/<b>حتى نفاد المقاعد<\/b>/)
   })
 })
+
+/* ═══ ⑥ ما يزيد البيع — قرارُ صاحب المنصّة (٢٠ نوفمبر ٢٠٢٦): «ابدأ بالأوّل ونفّذ ٤ و٥ و٦ و٨» ═══ */
+describe('⑥ احجز أولا، ومن أين جاء، ولمن الدورة، والضمان، وواتساب', () => {
+  it('⚠️ المصدر من ?src= أولا، ثم utm، ثم الموقع الذي أحاله', async () => {
+    const { readSource } = await import('@/application/private-course/source')
+    expect(readSource('?src=ig&utm_campaign=bf1', '', 'www.wajeezacademy.com')).toBe('Instagram · bf1')
+    expect(readSource('?utm_source=linkedin&utm_medium=post', 'https://www.google.com/', 'www.wajeezacademy.com')).toBe('LinkedIn · post')
+    expect(readSource('', 'https://l.instagram.com/?u=x', 'www.wajeezacademy.com')).toBe('Instagram')
+    expect(readSource('', 'https://lnkd.in/abc', 'www.wajeezacademy.com')).toBe('LinkedIn')
+    expect(readSource('?fbclid=123', '', 'www.wajeezacademy.com')).toBe('Facebook/Instagram')
+  })
+
+  it('⚠️ والدخول المباشر أو من الموقع نفسه لا مصدر له — ولا يطابق اسما جزءا من نطاق', async () => {
+    const { readSource } = await import('@/application/private-course/source')
+    expect(readSource('', '', 'www.wajeezacademy.com')).toBeNull()
+    expect(readSource('', 'https://www.wajeezacademy.com/grant', 'www.wajeezacademy.com')).toBeNull()
+    expect(readSource('', 'https://notinstagram.com.evil.io/', 'www.wajeezacademy.com')).toBe('notinstagram.com.evil.io')
+  })
+
+  it('⚠️ النموذج يحجز بلا صورة حوالة — والرفع في الخطوة الثانية', () => {
+    const form = read('src/pages/ai-jobs/RegisterForm.tsx')
+    expect(form).not.toMatch(/type="file"/)
+    expect(form).toMatch(/<PayStep /)
+    expect(form).toMatch(/storedSource\(\)/)
+    expect(read('src/pages/ai-jobs/PayStep.tsx')).toMatch(/type="file"/)
+  })
+
+  it('ورابط الدفع صفحة عامة قبل حارس الأدوار', () => {
+    const app = read('src/App.tsx')
+    const route = app.indexOf('path="/ai-jobs/pay/:token"')
+    expect(route).toBeGreaterThan(0)
+    expect(route).toBeLessThan(app.indexOf('<RequireRole'))
+  })
+
+  it('ولمن هذه الدورة، والضمان في العرض والنتيجة والأسئلة، وواتساب ثابت', () => {
+    const page = read('src/pages/ai-jobs/AiJobs.tsx')
+    expect(page).toMatch(/WHO\.map/)
+    expect((page.match(/GUARANTEE\.text/g) ?? []).length).toBe(2)
+    expect(read('src/pages/ai-jobs/content.ts')).toMatch(/q: 'ماذا لو لم أستفد؟'/)
+    expect(page).toMatch(/className=\{`aij-wa/)
+  })
+})

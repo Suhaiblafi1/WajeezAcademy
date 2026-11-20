@@ -89,6 +89,11 @@ export async function publicCourseState(prisma: PrismaClient, slug: string) {
 
 /* ── التسجيلُ من الصفحة ── */
 
+export interface ProofInput {
+  name: string
+  base64: string
+}
+
 export interface PublicRegistrationInput {
   fullName: string
   email: string
@@ -96,7 +101,10 @@ export interface PublicRegistrationInput {
   phone: string
   sectionKey: string
   note?: string
-  proof: { name: string; base64: string }
+  /** اختياريّةٌ منذ «احجز أوّلا وادفع بعد» (٢٠ نوفمبر ٢٠٢٦) — تُرفع هنا أو من رابط الدفع */
+  proof?: ProofInput
+  /** من أين جاء — تكتبه الصفحةُ من `?src=` و`utm_*` أو الموقعِ الذي أحاله (`source.ts`) */
+  source?: string
 }
 
 function decodeProof(base64: string): Buffer {
@@ -109,6 +117,28 @@ function decodeProof(base64: string): Buffer {
   return buffer
 }
 
+/** يكتب صورةَ الحوالة على القرص ويعيد أعمدتَها — والنوعُ من البايتات لا من الاسم ولا ممّا يعلنه المتصفّح:
+    صفحةُ HTML مسمّاةٌ «حوالة.png» تُردّ (العلّةُ عند `APPLICATION_DOC_MIMES` في `storage.service.ts`) */
+async function storeProof(proof: ProofInput) {
+  const buffer = decodeProof(proof.base64)
+  const mime = sniffDocumentMime(buffer)
+  if (!mime) throw new AuthError('bad_mime', 'الملف ليس صورة ولا PDF — ارفع صورة الحوالة (JPG أو PNG) أو PDF', 415)
+  const proofKey = newStorageKey()
+  const proofName = proof.name.trim().slice(0, 200) || 'proof'
+  await putObject(proofKey, buffer, { mime, originalName: proofName })
+  return { proofKey, proofName, proofMime: mime, proofSize: buffer.length, proofUploadedAt: new Date() }
+}
+
+/** المصدرُ نصٌّ قصيرٌ يُقرأ في اللوحة — لا يُخزَّن منه ما يتجاوز سطرا */
+function cleanSource(raw: string | undefined): string | null {
+  const v = (raw ?? '').replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)
+  return v || null
+}
+
+function reference(id: string): string {
+  return id.slice(0, 8).toUpperCase()
+}
+
 export async function registerPublic(prisma: PrismaClient, slug: string, input: PublicRegistrationInput) {
   const course = await ensureCourse(prisma, slug)
   if (!course.open) throw new AuthError('closed', 'التسجيل مغلق الآن — راسلنا على واتساب', 409)
@@ -119,41 +149,87 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
   const email = input.email.trim().toLowerCase()
   const fullName = input.fullName.trim().replace(/\s+/g, ' ')
 
-  const buffer = decodeProof(input.proof.base64)
-  /* النوعُ من البايتات لا من الاسم ولا مما يعلنه المتصفّح — صفحةُ HTML مسمّاةٌ «حوالة.png» تُردّ
-     (العلّةُ عند `APPLICATION_DOC_MIMES` في `storage.service.ts`) */
-  const mime = sniffDocumentMime(buffer)
-  if (!mime) throw new AuthError('bad_mime', 'الملف ليس صورة ولا PDF — ارفع صورة الحوالة (JPG أو PNG) أو PDF', 415)
-
   const existing = await prisma.privateRegistration.findUnique({ where: { courseSlug_email: { courseSlug: slug, email } } })
   if (existing?.status === 'confirmed') {
     throw new AuthError('already_confirmed', 'تسجيلك مؤكد من قبل — تفقد بريدك، وإن لم تجد الرسالة راسلنا على واتساب', 409)
   }
 
-  const proofKey = newStorageKey()
-  const proofName = input.proof.name.trim().slice(0, 200) || 'proof'
-  await putObject(proofKey, buffer, { mime, originalName: proofName })
-
+  const proof = input.proof ? await storeProof(input.proof) : null
   const data = {
     sectionKey: section.key,
     fullName,
     phone: phone.e164,
     phoneCountry: phone.country.iso2,
-    note: input.note?.trim() || null,
-    proofKey, proofName, proofMime: mime, proofSize: buffer.length,
+    ...(input.note?.trim() ? { note: input.note.trim() } : {}),
+    ...(proof ?? {}),
   }
   try {
+    /* وتسجيلٌ ثانٍ بالبريد نفسِه يحدّث الأوّل: رابطُ دفعه كما هو، وحوالتُه كما هي ما لم تُرفع أخرى،
+       ومصدرُه الأوّلُ لا يُمحى بدخولٍ مباشرٍ بعده */
     const row = existing
       ? await prisma.privateRegistration.update({
           where: { id: existing.id },
-          data: { ...data, status: 'pending', rejectedAt: null },
+          data: { ...data, status: 'pending', rejectedAt: null, ...(cleanSource(input.source) ? { source: cleanSource(input.source) } : {}) },
         })
-      : await prisma.privateRegistration.create({ data: { ...data, courseSlug: slug, email } })
-    if (existing) await deleteObject(existing.proofKey)
-    return { reference: row.id.slice(0, 8).toUpperCase(), updated: Boolean(existing), sectionTitle: section.title }
+      : await prisma.privateRegistration.create({
+          data: { ...data, courseSlug: slug, email, payToken: newStorageKey(), source: cleanSource(input.source) },
+        })
+    if (existing?.proofKey && proof) await deleteObject(existing.proofKey)
+    return {
+      reference: reference(row.id),
+      updated: Boolean(existing),
+      sectionTitle: section.title,
+      payToken: row.payToken,
+      hasProof: Boolean(row.proofKey),
+    }
   } catch (e) {
     /* لا يبقى على القرص ملفٌّ لا يملكه صفّ */
-    await deleteObject(proofKey)
+    if (proof) await deleteObject(proof.proofKey)
+    throw e
+  }
+}
+
+/* ── رابطُ الدفع — `/ai-jobs/pay/<payToken>` ── */
+
+const TOKEN_SHAPE = /^[A-Za-z0-9_-]{16,128}$/
+
+async function byToken(prisma: PrismaClient, slug: string, token: string) {
+  assertKnownCourse(slug)
+  if (!TOKEN_SHAPE.test(token)) throw new AuthError('not_found', 'الرابط غير صحيح — راسلنا على واتساب', 404)
+  const r = await prisma.privateRegistration.findUnique({ where: { payToken: token } })
+  if (!r || r.courseSlug !== slug) throw new AuthError('not_found', 'الرابط غير صحيح — راسلنا على واتساب', 404)
+  return r
+}
+
+/** ما تعرضه صفحةُ الدفع — الاسمُ الأوّلُ والشعبةُ والحال، لا البريدُ ولا الرقم: الرابطُ قد يُرسَل في محادثة */
+function payView(r: PrivateRegistration) {
+  return {
+    firstName: r.fullName.split(' ')[0],
+    reference: reference(r.id),
+    sectionTitle: aiJobsSection(r.sectionKey)?.title ?? '',
+    status: r.status as RegistrationStatus,
+    hasProof: Boolean(r.proofKey),
+  }
+}
+
+export async function payInfo(prisma: PrismaClient, slug: string, token: string) {
+  return payView(await byToken(prisma, slug, token))
+}
+
+export async function submitProof(prisma: PrismaClient, slug: string, token: string, input: { proof: ProofInput; note?: string }) {
+  const r = await byToken(prisma, slug, token)
+  if (r.status === 'confirmed') throw new AuthError('already_confirmed', 'مقعدك مؤكد — تفقد بريدك', 409)
+  const proof = await storeProof(input.proof)
+  try {
+    const row = await prisma.privateRegistration.update({
+      where: { id: r.id },
+      /* ومن رُفض فرفع حوالةً جديدةً عاد للمراجعة */
+      data: { ...proof, status: 'pending', rejectedAt: null, ...(input.note?.trim() ? { note: input.note.trim() } : {}) },
+    })
+    if (r.proofKey) await deleteObject(r.proofKey)
+    return payView(row)
+  } catch (e) {
+    await deleteObject(proof.proofKey)
     throw e
   }
 }
@@ -164,14 +240,18 @@ function view(r: PrivateRegistration, course: PrivateCourse) {
   const zoom = zoomOf(course, r.sectionKey)
   return {
     id: r.id,
-    reference: r.id.slice(0, 8).toUpperCase(),
+    reference: reference(r.id),
     fullName: r.fullName,
     email: r.email,
     phone: r.phone,
     phoneCountry: r.phoneCountry,
     sectionKey: r.sectionKey,
     note: r.note,
-    proof: { name: r.proofName, mime: r.proofMime, size: r.proofSize },
+    /** `null` حتى يرفعها — «حجز ولم يدفع بعد» */
+    proof: r.proofKey ? { name: r.proofName ?? 'proof', mime: r.proofMime ?? '', size: r.proofSize ?? 0 } : null,
+    proofUploadedAt: r.proofUploadedAt?.toISOString() ?? null,
+    payToken: r.payToken,
+    source: r.source,
     status: r.status as RegistrationStatus,
     createdAt: r.createdAt.toISOString(),
     confirmedAt: r.confirmedAt?.toISOString() ?? null,
@@ -284,9 +364,9 @@ async function load(prisma: PrismaClient, id: string) {
 
 export async function proofOf(prisma: PrismaClient, id: string) {
   const r = await load(prisma, id)
-  const content = await getObject(r.proofKey)
-  if (!content) throw new AuthError('not_found', 'ملف الحوالة غير موجود', 404)
-  return { content, mime: r.proofMime, name: r.proofName }
+  const content = r.proofKey ? await getObject(r.proofKey) : null
+  if (!content) throw new AuthError('not_found', 'لم يرفع صورة الحوالة بعد', 404)
+  return { content, mime: r.proofMime ?? 'application/octet-stream', name: r.proofName ?? 'proof' }
 }
 
 /** يرسل بريدَ التأكيد ويكتب نتيجتَه في الصفّ — نجاحا أو سببَ إخفاق يُقرأ في اللوحة */
@@ -356,7 +436,7 @@ export async function moveSection(prisma: PrismaClient, id: string, sectionKey: 
 export async function deleteRegistration(prisma: PrismaClient, id: string) {
   const r = await load(prisma, id)
   await prisma.privateRegistration.delete({ where: { id } })
-  await deleteObject(r.proofKey)
+  if (r.proofKey) await deleteObject(r.proofKey)
   return { ok: true }
 }
 
@@ -382,6 +462,8 @@ export async function exportXlsx(
     { header: 'سجل في', key: 'created', width: 20 },
     { header: 'تأكد في', key: 'confirmed', width: 20 },
     { header: 'وصله البريد', key: 'mailed', width: 20 },
+    { header: 'الحوالة', key: 'proof', width: 18 },
+    { header: 'المصدر', key: 'source', width: 26 },
     { header: 'ملاحظة', key: 'note', width: 30 },
   ]
   const sheets = filter.section
@@ -398,6 +480,8 @@ export async function exportXlsx(
         created: fmtDateTime(r.createdAt),
         confirmed: r.confirmedAt ? fmtDateTime(r.confirmedAt) : '',
         mailed: r.mailSentAt ? fmtDateTime(r.mailSentAt) : '',
+        proof: r.proofUploadedAt ? fmtDateTime(r.proofUploadedAt) : 'لم يرفعها بعد',
+        source: r.source ?? 'مباشر',
         note: r.note ?? '',
       })
     }

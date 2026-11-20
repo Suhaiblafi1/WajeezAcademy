@@ -100,10 +100,20 @@ beforeAll(async () => {
 
 describe('نافذةُ جدولةِ المدرّب', () => {
   let cohortId = ''
-  /* المدى: أسبوعان من أوّل ديسمبر. وخارجُه يقع قبله وبعده. */
-  const from = new Date('2026-12-01T00:00:00Z')
-  const to = new Date('2026-12-14T23:59:59Z')
-  const inside = new Date('2026-12-03T18:00:00Z')
+  /* المدى: أسبوعان. وخارجُه يقع قبله وبعده.
+
+     ═══ والأيّامُ نسبيّةٌ إلى اليوم لا تواريخُ مكتوبة (٢٠ نوفمبر ٢٠٢٦) ═══
+     كان المدى أوّلَ ديسمبر ٢٠٢٦، و«قبل المدى» ٢٠ نوفمبر ١٨:٠٠. فلمّا بلغت الساعةُ ذلك الموعدَ صار «قبل المدى» ماضيا،
+     فردّته الخدمةُ «هذا الوقت مضى» قبل أن تسأل عن المدى — فسقط ② في كلّ فرعٍ وفي `main` معا، ولم يتغيّر حرفٌ ممّا
+     يحرسه. وكان المدى نفسُه سيمضي أوّلَ ديسمبر. فالأيّامُ تُعدّ من بعد ستّين يوما من اليوم، فلا يبلغها اليومُ أبدا. */
+  const DAY = 86_400_000
+  const today = new Date()
+  const base = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) + 60 * DAY
+  /** اليومُ `d` من بداية المدى، الساعةَ `h` بغرينتش */
+  const at = (d: number, h = 18) => new Date(base + d * DAY + h * 3_600_000)
+  const from = at(0, 0)
+  const to = new Date(at(14, 0).getTime() - 1000)
+  const inside = at(2)
 
   it('يُهيَّأ: شعبةٌ لها مدرّبُها', async () => {
     const c = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةُ نافذةِ الجدولة' })
@@ -153,7 +163,7 @@ describe('نافذةُ جدولةِ المدرّب', () => {
 
     /* والمسموحُ يقع فعلا — وإلّا كان الحارسُ يحرس بابا مسدودا */
     const s = await cohorts.trainerAddSession(trainerUserId, cohortId, {
-      title: 'لقاءٌ بلا سقف', startsAt: inside, endsAt: new Date('2026-12-03T20:00:00Z'),
+      title: 'لقاءٌ بلا سقف', startsAt: inside, endsAt: at(2, 20),
     })
     expect(s.cohortId).toBe(cohortId)
     /* ويُرفَع أثرُه: ما بعده يبدأ من شعبةٍ فارغة */
@@ -167,25 +177,25 @@ describe('نافذةُ جدولةِ المدرّب', () => {
 
     /* المسموحُ يقع فعلا — وإلّا كان الحارسُ يحرس بابا مسدودا */
     const s = await cohorts.trainerAddSession(trainerUserId, cohortId, {
-      title: 'لقاءٌ داخلَ المدى', startsAt: inside, endsAt: new Date('2026-12-03T20:00:00Z'),
+      title: 'لقاءٌ داخلَ المدى', startsAt: inside, endsAt: at(2, 20),
     })
     expect(s.cohortId).toBe(cohortId)
 
     /* قبل المدى وبعده — كلاهما يُرَدّ */
     await expect(cohorts.trainerAddSession(trainerUserId, cohortId, {
-      title: 'لقاءٌ قبل المدى', startsAt: new Date('2026-11-20T18:00:00Z'),
+      title: 'لقاءٌ قبل المدى', startsAt: at(-5),
     })).rejects.toMatchObject({ code: 'forbidden' })
     await expect(cohorts.trainerAddSession(trainerUserId, cohortId, {
-      title: 'لقاءٌ بعد المدى', startsAt: new Date('2027-01-05T18:00:00Z'),
+      title: 'لقاءٌ بعد المدى', startsAt: at(35),
     })).rejects.toMatchObject({ code: 'forbidden' })
   })
 
   it('⚠️ ③ ولا سقفَ لعدد اللقاءات — وسقفٌ حُفظ من قبل لا يُقرأ (٤ أكتوبر ٢٠٢٦)', async () => {
     /* سقفٌ واحدٌ محفوظٌ في الصفّ كما كانت الإدارةُ تضعه — وفي الشعبة لقاءٌ من قبل */
     await prisma.cohort.update({ where: { id: cohortId }, data: { maxSessions: 1 } })
-    for (const day of ['2026-12-10', '2026-12-12', '2026-12-14']) {
+    for (const day of [9, 11, 13]) {
       const s = await cohorts.trainerAddSession(trainerUserId, cohortId, {
-        title: `لقاءٌ يوم ${day}`, startsAt: new Date(`${day}T18:00:00Z`),
+        title: `لقاءٌ في اليوم ${day}`, startsAt: at(day),
       })
       expect(s.cohortId, 'رُدّ لقاءٌ فوق سقفٍ لم يعد له وجود').toBe(cohortId)
     }
@@ -197,24 +207,24 @@ describe('نافذةُ جدولةِ المدرّب', () => {
       where: { cohortId }, orderBy: { startsAt: 'asc' }, select: { id: true },
     })
     const moved = await cohorts.trainerMoveSession(trainerUserId, one!.id, {
-      startsAt: new Date('2026-12-05T18:00:00Z'),
+      startsAt: at(4),
     })
-    expect(moved.startsAt.toISOString()).toBe('2026-12-05T18:00:00.000Z')
+    expect(moved.startsAt.toISOString()).toBe(at(4).toISOString())
 
     /* أمّا خارجَ المدى فيُرَدّ ولو كان نقلا */
     await expect(cohorts.trainerMoveSession(trainerUserId, one!.id, {
-      startsAt: new Date('2027-02-01T18:00:00Z'),
+      startsAt: at(62),
     })).rejects.toMatchObject({ code: 'forbidden' })
   })
 
   it('④ من ليس مدرّبَ الشعبة يُرَدّ — والصلاحيّةُ وحدَها لا تكفي', async () => {
     await expect(cohorts.trainerAddSession(strangerUserId, cohortId, {
-      title: 'لقاءٌ من غريب', startsAt: new Date('2026-12-08T18:00:00Z'),
+      title: 'لقاءٌ من غريب', startsAt: at(7),
     })).rejects.toMatchObject({ code: 'forbidden' })
 
     const one = await prisma.cohortSession.findFirst({ where: { cohortId }, select: { id: true } })
     await expect(cohorts.trainerMoveSession(strangerUserId, one!.id, {
-      startsAt: new Date('2026-12-09T18:00:00Z'),
+      startsAt: at(8),
     })).rejects.toMatchObject({ code: 'forbidden' })
   })
 
@@ -223,7 +233,7 @@ describe('نافذةُ جدولةِ المدرّب', () => {
     const w = await cohorts.scheduleWindowFor(trainerUserId, cohortId)
     expect(w.open).toBe(false)
     await expect(cohorts.trainerAddSession(trainerUserId, cohortId, {
-      title: 'لقاءٌ بعد الإغلاق', startsAt: new Date('2026-12-06T18:00:00Z'),
+      title: 'لقاءٌ بعد الإغلاق', startsAt: at(5),
     })).rejects.toMatchObject({ code: 'forbidden' })
   })
 

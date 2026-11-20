@@ -5292,10 +5292,16 @@ model PrivateRegistration {
   phone        String
   phoneCountry String
   note         String?
-  proofKey     String
-  proofName    String
-  proofMime    String
-  proofSize    Int
+  /// صورةُ الحوالة — فارغةٌ حتى يرفعها: «احجز أوّلا وادفع بعد» (٢٠ نوفمبر ٢٠٢٦)
+  proofKey     String?
+  proofName    String?
+  proofMime    String?
+  proofSize    Int?
+  proofUploadedAt DateTime?
+  /// رابطُ الدفع باسمه — `/ai-jobs/pay/<payToken>`: يرفع منه الحوالةَ متى حوّل، ولا يكشف غيرَ اسمه الأوّل وشعبته
+  payToken     String    @unique
+  /// من أين جاء — `Instagram · story · bf1` من `?src=` و`utm_*` أو الموقعِ الذي أحاله، وفارغُه دخولٌ مباشر
+  source       String?
   status       String    @default("pending") // pending | confirmed | rejected
   confirmedAt  DateTime?
   rejectedAt   DateTime?
