@@ -9,7 +9,7 @@
 
    وكبريد التأكيد: من Gmail صاحب الدورة، بلا شعار وجيز ولا اسمِها. والأسلوبُ ألوانُ منشور الدورة (`confirmation-mail.ts`). */
 
-import { AI_JOBS, seatsLabel, type PrivateSection } from '../../../src/application/private-course/ai-jobs'
+import { ABROAD_PAY_LINE, AI_JOBS, abroadPayMessage, seatsLabel, type PrivateSection } from '../../../src/application/private-course/ai-jobs'
 import { whatsappLink } from '../../../src/application/private-course/phone'
 import { button, C, esc, firstName, FONT } from './confirmation-mail'
 import { PRIVATE_SENDER_NAME } from './mailer'
@@ -28,6 +28,16 @@ export interface ReminderInput {
   cardChosen: boolean
   /** ما بقي من مقاعد شعبته — كما تعرضه الصفحة */
   seats: number
+  /** رقمُه خارجَ الأردن — وCliQ داخلَه وحدَه، فيُدعى إلى واتساب لترتيب الدفع (٢١ نوفمبر ٢٠٢٦) */
+  abroad: boolean
+  /** رقمُ مرجعه — في رسالة واتساب الجاهزة */
+  reference: string
+}
+
+/** من خارج الأردن والبطاقةُ غيرُ معروضة — فلا طريقَ له إلّا واتساب */
+function abroadLink(i: ReminderInput): string | null {
+  if (!i.abroad || i.card) return null
+  return whatsappLink(AI_JOBS.whatsapp, abroadPayMessage({ reference: i.reference }))
 }
 
 export function reminderSubject(kind: ReminderKind): string {
@@ -72,6 +82,7 @@ export function reminderHtml(i: ReminderInput): string {
     <div style="font-family:${FONT};font-size:17px;font-weight:800;color:${C.ink}">أكّد مقعدك بخطوة واحدة</div>
     ${p(`حوّل <b style="color:${C.ink}">${AI_JOBS.priceJod} دينار</b> عبر CliQ إلى الاسم المستعار <b dir="ltr" style="color:${C.ink}">${esc(AI_JOBS.cliqAlias)}</b>، ثم ارفع صورة الحوالة من رابطك.`, ';margin-top:4px')}
     ${i.card ? p(`من خارج الأردن؟ ادفع <b dir="ltr" style="color:${C.ink}">${AI_JOBS.priceUsd}$</b> بالبطاقة من الرابط نفسه.`) : ''}
+    ${abroadLink(i) ? p(`<a href="${esc(abroadLink(i)!)}" style="color:${C.green};font-weight:700;text-decoration:none">${esc(ABROAD_PAY_LINE)}</a>`) : ''}
     ${button(i.payUrl, last ? 'أكّد مقعدي الآن' : 'أكمل حجزي', C.yellow, C.ink)}
     <div dir="ltr" style="font-family:${FONT};font-size:12px;color:${C.ink2};word-break:break-all;text-align:right">${esc(i.payUrl)}</div>
   </td></tr></table>
@@ -102,6 +113,7 @@ export function reminderText(i: ReminderInput): string {
     `أكّد مقعدك: حوّل ${AI_JOBS.priceJod} دينار عبر CliQ إلى ${AI_JOBS.cliqAlias}، ثم ارفع صورة الحوالة من رابطك:`,
     i.payUrl,
     ...(i.card ? [`من خارج الأردن؟ ادفع ${AI_JOBS.priceUsd}$ بالبطاقة من الرابط نفسه.`] : []),
+    ...(abroadLink(i) ? [`${ABROAD_PAY_LINE}: ${abroadLink(i)}`] : []),
     ...(i.cardChosen ? ['', CARD_DONE] : []),
     '',
     `عندك سؤال؟ رد على هذه الرسالة أو راسلني على واتساب ${AI_JOBS.whatsappLabel}`,

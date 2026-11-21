@@ -88,6 +88,26 @@ export function aiJobsSection(key: string): PrivateSection | null {
   return AI_JOBS.sections.find((s) => s.key === key) ?? null
 }
 
+/* ═══ من خارج الأردن — واتساب يرتّب الدفع (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة (اقتراحُ «١»): CliQ داخل الأردن وحدَه، والبطاقةُ أُخفيت كلّيّا. فمن رقمُه خارجَ الأردن لا يجد طريقا
+   يدفع به فيترك. فيُقال له في النموذج وخطوة الدفع وبريد التذكير: راسلنا على واتساب ونرتّب الدفع — برسالةٍ جاهزة. */
+export const ABROAD_PAY_LINE = 'من خارج الأردن؟ راسلنا على واتساب ونرتب طريقة الدفع'
+
+export function abroadPayMessage(opts: { country?: string; reference?: string } = {}): string {
+  const from = opts.country ? `من ${opts.country}` : 'من خارج الأردن'
+  const ref = opts.reference ? ` رقم المرجع ${opts.reference}.` : ''
+  return `مرحبا، أنا ${from} وأريد التسجيل في دورة التقديم على الوظائف بالذكاء الاصطناعي.${ref} كيف أدفع؟`
+}
+
+/* ═══ «سجّل معي» — بعد الحجز (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُه (اقتراحُ «٢»): من يبحث عن عمل يعرف غيرَه يبحث. فرسالةٌ جاهزةٌ على واتساب برابط الصفحة، و`?src=share` يقول
+   في اللوحة من جاء منها (`source.ts`). */
+export const SHARE_SOURCE = 'share'
+
+export function shareInviteText(origin: string): string {
+  return `سجلت في دورة «${AI_JOBS.headline}» — ${AI_JOBS.hours} ساعات مباشرة على Zoom يوم ${AI_JOBS.dateLabel}، بـ${AI_JOBS.priceUsd}$ بدل ${AI_JOBS.listPriceUsd}$. إذا تبحث عن عمل سجّل معي: ${origin}/ai-jobs?src=${SHARE_SOURCE}`
+}
+
 /* ═══ روابطُ ما قبل الدورة — في بريد التأكيد ═══
    قرارُه: «يقول له نزّل Claude Code وأعطه الرابط إن لم يكن مشتركا فيه». فرابطان: التنزيلُ، والاشتراك. */
 export const CLAUDE_LINKS = {

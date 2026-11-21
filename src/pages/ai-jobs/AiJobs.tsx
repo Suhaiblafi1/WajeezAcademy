@@ -14,7 +14,7 @@ import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
 import { AI_JOBS, AI_JOBS_SEO } from '@/application/private-course/ai-jobs'
 import { whatsappLink } from '@/application/private-course/phone'
 import { rememberSource } from '@/application/private-course/source'
-import { BONUS, CARD_FAQ, DOORS, FACTS, FAQS, FEATURES, GUARANTEE, NOT_FOR, PAINS, RESULTS, SKILLS, STEPS, TIPS, WHO } from './content'
+import { BONUS, DOORS, FACTS, FEATURES, GUARANTEE, NOT_FOR, PAINS, RESULTS, SKILLS, STEPS, TIPS, WHO, faqsFor } from './content'
 import { useCourseState } from './course-state'
 import { loadMetaPixel, trackPixel } from './meta-pixel'
 import RegisterForm from './RegisterForm'
@@ -442,7 +442,7 @@ export default function AiJobs() {
         <div className="aij-wrap" style={{ maxWidth: 860 }}>
           <h2 id="aij-faq" className="aij-h2">أسئلة <span className="aij-mk">سريعة</span></h2>
           <div className="aij-faq">
-            {(card ? [...FAQS.slice(0, 3), CARD_FAQ, ...FAQS.slice(3)] : FAQS).map((f) => (
+            {faqsFor(card).map((f) => (
               <details key={f.q}><summary>{f.q}</summary><p>{f.a}</p></details>
             ))}
           </div>

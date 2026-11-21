@@ -11,6 +11,8 @@ import { whatsappLink } from '@/application/private-course/phone'
 import { waShare } from '@/application/site/whatsapp'
 import { readProof, type Proof } from './proof-file'
 import ProofDrop from './ProofDrop'
+import AbroadPay from './AbroadPay'
+import ShareInvite from './ShareInvite'
 import { trackPixel } from './meta-pixel'
 
 export interface PayInfo {
@@ -132,6 +134,7 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
         <div className="aij-row" style={{ justifyContent: 'center' }}>
           <a className="aij-cta aij-cta-y" href={ask} target="_blank" rel="noopener noreferrer">راسلنا على واتساب</a>
         </div>
+        <ShareInvite />
       </div>
     )
   }
@@ -147,6 +150,7 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
           <a className="aij-cta aij-cta-y" href={ask} target="_blank" rel="noopener noreferrer">راسلنا على واتساب</a>
           <button type="button" className="aij-ghost" style={{ background: 'none', border: 0, cursor: 'pointer' }} onClick={() => setAgain(true)}>ارفع صورة أخرى</button>
         </div>
+        <ShareInvite />
       </div>
     )
   }
@@ -203,6 +207,8 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
                 <Copy text={AI_JOBS.cliqAlias} label="انسخ" />
               </div>
             </div>
+            {/* CliQ داخل الأردن وحدَه — ومن رقمُه خارجَه يرتّب الدفعَ على واتساب برقم مرجعه (٢١ نوفمبر ٢٠٢٦) */}
+            {info.abroad && <AbroadPay reference={info.reference} />}
 
             <ProofDrop id="aij-pay-proof" label="صورة الحوالة" hint="صورة أو لقطة شاشة أو PDF"
               proof={proof} busy={busy} invalid={Boolean(error)} onPick={(f) => void pick(f)} />
@@ -229,6 +235,8 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
           <a className="aij-copy" href={waShare(`رابط إكمال حجزي في دورة التقديم على الوظائف بالذكاء الاصطناعي: ${link}`)} target="_blank" rel="noopener noreferrer">أرسله لنفسي على واتساب</a>
         </div>
       </div>
+      {/* «سجّل معي» لمن حجز الآن — لا لمن عاد يدفع من رابطه */}
+      {fresh && <ShareInvite />}
     </form>
   )
 }

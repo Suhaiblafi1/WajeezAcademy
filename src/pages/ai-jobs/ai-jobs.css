@@ -341,6 +341,16 @@
 .aij-later .aij-row { gap: 8px; }
 .aij-later a.aij-copy { text-decoration: none; display: inline-block; }
 
+/* ── من خارج الأردن: واتساب يرتّب الدفع، و«سجّل معي» بعد الحجز (٢١ نوفمبر ٢٠٢٦) ── */
+.aij-abroad { margin-top: 10px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 2px dashed var(--ink); border-radius: 12px; background: var(--mint); color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.6; text-decoration: none; }
+.aij-abroad svg { flex: none; color: var(--g); }
+.aij-abroad:hover { background: #d8efe3; }
+.aij-abroad:focus-visible { outline: 3px solid var(--b); outline-offset: 3px; }
+.aij-share { margin-top: 18px; border-top: 2px dashed rgba(20, 34, 64, .2); padding-top: 14px; font-size: 14px; color: var(--ink2); line-height: 1.8; text-align: center; }
+.aij-share b { display: block; color: var(--ink); font-size: 15px; font-weight: 600; }
+.aij-share span { display: block; }
+.aij-share a.aij-copy { margin-top: 8px; text-decoration: none; display: inline-block; }
+
 /* ── واتساب قبل التسجيل ── */
 .aij-wa { position: fixed; z-index: 49; left: 16px; bottom: 92px; display: flex; align-items: center; gap: 8px; background: #1fa855; color: #fff !important; text-decoration: none; border-radius: 999px; padding: 10px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); font-weight: 600; font-size: 14px; transition: bottom .25s ease, transform .15s ease; }
 .aij-wa:hover { transform: translateY(-2px); }
