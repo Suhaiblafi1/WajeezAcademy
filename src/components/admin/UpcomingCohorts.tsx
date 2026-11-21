@@ -18,6 +18,7 @@ import { UPCOMING_DAY_CHOICES, UPCOMING_MAX_DAYS, isUpcoming } from "@/applicati
 import { CohortMoneyLine, VerdictChip, type CohortMoneyView } from "./CohortMoney";
 import CancelCohortBox from "./CancelCohortBox";
 import PostponeMonthBox from "./PostponeMonthBox";
+import SeasonChoiceBox from "./SeasonChoiceBox";
 
 interface UpcomingRow {
   id: string; title: string; courseTitle: string; status: string; firstAt: string; capacity: number | null;
@@ -53,6 +54,8 @@ export default function UpcomingCohorts({ onOpen, onChanged, onFlash }: {
 
   return (
     <div className="space-y-3">
+      {/* سؤالُ مدرّبي الموسم الجاري عن موسم شعبهم — الربيع أو موسمٌ لاحق أو الإلغاء (٢١ نوفمبر ٢٠٢٦) */}
+      <SeasonChoiceBox onChanged={() => { load(); onChanged(); }} onFlash={onFlash} />
       {/* تأجيلُ شعب شهرٍ كاملٍ بموافقة مدرّبيها — أو تتوقّف (٢٤ أكتوبر ٢٠٢٦) */}
       <PostponeMonthBox onChanged={() => { load(); onChanged(); }} onFlash={onFlash} />
       <Panel className="flex flex-wrap items-center justify-between gap-3">

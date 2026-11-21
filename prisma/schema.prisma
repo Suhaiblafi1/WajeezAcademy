@@ -1839,19 +1839,28 @@ model TrainerTextSuggestion {
  * فتتوقّف، أو تمضي المهلةُ فتتوقّف تلقائيّا (العامل). والعلّةُ في `src/application/trainer/postpone-offer.ts`.
  */
 model CohortPostponeOffer {
-  id          String    @id @default(uuid()) @db.Uuid
-  cohortId    String    @db.Uuid
-  proposedBy  String    @db.Uuid
-  shiftDays   Int
-  fromFirstAt DateTime
-  toFirstAt   DateTime
-  reasonAr    String
-  deadlineAt  DateTime
-  status      String    @default("pending") // pending | accepted | declined | expired | withdrawn
-  decidedBy   String?   @db.Uuid
-  decidedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  cohort      Cohort    @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  id           String    @id @default(uuid()) @db.Uuid
+  cohortId     String    @db.Uuid
+  proposedBy   String    @db.Uuid
+  /// نوعُ السؤال: تأجيلٌ إلى الشهر التالي يقبله أو لا، أو اختيارُ موسمٍ قادمٍ أو الإلغاء (٢١ نوفمبر ٢٠٢٦ — `season-choice.ts`)
+  kind         String    @default("next_month") // next_month | season_choice
+  shiftDays    Int
+  /// أوّلُ لقاءٍ ساعةَ الإرسال — وفارغٌ لشعبة إعدادٍ لا موعدَ فيها بعد (اختيارُ الموسم يربطها بفصلها وحدَه)
+  fromFirstAt  DateTime?
+  /// أوّلُ لقاءٍ بعد الحسم — يُعرف في اختيار الموسم حين يختار
+  toFirstAt    DateTime?
+  /// المواسمُ التي يختار منها — `[{ year, season }]`، في اختيار الموسم وحدَه
+  choices      Json?
+  /// ما اختاره — موسمٌ بعينه، وفارغان إن اختار الإلغاء أو لم يختر
+  chosenYear   Int?
+  chosenSeason String?
+  reasonAr     String
+  deadlineAt   DateTime
+  status       String    @default("pending") // pending | accepted | declined | expired | withdrawn
+  decidedBy    String?   @db.Uuid
+  decidedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  cohort       Cohort    @relation(fields: [cohortId], references: [id], onDelete: Cascade)
 
   @@index([status, deadlineAt])
   @@index([cohortId, createdAt])

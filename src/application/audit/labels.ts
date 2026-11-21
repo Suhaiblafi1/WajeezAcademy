@@ -547,6 +547,11 @@ const PHRASES: Record<string, string> = {
   'cohort.postpone.decline': 'لم يقبل المدرّب تأجيل شعبته — أوقفت',
   'cohort.postpone.expire': 'لم يرد المدرّب على التأجيل في موعده — أوقفت الشعبة',
   'cohort.postpone.withdraw': 'سحب اقتراح تأجيل شعبة',
+  /* واختيارُ الموسم لشعب الموسم الأوّل (٢١ نوفمبر ٢٠٢٦) — `cohort-postpone.service.ts` */
+  'cohort.season_choice.propose': 'سؤال مدرّب الشعبة عن موسمها — الربيع أو موسم لاحق أو الإلغاء',
+  'cohort.season_choice.send': 'إرسال سؤال الموسم لمدرّبي الشعب — رسالة لكلّ مدرّب',
+  'cohort.season_choice.choose': 'اختار المدرّب موسم شعبته أو إلغاءها',
+  'cohort.season_choice.expire': 'لم يختر المدرّب موسم شعبته في المهلة — ألغيت',
   'session.reschedule.reject': 'ردّ اقتراح تأجيل جلسة',
 
   /* طلبُ مستشار — `advisor-request.service.ts:165` */

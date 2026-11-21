@@ -120,6 +120,8 @@ const TRAINER: Table = {
   'cohort.reopened.trainer': { path: '/trainer/board', ctaAr: 'افتح شعبك' },
   /* واقتراحُ التأجيل بطاقةٌ في «شعبي» يقبلها أو لا (٢٤ أكتوبر ٢٠٢٦) */
   'cohort.postpone.proposed': { path: '/trainer/board', ctaAr: 'افتح الاقتراح' },
+  /* وسؤالُ الموسم بطاقةٌ في «شعبي» يختار منها (٢١ نوفمبر ٢٠٢٦) — والزرُّ يدلّ ولا يأمر */
+  'cohort.season_choice.proposed': { path: '/trainer/board', ctaAr: 'افتح شعبتك' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّة شعبتك' },
   'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرار الخطّة' },
   'cohort.schedule.proposed': { path: '/trainer/board', ctaAr: 'افتح الاقتراح' },
