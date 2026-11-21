@@ -17,7 +17,8 @@ import { whatsappLink } from '../../../src/application/private-course/phone'
 import { buildIcs } from '../calendar/ics'
 import { PRIVATE_SENDER_NAME } from './mailer'
 
-const C = {
+/** ألوانُ منشور الدورة — يقرؤها بريدُ التذكير أيضا (`reminder-mail.ts`) فلا يفترق شكلاهما */
+export const C = {
   ink: '#142240',
   ink2: '#3c4a66',
   yellow: '#ffd23f',
@@ -28,7 +29,7 @@ const C = {
   line: '#d9e2ef',
 }
 
-const FONT = "'Segoe UI', Tahoma, Arial, sans-serif"
+export const FONT = "'Segoe UI', Tahoma, Arial, sans-serif"
 
 export interface ConfirmationInput {
   registrationId: string
@@ -43,15 +44,15 @@ export interface ConfirmationInput {
   organizerEmail: string
 }
 
-function esc(s: string): string {
+export function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-function firstName(full: string): string {
+export function firstName(full: string): string {
   return full.trim().split(/\s+/)[0] || full.trim()
 }
 
-function button(href: string, label: string, bg: string, color = '#ffffff'): string {
+export function button(href: string, label: string, bg: string, color = '#ffffff'): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 4px"><tr><td style="background:${bg};border-radius:12px;border:2px solid ${C.ink}">` +
     `<a href="${esc(href)}" target="_blank" style="display:inline-block;padding:13px 26px;font-family:${FONT};font-size:16px;font-weight:700;color:${color};text-decoration:none">${esc(label)}</a>` +
     `</td></tr></table>`

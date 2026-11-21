@@ -311,6 +311,10 @@ function view(r: PrivateRegistration, course: PrivateCourse) {
     confirmedAt: r.confirmedAt?.toISOString() ?? null,
     rejectedAt: r.rejectedAt?.toISOString() ?? null,
     mailSentAt: r.mailSentAt?.toISOString() ?? null,
+    /** تذكيرُ من لم يدفع بالبريد — بعد يوم، و«آخر فرصة» بعد ثلاثة (`reminders.ts`) */
+    remindedAt: r.remindedAt?.toISOString() ?? null,
+    lastChanceAt: r.lastChanceAt?.toISOString() ?? null,
+    reminderError: r.reminderError,
     mailError: r.mailError,
     /** مؤكَّدٌ لم يصله رابطُ Zoom الحاليّ لشعبته — بريدٌ قبل ضبط الرابط، أو قبل تغييره */
     zoomMissing: r.status === 'confirmed' && Boolean(zoom) && r.mailZoomUrl !== zoom?.url,

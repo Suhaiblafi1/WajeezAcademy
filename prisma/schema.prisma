@@ -5301,7 +5301,7 @@ model PrivateRegistration {
   proofMime    String?
   proofSize    Int?
   proofUploadedAt DateTime?
-  /// كيف دفع — يختاره حين يرفع الإيصال، وفارغُه لما قبل الخيار
+  /// كيف دفع — `cliq` مع صورة الحوالة، و`card` حين يضغط «ادفع بالبطاقة» (لا إيصالَ لها)، وفارغُه لمن لم يفعل بعد
   payMethod    String? // cliq | card
   /// رابطُ الدفع باسمه — `/ai-jobs/pay/<payToken>`: يرفع منه الحوالةَ متى حوّل، ولا يكشف غيرَ اسمه الأوّل وشعبته
   payToken     String    @unique
@@ -5314,6 +5314,11 @@ model PrivateRegistration {
   mailSentAt   DateTime?
   mailZoomUrl  String?
   mailError    String?
+  /// تذكيرُ من حجز ولم يدفع: «تذكير» بعد يوم، و«آخر فرصة» بعد ثلاثة أيام — مرّةً لكلٍّ (`reminders.ts`)
+  remindedAt   DateTime?
+  lastChanceAt DateTime?
+  /// آخرُ إخفاقٍ في التذكير — يُعاد في الساعة التالية، ويُمحى بأوّل إرسالٍ ينجح
+  reminderError String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

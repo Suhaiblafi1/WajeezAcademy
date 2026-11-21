@@ -5,7 +5,8 @@
    ② **اللوحةُ له وحدَه**: «فقط أنا suhaib@wajeez.co» — لا مديرَ نظامٍ آخر، ولا بريدُه بلا رتبة.
    ③ **بريدُ التأكيد**: من Gmail صاحبها، فيه رابطُ Zoom شعبته وروابطُ Claude Code وملفُّ الدورة، ودعوةٌ مدعوُّها
       المتعلّمُ وحدَه — و«لا تضع لوقو وجيز.. ولا تُدرج أحدا ثانيا من أكاديميّة وجيز».
-   ④ **التحميلُ**: Excel للمسجّلين، كلِّهم أو شعبةٍ وحدَها. */
+   ④ **التحميلُ**: Excel للمسجّلين، كلِّهم أو شعبةٍ وحدَها.
+   ⑧ **التذكيرُ**: من حجز ولم يدفع يصله بريدٌ بعد يوم، و«آخر فرصة» بعد ثلاثة — ولا أثرَ في سجلّ الأكاديميّة. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FastifyInstance } from 'fastify'
@@ -17,7 +18,9 @@ import { buildApp } from '../../http/app'
 import {
   PRIVATE_SENDER_EMAIL, setPrivateMailSenderForTests, type GmailConfig, type PrivateMail,
 } from '../../services/private-course/mailer'
-import { AI_JOBS_SLUG, CLAUDE_LINKS } from '../../../src/application/private-course/ai-jobs'
+import { AI_JOBS, AI_JOBS_SLUG, CLAUDE_LINKS, seatsLabel, seatsLeft } from '../../../src/application/private-course/ai-jobs'
+import { runPrivateCourseReminders } from '../../services/private-course/reminders'
+import { runJob } from '../../worker/jobs'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -499,5 +502,145 @@ describe('⑦ التسجيل وصورة الحوالة معا', () => {
   it('وبلا طريقة مذكورة فهي CliQ', async () => {
     const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'sara@test.local' } })
     expect(row.payMethod).toBe('cliq')
+  })
+})
+
+/* ═══ ⑧ تذكيرُ من حجز ولم يدفع (٢١ نوفمبر ٢٠٢٦) ═══
+   «if they haven't paid, remind them next day as reminder, after three days last chance». والأوقاتُ كلُّها ثابتةٌ
+   قبل الدورة (٥ ديسمبر) لا من ساعة الجهاز — فلا يسقط الحارسُ يومَ يمرّ تاريخها. */
+describe('⑧ تذكير من لم يدفع', () => {
+  const DAY = 86_400_000
+  const HOUR = 3_600_000
+  /* ظهرُ عمّان (09:00Z) قبل الدورة بعشرة أيام */
+  const NOON = new Date('2026-11-25T09:00:00.000Z')
+  const at = (ms: number) => new Date(NOON.getTime() + ms)
+  let n = 0
+
+  async function reserved(createdAt: Date, data: Record<string, unknown> = {}) {
+    n += 1
+    return prisma.privateRegistration.create({
+      data: {
+        courseSlug: AI_JOBS_SLUG, sectionKey: 'morning', fullName: 'هند سالم', email: `remind-${n}@test.local`,
+        phone: '+971501234567', phoneCountry: 'AE', payToken: `remind${n}`.padEnd(24, 'x'), createdAt, ...data,
+      },
+    })
+  }
+  const mailsTo = (email: string) => sent.filter((x) => x.mail.to === email).map((x) => x.mail)
+  const row = (id: string) => prisma.privateRegistration.findUniqueOrThrow({ where: { id } })
+
+  it('⚠️ بعد يوم: تذكير واحد برابط دفعه وCliQ — بلا وجيز، ولا يتكرر', async () => {
+    const r = await reserved(at(-1.5 * DAY))
+    const early = await reserved(at(-20 * HOUR))
+    await runPrivateCourseReminders(prisma, NOON)
+    const [mail, ...more] = mailsTo(r.email)
+    expect(more).toHaveLength(0)
+    expect(mail.subject).toBe('مقعدك محجوز — أكمل الدفع لتأكيده')
+    expect(mail.html).toContain(`/ai-jobs/pay/${r.payToken}`)
+    expect(mail.text).toContain(`/ai-jobs/pay/${r.payToken}`)
+    expect(mail.text).toContain(AI_JOBS.cliqAlias)
+    expect(mail.html, 'اسم الأكاديمية في بريد خاص').not.toMatch(/وجيز|wajeez/i)
+    expect(mail.html, 'وعد بإلغاء لا نفعله').not.toMatch(/نلغي|سيلغى/)
+    expect(mail.html).not.toContain('دفعت بالبطاقة؟')
+    expect((await row(r.id)).remindedAt).toEqual(NOON)
+    expect(mailsTo(early.email), 'ذكر قبل يوم').toHaveLength(0)
+
+    await runPrivateCourseReminders(prisma, at(HOUR))
+    expect(mailsTo(r.email), 'تكرر التذكير').toHaveLength(1)
+  })
+
+  it('⚠️ بعد ثلاثة أيام: «آخر فرصة» بمقاعد شعبته — وبعد يوم من التذكير على الأقل', async () => {
+    const r = await reserved(at(-2.5 * DAY), { remindedAt: at(-1.4 * DAY) })
+    const justReminded = await reserved(at(DAY - 3.2 * DAY), { remindedAt: at(DAY - 2 * HOUR) })
+    await runPrivateCourseReminders(prisma, at(DAY))
+    const [mail, ...more] = mailsTo(r.email)
+    expect(more).toHaveLength(0)
+    expect(mail.subject).toBe('آخر فرصة لتأكيد مقعدك')
+    expect(mail.html).toContain(seatsLabel(seatsLeft('morning', at(DAY).getTime())))
+    expect(mail.html).toContain(`/ai-jobs/pay/${r.payToken}`)
+    expect((await row(r.id)).lastChanceAt).toEqual(at(DAY))
+    expect(mailsTo(justReminded.email), 'آخر فرصة بعد التذكير بساعتين').toHaveLength(0)
+    expect((await row(justReminded.id)).lastChanceAt).toBeNull()
+  })
+
+  it('⚠️ ومن فاته اليوم الأول حتى بلغ الثالث تصله «آخر فرصة» وحدها', async () => {
+    const r = await reserved(at(-4 * DAY))
+    await runPrivateCourseReminders(prisma, NOON)
+    expect(mailsTo(r.email).map((m) => m.subject)).toEqual(['آخر فرصة لتأكيد مقعدك'])
+    expect((await row(r.id)).remindedAt).toBeNull()
+  })
+
+  it('⚠️ لا تذكير لمن رفع الحوالة أو تأكد أو رفض — ولا ليلا ولا بعد بدء شعبته', async () => {
+    const quiet = await Promise.all([
+      reserved(at(-1.5 * DAY), { proofKey: 'private/x.png' }),
+      reserved(at(-1.5 * DAY), { status: 'confirmed' }),
+      reserved(at(-1.5 * DAY), { status: 'rejected' }),
+    ])
+    await runPrivateCourseReminders(prisma, NOON)
+    for (const q of quiet) expect(mailsTo(q.email), q.email).toHaveLength(0)
+
+    const night = await reserved(at(-1.5 * DAY + 12 * HOUR))
+    const out = await runPrivateCourseReminders(prisma, at(12 * HOUR))
+    expect(out.summaryAr).toBe('خارج ساعات الإرسال')
+    expect(mailsTo(night.email)).toHaveLength(0)
+
+    const late = await reserved(new Date('2026-12-03T09:00:00.000Z'))
+    await runPrivateCourseReminders(prisma, new Date('2026-12-05T09:00:00.000Z'))
+    expect(mailsTo(late.email), 'تذكير بعد بدء الشعبة').toHaveLength(0)
+  })
+
+  it('⚠️ ومن ضغط «ادفع بالبطاقة» يقال له لا يفعل شيئا إن دفع', async () => {
+    const r = await reserved(at(-1.2 * DAY), { payMethod: 'card' })
+    await runPrivateCourseReminders(prisma, NOON)
+    const [mail] = mailsTo(r.email)
+    expect(mail.html).toContain('دفعت بالبطاقة؟ لا تحتاج لفعل شيء')
+    expect(mail.text).toContain('دفعت بالبطاقة؟ لا تحتاج لفعل شيء')
+  })
+
+  it('⚠️ بلا Gmail لا محاولة ولا خطأ يكتب — ثم يلحق حين يضبط', async () => {
+    const r = await reserved(at(-1.1 * DAY))
+    await asOwner('PUT', '/api/v1/private/mail', { appPassword: '' })
+    const out = await runPrivateCourseReminders(prisma, NOON)
+    expect(out.summaryAr).toMatch(/بانتظار ضبط Gmail/)
+    expect(mailsTo(r.email)).toHaveLength(0)
+    expect((await row(r.id)).reminderError).toBeNull()
+    await asOwner('PUT', '/api/v1/private/mail', { appPassword: 'abcd efgh ijkl mnop' })
+    await runPrivateCourseReminders(prisma, at(HOUR))
+    expect(mailsTo(r.email)).toHaveLength(1)
+  })
+
+  it('⚠️ إخفاق Gmail يكتب الخطأ ويوقف الدورة ويعاد بعدها — ورفض المستلم لا يعاد', async () => {
+    const a = await reserved(at(-10 * DAY))
+    const b = await reserved(at(-9 * DAY))
+    let calls = 0
+    setPrivateMailSenderForTests(async () => { calls += 1; throw Object.assign(new Error('auth'), { code: 'EAUTH' }) })
+    const out = await runPrivateCourseReminders(prisma, NOON)
+    expect(calls, 'استمر يحاول بعد رفض الدخول').toBe(1)
+    expect(out.failed).toBe(1)
+    expect(await row(a.id)).toMatchObject({ reminderError: 'رفض Gmail الدخول — تأكد من البريد وكلمة مرور التطبيق', lastChanceAt: null })
+
+    setPrivateMailSenderForTests(async (config, mail) => {
+      if (mail.to === b.email) throw Object.assign(new Error('no such user'), { responseCode: 550 })
+      sent.push({ config, mail })
+    })
+    await runPrivateCourseReminders(prisma, at(HOUR))
+    expect(await row(a.id)).toMatchObject({ reminderError: null, lastChanceAt: at(HOUR) })
+    expect(mailsTo(a.email)).toHaveLength(1)
+    expect(await row(b.id), 'رفض المستلم يعاد كل ساعة').toMatchObject({ reminderError: 'رفض Gmail عنوان المستلم', lastChanceAt: at(HOUR) })
+    setPrivateMailSenderForTests(async (config, mail) => { sent.push({ config, mail }) })
+  })
+
+  it('⚠️ وظيفة في العامل — ولا أثر في سجل الأكاديمية', async () => {
+    const r = await reserved(at(-1.3 * DAY))
+    const out = await runJob(prisma, 'private_course_reminders', at(2 * HOUR))
+    expect(out.done).toBeGreaterThanOrEqual(1)
+    expect(mailsTo(r.email)).toHaveLength(1)
+    expect(await prisma.auditEvent.count({ where: { action: 'worker.private_course_reminders' } }), 'أثر في سجل الأكاديمية').toBe(0)
+  })
+
+  it('واللوحة تقول ما وصله', async () => {
+    const o = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json()
+    const first = o.registrations.find((x: { email: string }) => x.email === 'remind-1@test.local')
+    expect(first.remindedAt).toBe(NOON.toISOString())
+    expect(first.lastChanceAt).toBeNull()
   })
 })

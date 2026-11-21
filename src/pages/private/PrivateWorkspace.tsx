@@ -42,6 +42,9 @@ interface Registration {
   payToken: string
   source: string | null
   payMethod: 'cliq' | 'card' | null
+  remindedAt: string | null
+  lastChanceAt: string | null
+  reminderError: string | null
   status: Status
   createdAt: string
   confirmedAt: string | null
@@ -401,6 +404,15 @@ function RegistrationCard({ r, onChange, onRemove }: {
                     <span className="text-fine leading-5 text-muted-foreground">حجز مقعده ولم يدفع. ذكّره برابط الدفع باسمه:</span>
                   </>
                 )}
+              {/* والبريدُ يذكّره وحدَه: بعد يوم، و«آخر فرصة» بعد ثلاثة (٢١ نوفمبر ٢٠٢٦) */}
+              <span className="text-fine leading-5 text-muted-foreground">
+                {r.lastChanceAt
+                  ? `وصله بريد «آخر فرصة» ${fmtDateTime(r.lastChanceAt)}`
+                  : r.remindedAt
+                    ? `وصله التذكير بالبريد ${fmtDateTime(r.remindedAt)} — و«آخر فرصة» بعد 3 أيام من حجزه`
+                    : 'يصله تذكير بالبريد بعد يوم من حجزه، و«آخر فرصة» بعد 3 أيام'}
+              </span>
+              {r.reminderError && <span className="text-fine leading-5 text-red-300">لم يصله التذكير: {r.reminderError}</span>}
               <Button as="a" href={reminder} target="_blank" rel="noopener noreferrer" size="sm" icon={MessageCircle}>ذكّره على واتساب</Button>
               <Button size="sm" tone="ghost" icon={Copy} onClick={() => { void navigator.clipboard?.writeText(payLink).then(() => toast('نسخنا رابط الدفع')) }}>انسخ رابط الدفع</Button>
             </Inset>
