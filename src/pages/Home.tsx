@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { safeGet, safeSet, safeRemove } from '@/services/safe-storage'
 import { Link, useNavigationType } from 'react-router'
 import {
-  Sparkles, Compass, Route, BadgeCheck, Network, Target,
+  Sparkles, Compass, Route, Network, Target, Snowflake, Flower2, Sun, Leaf,
   FileCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
   User, Award,
   BookOpen, CheckCircle2, ChevronRight,
@@ -37,6 +37,8 @@ import { stories, partnerLogos, STORY_ILLUSTRATIVE_BADGE_AR } from '@/data/stori
 import StoryAvatar from '@/components/StoryAvatar'
 import ProofBand from '@/components/ProofBand'
 import { Card, Panel, Inset } from '@/components/ui/Surface'
+import Chip, { type ChipTone } from '@/components/ui/Chip'
+import { CALENDAR_YEAR, currentSeasonLineAr, seasonCards, type SeasonCard, type SeasonCardState } from '@/application/terms/season-calendar'
 import { waHref, whatsAppFor } from '@/application/site/whatsapp'
 import { useWhatsAppNumbers } from '@/services/whatsapp'
 import { OPEN_GRANT_PATH } from '@/application/commerce/grant'
@@ -460,23 +462,26 @@ function DiagnosticTeaser() {
 }
 
 /* ───────────────── how it works ───────────────── */
-const steps = [
-  { icon: Compass, title: 'نفهمك', text: 'أسئلة متكيفة عن هدفك وواقعك ووقتك.' },
-  { icon: Target, title: 'نوصي ونشرح', text: 'مسار واحد واضح، أو نحوّلك لمستشار.' },
-  { icon: Route, title: 'تتعلم بترابط', text: 'كل دورة تبني على ما قبلها، ومعك مدرب ومستشار.' },
-  { icon: BadgeCheck, title: 'تثبت بمخرج', text: 'مشروع حقيقي يراجع ويقيّم. القيمة بالإنجاز، لا بالمشاهدة.' },
-]
+/* ═══ مواسمُ ٢٠٢٧ — بدلَ «كيف تسير رحلتك» (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «غيّر هذا التصميم ليعطي انطباعا عن الفصول ومتى يبدأ التسجيل لكلّ موسم لعام ٢٠٢٧… تصميمٌ ناعمٌ
+   يتوافق مع الموقع ككلّ». فالخطُّ الواصلُ والمحطّاتُ كما كانت — والمحطّةُ أيقونةُ الموسم، والبطاقةُ اسمُه وشهراه وحالُ
+   تسجيله. والحسابُ كلُّه في `src/application/terms/season-calendar.ts`. */
+const SEASON_ICONS: Record<SeasonCard['key'], typeof Snowflake> = {
+  jan_feb: Snowflake, apr_may: Flower2, jul_aug: Sun, oct_nov: Leaf,
+}
+const SEASON_TONE: Record<SeasonCardState, ChipTone> = {
+  closed: 'neutral', upcoming: 'accent', open: 'positive', running: 'positive', ended: 'neutral',
+}
 
 function HowItWorks() {
+  const [now] = useState(() => new Date())
+  const cards = seasonCards(now)
+  const line = currentSeasonLineAr(now)
   return (
     <section id="how" className="scroll-mt-24 border-y border-white/5 bg-white/[0.02] py-14 md:py-16">
       {/* ── الخطُّ الواصل يُرسم، والمحطّاتُ تُضاء بالترتيب ──
-
-          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): «خطواتٌ أفقيّة بخطٍّ واصلٍ
-          متحرّك» — وأسلوبٌ مؤسّسيّ لا استعراض. فالحركةُ واحدة: حين يُرى
-          القسمُ يُرسم الخطُّ من اليمين إلى اليسار (اتّجاهُ القراءة)، وتُضاء
-          أرقامُ المحطّات الأربع واحدةً بعد الأخرى. ولا يتكرّر شيء. ومن طلب
-          تقليلَ الحركة يرى الخطَّ تامّا والمحطّاتِ مضاءةً (`forwards`). */}
+          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): «خطواتٌ أفقيّة بخطٍّ واصلٍ متحرّك» — وأسلوبٌ مؤسّسيّ لا استعراض.
+          ومن طلب تقليلَ الحركة يرى الخطَّ تامّا والمحطّاتِ مضاءةً (`forwards`). */}
       <style>{`
         .how-rail { transform-origin: right center; transform: scaleX(0); }
         .how-node { opacity: 0; transform: scale(.6); }
@@ -486,50 +491,35 @@ function HowItWorks() {
         @keyframes how-node { to { opacity: 1; transform: scale(1); } }
       `}</style>
       <div className="shell">
-        {/* عنوانٌ واحدٌ في الوسط بلا شارة — بقرار صاحب المنصّة (٨ سبتمبر ٢٠٢٦):
-            «أربع خطوات لا أكثر» تكرّر ما تقوله البطاقاتُ الأربعُ تحته، والشارةُ
-            كانت تجرّ العنوانَ إلى طرفٍ وتترك الوسطَ فارغا. */}
         <div className="reveal text-center">
-          <h2 className="text-xl font-bold md:text-2xl">كيف تسير رحلتك</h2>
+          <h2 className="text-xl font-bold md:text-2xl">مواسم {CALENDAR_YEAR}</h2>
+          <p className="mt-2 text-read text-muted-foreground">شهران لكل موسم، ويفتح التسجيل قبله بشهر.</p>
+          {line && <p className="mt-1 text-read font-bold text-gold-ink">{line}</p>}
         </div>
         <div className="reveal how-steps relative mt-10">
-          {/* الخطُّ بين مركزَي المحطّة الأولى والأخيرة: المحطّاتُ في وسط أعمدةٍ
-              أربعة، فمراكزُها عند ١٢٫٥٪ و٨٧٫٥٪ من العرض. */}
+          {/* الخطُّ بين مركزَي المحطّة الأولى والأخيرة: أعمدةٌ أربعة، فمراكزُها عند ١٢٫٥٪ و٨٧٫٥٪ من العرض.
+              وعمودان على الهاتف (١٢ سبتمبر ٢٠٢٦) فتُرى المواسمُ الأربعةُ في شاشةٍ واحدة */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-[12.5%] top-5 hidden h-px md:block">
             <div className="how-rail h-full w-full bg-gradient-to-l from-teal/70 via-teal/35 to-teal/70" />
           </div>
-          {/* ─────────── لماذا عمودان على الهاتف لا عمودٌ واحد ───────────
-
-              كانت الشبكةُ عمودا واحدا على الهاتف، فتصير المحطّاتُ الأربعُ
-              نحوَ ألفِ بكسلٍ من التمرير: لا يرى الزائرُ منها إلّا واحدةً
-              ونصفا في الشاشة الواحدة. وقسمٌ عنوانُه «كيف تسير رحلتك» لا
-              يؤدّي معناه إن لم تُرَ رحلتُه مجتمعةً — فأربعُ محطّاتٍ
-              تُقرأ واحدةً واحدةً هي أربعُ بطاقاتٍ لا رحلة.
-
-              فصارت ٢×٢ على الهاتف بقرار صاحب المنصّة (١٢ سبتمبر ٢٠٢٦)،
-              ومعها ضغطُ المقاسات — الحلقةُ والأيقونةُ والحشوةُ والسطرُ —
-              حتّى تسع الأربعُ شاشةً واحدة. و`md:` يبقى كما كان بحرفه:
-              أربعةُ أعمدةٍ تحت الخطّ الواصل.
-
-              **والضغطُ من الحشوة والمقاسات لا من الحرف:** جُرّب `text-fine`
-              للسطر الشارح فأسقطه حارسُ `learner-surface` عن حقّ — متنٌ دون
-              أربعةَ عشرَ لا يُقرأ، والقاعدةُ أنّ `text-fine` للّصيقات
-              وحدَها. فبقي المتنُ `text-read` كما كان. */}
           <ol className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            {steps.map((s, i) => (
-              <li key={s.title} className="relative flex flex-col items-center text-center" style={{ ['--i' as string]: i }}>
-                <span className="how-node relative z-10 grid h-8 w-8 place-items-center rounded-full border border-teal/50 bg-card text-sm font-black text-teal-ink md:h-10 md:w-10">
-                  {i + 1}
-                </span>
-                <Card tone="accent" className="mt-3 flex w-full flex-1 flex-col items-center bg-card px-3 py-4 transition hover:border-teal/40 md:mt-4 md:px-4 md:py-5">
-                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-teal/12 text-teal-ink md:h-10 md:w-10">
-                    <s.icon className="h-4 w-4 md:h-5 md:w-5" />
+            {cards.map((c, i) => {
+              const Icon = SEASON_ICONS[c.key]
+              const muted = c.state === 'closed' || c.state === 'ended'
+              return (
+                <li key={c.key} className="relative flex flex-col items-center text-center" style={{ ['--i' as string]: i }}>
+                  <span className={`how-node relative z-10 grid h-8 w-8 place-items-center rounded-full border bg-card md:h-10 md:w-10 ${c.next ? 'border-teal text-teal-ink' : muted ? 'border-white/15 text-muted-foreground' : 'border-teal/50 text-teal-ink'}`}>
+                    <Icon className="h-4 w-4 md:h-5 md:w-5" aria-hidden="true" />
                   </span>
-                  <h3 className="mt-2.5 text-sm font-bold md:mt-3">{s.title}</h3>
-                  <p className="mt-1 text-read leading-6 text-muted-foreground md:mt-1.5">{s.text}</p>
-                </Card>
-              </li>
-            ))}
+                  <Card tone="accent" className={`mt-3 flex w-full flex-1 flex-col items-center gap-1.5 bg-card px-3 py-4 transition md:mt-4 md:px-4 md:py-5 ${c.next ? 'border-teal/60' : muted ? 'opacity-70' : ''}`}>
+                    <h3 className="text-sm font-bold">{c.nameAr}</h3>
+                    <p className="text-read text-muted-foreground">{c.monthsAr}</p>
+                    <Chip tone={SEASON_TONE[c.state]} className="mt-1">{c.noteAr}</Chip>
+                    {c.next && <span className="text-fine font-bold text-teal-light-ink">القادم</span>}
+                  </Card>
+                </li>
+              )
+            })}
           </ol>
         </div>
       </div>
