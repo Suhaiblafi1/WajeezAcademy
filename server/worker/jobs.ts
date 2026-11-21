@@ -53,6 +53,7 @@ import { hasNewSinceLast, isDigestHour, unbookedDigest } from '../../src/applica
 import { getCalendlyConfig, recordCalendlySync } from '../services/integrations.service'
 import { CalendlyWebhookService } from '../services/calendly-webhook.service'
 import { CHECKOUT_HOLD_MS, TEAM_HOLD_MS, teamHeldOrderIds } from '../services/commerce/seat-hold'
+import { runPrivateCourseReminders } from '../services/private-course/reminders'
 import {
   CalendlyApiError,
   type CalendlyScheduledEvent,
@@ -1926,6 +1927,9 @@ export const JOBS = [
   { key: 'cohort_corrections', everyMs: HOUR, run: runCohortCorrections, titleAr: 'تصحيح مواعيد شعب بقرار صاحب المنصة' },
   /* كلَّ ساعة: الحفظُ يسأل منذ اليوم، وهذه تلحق ما كُتب قبله — ثمّ لا تجد شيئا */
   { key: 'adopt_foreign_files', everyMs: HOUR, run: runAdoptForeignFiles, titleAr: 'نسخ ملفات الخطط والمهام إلى شعبها' },
+  /* كلَّ ساعة: العتبةُ يومٌ وثلاثة، وساعاتُ الإرسال نهارُ عمّان. و`private`: مساحةُ صاحب المنصّة الخاصّة لا أثرَ لها
+     في سجلّ الأكاديميّة (CLAUDE.md) — فلا يكتب `runJob` لها شيئا، وما فعلته يُقرأ في `/private` */
+  { key: 'private_course_reminders', everyMs: HOUR, run: runPrivateCourseReminders, titleAr: 'تذكير من حجز الدورة الخاصة ولم يدفع', private: true },
 ] as const
 
 /** دورةٌ واحدةٌ لوظيفةٍ واحدة، بأثرها المسجَّل — لا عملَ صامت */
@@ -1933,8 +1937,8 @@ export async function runJob(prisma: PrismaClient, key: string, now = new Date()
   const job = JOBS.find((j) => j.key === key)
   if (!job) throw new Error(`لا وظيفة بهذا المفتاح: ${key}`)
   const result = await job.run(prisma, now)
-  /* لا يُسجَّل إلّا ما عمل: دورةٌ فارغةٌ كلَّ دقيقةٍ تُغرق السجلَّ بلا خبر */
-  if (result.done > 0 || result.failed > 0) {
+  /* لا يُسجَّل إلّا ما عمل: دورةٌ فارغةٌ كلَّ دقيقةٍ تُغرق السجلَّ بلا خبر. ولا يُسجَّل الخاصُّ أبدا */
+  if ((result.done > 0 || result.failed > 0) && !('private' in job)) {
     await recordAudit(prisma, {
       actorId: null, action: `worker.${key}`, entityType: 'worker', entityId: key,
       meta: { summaryAr: result.summaryAr, done: result.done, failed: result.failed, ms: result.ms },

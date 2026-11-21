@@ -25,6 +25,8 @@ export interface PayInfo {
   abroad: boolean
   /** ضغط «ادفع بالبطاقة» ولم يرفع حوالة */
   cardChosen: boolean
+  /** Stripe مربوط: دفعُ البطاقة يؤكّد مقعده وحدَه، والبريدُ يصله خلال دقائق (٢١ نوفمبر ٢٠٢٦) */
+  cardAuto: boolean
 }
 
 type Method = 'cliq' | 'card'
@@ -176,11 +178,20 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
       {card
         ? (
           <div className="aij-cliq">
-            <small>ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة في صفحة الدفع. يصلك إيصال الدفع على بريدك، ثم نؤكد مقعدك ونرسل لك رابط Zoom — لا حاجة لرفع شيء.</small>
+            <small>
+              ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة في صفحة الدفع.{' '}
+              {info.cardAuto
+                ? 'يتأكد مقعدك تلقائيا بعد الدفع، ويصلك التأكيد ورابط Zoom على بريدك خلال دقائق — لا حاجة لرفع شيء.'
+                : 'يصلك إيصال الدفع على بريدك، ثم نؤكد مقعدك ونرسل لك رابط Zoom — لا حاجة لرفع شيء.'}
+            </small>
             <a className="aij-cta aij-cta-y aij-card-btn" href={info.cardUrl!} target="_blank" rel="noopener noreferrer" onClick={goCard}>
               ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة
             </a>
-            {info.cardChosen && <small style={{ marginTop: 8 }}>دفعت؟ نؤكد مقعدك فور وصول الدفع، ويصلك البريد ورابط Zoom.</small>}
+            {info.cardChosen && (
+              <small style={{ marginTop: 8 }}>
+                {info.cardAuto ? 'دفعت؟ يصلك التأكيد ورابط Zoom على بريدك خلال دقائق — تفقد الرسائل غير المرغوبة كذلك.' : 'دفعت؟ نؤكد مقعدك فور وصول الدفع، ويصلك البريد ورابط Zoom.'}
+              </small>
+            )}
           </div>
         )
         : (

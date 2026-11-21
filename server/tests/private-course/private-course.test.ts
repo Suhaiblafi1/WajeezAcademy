@@ -5,7 +5,9 @@
    ② **اللوحةُ له وحدَه**: «فقط أنا suhaib@wajeez.co» — لا مديرَ نظامٍ آخر، ولا بريدُه بلا رتبة.
    ③ **بريدُ التأكيد**: من Gmail صاحبها، فيه رابطُ Zoom شعبته وروابطُ Claude Code وملفُّ الدورة، ودعوةٌ مدعوُّها
       المتعلّمُ وحدَه — و«لا تضع لوقو وجيز.. ولا تُدرج أحدا ثانيا من أكاديميّة وجيز».
-   ④ **التحميلُ**: Excel للمسجّلين، كلِّهم أو شعبةٍ وحدَها. */
+   ④ **التحميلُ**: Excel للمسجّلين، كلِّهم أو شعبةٍ وحدَها.
+   ⑧ **التذكيرُ**: من حجز ولم يدفع يصله بريدٌ بعد يوم، و«آخر فرصة» بعد ثلاثة — ولا أثرَ في سجلّ الأكاديميّة.
+   ⑨ **Stripe**: دفعُ البطاقة يؤكّد الحجزَ ويرسل بريدَ Zoom وحدَه — بتوقيعٍ إلزاميّ، ومرّةً واحدة. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FastifyInstance } from 'fastify'
@@ -17,7 +19,10 @@ import { buildApp } from '../../http/app'
 import {
   PRIVATE_SENDER_EMAIL, setPrivateMailSenderForTests, type GmailConfig, type PrivateMail,
 } from '../../services/private-course/mailer'
-import { AI_JOBS_SLUG, CLAUDE_LINKS } from '../../../src/application/private-course/ai-jobs'
+import { AI_JOBS, AI_JOBS_SLUG, CLAUDE_LINKS, seatsLabel, seatsLeft } from '../../../src/application/private-course/ai-jobs'
+import { dueReminder, runPrivateCourseReminders } from '../../services/private-course/reminders'
+import { createHmac } from 'node:crypto'
+import { runJob } from '../../worker/jobs'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -499,5 +504,281 @@ describe('⑦ التسجيل وصورة الحوالة معا', () => {
   it('وبلا طريقة مذكورة فهي CliQ', async () => {
     const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'sara@test.local' } })
     expect(row.payMethod).toBe('cliq')
+  })
+})
+
+/* ═══ ⑧ تذكيرُ من حجز ولم يدفع (٢١ نوفمبر ٢٠٢٦) ═══
+   «if they haven't paid, remind them next day as reminder, after three days last chance». والأوقاتُ كلُّها ثابتةٌ
+   قبل الدورة (٥ ديسمبر) لا من ساعة الجهاز — فلا يسقط الحارسُ يومَ يمرّ تاريخها. */
+describe('⑧ تذكير من لم يدفع', () => {
+  const DAY = 86_400_000
+  const HOUR = 3_600_000
+  /* ظهرُ عمّان (09:00Z) قبل الدورة بعشرة أيام */
+  const NOON = new Date('2026-11-25T09:00:00.000Z')
+  const at = (ms: number) => new Date(NOON.getTime() + ms)
+  let n = 0
+
+  async function reserved(createdAt: Date, data: Record<string, unknown> = {}) {
+    n += 1
+    return prisma.privateRegistration.create({
+      data: {
+        courseSlug: AI_JOBS_SLUG, sectionKey: 'morning', fullName: 'هند سالم', email: `remind-${n}@test.local`,
+        phone: '+971501234567', phoneCountry: 'AE', payToken: `remind${n}`.padEnd(24, 'x'), createdAt, ...data,
+      },
+    })
+  }
+  const mailsTo = (email: string) => sent.filter((x) => x.mail.to === email).map((x) => x.mail)
+  const row = (id: string) => prisma.privateRegistration.findUniqueOrThrow({ where: { id } })
+
+  it('⚠️ بعد يوم: تذكير واحد برابط دفعه وCliQ — بلا وجيز، ولا يتكرر', async () => {
+    const r = await reserved(at(-1.5 * DAY))
+    const early = await reserved(at(-20 * HOUR))
+    await runPrivateCourseReminders(prisma, NOON)
+    const [mail, ...more] = mailsTo(r.email)
+    expect(more).toHaveLength(0)
+    expect(mail.subject).toBe('مقعدك محجوز — أكمل الدفع لتأكيده')
+    expect(mail.html).toContain(`/ai-jobs/pay/${r.payToken}`)
+    expect(mail.text).toContain(`/ai-jobs/pay/${r.payToken}`)
+    expect(mail.text).toContain(AI_JOBS.cliqAlias)
+    expect(mail.html, 'اسم الأكاديمية في بريد خاص').not.toMatch(/وجيز|wajeez/i)
+    expect(mail.html, 'وعد بإلغاء لا نفعله').not.toMatch(/نلغي|سيلغى/)
+    expect(mail.html).not.toContain('دفعت بالبطاقة؟')
+    expect((await row(r.id)).remindedAt).toEqual(NOON)
+    expect(mailsTo(early.email), 'ذكر قبل يوم').toHaveLength(0)
+
+    await runPrivateCourseReminders(prisma, at(HOUR))
+    expect(mailsTo(r.email), 'تكرر التذكير').toHaveLength(1)
+  })
+
+  it('⚠️ بعد ثلاثة أيام: «آخر فرصة» بمقاعد شعبته — وبعد يوم من التذكير على الأقل', async () => {
+    const r = await reserved(at(-2.5 * DAY), { remindedAt: at(-1.4 * DAY) })
+    const justReminded = await reserved(at(DAY - 3.2 * DAY), { remindedAt: at(DAY - 2 * HOUR) })
+    await runPrivateCourseReminders(prisma, at(DAY))
+    const [mail, ...more] = mailsTo(r.email)
+    expect(more).toHaveLength(0)
+    expect(mail.subject).toBe('آخر فرصة لتأكيد مقعدك')
+    expect(mail.html).toContain(seatsLabel(seatsLeft('morning', at(DAY).getTime())))
+    expect(mail.html).toContain(`/ai-jobs/pay/${r.payToken}`)
+    expect((await row(r.id)).lastChanceAt).toEqual(at(DAY))
+    expect(mailsTo(justReminded.email), 'آخر فرصة بعد التذكير بساعتين').toHaveLength(0)
+    expect((await row(justReminded.id)).lastChanceAt).toBeNull()
+  })
+
+  it('⚠️ ومن فاته اليوم الأول حتى بلغ الثالث تصله «آخر فرصة» وحدها', async () => {
+    const r = await reserved(at(-4 * DAY))
+    await runPrivateCourseReminders(prisma, NOON)
+    expect(mailsTo(r.email).map((m) => m.subject)).toEqual(['آخر فرصة لتأكيد مقعدك'])
+    expect((await row(r.id)).remindedAt).toBeNull()
+  })
+
+  it('⚠️ لا تذكير لمن رفع الحوالة أو تأكد أو رفض — ولا ليلا ولا بعد بدء شعبته', async () => {
+    const quiet = await Promise.all([
+      reserved(at(-1.5 * DAY), { proofKey: 'private/x.png' }),
+      reserved(at(-1.5 * DAY), { status: 'confirmed' }),
+      reserved(at(-1.5 * DAY), { status: 'rejected' }),
+    ])
+    await runPrivateCourseReminders(prisma, NOON)
+    for (const q of quiet) expect(mailsTo(q.email), q.email).toHaveLength(0)
+
+    const night = await reserved(at(-1.5 * DAY + 12 * HOUR))
+    const out = await runPrivateCourseReminders(prisma, at(12 * HOUR))
+    expect(out.summaryAr).toBe('خارج ساعات الإرسال')
+    expect(mailsTo(night.email)).toHaveLength(0)
+
+    const late = await reserved(new Date('2026-12-03T09:00:00.000Z'))
+    await runPrivateCourseReminders(prisma, new Date('2026-12-05T09:00:00.000Z'))
+    expect(mailsTo(late.email), 'تذكير بعد بدء الشعبة').toHaveLength(0)
+  })
+
+  it('⚠️ ومن ضغط «ادفع بالبطاقة» يقال له لا يفعل شيئا إن دفع', async () => {
+    const r = await reserved(at(-1.2 * DAY), { payMethod: 'card' })
+    await runPrivateCourseReminders(prisma, NOON)
+    const [mail] = mailsTo(r.email)
+    expect(mail.html).toContain('دفعت بالبطاقة؟ لا تحتاج لفعل شيء')
+    expect(mail.text).toContain('دفعت بالبطاقة؟ لا تحتاج لفعل شيء')
+  })
+
+  it('⚠️ بلا Gmail لا محاولة ولا خطأ يكتب — ثم يلحق حين يضبط', async () => {
+    const r = await reserved(at(-1.1 * DAY))
+    await asOwner('PUT', '/api/v1/private/mail', { appPassword: '' })
+    const out = await runPrivateCourseReminders(prisma, NOON)
+    expect(out.summaryAr).toMatch(/بانتظار ضبط Gmail/)
+    expect(mailsTo(r.email)).toHaveLength(0)
+    expect((await row(r.id)).reminderError).toBeNull()
+    await asOwner('PUT', '/api/v1/private/mail', { appPassword: 'abcd efgh ijkl mnop' })
+    await runPrivateCourseReminders(prisma, at(HOUR))
+    expect(mailsTo(r.email)).toHaveLength(1)
+  })
+
+  it('⚠️ إخفاق Gmail يكتب الخطأ ويوقف الدورة ويعاد بعدها — ورفض المستلم لا يعاد', async () => {
+    const a = await reserved(at(-10 * DAY))
+    const b = await reserved(at(-9 * DAY))
+    let calls = 0
+    setPrivateMailSenderForTests(async () => { calls += 1; throw Object.assign(new Error('auth'), { code: 'EAUTH' }) })
+    const out = await runPrivateCourseReminders(prisma, NOON)
+    expect(calls, 'استمر يحاول بعد رفض الدخول').toBe(1)
+    expect(out.failed).toBe(1)
+    expect(await row(a.id)).toMatchObject({ reminderError: 'رفض Gmail الدخول — تأكد من البريد وكلمة مرور التطبيق', lastChanceAt: null })
+
+    setPrivateMailSenderForTests(async (config, mail) => {
+      if (mail.to === b.email) throw Object.assign(new Error('no such user'), { responseCode: 550 })
+      sent.push({ config, mail })
+    })
+    await runPrivateCourseReminders(prisma, at(HOUR))
+    expect(await row(a.id)).toMatchObject({ reminderError: null, lastChanceAt: at(HOUR) })
+    expect(mailsTo(a.email)).toHaveLength(1)
+    expect(await row(b.id), 'رفض المستلم يعاد كل ساعة').toMatchObject({ reminderError: 'رفض Gmail عنوان المستلم', lastChanceAt: at(HOUR) })
+    setPrivateMailSenderForTests(async (config, mail) => { sent.push({ config, mail }) })
+  })
+
+  it('⚠️ وظيفة في العامل — ولا أثر في سجل الأكاديمية', async () => {
+    const r = await reserved(at(-1.3 * DAY))
+    const out = await runJob(prisma, 'private_course_reminders', at(2 * HOUR))
+    expect(out.done).toBeGreaterThanOrEqual(1)
+    expect(mailsTo(r.email)).toHaveLength(1)
+    expect(await prisma.auditEvent.count({ where: { action: 'worker.private_course_reminders' } }), 'أثر في سجل الأكاديمية').toBe(0)
+  })
+
+  it('واللوحة تقول ما وصله', async () => {
+    const o = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json()
+    const first = o.registrations.find((x: { email: string }) => x.email === 'remind-1@test.local')
+    expect(first.remindedAt).toBe(NOON.toISOString())
+    expect(first.lastChanceAt).toBeNull()
+  })
+})
+
+/* ═══ ⑨ Stripe يؤكد دفع البطاقة وحده (٢١ نوفمبر ٢٠٢٦) ═══
+   «نعم اربط Stripe ليتأكّد تلقائيّا». والخبرُ موقَّعٌ بصيغة Stripe، والمطابقةُ برقم المرجع في رابط البطاقة ثمّ بالبريد. */
+describe('⑨ Stripe يؤكد دفع البطاقة', () => {
+  const SECRET = 'whsec_testSecretForPrivateCourse123'
+  const HOOK = `/api/v1/public/private-courses/${AI_JOBS_SLUG}/stripe-webhook`
+  let k = 0
+  const sign = (body: string, secret = SECRET, t = Math.floor(Date.now() / 1000)) =>
+    `t=${t},v1=${createHmac('sha256', secret).update(`${t}.${body}`).digest('hex')}`
+  const event = (session: Record<string, unknown>, type = 'checkout.session.completed') => JSON.stringify({
+    id: `evt_${++k}`, type,
+    data: { object: { object: 'checkout.session', id: `cs_test_${k}`, payment_status: 'paid', amount_total: 2000, currency: 'usd', payment_intent: `pi_test_${k}`, ...session } },
+  })
+  const post = (body: string, signature = sign(body)) => app.inject({
+    method: 'POST', url: HOOK, payload: body, headers: { 'content-type': 'application/json', 'stripe-signature': signature },
+  })
+  const pending = (email: string, data: Record<string, unknown> = {}) => prisma.privateRegistration.create({
+    data: {
+      courseSlug: AI_JOBS_SLUG, sectionKey: 'evening', fullName: 'مازن خليل', email, phone: '+966501234567', phoneCountry: 'SA',
+      payToken: `stripe-${email}`.replace(/[^A-Za-z0-9_-]/g, '-').padEnd(24, 'x'), ...data,
+    },
+  })
+  const ref = (id: string) => id.slice(0, 8).toUpperCase()
+
+  it('⚠️ بلا مفتاح يرد 503 فيعيده Stripe — ولا يتأكد شيء', async () => {
+    const r = await pending('stripe-early@test.local')
+    const body = event({ client_reference_id: ref(r.id) })
+    expect((await post(body)).statusCode).toBe(503)
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: r.id } })).status).toBe('pending')
+  })
+
+  it('⚠️ المفتاح له وحده، ويحفظ مختوما ولا يعاد إلا مقنعا — ويرد ما ليس whsec_', async () => {
+    const other = await app.inject({ method: 'PUT', url: '/api/v1/private/stripe', payload: { webhookSecret: SECRET }, cookies: { wajeez_session: otherAdminToken } })
+    expect(other.statusCode).toBe(404)
+    expect((await asOwner('PUT', '/api/v1/private/stripe', { webhookSecret: 'sk_live_nope' })).statusCode).toBe(400)
+    const res = await asOwner('PUT', '/api/v1/private/stripe', { webhookSecret: SECRET })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toMatchObject({ ready: true, source: 'db', secretTail: '••••e123' })
+    expect(res.body).not.toContain(SECRET)
+    const row = await prisma.integrationSetting.findUniqueOrThrow({ where: { provider: 'private_stripe' } })
+    expect(JSON.stringify(row.config), 'المفتاح مكتوب بنصه في القاعدة').not.toContain('testSecretForPrivateCourse')
+    expect((await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json().stripe.ready).toBe(true)
+  })
+
+  it('⚠️ توقيع خاطئ أو قديم أو بغير صيغة Stripe يرد بـ400 — ولا يتأكد أحد', async () => {
+    const r = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'stripe-early@test.local' } })
+    const body = event({ client_reference_id: ref(r.id) })
+    expect((await post(body, sign(body, 'whsec_someoneElsesSecret0000'))).statusCode).toBe(400)
+    expect((await post(body, sign(body, SECRET, Math.floor(Date.now() / 1000) - 3600))).statusCode).toBe(400)
+    expect((await post(body, createHmac('sha256', SECRET).update(body).digest('hex'))).statusCode).toBe(400)
+    expect((await post(body, '')).statusCode).toBe(400)
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: r.id } })).status).toBe('pending')
+  })
+
+  it('⚠️ دفع بالمرجع يؤكد الحجز ويرسل بريد Zoom — مرة واحدة ولو أعيد الخبر، بلا أثر في سجل الأكاديمية', async () => {
+    const r = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'stripe-early@test.local' } })
+    const audits = await prisma.auditEvent.count()
+    const body = event({ client_reference_id: ref(r.id), customer_details: { email: 'someone-else@test.local' } })
+    const res = await post(body)
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toMatchObject({ action: 'confirmed', reference: ref(r.id) })
+    const row = await prisma.privateRegistration.findUniqueOrThrow({ where: { id: r.id } })
+    expect(row).toMatchObject({ status: 'confirmed', payMethod: 'card', cardAmount: 2000, cardCurrency: 'USD' })
+    expect(row.cardPaidAt).not.toBeNull()
+    expect(row.mailSentAt, 'تأكد بلا بريد').not.toBeNull()
+    const mails = sent.filter((x) => x.mail.to === 'stripe-early@test.local')
+    expect(mails).toHaveLength(1)
+    expect(mails[0].mail.subject).toContain('تم تأكيد تسجيلك')
+    expect(await prisma.auditEvent.count(), 'أثر في سجل الأكاديمية').toBe(audits)
+
+    const again = await post(body)
+    expect(again.json().action).toBe('duplicate')
+    expect(sent.filter((x) => x.mail.to === 'stripe-early@test.local'), 'بريدان لخبر معاد').toHaveLength(1)
+    expect((await app.inject({ method: 'GET', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}/pay/${r.payToken}` })).json().status).toBe('confirmed')
+  })
+
+  it('⚠️ بلا مرجع: يطابق البريد إن كان المبلغ سعر الدورة — وإلا يحفظ في قائمة ما لم يطابق', async () => {
+    const byMail = await pending('stripe-mail@test.local')
+    const ok = await post(event({ customer_details: { email: 'Stripe-Mail@test.local' } }))
+    expect(ok.json()).toMatchObject({ action: 'confirmed', reference: ref(byMail.id) })
+
+    const cheap = await pending('stripe-cheap@test.local')
+    const body = event({ customer_details: { email: 'stripe-cheap@test.local' }, amount_total: 500 })
+    expect((await post(body)).json().action).toBe('unmatched')
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: cheap.id } })).cardPaidAt, 'بريد وحده بمبلغ آخر').toBeNull()
+    const list = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json().stripe.unmatched
+    expect(list[0]).toMatchObject({ email: 'stripe-cheap@test.local', amount: 500, currency: 'USD', reason: 'no_match' })
+  })
+
+  it('⚠️ مبلغ أقل من السعر بالمرجع: يكتب ويبقى للمراجعة — ولا يذكر بعدها', async () => {
+    const r = await pending('stripe-held@test.local', { createdAt: new Date('2026-11-23T09:00:00.000Z') })
+    const res = await post(event({ client_reference_id: ref(r.id), amount_total: 1000 }))
+    expect(res.json().action).toBe('held')
+    const row = await prisma.privateRegistration.findUniqueOrThrow({ where: { id: r.id } })
+    expect(row.status).toBe('pending')
+    expect(row.cardAmount).toBe(1000)
+    expect(dueReminder(row, new Date('2026-11-25T09:00:00.000Z')), 'ذكر من دفع').toBeNull()
+    const o = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json()
+    expect(o.registrations.find((x: { email: string }) => x.email === 'stripe-held@test.local')).toMatchObject({ cardAmount: 1000, cardCurrency: 'USD' })
+  })
+
+  it('⚠️ دفعة ثانية لحجز مدفوع تظهر في القائمة — وترفع منها بعد المطابقة', async () => {
+    const r = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'stripe-early@test.local' } })
+    const body = event({ client_reference_id: ref(r.id) })
+    expect((await post(body)).json().action).toBe('second')
+    const sessionId = (JSON.parse(body) as { data: { object: { id: string } } }).data.object.id
+    let list = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json().stripe.unmatched
+    expect(list.find((u: { sessionId: string }) => u.sessionId === sessionId)).toMatchObject({ reason: 'second', reference: ref(r.id) })
+    list = (await asOwner('DELETE', `/api/v1/private/stripe/unmatched/${sessionId}`)).json().unmatched
+    expect(list.find((u: { sessionId: string }) => u.sessionId === sessionId)).toBeUndefined()
+    expect(sent.filter((x) => x.mail.to === 'stripe-early@test.local'), 'بريد ثان للدفعة الثانية').toHaveLength(1)
+  })
+
+  it('وما لم يقبض أو ليس دفعا لا يفعل شيئا — ويكتب أن الخبر وصل', async () => {
+    const r = await pending('stripe-async@test.local')
+    expect((await post(event({ client_reference_id: ref(r.id), payment_status: 'unpaid' }))).json().action).toBe('unpaid')
+    expect((await post(event({}, 'payment_intent.created'))).json().action).toBe('ignored')
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: r.id } })).status).toBe('pending')
+    const st = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json().stripe
+    expect(st.lastEventType).toBe('payment_intent.created')
+    expect(st.lastEventAt).not.toBeNull()
+    /* والمتأخّرُ قبضُه يصل بخبرٍ ثانٍ فيتأكّد */
+    const later = await post(event({ client_reference_id: ref(r.id) }, 'checkout.session.async_payment_succeeded'))
+    expect(later.json().action).toBe('confirmed')
+  })
+
+  it('وصفحة الدفع تقول إن البطاقة تتأكد وحدها حين يربط — والفصل يعيدها باليد', async () => {
+    await asOwner('PATCH', `/api/v1/private/courses/${AI_JOBS_SLUG}`, { cardUrl: 'https://buy.stripe.com/test_abc123' })
+    const r = await pending('stripe-view@test.local')
+    const url = `/api/v1/public/private-courses/${AI_JOBS_SLUG}/pay/${r.payToken}`
+    expect((await app.inject({ method: 'GET', url })).json().cardAuto).toBe(true)
+    expect((await asOwner('PUT', '/api/v1/private/stripe', { webhookSecret: '' })).json().ready).toBe(false)
+    expect((await app.inject({ method: 'GET', url })).json().cardAuto).toBe(false)
+    expect((await post(event({ client_reference_id: ref(r.id) }))).statusCode).toBe(503)
   })
 })

@@ -159,7 +159,15 @@ function readableError(e: unknown): string {
   return `تعذر الإرسال: ${err?.message ?? String(e)}`
 }
 
-export async function sendPrivateMail(prisma: PrismaClient, mail: PrivateMail): Promise<{ ok: true } | { ok: false; error: string }> {
+/** ردُّ Gmail على المستلم نفسِه (لا على الدخول ولا الشبكة) — فإعادتُه لا تغيّر شيئا */
+function recipientRefused(e: unknown): boolean {
+  const code = (e as { responseCode?: number })?.responseCode
+  return code === 550 || code === 553
+}
+
+export type PrivateMailResult = { ok: true } | { ok: false; error: string; /** رُفض المستلم — لا تُعاد */ recipient?: boolean }
+
+export async function sendPrivateMail(prisma: PrismaClient, mail: PrivateMail): Promise<PrivateMailResult> {
   const config = await getGmailConfig(prisma)
   if (!config.appPassword) return { ok: false, error: 'بريد Gmail غير مضبوط — اكتب كلمة مرور التطبيق في الإعدادات' }
   if (sender === smtpSender && !liveMailAllowed()) return { ok: false, error: MAIL_GATE_REFUSAL_AR }
@@ -167,6 +175,13 @@ export async function sendPrivateMail(prisma: PrismaClient, mail: PrivateMail): 
     await sender(config, mail)
     return { ok: true }
   } catch (e) {
-    return { ok: false, error: readableError(e) }
+    return { ok: false, error: readableError(e), ...(recipientRefused(e) ? { recipient: true } : {}) }
   }
+}
+
+/** هل يخرج بريدٌ الآن؟ — للعامل: لا يحاول ولا يكتب خطأً كلَّ ساعةٍ وGmail لم يُضبط بعد أو البيئةُ لا ترسل */
+export async function privateMailReady(prisma: PrismaClient): Promise<boolean> {
+  const config = await getGmailConfig(prisma)
+  if (!config.appPassword) return false
+  return sender !== smtpSender || liveMailAllowed()
 }

@@ -201,6 +201,13 @@ describe('⑦ الدفع بالبطاقة', () => {
     expect(step, 'عاد إرسال طريقة الدفع مع الصورة').not.toMatch(/payMethod:/)
   })
 
+  it('⚠️ وحين يربط Stripe يقال للحاجز إن مقعده يتأكد وحده — وإلا إننا نؤكده', () => {
+    /* «نعم اربط Stripe ليتأكّد تلقائيّا» (٢١ نوفمبر ٢٠٢٦) — والوعدُ بالتلقائيّ لا يُقال بلا ربط */
+    const branch = /\{card\s*\? \(([\s\S]*?)\)\s*: \(/.exec(step)?.[1] ?? ''
+    expect(branch).toMatch(/info\.cardAuto\s*\?\s*'يتأكد مقعدك تلقائيا/)
+    expect(step).not.toMatch(/'يتأكد مقعدك تلقائيا[^']*'\s*:\s*'يتأكد/)
+  })
+
   it('⚠️ ولا خيار بطاقة بلا رابط — لا زر يقود إلى لا شيء', () => {
     expect(step).toMatch(/\{info\.cardUrl && \(\s*<div className="aij-methods"/)
     expect(step).toMatch(/const card = method === 'card' && Boolean\(info\.cardUrl\)/)

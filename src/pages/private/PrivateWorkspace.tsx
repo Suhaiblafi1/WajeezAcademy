@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   CheckCircle2, Copy, CreditCard, Download, ExternalLink, FileText, Loader2, Lock, LockOpen, Mail, MessageCircle, RefreshCw, RotateCcw, Search, Send,
-  Trash2, Upload, Video, XCircle,
+  Trash2, Upload, Video, XCircle, Zap,
 } from 'lucide-react'
 import { ApiError, apiDelete, apiDownload, apiGet, apiPatch, apiPost, apiPut, apiUpload } from '@/services/api'
 import { toast, toastError } from '@/components/Toast'
@@ -42,6 +42,14 @@ interface Registration {
   payToken: string
   source: string | null
   payMethod: 'cliq' | 'card' | null
+  remindedAt: string | null
+  lastChanceAt: string | null
+  reminderError: string | null
+  /** دفعُ البطاقة كما أخبر به Stripe (٢١ نوفمبر ٢٠٢٦) */
+  cardPaidAt: string | null
+  cardAmount: number | null
+  cardCurrency: string | null
+  stripePaymentId: string | null
   status: Status
   createdAt: string
   confirmedAt: string | null
@@ -63,7 +71,26 @@ interface Overview {
     sections: { key: string; title: string; timeLabel: string; zoom: { url: string; passcode?: string } | null }[]
   }
   gmail: { user: string; ready: boolean; source: 'env' | 'db' | 'none'; passwordTail: string; live: boolean }
+  stripe: StripeState
   registrations: Registration[]
+}
+
+interface StripeState {
+  ready: boolean
+  source: 'env' | 'db' | 'none'
+  secretTail: string
+  lastEventAt: string | null
+  lastEventType: string | null
+  unmatched: {
+    at: string; sessionId: string; email: string | null; reference: string | null
+    amount: number | null; currency: string | null; reason: 'no_match' | 'second'
+  }[]
+}
+
+/** 2000 USD ← «20.00 USD» — Stripe يكتب المبلغ بأصغر وحدة */
+function money(amount: number | null, currency: string | null): string {
+  if (amount == null) return ''
+  return `${(amount / 100).toFixed(2)} ${currency ?? ''}`.trim()
 }
 
 type MailResult = { ok: true } | { ok: false; error: string } | null
@@ -158,7 +185,7 @@ function CardLink({ cardUrl, onSaved }: { cardUrl: string | null; onSaved: (o: O
     <Card className="p-4">
       <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-teal-ink" aria-hidden="true" />الدفع بالبطاقة — لمن هو خارج الأردن</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        أنشئ صفحة دفع بمبلغ <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> عند مزودك (Stripe Payment Link، أو PayPal، أو غيرهما) والصق رابطها هنا. فيظهر للحاجز خيار «بطاقة»، يدفع ثم يرفع الإيصال، وتؤكده أنت كالحوالة. وفارغه يخفي الخيار.
+        أنشئ صفحة دفع بمبلغ <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> في Stripe (Payment Link) والصق رابطها هنا. فيظهر للحاجز خيار «بطاقة»، يدفع بلا إيصال يرفعه. واربط Stripe تحته ليتأكد مقعده وحده. وفارغه يخفي الخيار.
       </p>
       <label className="mt-3 block">
         <span className={labelCls}>رابط صفحة الدفع</span>
@@ -170,6 +197,108 @@ function CardLink({ cardUrl, onSaved }: { cardUrl: string | null; onSaved: (o: O
       </div>
       {cardUrl && /buy\.stripe\.com/.test(cardUrl) && (
         <p className="mt-2 text-fine leading-5 text-muted-foreground">رابط Stripe يحمل رقم مرجع الحاجز، فتجده في لوحة Stripe بجانب الدفعة.</p>
+      )}
+    </Card>
+  )
+}
+
+/* ═══ ربطُ Stripe — دفعُ البطاقة يؤكّد الحجزَ ويرسل بريدَ Zoom وحدَه (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «نعم اربط Stripe ليتأكّد تلقائيّا». والربطُ webhook في لوحة Stripe يرسل إلى رابطٍ هنا،
+   ومفتاحُ توقيعه يُلصق في الحقل — لا في محادثة. وما وصل ولم نطابقه يظهر تحته ليطابقه بيده. */
+const STRIPE_EVENTS = ['checkout.session.completed', 'checkout.session.async_payment_succeeded']
+
+function StripeAuto({ stripe, onSaved }: { stripe: StripeState; onSaved: (s: StripeState) => void }) {
+  const [secret, setSecret] = useState('')
+  const [saving, setSaving] = useState(false)
+  const hook = `${window.location.origin}/api/v1/public/private-courses/${SLUG}/stripe-webhook`
+
+  async function save(value: string, done: string) {
+    setSaving(true)
+    try {
+      onSaved(await apiPut<StripeState>('/api/v1/private/stripe', { webhookSecret: value }))
+      setSecret('')
+      toast(done)
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'تعذر الحفظ')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function dismiss(sessionId: string) {
+    try {
+      onSaved(await apiDelete<StripeState>(`/api/v1/private/stripe/unmatched/${encodeURIComponent(sessionId)}`))
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'تعذر الحذف')
+    }
+  }
+
+  return (
+    <Card className="p-4 lg:col-span-2">
+      <p className="flex items-center gap-2 text-sm font-black"><Zap className="h-4 w-4 text-teal-ink" aria-hidden="true" />تأكيد البطاقة تلقائيا — Stripe</p>
+      <div className={`mt-2 rounded-lg px-3 py-2 text-read font-bold ${stripe.ready ? 'text-emerald-300' : 'text-gold-ink'}`}>
+        {stripe.ready
+          ? `مربوط — من يدفع بالبطاقة يتأكد مقعده ويصله البريد ورابط Zoom وحده. مفتاح التوقيع ${stripe.secretTail}${stripe.source === 'env' ? ' (من إعداد الخادم)' : ''}`
+          : 'غير مربوط — من يدفع بالبطاقة تؤكده أنت بعد أن تجد دفعته في Stripe'}
+      </div>
+      {stripe.ready && (
+        <p className="mt-1 text-read leading-6 text-muted-foreground">
+          {stripe.lastEventAt
+            ? <>آخر خبر من Stripe: {fmtDateTime(stripe.lastEventAt)} <span dir="ltr" className="font-mono text-fine">({stripe.lastEventType})</span></>
+            : 'لم يصل أي خبر من Stripe بعد. جرب «Send test webhook» في Stripe ليظهر هنا.'}
+        </p>
+      )}
+      <ol className="mt-3 grid list-decimal gap-1.5 ps-5 text-read leading-6 text-muted-foreground">
+        <li>
+          في Stripe افتح{' '}
+          <a className="text-teal-ink underline" href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer">Developers ← Webhooks</a>
+          {' '}واضغط «Add endpoint».
+        </li>
+        <li>
+          الصق هذا الرابط في Endpoint URL:
+          <span className="mt-1 flex flex-wrap items-center gap-2">
+            <code dir="ltr" className="break-all rounded bg-white/5 px-2 py-1 font-mono text-fine text-foreground">{hook}</code>
+            <Button size="sm" tone="ghost" icon={Copy} onClick={() => { void navigator.clipboard?.writeText(hook).then(() => toast('نسخنا الرابط')) }}>انسخ</Button>
+          </span>
+        </li>
+        <li>
+          اختر الحدثين: {STRIPE_EVENTS.map((e, i) => <span key={e}>{i > 0 && ' و'}<code dir="ltr" className="font-mono text-fine text-foreground">{e}</code></span>)}
+        </li>
+        <li>بعد الحفظ اضغط «Reveal» تحت Signing secret، وانسخ المفتاح الذي يبدأ بـ <code dir="ltr" className="font-mono text-fine">whsec_</code> والصقه هنا.</li>
+      </ol>
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <label className="block min-w-64 flex-1">
+          <span className={labelCls}>مفتاح التوقيع (Signing secret) {stripe.ready && '— اتركه فارغا ليبقى كما هو'}</span>
+          <input dir="ltr" type="password" autoComplete="new-password" className={`${inputCls} mt-1`} placeholder="whsec_…"
+            value={secret} onChange={(e) => setSecret(e.target.value)} disabled={stripe.source === 'env'} />
+        </label>
+        <Button tone="confirm" size="sm" loading={saving} disabled={!secret.trim() || stripe.source === 'env'}
+          onClick={() => void save(secret, 'ربطنا Stripe — دفع البطاقة يؤكد المقعد وحده من الآن')}>احفظ</Button>
+        {stripe.ready && stripe.source === 'db' && (
+          <Button size="sm" tone="ghost" disabled={saving}
+            onClick={() => { if (window.confirm('فصل Stripe؟ يعود تأكيد دفع البطاقة بيدك.')) void save('', 'فصلنا Stripe — تؤكد دفع البطاقة بيدك') }}>
+            افصل
+          </Button>
+        )}
+      </div>
+      {stripe.unmatched.length > 0 && (
+        <div className="mt-4 border-t border-white/10 pt-3">
+          <p className="text-read font-bold text-gold-ink">دفعات وصلت ولم نجد حجزها — ابحث عنها في Stripe وأكد صاحبها بيدك</p>
+          <ul className="mt-2 grid gap-2">
+            {stripe.unmatched.map((u) => (
+              <li key={u.sessionId}>
+                <Inset tone="warn" className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-read">
+                  <b dir="ltr">{money(u.amount, u.currency)}</b>
+                  {u.email && <span dir="ltr">{u.email}</span>}
+                  {u.reference && <span>المرجع <b dir="ltr">{u.reference}</b></span>}
+                  <span className="text-muted-foreground">{fmtDateTime(u.at)}</span>
+                  <span className="text-muted-foreground">{u.reason === 'second' ? 'دفعة ثانية لحجز مدفوع — ردها من Stripe' : 'لا حجز بمرجعه ولا ببريده'}</span>
+                  <Button size="sm" tone="ghost" className="ms-auto" onClick={() => void dismiss(u.sessionId)}>تمت مطابقتها</Button>
+                </Inset>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </Card>
   )
@@ -340,7 +469,7 @@ function RegistrationCard({ r, onChange, onRemove }: {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-black">{r.fullName}</h3>
-            <Inset tone={STATUS_TONE[r.status]} className="px-2 py-0.5 text-fine font-bold">{r.status === 'pending' && !r.proof ? 'بانتظار الدفع' : STATUS_AR[r.status]}</Inset>
+            <Inset tone={STATUS_TONE[r.status]} className="px-2 py-0.5 text-fine font-bold">{r.status === 'pending' && !r.proof && !r.cardPaidAt ? 'بانتظار الدفع' : STATUS_AR[r.status]}</Inset>
             <span dir="ltr" className="font-mono text-fine text-muted-foreground">#{r.reference}</span>
           </div>
           <div className="mt-2 grid gap-1 text-read leading-6">
@@ -385,6 +514,28 @@ function RegistrationCard({ r, onChange, onRemove }: {
                 )}
             </a>
           )
+          : r.cardPaidAt
+            ? (
+              /* دفعُ البطاقة كما أخبر به Stripe — يتأكّد وحدَه، إلّا مبلغا دون السعر يبقى للمراجعة (٢١ نوفمبر ٢٠٢٦) */
+              <Inset tone={r.status === 'confirmed' ? 'positive' : 'warn'} className="flex w-full flex-col items-start gap-2 p-3 text-read md:w-56">
+                <b>دفع بالبطاقة <bdi dir="ltr">{money(r.cardAmount, r.cardCurrency)}</bdi></b>
+                <span className="text-fine leading-5 text-muted-foreground">
+                  أخبر به Stripe {fmtDateTime(r.cardPaidAt)}{r.status === 'confirmed' ? ' — وتأكد مقعده وحده' : ''}
+                </span>
+                {r.status === 'pending' && (
+                  <span className="text-fine leading-5 text-gold-ink">
+                    {r.cardCurrency === 'USD' && (r.cardAmount ?? 0) < AI_JOBS.priceUsd * 100
+                      ? 'المبلغ أقل من سعر الدورة — راجعه في Stripe ثم أكده أو ارفضه'
+                      : 'لم يتأكد بعد — أكده'}
+                  </span>
+                )}
+                {r.stripePaymentId && (
+                  <Button as="a" href={`https://dashboard.stripe.com/payments/${r.stripePaymentId}`} target="_blank" rel="noopener noreferrer" size="sm" icon={ExternalLink}>
+                    افتحها في Stripe
+                  </Button>
+                )}
+              </Inset>
+            )
           : (
             <Inset tone="warn" className="flex w-full flex-col items-start gap-2 p-3 text-read md:w-56">
               {/* البطاقةُ لا إيصالَ لها: يُطابَق دفعُه في Stripe برقم مرجعه (٢١ نوفمبر ٢٠٢٦) */}
@@ -401,6 +552,15 @@ function RegistrationCard({ r, onChange, onRemove }: {
                     <span className="text-fine leading-5 text-muted-foreground">حجز مقعده ولم يدفع. ذكّره برابط الدفع باسمه:</span>
                   </>
                 )}
+              {/* والبريدُ يذكّره وحدَه: بعد يوم، و«آخر فرصة» بعد ثلاثة (٢١ نوفمبر ٢٠٢٦) */}
+              <span className="text-fine leading-5 text-muted-foreground">
+                {r.lastChanceAt
+                  ? `وصله بريد «آخر فرصة» ${fmtDateTime(r.lastChanceAt)}`
+                  : r.remindedAt
+                    ? `وصله التذكير بالبريد ${fmtDateTime(r.remindedAt)} — و«آخر فرصة» بعد 3 أيام من حجزه`
+                    : 'يصله تذكير بالبريد بعد يوم من حجزه، و«آخر فرصة» بعد 3 أيام'}
+              </span>
+              {r.reminderError && <span className="text-fine leading-5 text-red-300">لم يصله التذكير: {r.reminderError}</span>}
               <Button as="a" href={reminder} target="_blank" rel="noopener noreferrer" size="sm" icon={MessageCircle}>ذكّره على واتساب</Button>
               <Button size="sm" tone="ghost" icon={Copy} onClick={() => { void navigator.clipboard?.writeText(payLink).then(() => toast('نسخنا رابط الدفع')) }}>انسخ رابط الدفع</Button>
             </Inset>
@@ -461,7 +621,8 @@ function RegistrationCard({ r, onChange, onRemove }: {
 type Filter = 'unpaid' | 'review' | 'confirmed' | 'rejected' | 'all'
 
 function filterOf(r: Registration): Exclude<Filter, 'all'> {
-  if (r.status === 'pending') return r.proof ? 'review' : 'unpaid'
+  /* ودفعُ بطاقةٍ أخبر به Stripe وبقي للمراجعة (مبلغٌ دون السعر) — دفع، فهو للمراجعة لا للتذكير */
+  if (r.status === 'pending') return r.proof || r.cardPaidAt ? 'review' : 'unpaid'
   return r.status
 }
 
@@ -660,6 +821,7 @@ export default function PrivateWorkspace() {
                 sending={bulk === s.key} onSendMissing={() => void sendMissing(s.key)} />
             ))}
             <CardLink key={data.course.cardUrl ?? ''} cardUrl={data.course.cardUrl} onSaved={setData} />
+            <StripeAuto stripe={data.stripe} onSaved={(st) => setData((d) => d && ({ ...d, stripe: st }))} />
             <CourseFile file={data.course.file} onSaved={setData} />
             <GmailSettings gmail={data.gmail} onSaved={(g) => setData((d) => d && ({ ...d, gmail: g }))} />
           </div>
