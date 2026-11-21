@@ -7,7 +7,8 @@
       المتعلّمُ وحدَه — و«لا تضع لوقو وجيز.. ولا تُدرج أحدا ثانيا من أكاديميّة وجيز».
    ④ **التحميلُ**: Excel للمسجّلين، كلِّهم أو شعبةٍ وحدَها.
    ⑧ **التذكيرُ**: من حجز ولم يدفع يصله بريدٌ بعد يوم، و«آخر فرصة» بعد ثلاثة — ولا أثرَ في سجلّ الأكاديميّة.
-   ⑨ **Stripe**: دفعُ البطاقة يؤكّد الحجزَ ويرسل بريدَ Zoom وحدَه — بتوقيعٍ إلزاميّ، ومرّةً واحدة. */
+   ⑨ **Stripe**: دفعُ البطاقة يؤكّد الحجزَ ويرسل بريدَ Zoom وحدَه — بتوقيعٍ إلزاميّ، ومرّةً واحدة.
+   ⑩ **البطاقةُ مخفيّةٌ كلّيّا**: «أخفِ الدفعَ بالكارد كلّيّا الآن» — ولو بقي رابطُها. وطريقُها في ⑥ و⑨ يُحرس بمفتاحها مفتوحا. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FastifyInstance } from 'fastify'
@@ -21,6 +22,7 @@ import {
 } from '../../services/private-course/mailer'
 import { AI_JOBS, AI_JOBS_SLUG, CLAUDE_LINKS, seatsLabel, seatsLeft } from '../../../src/application/private-course/ai-jobs'
 import { dueReminder, runPrivateCourseReminders } from '../../services/private-course/reminders'
+import { setCardPaymentsForTests } from '../../services/private-course/registration.service'
 import { createHmac } from 'node:crypto'
 import { runJob } from '../../worker/jobs'
 
@@ -405,6 +407,9 @@ describe('⑤ الحجز أولا والدفع بعد', () => {
    ولمن رقمُه خارجَ الأردن أوّلا. ولا إيصالَ يُرفع لها: «لو دفع يصل له التأكيد مباشرة، لا حاجة ليثبته» — فيُكتب
    أنّه ذهب إليها، ويطابقه صاحبُ الدورة في Stripe برقم مرجعه. والصورةُ المرفوعةُ حوالةُ CliQ دائما. */
 describe('⑥ الدفع بالبطاقة', () => {
+  /* البطاقةُ مخفيّةٌ كلّيّا (⑩) — وطريقُها يُحرس هنا بمفتاحها مفتوحا، كي يعود كما كان إن أُعيد */
+  beforeAll(() => setCardPaymentsForTests(true))
+  afterAll(() => setCardPaymentsForTests(null))
   const STRIPE = 'https://buy.stripe.com/test_abc123'
   const payUrl = (token: string) => `/api/v1/public/private-courses/${AI_JOBS_SLUG}/pay/${token}`
 
@@ -590,12 +595,20 @@ describe('⑧ تذكير من لم يدفع', () => {
     expect(mailsTo(late.email), 'تذكير بعد بدء الشعبة').toHaveLength(0)
   })
 
-  it('⚠️ ومن ضغط «ادفع بالبطاقة» يقال له لا يفعل شيئا إن دفع', async () => {
-    const r = await reserved(at(-1.2 * DAY), { payMethod: 'card' })
-    await runPrivateCourseReminders(prisma, NOON)
-    const [mail] = mailsTo(r.email)
-    expect(mail.html).toContain('دفعت بالبطاقة؟ لا تحتاج لفعل شيء')
-    expect(mail.text).toContain('دفعت بالبطاقة؟ لا تحتاج لفعل شيء')
+  it('⚠️ ومن ضغط «ادفع بالبطاقة» يقال له لا يفعل شيئا إن دفع — حين تكون البطاقة معروضة', async () => {
+    setCardPaymentsForTests(true)
+    await prisma.privateCourse.update({ where: { slug: AI_JOBS_SLUG }, data: { cardUrl: 'https://buy.stripe.com/test_abc123' } })
+    try {
+      const r = await reserved(at(-1.2 * DAY), { payMethod: 'card' })
+      await runPrivateCourseReminders(prisma, NOON)
+      const [mail] = mailsTo(r.email)
+      expect(mail.html).toContain('دفعت بالبطاقة؟ لا تحتاج لفعل شيء')
+      expect(mail.text).toContain('دفعت بالبطاقة؟ لا تحتاج لفعل شيء')
+      expect(mail.text).toContain('بالبطاقة من الرابط نفسه')
+    } finally {
+      setCardPaymentsForTests(null)
+      await prisma.privateCourse.update({ where: { slug: AI_JOBS_SLUG }, data: { cardUrl: null } })
+    }
   })
 
   it('⚠️ بلا Gmail لا محاولة ولا خطأ يكتب — ثم يلحق حين يضبط', async () => {
@@ -650,6 +663,8 @@ describe('⑧ تذكير من لم يدفع', () => {
 /* ═══ ⑨ Stripe يؤكد دفع البطاقة وحده (٢١ نوفمبر ٢٠٢٦) ═══
    «نعم اربط Stripe ليتأكّد تلقائيّا». والخبرُ موقَّعٌ بصيغة Stripe، والمطابقةُ برقم المرجع في رابط البطاقة ثمّ بالبريد. */
 describe('⑨ Stripe يؤكد دفع البطاقة', () => {
+  beforeAll(() => setCardPaymentsForTests(true))
+  afterAll(() => setCardPaymentsForTests(null))
   const SECRET = 'whsec_testSecretForPrivateCourse123'
   const HOOK = `/api/v1/public/private-courses/${AI_JOBS_SLUG}/stripe-webhook`
   let k = 0
@@ -780,5 +795,42 @@ describe('⑨ Stripe يؤكد دفع البطاقة', () => {
     expect((await asOwner('PUT', '/api/v1/private/stripe', { webhookSecret: '' })).json().ready).toBe(false)
     expect((await app.inject({ method: 'GET', url })).json().cardAuto).toBe(false)
     expect((await post(event({ client_reference_id: ref(r.id) }))).statusCode).toBe(503)
+  })
+})
+
+/* ═══ ⑩ البطاقةُ مخفيّةٌ كلّيّا (٢١ نوفمبر ٢٠٢٦) ═══
+   «أخفِ الدفعَ بالكارد كلّيّا الآن». والمفتاحُ مغلقٌ افتراضا — فالحارسُ هنا يقرأ الحالَ كما هو في الإنتاج. */
+describe('⑩ البطاقة مخفية كليا', () => {
+  it('⚠️ ولو بقي رابطها وStripe مربوطا: لا خيار في الصفحة ولا رابط الدفع ولا التذكير، ولا إعدادات في اللوحة', async () => {
+    await prisma.privateCourse.update({ where: { slug: AI_JOBS_SLUG }, data: { cardUrl: 'https://buy.stripe.com/test_abc123' } })
+    await asOwner('PUT', '/api/v1/private/stripe', { webhookSecret: 'whsec_testSecretForPrivateCourse123' })
+
+    expect((await app.inject({ method: 'GET', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}` })).json().card).toBe(false)
+
+    const chose = await prisma.privateRegistration.create({
+      data: {
+        courseSlug: AI_JOBS_SLUG, sectionKey: 'morning', fullName: 'رامي حداد', email: 'hidden-card@test.local',
+        phone: '+971501234567', phoneCountry: 'AE', payToken: 'hidden-card-token-xxxxxxxx', payMethod: 'card',
+        createdAt: new Date('2026-11-24T03:00:00.000Z'),
+      },
+    })
+    const payUrl = `/api/v1/public/private-courses/${AI_JOBS_SLUG}/pay/${chose.payToken}`
+    expect((await app.inject({ method: 'GET', url: payUrl })).json()).toMatchObject({ cardUrl: null, cardAuto: false, cardChosen: false })
+
+    /* بلا صورة حوالة — فلا يمنع اختيارَ البطاقة شيءٌ غيرُ إخفائها */
+    const fresh = await register({ email: 'hidden-card-2@test.local', phoneCountry: 'AE', phone: '501234567', proof: undefined })
+    expect(fresh.json()).toMatchObject({ cardUrl: null, cardAuto: false })
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'hidden-card-2@test.local' } })
+    await app.inject({ method: 'POST', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}/pay/${row.payToken}/card` })
+    expect(row.proofKey).toBeNull()
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: row.id } })).payMethod, 'كتب اختيار بطاقة مخفية').toBeNull()
+
+    await runPrivateCourseReminders(prisma, new Date('2026-11-25T09:00:00.000Z'))
+    const mail = sent.filter((x) => x.mail.to === 'hidden-card@test.local').map((x) => x.mail)[0]
+    expect(mail, 'لم يصله التذكير').toBeTruthy()
+    expect(mail.html, 'البطاقة في بريد التذكير').not.toMatch(/بالبطاقة/)
+    expect(mail.text).not.toMatch(/بالبطاقة/)
+
+    expect((await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json().course.cardPayments).toBe(false)
   })
 })

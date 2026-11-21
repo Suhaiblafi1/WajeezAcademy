@@ -17,6 +17,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AI_JOBS_SLUG, aiJobsSection, seatsLeft, type AiJobsSectionKey } from '../../../src/application/private-course/ai-jobs'
 import { publicSiteUrl } from '../site-url'
+import { cardOn } from './registration.service'
 import { privateMailReady, sendPrivateMail } from './mailer'
 import { reminderHtml, reminderSubject, reminderText, type ReminderKind } from './reminder-mail'
 
@@ -106,8 +107,8 @@ export async function runPrivateCourseReminders(prisma: PrismaClient, now = new 
       fullName: r.fullName,
       section,
       payUrl: `${publicSiteUrl()}/ai-jobs/pay/${r.payToken}`,
-      card: Boolean(r.course.cardUrl),
-      cardChosen: r.payMethod === 'card',
+      card: cardOn(r.course),
+      cardChosen: cardOn(r.course) && r.payMethod === 'card',
       seats: seatsLeft(r.sectionKey as AiJobsSectionKey, now.getTime()),
     }
     const sent = await sendPrivateMail(prisma, {

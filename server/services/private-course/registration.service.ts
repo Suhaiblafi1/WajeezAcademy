@@ -85,7 +85,24 @@ export function cleanZoomUrl(raw: string): string {
 
 export async function publicCourseState(prisma: PrismaClient, slug: string) {
   const course = await ensureCourse(prisma, slug)
-  return { open: course.open, card: Boolean(course.cardUrl) }
+  return { open: course.open, card: cardOn(course) }
+}
+
+/* ═══ الدفعُ بالبطاقة مخفيٌّ كلّيّا (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «أخفِ الدفعَ بالكارد كلّيّا الآن». فلا يظهر في الصفحة ولا النموذج ولا خطوة الدفع ولا بريد التذكير —
+   ولو بقي رابطُه محفوظا في اللوحة — ولا تُعرض إعداداتُه في اللوحة. والشيفرةُ باقيةٌ خلفَ هذا المفتاح: إعادتُه سطرٌ واحد.
+   ومعالجُ Stripe باقٍ يعمل: من دفع قبل الإخفاء يتأكّد. */
+const CARD_PAYMENTS = false
+let cardPayments = CARD_PAYMENTS
+
+/** للاختبار وحدَه: يُظهر البطاقةَ ليُحرس طريقُها كما كان — و`null` يعيد ما في الإنتاج لا «مغلقا» يكتبه الاختبار */
+export function setCardPaymentsForTests(on: boolean | null): void {
+  cardPayments = on ?? CARD_PAYMENTS
+}
+
+/** البطاقةُ معروضةٌ للحاجز؟ — المفتاحُ ورابطُها معا */
+export function cardOn(course: Pick<PrivateCourse, 'cardUrl'>): boolean {
+  return cardPayments && Boolean(course.cardUrl)
 }
 
 /* ═══ الدفعُ بالبطاقة لمن هو خارج الأردن (٢١ نوفمبر ٢٠٢٦) ═══
@@ -106,7 +123,7 @@ export function cleanCardUrl(raw: string): string {
 /** رابطُ الدفع لحجزٍ بعينه — وروابطُ Stripe تحمل رقمَ مرجعه (`client_reference_id`) فيُطابَق الدفعُ بصاحبه في لوحة Stripe.
     ولا يُضاف البريد: الرابطُ يُعرض في صفحةٍ يفتحها من معه رابطُ الدفع وحدَه */
 export function cardLinkFor(course: Pick<PrivateCourse, 'cardUrl'>, ref: string): string | null {
-  if (!course.cardUrl) return null
+  if (!cardOn(course) || !course.cardUrl) return null
   const u = new URL(course.cardUrl)
   if (u.hostname === 'buy.stripe.com') u.searchParams.set('client_reference_id', ref)
   return u.toString()
@@ -209,8 +226,8 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
       hasProof: Boolean(row.proofKey),
       cardUrl: cardLinkFor(course, reference(row.id)),
       abroad: row.phoneCountry !== 'JO',
-      cardChosen: row.payMethod === 'card' && !row.proofKey,
-      cardAuto: Boolean(course.cardUrl) && await stripeAutoReady(prisma),
+      cardChosen: cardOn(course) && row.payMethod === 'card' && !row.proofKey,
+      cardAuto: cardOn(course) && await stripeAutoReady(prisma),
     }
   } catch (e) {
     /* لا يبقى على القرص ملفٌّ لا يملكه صفّ */
@@ -243,9 +260,9 @@ function payView(r: PrivateRegistration, course: Pick<PrivateCourse, 'cardUrl'>,
     cardUrl: cardLinkFor(course, reference(r.id)),
     abroad: r.phoneCountry !== 'JO',
     /** ضغط «ادفع بالبطاقة» ولم يرفع حوالة — فيرى «نؤكد مقعدك بعد وصول الدفع» إن عاد للرابط */
-    cardChosen: r.payMethod === 'card' && !r.proofKey,
+    cardChosen: cardOn(course) && r.payMethod === 'card' && !r.proofKey,
     /** Stripe مربوط: دفعُ البطاقة يؤكّد مقعده وحدَه (`stripe-webhook.ts`) */
-    cardAuto: Boolean(course.cardUrl) && auto,
+    cardAuto: cardOn(course) && auto,
   }
 }
 
@@ -287,7 +304,7 @@ export async function submitProof(
 export async function chooseCard(prisma: PrismaClient, slug: string, token: string) {
   const r = await byToken(prisma, slug, token)
   const auto = await stripeAutoReady(prisma)
-  if (!r.course.cardUrl || r.status === 'confirmed' || r.proofKey || r.payMethod === 'card') return payView(r, r.course, auto)
+  if (!cardOn(r.course) || r.status === 'confirmed' || r.proofKey || r.payMethod === 'card') return payView(r, r.course, auto)
   const row = await prisma.privateRegistration.update({ where: { id: r.id }, data: { payMethod: 'card' } })
   return payView(row, r.course, auto)
 }
@@ -350,6 +367,8 @@ export async function ownerOverview(prisma: PrismaClient, slug: string) {
       open: course.open,
       priceJod: AI_JOBS.priceJod,
       cardUrl: course.cardUrl,
+      /** البطاقةُ مخفيّةٌ كلّيّا — فلا تُعرض إعداداتُها في اللوحة (٢١ نوفمبر ٢٠٢٦) */
+      cardPayments,
       file: await fileView(course),
       sections: AI_JOBS.sections.map((s) => ({
         key: s.key,

@@ -67,6 +67,8 @@ interface Overview {
     priceJod: number
     /** رابطُ الدفع بالبطاقة لمن هو خارج الأردن — وفارغُه يُخفي الخيار (٢١ نوفمبر ٢٠٢٦) */
     cardUrl: string | null
+    /** البطاقةُ مخفيّةٌ كلّيّا بقرار صاحب المنصّة — فلا تُعرض إعداداتُها (٢١ نوفمبر ٢٠٢٦) */
+    cardPayments: boolean
     file: { name: string; custom: boolean }
     sections: { key: string; title: string; timeLabel: string; zoom: { url: string; passcode?: string } | null }[]
   }
@@ -820,8 +822,12 @@ export default function PrivateWorkspace() {
                 missing={regs.filter((r) => r.sectionKey === s.key && r.zoomMissing).length}
                 sending={bulk === s.key} onSendMissing={() => void sendMissing(s.key)} />
             ))}
-            <CardLink key={data.course.cardUrl ?? ''} cardUrl={data.course.cardUrl} onSaved={setData} />
-            <StripeAuto stripe={data.stripe} onSaved={(st) => setData((d) => d && ({ ...d, stripe: st }))} />
+            {data.course.cardPayments && (
+              <>
+                <CardLink key={data.course.cardUrl ?? ''} cardUrl={data.course.cardUrl} onSaved={setData} />
+                <StripeAuto stripe={data.stripe} onSaved={(st) => setData((d) => d && ({ ...d, stripe: st }))} />
+              </>
+            )}
             <CourseFile file={data.course.file} onSaved={setData} />
             <GmailSettings gmail={data.gmail} onSaved={(g) => setData((d) => d && ({ ...d, gmail: g }))} />
           </div>
