@@ -35,6 +35,8 @@ export interface CourseJourneyEdit {
      ولا يحذف ولا يضيف. والسبب أن عدد الدورات هو ما يحدد السعر،
      فتثبيته يُبقي السعر ثابتا ويفتح الاختيار في الوقت نفسه. */
   swapOnly?: boolean;
+  /** في وضع التبديل: دوراتٌ تُحذف مع ذلك — ما أضافه المتعلّمُ في المسار الخاصّ بكوده (٢١ نوفمبر ٢٠٢٦، `pathCourseRemovable`) */
+  removableIds?: readonly string[];
   /** لماذا يضيف بدل أن يكتفي — جملةٌ يكتبها النداء بأرقامه هو.
 
       لا تُحسب هنا: سلّمُ خصم المسار الجاهز غير سلّم البناء الحرّ، فرقمٌ
@@ -447,10 +449,10 @@ export default function CourseJourney({
                         <RefreshCcw className="h-3 w-3" />
                         {swapOpen ? "إخفاء البدائل" : "استبدالها"}
                       </button>
-                      {!edit.swapOnly && (
+                      {(!edit.swapOnly || edit.removableIds?.includes(c.id)) && (
                       <button
                         onClick={() => edit.onRemove(c.id)}
-                        disabled={edit.minReached}
+                        disabled={!edit.swapOnly && edit.minReached}
                         aria-label={`حذف ${c.title}`}
                         className="flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-fine font-bold text-muted-foreground transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-30"
                       >

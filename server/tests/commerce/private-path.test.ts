@@ -7,7 +7,10 @@
    ⑤ **والتعديلُ رابطٌ جديد** — والقديمُ يحوّل إليه.
    ⑥ **والرمزُ لا يُخمَّن** — المجهولُ جوابُه «غير صحيح»، ومن جرّب عشرةً خاطئةً يُوقف.
    ⑦ **والفتحاتُ تُعدّ** — الإنسانُ لا الزاحف.
-   ⑧ **والنسبةُ باقية** — الطلبُ من رابطه يُنسب إلى مولّده، ورابطُ حملة واتساب يُقال «حملة واتساب». */
+   ⑧ **والنسبةُ باقية** — الطلبُ من رابطه يُنسب إلى مولّده، ورابطُ حملة واتساب يُقال «حملة واتساب».
+   ⑩ **و«أضف دورة» بما بقي على الكود** (٢١ نوفمبر ٢٠٢٦، «Allow adding») — الصفحةُ تقرأ من الخادم كم دورةً يضيفها بكوده:
+      ما بقي على كود المنحة ناقصا دوراتِ المسار، وينقص بما اشتراه بكوده في مكانٍ آخر، و`null` لمسارٍ بلا كود.
+   ⑪ **والبدائلُ من دورات صفحة منحته** (٢١ نوفمبر ٢٠٢٦، «Only Black Friday courses») — قائمةُ المدير لحملة الكود، و`null` بلا كود. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FastifyInstance } from 'fastify'
@@ -308,5 +311,62 @@ describe('⑨ الدورة الهدية في رابط المسار (٨ نوفم�
     expect(q.gift).toBeNull()
     expect(q.items.every((i) => !i.isGift)).toBe(true)
     expect(q.items.find((i) => i.cohortId === g.id)?.unitPrice).toBeGreaterThan(0)
+  })
+})
+
+describe('⑩ و«أضف دورة» بما بقي على الكود (٢١ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ كود لأربع دورات ومساره دورتان: يضيف دورتين — وينقص بما اشتراه بكوده في مكان آخر', async () => {
+    await members.update({ active: true, percentOff: 60, maxCourses: 4, maxCodes: null, closesAt: new Date(grantClosesAt('2098-12-31')) }, superId)
+    try {
+      const l = await learnerWithGrant()
+      const [a, b, elsewhere] = [await cohort(), await cohort(), await cohort()]
+      const out = await links.generate(SUPER(), { leadId: l.leadId }, {
+        courseId: a.courseId, cohortId: a.id, adds: [{ courseId: b.courseId, cohortId: b.id }], code: l.code,
+      })
+      const code = codeOf(out.goPath!)
+      expect((await view(code)).coursesLeft).toBe(2)
+      /* طلبٌ بكوده لدورةٍ خارج المسار — يُحجز من حدّه حتّى يُدفع أو يُلغى (`coursesLeft`) */
+      await commerce.checkout(l.clientId, [elsewhere.id], l.code)
+      expect((await view(code)).coursesLeft, 'لم ينقص ما يضيفه بما اشتراه بكوده').toBe(1)
+    } finally {
+      await members.update({ active: true, percentOff: 60, maxCourses: 2, maxCodes: null, closesAt: new Date(grantClosesAt('2098-12-31')) }, superId)
+    }
+  })
+
+  it('⚠️ ومسار بلا كود منحة: لا شيء يضاف — `null`', async () => {
+    const l = await learnerWithGrant()
+    const a = await cohort()
+    const out = await links.generate(SUPER(), { leadId: l.leadId }, { courseId: a.courseId, cohortId: a.id })
+    const v = await view(codeOf(out.goPath!))
+    expect(v.couponCode).toBeNull()
+    expect(v.coursesLeft).toBeNull()
+    expect(v.grantCourseIds).toBeNull()
+  })
+})
+
+describe('⑪ والبدائل من دورات صفحة منحته وحدها (٢١ نوفمبر ٢٠٢٦)', () => {
+  it('⚠️ حملة الكود بقائمتها: الصفحة تقرأ قائمتها — لا كل ما يشترى', async () => {
+    const l = await learnerWithGrant()
+    const [a, listed, outside] = [await cohort(), await cohort(), await cohort()]
+    /* ودوراتُ صفحة المنحة ما له شعبةٌ تُشترى بمدرّبٍ منشور (`GrantCoursesService.pool`) — فللثلاث مدرّبٌ منشور */
+    const tu = await prisma.user.create({ data: { email: `pp-tr-${STAMP}@wajeez.test`, displayName: 'مدرب المسار', passwordHash: 'x' } })
+    const trApp = await prisma.trainerApplication.create({ data: { reference: `WJ-TR-PP-${STAMP}`, fullName: 'مدرب المسار', email: tu.email, status: 'active' } })
+    const profile = await prisma.trainerProfile.create({
+      data: { userId: tu.id, applicationId: trApp.id, publicVisibility: true, isVerified: true, publishApprovedAt: new Date() },
+    })
+    for (const c of [a, listed, outside]) await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId: profile.id, role: 'lead', assignedBy: superId } })
+    const lead = await prisma.lead.findUniqueOrThrow({ where: { id: l.leadId }, select: { grantCode: { select: { campaignId: true } } } })
+    const campaignId = lead.grantCode!.campaignId
+    const before = (await prisma.grantCampaign.findUniqueOrThrow({ where: { id: campaignId }, select: { courseIds: true } })).courseIds
+    await prisma.grantCampaign.update({ where: { id: campaignId }, data: { courseIds: [a.courseId, listed.courseId] } })
+    try {
+      const out = await links.generate(SUPER(), { leadId: l.leadId }, { courseId: a.courseId, cohortId: a.id, code: l.code })
+      const v = await view(codeOf(out.goPath!))
+      expect(v.grantCourseIds, 'لم تقل الصفحة قائمة المنحة').not.toBeNull()
+      expect(v.grantCourseIds).toContain(listed.courseId)
+      expect(v.grantCourseIds, 'دورة خارج قائمة المنحة صارت بديلا').not.toContain(outside.courseId)
+    } finally {
+      await prisma.grantCampaign.update({ where: { id: campaignId }, data: { courseIds: before } })
+    }
   })
 })

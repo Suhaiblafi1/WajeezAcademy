@@ -13,13 +13,15 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordOpen } from './link-opens'
+import { GrantService } from './grant.service'
+import { pageCourses } from './grant-scope.service'
 import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 import { PUBLIC_SESSION_WHERE } from './public-catalog.service'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
   GO_CODE_LENGTH, GO_CODE_RE, PRIVATE_PATH_PURPOSE, firstLastNameAr, goPath, type GiftRule, privatePathPrice, type PrivatePathPayload,
 } from '../../src/application/commerce/private-path'
-import { grantLastDay } from '../../src/application/commerce/grant'
+import { grantLastDay, type CampaignSlug } from '../../src/application/commerce/grant'
 
 type Db = PrismaClient | Prisma.TransactionClient
 
@@ -77,6 +79,12 @@ export interface PrivatePathView {
   couponCode: string | null
   /** ما سقط من المسار ولا يُشترى الآن — بسببه */
   unavailable: { titleAr: string; reasonAr: string }[]
+  /** كم دورةً يضيفها إلى المسار بكوده نفسِه — ما بقي على كود المنحة (`coursesLeft`) ناقصا دوراتِ المسار.
+      و`null` لمسارٍ بلا كود منحة: لا «أضف دورة» بسعرها الكامل (٢١ نوفمبر ٢٠٢٦، `pathAddsLeft`) */
+  coursesLeft: number | null
+  /** دوراتُ صفحة منحة الكود — منها وحدَها بدائلُ «استبدالها» و«أضف دورة» (٢١ نوفمبر ٢٠٢٦، «Only Black Friday courses»).
+      و`null` لمسارٍ بلا كود منحة: كلُّ ما يُشترى كما كان (`pathCandidatesWithin`) */
+  grantCourseIds: string[] | null
   /** يُرسَل مع الشراء فيُنسب الطلبُ إلى من ولّد الرابط (`buyLinkForOrder`) */
   buyLinkToken: string
   /** الدورةُ الهديّة وشرطُها — وسعرُها الأصليّ ليُعرض مشطوبا (٨ نوفمبر ٢٠٢٦، `private-path-gift.ts`) */
@@ -167,14 +175,33 @@ export class PrivatePathService {
 
     /* وآخرُ يوم: نهايةُ حملة كود المنحة، أو انتهاءُ الكوبون — وما لا نهايةَ له لا يُقال */
     let lastDay: string | null = null
+    let coursesLeft: number | null = null
+    let grantCourseIds: string[] | null = null
     const couponCode = preview && !preview.couponError ? preview.couponCode : null
     if (couponCode) {
       const coupon = await this.prisma.coupon.findUnique({
         where: { code: couponCode },
-        select: { expiresAt: true, grantCode: { select: { campaign: { select: { closesAt: true } } } } },
+        select: {
+          id: true, usedCount: true, maxUses: true, expiresAt: true,
+          grantCode: {
+            select: { influencerId: true, campaign: { select: { id: true, slug: true, active: true, closesAt: true, maxCourses: true } } },
+          },
+        },
       })
       const ends = coupon?.grantCode?.campaign.closesAt ?? coupon?.expiresAt ?? null
       lastDay = ends ? grantLastDay(ends) : null
+      /* ═══ وكم يضيف بكوده (٢١ نوفمبر ٢٠٢٦، «Allow adding») ═══
+         ما بقي على الكود في كلّ مشترياته — عدُّ الدفع نفسُه (`GrantService.coursesLeft`) — ناقصا ما في المسار. فمن اشترى
+         بكوده دورةً في مكانٍ آخر نقص ما يضيفه هنا. وكوبونٌ ليس كودَ منحةٍ لا حدَّ له يُقال، فلا يُضاف به */
+      if (coupon?.grantCode) {
+        const left = await new GrantService(this.prisma).coursesLeft(coupon)
+        coursesLeft = Math.max(0, left - courses.length)
+        /* ═══ والبدائلُ من دورات صفحة منحته وحدَها (٢١ نوفمبر ٢٠٢٦، «Only Black Friday courses») ═══
+           قرارُ صاحب المنصّة: ما يُستبدل به أو يُضاف في مسارٍ على كود حملةٍ هو ما تعرضه صفحةُ تلك الحملة — بقائمة المدير
+           لها ولمؤثّرها (`pageCourses`)، لا كلُّ ما يُشترى. ودوراتُ المسار نفسُها تبقى ولو لم تكن فيها. والدفعُ لا يتغيّر */
+        const shown = await pageCourses(this.prisma, coupon.grantCode.campaign.slug as CampaignSlug, coupon.grantCode.influencerId)
+        grantCourseIds = [...new Set(shown.courses.map((c) => c.courseId))]
+      }
     }
 
     /* واسمُه الأوّلُ والأخيرُ ومجالُ عمله ومستواه — بحسابه أو بنموذجه (`learnerKey`)، وأحدثُ نموذجٍ له إن تعدّد.
@@ -239,6 +266,8 @@ export class PrivatePathService {
       lastDay,
       couponCode,
       unavailable,
+      coursesLeft,
+      grantCourseIds,
       buyLinkToken: p.token,
     }
   }

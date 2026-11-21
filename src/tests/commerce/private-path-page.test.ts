@@ -36,8 +36,9 @@ describe('صفحة المسار الخاص', () => {
 
   it('⚠️ لا اقتراح لغيرها ولا «ابن مسارك» — ولا حساب للسعر فيها', () => {
     expect(PAGE).not.toMatch(/ابن(ِ)? مسارك|suggest|Suggested|priceCart|grantPrice/)
-    /* ولا ما يقترحه قالبُ المسار المعتاد خارجه: «أضف دورة»، و«مسار جاهز يناسبك»، و«مجّانا لك الآن»، وبدائلُ الموسم */
-    expect(PAGE).not.toMatch(/ReadySeasonPathway|FreeNowPerks|pathwayExtraOptions|useSeasonReplacements|أضف دورة/)
+    /* ولا ما يقترحه قالبُ المسار المعتاد خارجه: «مسار جاهز يناسبك»، و«مجّانا لك الآن»، وبدائلُ الموسم. و«أضف دورة» صار
+       بقرار صاحب المنصّة (٢١ نوفمبر ٢٠٢٦) بحدّ الكود وحدَه — وحارسُه `private-path-add.test.ts` */
+    expect(PAGE).not.toMatch(/ReadySeasonPathway|FreeNowPerks|pathwayExtraOptions|useSeasonReplacements/)
     expect(PAGE).toMatch(/swapOnly: true,[\s\S]*?maxReached: true,/)
     expect(PAGE, 'بدائل دورات لا تشترى هذا الموسم').not.toMatch(/\bunavailable,\n/)
     /* والمسارُ من الخادم وحدَه — من الطلب المبكر، وما خاب منه عاديّا */
@@ -235,7 +236,7 @@ describe('السعر قبل وبعد (٨ نوفمبر ٢٠٢٦)', () => {
   })
   it('⚠️ البطاقة: «ما تدفعه بعد المنحة»، وبعد الاستبدال ما كان وبكم تغير', () => {
     expect(PAGE).toContain('"ما تدفعه بعد المنحة"')
-    expect(PAGE).toMatch(/data-testid="private-path-price-was">\s*قبل الاستبدال كان <bdi dir="ltr">\{fmtMoney\(v\.price\.total/)
+    expect(PAGE).toMatch(/data-testid="private-path-price-was">\s*قبل التعديل كان <bdi dir="ltr">\{fmtMoney\(v\.price\.total/)
   })
 })
 
