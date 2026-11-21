@@ -1,0 +1,71 @@
+/* ═══ بكسل Meta لصفحة الدورة الخاصّة — `/ai-jobs` ورابطُ الدفع وحدَهما (٢١ نوفمبر ٢٠٢٦) ═══
+
+   طلبُ صاحب المنصّة: شيفرةُ بكسل Meta (المعرّف أدناه) «على الأقلّ في /ai-jobs». فيُحمَّل هنا من الصفحتين لا من
+   `index.html`: الدورةُ دورتُه وإعلاناتُها إعلاناتُه، وصفحاتُ الأكاديميّة الأخرى لا تُرسل زوّارَها إلى حسابه
+   (قرارُ «المساحة الخاصّة منفصلة» في `CLAUDE.md`).
+
+   والأحداثُ ما يبني عليه الإعلانُ جمهورَه ويقيس نتيجتَه:
+   · `PageView` عند فتح الصفحة.
+   · `Lead` حين يُحجز المقعد — وهو الحدثُ الذي يُحسَّن عليه الإعلان.
+   · `InitiateCheckout` حين يفتح صفحةَ الدفع بالبطاقة، و`AddPaymentInfo` حين يرفع الإيصال.
+   · `Contact` حين يضغط واتساب.
+
+   والسياسةُ في `deploy/Caddyfile` تسمح لـ`connect.facebook.net` (السكربت) و`www.facebook.com` (الإرسال) — وبدونهما
+   يُردّ البكسلُ صامتا. ويحرسهما `src/tests/private-course/ai-jobs-page.test.ts`. */
+
+export const META_PIXEL_ID = '1150707094391273'
+
+type Fbq = ((...args: unknown[]) => void) & {
+  callMethod?: (...args: unknown[]) => void
+  queue: unknown[][]
+  push: Fbq
+  loaded: boolean
+  version: string
+}
+
+declare global {
+  interface Window {
+    fbq?: Fbq
+    _fbq?: Fbq
+  }
+}
+
+let initialised = false
+
+/** يحمّل البكسلَ مرّةً واحدةً في عمر الصفحة — الشيفرةُ الرسميّةُ نفسُها، مكتوبةً بلا تقليص */
+export function loadMetaPixel(): void {
+  if (typeof window === 'undefined') return
+  if (!window.fbq) {
+    const n = function (...args: unknown[]) {
+      if (n.callMethod) n.callMethod(...args)
+      else n.queue.push(args)
+    } as Fbq
+    n.queue = []
+    n.push = n
+    n.loaded = true
+    n.version = '2.0'
+    window.fbq = n
+    if (!window._fbq) window._fbq = n
+    const script = document.createElement('script')
+    script.async = true
+    script.src = 'https://connect.facebook.net/en_US/fbevents.js'
+    document.head.appendChild(script)
+  }
+  if (!initialised) {
+    window.fbq('init', META_PIXEL_ID)
+    initialised = true
+  }
+}
+
+export type PixelEvent = 'PageView' | 'Lead' | 'InitiateCheckout' | 'AddPaymentInfo' | 'Contact'
+
+/** حدثٌ إلى البكسل — ولا يكسر شيئا إن لم يُحمَّل (مانعُ إعلانات، أو شبكةٌ تحجبه) */
+export function trackPixel(event: PixelEvent, params?: Record<string, unknown>): void {
+  try {
+    if (typeof window === 'undefined' || !window.fbq) return
+    if (params) window.fbq('track', event, params)
+    else window.fbq('track', event)
+  } catch {
+    /* البكسلُ قياسٌ لا شرط — لا يمنع حجزا ولا دفعا */
+  }
+}

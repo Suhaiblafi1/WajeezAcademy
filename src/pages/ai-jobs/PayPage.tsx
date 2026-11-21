@@ -9,6 +9,7 @@ import { ApiError, apiGet } from '@/services/api'
 import { AI_JOBS } from '@/application/private-course/ai-jobs'
 import { whatsappLink } from '@/application/private-course/phone'
 import PayStep, { type PayInfo } from './PayStep'
+import { loadMetaPixel, trackPixel } from './meta-pixel'
 import './ai-jobs.css'
 
 const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=Marhey:wght@600;700&display=swap'
@@ -27,6 +28,8 @@ export default function PayPage() {
       document.head.appendChild(robots)
     }
     robots.content = 'noindex, nofollow'
+    loadMetaPixel()
+    trackPixel('PageView')
     if (!document.head.querySelector('link[data-aij-fonts]')) {
       const link = document.createElement('link')
       link.rel = 'stylesheet'

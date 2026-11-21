@@ -32,7 +32,11 @@
 		# و`frame-src` تسمح بأصول فيديو المدرّب الثلاثة وحدَها (٨ نوفمبر ٢٠٢٦، «تعرّف على مدرّبك»):
 		# يوتيوب بلا كوكيز وفيميو ودرايف — ما يبني منه `src/application/trainer/marketing-video.ts`
 		# إطارا، لا أوسع. وحارسُها `src/tests/deploy/csp-trainer-video.test.ts`.
-		Content-Security-Policy "default-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-src 'self' https://calendly.com https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+		#
+		# و`connect.facebook.net` في `script-src` و`www.facebook.com` في `img-src` و`connect-src` لبكسل Meta في صفحة دورة
+		# صاحب المنصّة الخاصّة وحدَها (٢١ نوفمبر ٢٠٢٦، `src/pages/ai-jobs/meta-pixel.ts`): السكربتُ من الأوّل والإرسالُ إلى
+		# الثاني. ولا يُحمَّل في صفحةٍ غيرها. وحارسُها `src/tests/private-course/ai-jobs-page.test.ts` ⑧.
+		Content-Security-Policy "default-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.facebook.com; connect-src 'self' https://www.facebook.com https://connect.facebook.net; object-src 'none'; frame-src 'self' https://calendly.com https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		-Server
 	}

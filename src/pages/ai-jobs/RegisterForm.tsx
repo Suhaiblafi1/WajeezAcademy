@@ -15,6 +15,7 @@ import { useHoneypot } from '@/components/HoneypotField'
 import { SeatPill } from './Seats'
 import PayStep, { type PayInfo } from './PayStep'
 import { useCourseState } from './course-state'
+import { trackPixel } from './meta-pixel'
 
 interface Reserved {
   token: string
@@ -75,6 +76,8 @@ export default function RegisterForm() {
           website: hp.value,
         },
       )
+      /* الحجزُ هو الحدثُ الذي يُحسَّن عليه الإعلان — مرّةً لكلّ حجز */
+      trackPixel('Lead', { content_name: AI_JOBS.title, value: AI_JOBS.priceUsd, currency: 'USD' })
       setReserved({
         token: r.payToken,
         info: {

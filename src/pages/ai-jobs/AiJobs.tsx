@@ -16,6 +16,7 @@ import { whatsappLink } from '@/application/private-course/phone'
 import { rememberSource } from '@/application/private-course/source'
 import { BONUS, CARD_FAQ, DOORS, FACTS, FAQS, FEATURES, GUARANTEE, NOT_FOR, PAINS, RESULTS, SKILLS, STEPS, TIPS, WHO } from './content'
 import { useCourseState } from './course-state'
+import { loadMetaPixel, trackPixel } from './meta-pixel'
 import RegisterForm from './RegisterForm'
 import { SeatPill, Seats } from './Seats'
 import './ai-jobs.css'
@@ -115,6 +116,9 @@ export default function AiJobs() {
   /* من أين جاء — يُحفظ على الجهاز ويُرسل مع الحجز (`source.ts`) */
   useEffect(() => {
     rememberSource(window.location.search, document.referrer, window.location.hostname)
+    /* بكسلُ Meta لهذه الصفحة وحدَها (`meta-pixel.ts`) */
+    loadMetaPixel()
+    trackPixel('PageView')
   }, [])
 
   useEffect(() => {
@@ -460,7 +464,7 @@ export default function AiJobs() {
 
       {/* ═══ واتساب قبل التسجيل — اقتراحُ «٤» ═══ */}
       <a className={`aij-wa${barHidden ? ' low' : ''}`} href={whatsappLink(AI_JOBS.whatsapp, 'مرحبا، عندي سؤال قبل التسجيل في دورة التقديم على الوظائف بالذكاء الاصطناعي')}
-        target="_blank" rel="noopener noreferrer" aria-label="اسألني على واتساب قبل التسجيل">
+        target="_blank" rel="noopener noreferrer" aria-label="اسألني على واتساب قبل التسجيل" onClick={() => trackPixel('Contact')}>
         <WaIcon />
         <span>اسألني قبل التسجيل</span>
       </a>
