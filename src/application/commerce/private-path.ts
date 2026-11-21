@@ -232,3 +232,51 @@ export function privatePathGrantLabelAr(p: Pick<PrivatePathPrice, 'grantNameAr' 
   const name = p.grantNameAr ?? 'الخصم'
   return p.grantPct ? `${name} ${p.grantPct}%` : name
 }
+
+/* ═══ «أضف دورة» في المسار الخاصّ بما بقي على الكود (٢١ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «Allow adding» — نسخا لـ«لا أضف دورة» في الصفحة. فمن كان كودُ منحته يسع أكثرَ من دورات مساره
+   (مثلا: مسارٌ بدورتين على كودٍ لأربع) يضيف حتّى حدّ الكود، ويختفي الزرُّ عند الحدّ.
+   · **العددُ من الخادم** (`coursesLeft` في جواب `/api/public/go/:code`): ما بقي على كود المنحة في كلّ مشترياته ناقصا دوراتِ
+     المسار. ولا يُحسب هنا شيءٌ غيرُ طرح ما أضافه منه.
+   · **وبلا كود منحةٍ لا إضافة** (`coursesLeft: null`): لم يُطلب أن يضيف بسعرها الكامل، فالمسارُ يبقى بعدده.
+   · **ويحذف ما أضافه وحدَه**: دوراتُ المستشار تُستبدل ولا تُحذف، والمضافةُ آخرُ القائمة (الاستبدالُ في مكانه لا يحرّكها).
+   · والسعرُ بعد كلّ إضافةٍ أو حذفٍ من الخادم بالكود نفسِه كالاستبدال — وما لا يسعه الكودُ يقوله الخادم ويتعطّل الزرّ. */
+
+/** كم دورةً يضيفها الآن — حدُّ الخادم ناقصا ما أضافه. وبلا كود منحةٍ صفر */
+export function pathAddsLeft(input: { coursesLeft: number | null | undefined; baseCount: number; current: number }): number {
+  if (input.coursesLeft === null || input.coursesLeft === undefined) return 0
+  const added = Math.max(0, input.current - input.baseCount)
+  return Math.max(0, Math.floor(input.coursesLeft) - added)
+}
+
+/** أيُحذف هذا الموضع؟ — المضافُ وحدَه، وهو ما بعد دورات المسار */
+export const pathCourseRemovable = (index: number, baseCount: number): boolean => index >= baseCount
+
+/** ومن خرج قبل الدفع وعاد: قائمتُه المحفوظةُ إن كانت دوراتِ المسار وما أضافه في حدّه — وإلّا `null` فتعود دوراتُ المسار */
+export function restoredPathCourses(saved: readonly string[] | undefined, baseCount: number, coursesLeft: number | null | undefined): string[] | null {
+  if (!saved || new Set(saved).size !== saved.length) return null
+  const extra = saved.length - baseCount
+  if (extra < 0) return null
+  if (extra > 0 && extra > (coursesLeft ?? 0)) return null
+  return [...saved]
+}
+
+/** السطرُ فوق «أضف دورة» — «تضيف حتى دورتين بالكود نفسه» */
+export function pathAddsLeftAr(n: number): string {
+  return `تضيف حتى ${countAr(n)} بالكود نفسه`
+}
+
+/* ═══ والبدائلُ من دورات صفحة المنحة وحدَها (٢١ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «Only Black Friday courses». فما يُستبدل به أو يُضاف في مسارٍ على كود حملةٍ هو ما تعرضه صفحةُ
+   حملته (`grantCourseIds` من الخادم ← `pageCourses`). وبلا كود منحةٍ (`null`) كلُّ ما يُشترى كما كان. والترتيبُ يبقى
+   ترتيبَه (مجالُ الدورة أوّلا، وما لا يتعارض أوّلا يرتّبه `swapCandidates` بعده). ودوراتُ المسار نفسُها لا تُمسّ: هذا
+   للمرشّحين وحدَهم. */
+
+/** المرشّحون ممّا تسعه قائمةُ المنحة — بترتيبهم. و`null` لا قيد */
+export function pathCandidatesWithin<T extends { courseId: string }>(ranked: readonly T[], grantCourseIds: readonly string[] | null | undefined): T[] {
+  if (grantCourseIds === null || grantCourseIds === undefined) return [...ranked]
+  const allowed = new Set(grantCourseIds)
+  return ranked.filter((r) => allowed.has(r.courseId))
+}

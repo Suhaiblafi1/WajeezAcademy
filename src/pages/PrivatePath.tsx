@@ -12,19 +12,24 @@
    · العنوانُ «مسار {الاسم الأوّل والأخير} الشخصي» وتحته سطرٌ من مستواه ومجاله ودوراته — آليّان (`privatePathHeadline`).
    · و«سبب اختيارها لك» تحت عنوان كلّ دورةٍ بارزا — السببُ الذي كتبه مولّدُ الرابط (`reasonsProminentLabelAr`).
    · والسعرُ صندوقُه كما كان: الأصليّ، والمنحة، وما يدفعه، و«أكمل التسجيل».
-   · و«استبدالها» باقٍ بقاعدة المسار الجاهز (`swapCandidates`): العددُ ثابتٌ فحدُّ دورات المنحة لا يُمسّ، والبديلُ ممّا
-     يُشترى هذا الموسم. وبعد كلّ استبدالٍ أو تبديلِ شعبةٍ يُسأل الخادمُ عن السعر بالكود نفسِه
-     (`/api/public/checkout/preview`، سعرَ الزائر كما في أوّل فتح) — وإن قال إنّ الكودَ لا يسع ما صار في السلّة قيل ذلك
-     وتعطّل الزرّ حتّى يعيد دوراتِه. والدفعُ يسعّر من جديد على الخادم في كلّ حال.
-   · ولا اقتراحَ لدوراتٍ خارج المسار: لا «أضف دورة»، ولا «مسار جاهز يناسبك»، ولا «مجّانا لك الآن». والبدائلُ لا تظهر
-     إلّا لمن ضغط «استبدالها».
+   · و«استبدالها» باقٍ بقاعدة المسار الجاهز (`swapCandidates`)، والبديلُ ممّا يُشترى هذا الموسم. وبعد كلّ استبدالٍ أو
+     إضافةٍ أو تبديلِ شعبةٍ يُسأل الخادمُ عن السعر بالكود نفسِه (`/api/public/checkout/preview`، سعرَ الزائر كما في أوّل
+     فتح) — وإن قال إنّ الكودَ لا يسع ما صار في السلّة قيل ذلك وتعطّل الزرّ حتّى يعيد دوراتِه. والدفعُ يسعّر من جديد على
+     الخادم في كلّ حال.
+   · **و«أضف دورة» ما دام على الكود دورات** — قرارُ صاحب المنصّة (٢١ نوفمبر ٢٠٢٦، «Allow adding»)، نسخا لـ«لا أضف دورة»:
+     يضيف حتّى ما بقي على كود منحته (`coursesLeft` من الخادم ← `pathAddsLeft`)، ويختفي الزرُّ عند الحدّ. والمرشّحون بقاعدة
+     البدائل نفسِها (`addCandidates`). وما أضافه يُحذف، ودوراتُ المستشار تُستبدل ولا تُحذف (`pathCourseRemovable`). وبلا كود
+     منحةٍ لا إضافة: لم يُطلب أن يضيف بسعرها الكامل.
+   · **والبدائلُ والإضافةُ من دورات صفحة المنحة وحدَها** — قرارُه (٢١ نوفمبر ٢٠٢٦، «Only Black Friday courses»): قائمةُ حملة
+     الكود من الخادم (`grantCourseIds` ← `pathCandidatesWithin`)، وبلا كود منحةٍ كلُّ ما يُشترى. ودوراتُ المسار تبقى ولو لم تكن فيها.
+   · ولا «مسار جاهز يناسبك» ولا «مجّانا لك الآن». والبدائلُ لا تظهر إلّا لمن ضغط «استبدالها» أو «أضف دورة».
 
    ومن فتح نسخةً قديمةً يُحوَّل إلى الأحدث. والاسمُ الأوّلُ وحدَه يُعرض: لا بريدَ ولا هاتف. ومعاينةُ واتساب معاينةُ الموقع
    نفسُها (`index.html`) — لا اسمَ المتعلّم ولا كودَه. والقاعدةُ في `src/application/commerce/private-path.ts`. */
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router";
-import { CalendarClock, Gift, Layers, Loader2, Sparkles, UserRound } from "lucide-react";
+import { CalendarClock, Gift, Layers, Loader2, Plus, Sparkles, UserRound } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { rememberBuyLink } from "@/services/buy-link-token";
@@ -50,10 +55,11 @@ import { Card, Inset } from "@/components/ui/Surface";
 import { courseById, courseDomain, courseFullById, courses, pathwayDelivery } from "@/data/courses";
 import { fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
-import { chosenCohorts, swapCandidates } from "@/application/catalog/pathway-swap";
+import { addCandidates, chosenCohorts, swapCandidates } from "@/application/catalog/pathway-swap";
 import CohortPicker from "@/components/CohortPicker";
 import {
-  giftMissingAr, giftRuleAr, goPath, GO_CODE_RE, privatePathGrantLabelAr, privatePathHeadline, privatePathPrice, REASON_LABEL_AR,
+  giftMissingAr, giftRuleAr, goPath, GO_CODE_RE, pathAddsLeft, pathAddsLeftAr, pathCandidatesWithin, pathCourseRemovable,
+  privatePathGrantLabelAr, privatePathHeadline, privatePathPrice, REASON_LABEL_AR, restoredPathCourses,
   type GiftRule, type PathPreviewNumbers, type PrivatePathPrice,
 } from "@/application/commerce/private-path";
 
@@ -67,6 +73,10 @@ interface PathView {
   lastDay: string | null;
   couponCode: string | null;
   unavailable: { titleAr: string; reasonAr: string }[];
+  /** كم دورةً يضيفها بكوده — و`null` بلا كود منحة (٢١ نوفمبر ٢٠٢٦) */
+  coursesLeft?: number | null;
+  /** دوراتُ صفحة منحة الكود — منها وحدَها البدائلُ والإضافة. و`null` بلا كود منحة */
+  grantCourseIds?: string[] | null;
   buyLinkToken: string;
   /** الدورةُ المجانيّة وشرطُها (`private-path-gift.ts`) — وسعرُها الأصليّ يُعرض مشطوبا */
   gift?: {
@@ -157,10 +167,9 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
   const originalIds = useMemo(() => v.courses.map((c) => c.courseId), [v]);
   const originalPicked = useMemo(() => Object.fromEntries(v.courses.map((c) => [c.courseId, c.cohortId])), [v]);
   const originalKey = v.courses.map((c) => c.cohortId).join();
-  const [courseIds, setCourseIds] = useState<string[]>(() => {
-    const back = resumed?.intent.courseIds;
-    return back && back.length === originalIds.length ? [...back] : originalIds;
-  });
+  const [courseIds, setCourseIds] = useState<string[]>(
+    () => restoredPathCourses(resumed?.intent.courseIds, originalIds.length, v.coursesLeft) ?? originalIds,
+  );
   const [picked, setPicked] = useState<Record<string, string>>(() => ({ ...originalPicked, ...(resumed?.cohortByCourse ?? {}) }));
   const [swapForId, setSwapForId] = useState<string | null>(null);
   const reasons = useMemo(
@@ -204,14 +213,46 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
     if (!swapForId) return [];
     const from = courseById(swapForId);
     const near = from ? courses.filter((c) => c.pathwayId === from.pathwayId) : [];
-    const ranked = [...near, ...courses].map((c) => ({ courseId: c.id, reason_ar: `من مسار «${c.pathwayName}»` }));
+    const ranked = pathCandidatesWithin(
+      [...near, ...courses].map((c) => ({ courseId: c.id, reason_ar: `من مسار «${c.pathwayName}»` })),
+      v.grantCourseIds,
+    );
     return swapCandidates({
       courseId: swapForId, courseIds, ranked, season,
       cohortsOf: (id) => cohorts.get(id) ?? [],
       picked,
       titleOf: (id) => courseById(id)?.name ?? id,
     });
-  }, [swapForId, courseIds, season, cohorts, picked, catalogVersion]);
+  }, [swapForId, courseIds, season, cohorts, picked, catalogVersion, v.grantCourseIds]);
+
+  /* ═══ و«أضف دورة» ما دام على الكود دورات (٢١ نوفمبر ٢٠٢٦، «Allow adding») ═══
+     العددُ من الخادم (`coursesLeft`)، والمرشّحون بقاعدة البدائل: مسارُ دوراته أوّلا، وما لا يتعارض أوّلا، ومن قائمة منحته */
+  const addsLeft = pathAddsLeft({ coursesLeft: v.coursesLeft, baseCount: originalIds.length, current: courseIds.length });
+  const [addOpen, setAddOpen] = useState(false);
+  const addChoices = useMemo(() => {
+    void catalogVersion;
+    if (!addOpen || addsLeft <= 0) return [];
+    const ways = new Set(courseIds.map((id) => courseById(id)?.pathwayId).filter(Boolean));
+    const near = courses.filter((c) => ways.has(c.pathwayId));
+    const ranked = pathCandidatesWithin(
+      [...near, ...courses].map((c) => ({ courseId: c.id, reason_ar: `من مسار «${c.pathwayName}»` })),
+      v.grantCourseIds,
+    );
+    return addCandidates({
+      courseIds, ranked, season,
+      cohortsOf: (id) => cohorts.get(id) ?? [],
+      picked,
+      titleOf: (id) => courseById(id)?.name ?? id,
+      limit: 6,
+    }).filter((s) => s.courseId !== v.gift?.courseId);
+  }, [addOpen, addsLeft, courseIds, season, cohorts, picked, catalogVersion, v.grantCourseIds, v.gift?.courseId]);
+  const addCourse = (courseId: string, cohortId: string) => {
+    setCourseIds((ids) => (ids.includes(courseId) ? ids : [...ids, courseId]));
+    setPicked((prev) => ({ ...prev, [courseId]: cohortId }));
+    setAddOpen(false);
+  };
+  /* والمضافُ وحدَه يُحذف — وهو ما بعد دورات المسار (الاستبدالُ في مكانه لا يحرّكه) */
+  const removableIds = courseIds.filter((_, i) => pathCourseRemovable(i, originalIds.length));
 
   /* ═══ والدورةُ المجانيّة (٨ نوفمبر ٢٠٢٦) ═══
      طلبُ صاحب المنصّة: بطاقةٌ مستقلّةٌ بعد دورات المسار — «مجانية»، وسعرُها الأصليّ مشطوبٌ والحاليّ صفر، وسطرٌ بشرطها. وتُضاف
@@ -227,7 +268,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
   const pathTimed = chosenCohorts(courseIds, (id) => cohorts.get(id) ?? [], picked, (id) => courseById(id)?.name ?? id);
 
   const changed = courseIds.join() !== originalIds.join() || key !== originalKey;
-  const reset = () => { setCourseIds(originalIds); setPicked(originalPicked); setSwapForId(null); };
+  const reset = () => { setCourseIds(originalIds); setPicked(originalPicked); setSwapForId(null); setAddOpen(false); };
   const titleOf = (id: string) => courseFullById(id)?.title ?? v.courses.find((c) => c.courseId === id)?.titleAr ?? id;
   /* ودورةٌ لا يعرفها كتالوجُ الواجهة لا تسقط من الصفحة وهي في السلّة — تُعرض ببطاقتها المختصرة */
   const outsideCatalog = v.courses.filter((c) => courseIds.includes(c.courseId) && !courseFullById(c.courseId));
@@ -317,7 +358,9 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
           swapForId,
           /* والدورةُ المجانيّةُ لا تُستبدل بها دورةٌ مدفوعة — هي في بطاقتها */
           pool: swapChoices.filter((s) => s.courseId !== gift?.courseId).map((s) => ({ id: s.courseId, name: courseById(s.courseId)?.name ?? s.courseId, note: s.noteAr })),
-          introAr: "لك أن تستبدل أي دورة بأخرى، وخاصة التي تتعارض مواعيدها. العدد ثابت، والسعر يحدث من جديد بعد الاستبدال.",
+          introAr: v.coursesLeft
+            ? "لك أن تستبدل أي دورة بأخرى، وخاصة التي تتعارض مواعيدها. والسعر يحدث من جديد بعد كل تغيير."
+            : "لك أن تستبدل أي دورة بأخرى، وخاصة التي تتعارض مواعيدها. العدد ثابت، والسعر يحدث من جديد بعد الاستبدال.",
           onReset: changed ? reset : undefined,
           minReached: true,
           maxReached: true,
@@ -334,10 +377,47 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
             });
             setSwapForId(null);
           },
-          onRemove: () => undefined,
+          removableIds,
+          onRemove: (id) => {
+            if (!removableIds.includes(id)) return;
+            setCourseIds((ids) => ids.filter((x) => x !== id));
+            setPicked((prev) => {
+              const next = { ...prev };
+              delete next[id];
+              return next;
+            });
+          },
           onAdd: () => undefined,
         }}
       />
+
+      {/* «أضف دورة» — ما دام على الكود دورات، ويختفي عند الحدّ (٢١ نوفمبر ٢٠٢٦) */}
+      {addsLeft > 0 && (
+        <Card className="mt-4 p-4" data-testid="private-path-add">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-read text-muted-foreground">{pathAddsLeftAr(addsLeft)}</p>
+            <Button tone="secondary" size="sm" onClick={() => setAddOpen((o) => !o)} aria-expanded={addOpen}>
+              <Plus className="h-3.5 w-3.5" /> {addOpen ? "إخفاء الدورات" : "أضف دورة"}
+            </Button>
+          </div>
+          {addOpen && (
+            <div className="mt-3 grid gap-1.5">
+              {addChoices.map((s) => (
+                <button
+                  key={s.courseId}
+                  type="button"
+                  onClick={() => addCourse(s.courseId, s.cohortId)}
+                  className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right transition hover:border-teal-light/50 hover:bg-white/[0.07]"
+                >
+                  <span className="block text-xs font-bold text-foreground">{courseById(s.courseId)?.name ?? s.courseId}</span>
+                  <span className="mt-0.5 block text-fine text-muted-foreground">{s.noteAr}</span>
+                </button>
+              ))}
+              {addChoices.length === 0 && <p className="text-read text-muted-foreground">لا دورة لها شعبة الآن.</p>}
+            </div>
+          )}
+        </Card>
+      )}
 
       {outsideCatalog.length > 0 && (
         <ol className="mt-3 space-y-3">
@@ -429,7 +509,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
               <div className="flex justify-between text-lg font-black"><dt>{current.price.grant > 0 ? "ما تدفعه بعد المنحة" : "ما تدفعه"}</dt><dd>{fmtMoney(current.price.total, current.price.currency)}</dd></div>
               {priceShift !== 0 && v.price && (
                 <p className="text-muted-foreground" data-testid="private-path-price-was">
-                  قبل الاستبدال كان <bdi dir="ltr">{fmtMoney(v.price.total, v.price.currency)}</bdi> — {priceShift > 0 ? "زاد" : "نقص"} <bdi dir="ltr">{fmtMoney(Math.abs(priceShift), current.price.currency)}</bdi>
+                  قبل التعديل كان <bdi dir="ltr">{fmtMoney(v.price.total, v.price.currency)}</bdi> — {priceShift > 0 ? "زاد" : "نقص"} <bdi dir="ltr">{fmtMoney(Math.abs(priceShift), current.price.currency)}</bdi>
                 </p>
               )}
               {giftOn && gift && (
