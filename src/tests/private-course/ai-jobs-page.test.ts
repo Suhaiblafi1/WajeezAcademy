@@ -201,6 +201,17 @@ describe('⑦ الدفع بالبطاقة', () => {
     expect(step, 'عاد إرسال طريقة الدفع مع الصورة').not.toMatch(/payMethod:/)
   })
 
+  it('⚠️ والبطاقة مخفية كليا: إعداداتها في اللوحة لا تظهر إلا بمفتاحها', () => {
+    /* «أخفِ الدفعَ بالكارد كلّيّا الآن» (٢١ نوفمبر ٢٠٢٦) — والمفتاحُ في الخادم (`CARD_PAYMENTS`) */
+    const panel = read('src/pages/private/PrivateWorkspace.tsx')
+    const gate = /\{data\.course\.cardPayments && \(([\s\S]*?)\)\}/.exec(panel)?.[1] ?? ''
+    expect(gate).toMatch(/<CardLink /)
+    expect(gate).toMatch(/<StripeAuto /)
+    expect((panel.match(/<CardLink /g) ?? []).length, 'إعداد البطاقة خارج المفتاح').toBe(1)
+    expect((panel.match(/<StripeAuto /g) ?? []).length, 'ربط Stripe خارج المفتاح').toBe(1)
+    expect(read('server/services/private-course/registration.service.ts')).toMatch(/^const CARD_PAYMENTS = false$/m)
+  })
+
   it('⚠️ وحين يربط Stripe يقال للحاجز إن مقعده يتأكد وحده — وإلا إننا نؤكده', () => {
     /* «نعم اربط Stripe ليتأكّد تلقائيّا» (٢١ نوفمبر ٢٠٢٦) — والوعدُ بالتلقائيّ لا يُقال بلا ربط */
     const branch = /\{card\s*\? \(([\s\S]*?)\)\s*: \(/.exec(step)?.[1] ?? ''
