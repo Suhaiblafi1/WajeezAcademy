@@ -10,6 +10,7 @@ import { AI_JOBS, PROOF_ACCEPT } from '@/application/private-course/ai-jobs'
 import { whatsappLink } from '@/application/private-course/phone'
 import { waShare } from '@/application/site/whatsapp'
 import { readProof, type Proof } from './proof-file'
+import { trackPixel } from './meta-pixel'
 
 export interface PayInfo {
   firstName: string
@@ -96,6 +97,7 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
         note: note.trim() || undefined,
         payMethod: card ? 'card' : 'cliq',
       })
+      trackPixel('AddPaymentInfo', { payment_method: card ? 'card' : 'cliq', value: card ? AI_JOBS.priceUsd : AI_JOBS.priceJod, currency: card ? 'USD' : 'JOD' })
       setProof(null)
       setAgain(false)
       onChange(next)
@@ -164,7 +166,8 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
         ? (
           <div className="aij-cliq">
             <small>ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة في صفحة الدفع، ثم ارجع هنا وارفع صورة الإيصال أو رسالة التأكيد.</small>
-            <a className="aij-cta aij-cta-y aij-card-btn" href={info.cardUrl!} target="_blank" rel="noopener noreferrer">
+            <a className="aij-cta aij-cta-y aij-card-btn" href={info.cardUrl!} target="_blank" rel="noopener noreferrer"
+              onClick={() => trackPixel('InitiateCheckout', { value: AI_JOBS.priceUsd, currency: 'USD' })}>
               ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة
             </a>
             <small style={{ marginTop: 8 }}>رقم المرجع <b dir="ltr">{info.reference}</b> — اكتبه في الملاحظة إن طلبتها صفحة الدفع.</small>

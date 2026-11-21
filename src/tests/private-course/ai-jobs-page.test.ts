@@ -195,3 +195,51 @@ describe('⑦ الدفع بالبطاقة', () => {
     expect(page).toMatch(/card \? \[\.\.\.FAQS\.slice\(0, 3\), CARD_FAQ/)
   })
 })
+
+/* ═══ ⑧ بكسل Meta — في صفحة الدورة ورابط الدفع وحدهما (٢١ نوفمبر ٢٠٢٦) ═══ */
+describe('⑧ بكسل Meta', () => {
+  const csp = /Content-Security-Policy "([^"]+)"/.exec(read('deploy/Caddyfile'))?.[1] ?? ''
+  const directive = (name: string) => csp.split(';').map((d) => d.trim()).find((d) => d.startsWith(`${name} `)) ?? ''
+
+  it('⚠️ السياسة تسمح بسكربته وإرساله — وإلا رد صامتا', () => {
+    expect(directive('script-src')).toContain('https://connect.facebook.net')
+    expect(directive('img-src')).toContain('https://www.facebook.com')
+    expect(directive('connect-src')).toContain('https://www.facebook.com')
+  })
+
+  it('⚠️ ولا يحمل في صفحات الأكاديمية — في صفحة الدورة ورابط الدفع وحدهما', () => {
+    expect(read('index.html')).not.toMatch(/fbevents|1150707094391273/)
+    const loaders = ['src/pages/ai-jobs/AiJobs.tsx', 'src/pages/ai-jobs/PayPage.tsx']
+    for (const f of loaders) expect(read(f), f).toMatch(/loadMetaPixel\(\)/)
+    expect(read('src/App.tsx')).not.toMatch(/meta-pixel/)
+  })
+
+  it('والحجز يرسل Lead، والإيصال AddPaymentInfo، والبطاقة InitiateCheckout، وواتساب Contact', () => {
+    expect(read('src/pages/ai-jobs/RegisterForm.tsx')).toMatch(/trackPixel\('Lead'/)
+    const step = read('src/pages/ai-jobs/PayStep.tsx')
+    expect(step).toMatch(/trackPixel\('AddPaymentInfo'/)
+    expect(step).toMatch(/trackPixel\('InitiateCheckout'/)
+    expect(read('src/pages/ai-jobs/AiJobs.tsx')).toMatch(/trackPixel\('Contact'\)/)
+  })
+
+  it('⚠️ يحمل مرة واحدة ويهيأ بالمعرف — وبلا بكسل لا يكسر الحجز', async () => {
+    const appended: { src?: string }[] = []
+    const g = globalThis as unknown as { window?: unknown; document?: unknown }
+    const prev = { window: g.window, document: g.document }
+    g.window = {}
+    g.document = { createElement: () => ({}), head: { appendChild: (el: { src?: string }) => appended.push(el) } }
+    try {
+      const { loadMetaPixel, trackPixel, META_PIXEL_ID } = await import('@/pages/ai-jobs/meta-pixel')
+      trackPixel('Lead')
+      loadMetaPixel()
+      loadMetaPixel()
+      trackPixel('Lead', { value: 20 })
+      const fbq = (g.window as { fbq: { queue: unknown[][] } }).fbq
+      expect(appended.map((e) => e.src)).toEqual(['https://connect.facebook.net/en_US/fbevents.js'])
+      expect(fbq.queue).toEqual([['init', META_PIXEL_ID], ['track', 'Lead', { value: 20 }]])
+    } finally {
+      g.window = prev.window
+      g.document = prev.document
+    }
+  })
+})
