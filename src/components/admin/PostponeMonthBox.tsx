@@ -26,7 +26,7 @@ interface Candidate {
 }
 interface SentOffer {
   id: string; cohortId: string; title: string; status: PostponeStatus;
-  fromFirstAt: string; toFirstAt: string; deadlineAt: string;
+  fromFirstAt: string | null; toFirstAt: string | null; deadlineAt: string;
 }
 
 const MONTHS_AR = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];

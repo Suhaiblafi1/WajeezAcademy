@@ -5,7 +5,10 @@
    ثانيةً قبل أن يقع. والأثرُ في `server/services/cohort-postpone.service.ts`.
 
    وفي رأس «شعبي» لا في بطاقة الشعبة: شعبةُ الإعداد تُرى في «دوراتي» لا هنا (`board-place.ts`)، والجرسُ يفتح هذه
-   الصفحة — فلا يصل إليها ولا يجد ما جاء له. */
+   الصفحة — فلا يصل إليها ولا يجد ما جاء له.
+
+   ═══ وسؤالُ الموسم في الموضع نفسِه (٢١ نوفمبر ٢٠٢٦) ═══
+   الصفُّ نفسُه بنوع `season_choice` — بطاقتُه `SeasonChoiceCard`: الربيعُ أو موسمٌ لاحقٌ أو الإلغاء، وما يقع بكلٍّ. */
 
 import { useCallback, useEffect, useState } from "react";
 import { CalendarClock } from "lucide-react";
@@ -13,10 +16,12 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { fmtDateTimeAr, untilLabelAr } from "@/utils/format";
+import SeasonChoiceCard, { type SeasonOption } from "./SeasonChoiceCard";
+import type { SeasonPick } from "@/application/trainer/season-choice";
 
 interface Offer {
-  id: string; cohortId: string; title: string; reasonAr: string;
-  fromFirstAt: string; toFirstAt: string; deadlineAt: string;
+  id: string; cohortId: string; title: string; reasonAr: string; kind: "next_month" | "season_choice";
+  fromFirstAt: string | null; toFirstAt: string | null; deadlineAt: string; options: SeasonOption[];
 }
 
 export default function PostponeOfferCards({ onDecided }: { onDecided: () => void }) {
@@ -47,12 +52,31 @@ export default function PostponeOfferCards({ onDecided }: { onDecided: () => voi
     }
   };
 
+  const choose = async (o: Offer, pick: SeasonPick) => {
+    setBusy(true); setErr(null);
+    try {
+      const r = await apiPost<{ status: "accepted" | "declined"; toFirstAt?: string | null }>(`/api/trainer/cohort-postpones/${o.id}/choose`, pick);
+      const opt = pick.kind === "season" ? o.options.find((x) => x.year === pick.year && x.season === pick.season) : undefined;
+      setDone(r.status === "accepted"
+        ? `أجلنا «${o.title}» إلى ${opt?.optionAr ?? "الموسم الذي اخترته"}${r.toFirstAt ? ` — أول لقاء فيها ${fmtDateTimeAr(r.toFirstAt)}` : ""}.`
+        : `ألغينا «${o.title}» كما اخترت، ووصل متعلميها الخبر. ولا شيء عليك.`);
+      load(); onDecided();
+    } catch (e) {
+      setErr({ id: o.id, text: e instanceof ApiError ? e.message : "تعذر الإرسال — حاول مجددا" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (offers.length === 0 && !done) return null;
 
   return (
     <div className="mb-5 space-y-3">
       {done && <Panel as="p" tone="positive" role="status" className="text-read font-bold">{done}</Panel>}
-      {offers.map((o) => (
+      {offers.map((o) => o.kind === "season_choice" ? (
+        <SeasonChoiceCard key={o.id} busy={busy} error={err?.id === o.id ? err.text : null}
+          offer={{ ...o, options: o.options }} onChoose={(pick) => void choose(o, pick)} />
+      ) : (
         <Panel key={o.id} as="section" tone="warn" aria-labelledby={`postpone-${o.id}`}>
           <h2 id={`postpone-${o.id}`} className="flex items-center gap-2 font-black">
             <CalendarClock className="h-4 w-4 text-gold-ink" aria-hidden="true" />

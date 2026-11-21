@@ -28,6 +28,7 @@ import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortMoveService } from '../../services/cohort-move.service'
 import { CohortPostponeService } from '../../services/cohort-postpone.service'
+import { TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
 import { PLAN_MAX, PLAN_TITLE_MIN } from '../../../src/application/trainer/plan-limits'
 import { ReferralService } from '../../services/referral.service'
@@ -1274,7 +1275,31 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   app.get('/api/admin/cohort-postpones', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-cohorts'], summary: 'اقتراحات التأجيل وأين وقفت' },
-  }, async () => postpones.list())
+  }, async () => postpones.list('next_month'))
+
+  /* ═══ اختيارُ الموسم لشعب الموسم الأوّل — الإدارةُ تعاين ثمّ ترسل، والمدرّبُ يختار (٢١ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة وعلّتُه في `season-choice.ts`، والأثرُ في `cohort-postpone.service.ts`. والسحبُ بباب
+     `/api/admin/cohort-postpones/:id/withdraw` نفسِه، والعاملُ نفسُه يلغي ما مضت مهلتُه. */
+  app.get('/api/admin/cohort-season-choices/preview', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'شعب الموسم الجاري التي لم تبدأ ومدربوها — لا يرسل شيء' },
+  }, async () => postpones.seasonPreview())
+
+  app.post('/api/admin/cohort-season-choices', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'إرسال سؤال الموسم لمدربي الشعب المختارة — رسالة واحدة لكل مدرب' },
+  }, async (req, reply) => {
+    const body = z.object({
+      cohortIds: z.array(z.string().uuid()).min(1).max(500),
+      deadlineAt: z.coerce.date(),
+    }).parse(req.body)
+    return reply.status(201).send(await postpones.seasonSend(req.auth!.userId, body))
+  })
+
+  app.get('/api/admin/cohort-season-choices', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'أسئلة الموسم وما اختاره كل مدرب' },
+  }, async () => postpones.list('season_choice'))
 
   app.post('/api/admin/cohort-postpones/:id/withdraw', {
     preHandler: requirePermission('cohort.manage'),
@@ -1296,6 +1321,18 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ action: z.enum(['accept', 'decline']) }).parse(req.body)
     return postpones.decide(req.auth!.userId, id, body.action)
+  })
+
+  app.post('/api/trainer/cohort-postpones/:id/choose', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'اختيار موسم لشعبتي — أو إلغاؤها بلا التزام' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.discriminatedUnion('kind', [
+      z.object({ kind: z.literal('season'), year: z.number().int().min(2020).max(2100), season: z.enum(TRAINING_SEASON_VALUES) }),
+      z.object({ kind: z.literal('cancel') }),
+    ]).parse(req.body)
+    return postpones.choose(req.auth!.userId, id, body)
   })
 
   app.get('/api/trainer/grading-queue', {

@@ -244,6 +244,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'cohort.reopened.trainer',
       /* واقتراحُ تأجيلها بمهلة (٢٤ أكتوبر ٢٠٢٦): من كتمه سكت حتّى تتوقّف شعبتُه وهو لا يعلم */
       'cohort.postpone.proposed',
+      /* وسؤالُ موسمها بمهلة (٢١ نوفمبر ٢٠٢٦): من كتمه سكت حتّى تُلغى شعبتُه وهو لا يعلم */
+      'cohort.season_choice.proposed',
       /* والتفعيلُ مثلُهما (٣ أكتوبر ٢٠٢٦): من صار نشطا صار يُنتظَر منه عملُه — ساعاتُه
          وحسابُه البنكيُّ وشعبُه. وكان يصله بريدا وحدَه. */
       'trainer.activated',
