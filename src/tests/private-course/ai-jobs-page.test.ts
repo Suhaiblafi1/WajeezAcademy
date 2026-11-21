@@ -167,6 +167,15 @@ describe('⑥ احجز أولا، ومن أين جاء، ولمن الدورة،
     expect(read('src/pages/ai-jobs/ProofDrop.tsx')).toMatch(/type="file"/)
   })
 
+  it('⚠️ واسم الدولة كاملا في الهاتف: الدولة فوق الرقم في الشاشة الضيقة', () => {
+    /* «الأردن» كان يُقصّ «أردن» (٢١ نوفمبر ٢٠٢٦) — والقياسُ على كلّ دولةٍ عربيّة من 320 إلى 1366 بكسل */
+    const css = read('src/pages/ai-jobs/ai-jobs.css')
+    const narrow = /@media \(max-width: (\d+)px\) \{ \.aij-phone \{ grid-template-columns: minmax\(0, 1fr\); \} \}/.exec(css)
+    expect(narrow, 'الدولة والرقم متجاوران في الهاتف').not.toBeNull()
+    expect(Number(narrow![1])).toBeGreaterThanOrEqual(480)
+    expect(css.indexOf(narrow![0]), 'قاعدة الهاتف قبل القاعدة العامة فتغلبها').toBeGreaterThan(css.indexOf('.aij-phone { display: grid;'))
+  })
+
   it('ورابط الدفع صفحة عامة قبل حارس الأدوار', () => {
     const app = read('src/App.tsx')
     const route = app.indexOf('path="/ai-jobs/pay/:token"')
