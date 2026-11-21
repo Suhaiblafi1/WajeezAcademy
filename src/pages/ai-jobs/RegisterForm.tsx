@@ -6,7 +6,7 @@
    برابطه من لوحته. ومصدرُ الزائر (`source.ts`) يُرسل مع الحجز ليُعرف أيُّ منشورٍ يبيع. */
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { ApiError, apiGet, apiPost } from '@/services/api'
+import { ApiError, apiPost } from '@/services/api'
 import { COUNTRIES_SORTED, MOBILE_FORMATS, flagOf } from '@/data/countries'
 import { AI_JOBS, type AiJobsSectionKey } from '@/application/private-course/ai-jobs'
 import { normalizePhone, whatsappLink } from '@/application/private-course/phone'
@@ -14,6 +14,7 @@ import { storedSource } from '@/application/private-course/source'
 import { useHoneypot } from '@/components/HoneypotField'
 import { SeatPill } from './Seats'
 import PayStep, { type PayInfo } from './PayStep'
+import { useCourseState } from './course-state'
 
 interface Reserved {
   token: string
@@ -24,7 +25,8 @@ const ARAB = COUNTRIES_SORTED.filter((c) => c.arab)
 const OTHERS = COUNTRIES_SORTED.filter((c) => !c.arab)
 
 export default function RegisterForm() {
-  const [open, setOpen] = useState<boolean | null>(null)
+  const state = useCourseState()
+  const open = state?.open ?? null
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [country, setCountry] = useState('JO')
@@ -36,14 +38,6 @@ export default function RegisterForm() {
   const [alert, setAlert] = useState('')
   const [reserved, setReserved] = useState<Reserved | null>(null)
   const doneRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    let alive = true
-    apiGet<{ open: boolean }>(`/api/v1/public/private-courses/${AI_JOBS.slug}`)
-      .then((r) => { if (alive) setOpen(r.open) })
-      .catch(() => { if (alive) setOpen(true) })
-    return () => { alive = false }
-  }, [])
 
   useEffect(() => {
     if (reserved) doneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -73,7 +67,7 @@ export default function RegisterForm() {
     }
     setSending(true)
     try {
-      const r = await apiPost<{ reference: string; updated: boolean; sectionTitle: string; payToken: string; hasProof: boolean }>(
+      const r = await apiPost<{ reference: string; updated: boolean; sectionTitle: string; payToken: string; hasProof: boolean; cardUrl: string | null; abroad: boolean }>(
         `/api/v1/public/private-courses/${AI_JOBS.slug}/registrations`,
         {
           fullName, email, phoneCountry: country, phone, sectionKey: section,
@@ -83,7 +77,10 @@ export default function RegisterForm() {
       )
       setReserved({
         token: r.payToken,
-        info: { firstName: fullName.trim().split(/\s+/)[0], reference: r.reference, sectionTitle: r.sectionTitle, status: 'pending', hasProof: r.hasProof },
+        info: {
+          firstName: fullName.trim().split(/\s+/)[0], reference: r.reference, sectionTitle: r.sectionTitle,
+          status: 'pending', hasProof: r.hasProof, cardUrl: r.cardUrl, abroad: r.abroad,
+        },
       })
     } catch (err) {
       setAlert(err instanceof ApiError ? err.message : 'تعذر الإرسال — تأكد من الاتصال وأعد المحاولة')
@@ -175,7 +172,9 @@ export default function RegisterForm() {
         {sending ? 'نحجز مقعدك…' : 'احجز مقعدي'}
       </button>
       <p className="aij-small" style={{ marginTop: 12, textAlign: 'center' }}>
-        بعدها تحوّل {AI_JOBS.priceJod} دينار عبر CliQ وترفع صورة الحوالة، ويصلك التأكيد ورابط Zoom على بريدك.
+        {state?.card
+          ? <>بعدها تدفع {AI_JOBS.priceJod} دينار عبر CliQ، أو <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة من خارج الأردن، وترفع الإيصال. ويصلك التأكيد ورابط Zoom على بريدك.</>
+          : <>بعدها تحوّل {AI_JOBS.priceJod} دينار عبر CliQ وترفع صورة الحوالة، ويصلك التأكيد ورابط Zoom على بريدك.</>}
       </p>
     </form>
   )

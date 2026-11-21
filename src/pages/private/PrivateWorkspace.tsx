@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
-  CheckCircle2, Copy, Download, ExternalLink, FileText, Loader2, Lock, LockOpen, Mail, MessageCircle, RefreshCw, RotateCcw, Search, Send,
+  CheckCircle2, Copy, CreditCard, Download, ExternalLink, FileText, Loader2, Lock, LockOpen, Mail, MessageCircle, RefreshCw, RotateCcw, Search, Send,
   Trash2, Upload, Video, XCircle,
 } from 'lucide-react'
 import { ApiError, apiDelete, apiDownload, apiGet, apiPatch, apiPost, apiPut, apiUpload } from '@/services/api'
@@ -41,6 +41,7 @@ interface Registration {
   proofUploadedAt: string | null
   payToken: string
   source: string | null
+  payMethod: 'cliq' | 'card' | null
   status: Status
   createdAt: string
   confirmedAt: string | null
@@ -56,6 +57,8 @@ interface Overview {
     title: string
     open: boolean
     priceJod: number
+    /** رابطُ الدفع بالبطاقة لمن هو خارج الأردن — وفارغُه يُخفي الخيار (٢١ نوفمبر ٢٠٢٦) */
+    cardUrl: string | null
     file: { name: string; custom: boolean }
     sections: { key: string; title: string; timeLabel: string; zoom: { url: string; passcode?: string } | null }[]
   }
@@ -130,6 +133,43 @@ function ZoomEditor({ section, onSaved, missing, onSendMissing, sending }: {
         <p className="mt-2 text-read leading-6 text-muted-foreground">
           وصلهم بريد التأكيد قبل هذا الرابط أو قبل تغييره. الإرسال يعيد لهم بريد التأكيد كاملا بالرابط الجديد.
         </p>
+      )}
+    </Card>
+  )
+}
+
+/* ═══ الدفعُ بالبطاقة لمن هو خارج الأردن — رابطُ صفحة دفعٍ من مزوّدك (٢١ نوفمبر ٢٠٢٦) ═══ */
+function CardLink({ cardUrl, onSaved }: { cardUrl: string | null; onSaved: (o: Overview) => void }) {
+  const [url, setUrl] = useState(cardUrl ?? '')
+  const [saving, setSaving] = useState(false)
+  const dirty = url.trim() !== (cardUrl ?? '')
+  async function save() {
+    setSaving(true)
+    try {
+      onSaved(await apiPatch<Overview>(BASE, { cardUrl: url.trim() }))
+      toast(url.trim() ? 'حفظنا رابط الدفع بالبطاقة — يظهر للحاجزين الآن' : 'أخفينا الدفع بالبطاقة')
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'تعذر الحفظ')
+    } finally {
+      setSaving(false)
+    }
+  }
+  return (
+    <Card className="p-4">
+      <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-teal-ink" aria-hidden="true" />الدفع بالبطاقة — لمن هو خارج الأردن</p>
+      <p className="mt-1 text-read leading-6 text-muted-foreground">
+        أنشئ صفحة دفع بمبلغ <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> عند مزودك (Stripe Payment Link، أو PayPal، أو غيرهما) والصق رابطها هنا. فيظهر للحاجز خيار «بطاقة»، يدفع ثم يرفع الإيصال، وتؤكده أنت كالحوالة. وفارغه يخفي الخيار.
+      </p>
+      <label className="mt-3 block">
+        <span className={labelCls}>رابط صفحة الدفع</span>
+        <input dir="ltr" className={`${inputCls} mt-1`} placeholder="https://buy.stripe.com/… أو https://paypal.me/…" value={url} onChange={(e) => setUrl(e.target.value)} />
+      </label>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button tone="confirm" size="sm" loading={saving} disabled={!dirty} onClick={() => void save()}>احفظ</Button>
+        {cardUrl && <Button as="a" href={cardUrl} target="_blank" rel="noopener noreferrer" size="sm" icon={ExternalLink}>افتحه</Button>}
+      </div>
+      {cardUrl && /buy\.stripe\.com/.test(cardUrl) && (
+        <p className="mt-2 text-fine leading-5 text-muted-foreground">رابط Stripe يحمل رقم مرجع الحاجز، فتجده في لوحة Stripe بجانب الدفعة.</p>
       )}
     </Card>
   )
@@ -307,7 +347,7 @@ function RegistrationCard({ r, onChange, onRemove }: {
             <a dir="ltr" className="w-fit text-teal-ink hover:underline" href={`mailto:${r.email}`}>{r.email}</a>
             <a dir="ltr" className="w-fit text-teal-ink hover:underline" href={whatsappLink(r.phone)} target="_blank" rel="noopener noreferrer">{r.phone} · واتساب</a>
             <span className="text-muted-foreground">سجل {fmtDateTime(r.createdAt)}{r.proofUploadedAt && r.proofUploadedAt !== r.createdAt ? ` · رفع الحوالة ${fmtDateTime(r.proofUploadedAt)}` : ''}</span>
-            <span className="text-muted-foreground">المصدر: <b className="text-foreground">{r.source ?? 'مباشر'}</b></span>
+            <span className="text-muted-foreground">المصدر: <b className="text-foreground">{r.source ?? 'مباشر'}</b>{r.payMethod && <> · الدفع: <b className="text-foreground">{r.payMethod === 'card' ? 'بطاقة' : 'CliQ'}</b></>}</span>
             {r.note && <span>ملاحظته: {r.note}</span>}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -607,6 +647,7 @@ export default function PrivateWorkspace() {
                 missing={regs.filter((r) => r.sectionKey === s.key && r.zoomMissing).length}
                 sending={bulk === s.key} onSendMissing={() => void sendMissing(s.key)} />
             ))}
+            <CardLink key={data.course.cardUrl ?? ''} cardUrl={data.course.cardUrl} onSaved={setData} />
             <CourseFile file={data.course.file} onSaved={setData} />
             <GmailSettings gmail={data.gmail} onSaved={(g) => setData((d) => d && ({ ...d, gmail: g }))} />
           </div>

@@ -14,7 +14,8 @@ import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
 import { AI_JOBS, AI_JOBS_SEO } from '@/application/private-course/ai-jobs'
 import { whatsappLink } from '@/application/private-course/phone'
 import { rememberSource } from '@/application/private-course/source'
-import { BONUS, DOORS, FACTS, FAQS, FEATURES, GUARANTEE, NOT_FOR, PAINS, RESULTS, SKILLS, STEPS, TIPS, WHO } from './content'
+import { BONUS, CARD_FAQ, DOORS, FACTS, FAQS, FEATURES, GUARANTEE, NOT_FOR, PAINS, RESULTS, SKILLS, STEPS, TIPS, WHO } from './content'
+import { useCourseState } from './course-state'
 import RegisterForm from './RegisterForm'
 import { SeatPill, Seats } from './Seats'
 import './ai-jobs.css'
@@ -108,6 +109,8 @@ function CopyAlias() {
 
 export default function AiJobs() {
   const [barHidden, setBarHidden] = useState(false)
+  /* خيارُ البطاقة يُذكر حين يضبط صاحبُ الدورة رابطَه — لا وعدَ بزرٍّ لا يوجد */
+  const card = useCourseState()?.card ?? false
 
   /* من أين جاء — يُحفظ على الجهاز ويُرسل مع الحجز (`source.ts`) */
   useEffect(() => {
@@ -421,6 +424,9 @@ export default function AiJobs() {
                 <li>نراجع الحوالة ويصلك التأكيد ورابط Zoom على بريدك</li>
               </ol>
             </div>
+            {card && (
+              <p className="aij-card-note">من خارج الأردن؟ <b>ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة</b> بعد الحجز — تختارها في خطوة الدفع.</p>
+            )}
           </div>
 
           <RegisterForm />
@@ -432,7 +438,7 @@ export default function AiJobs() {
         <div className="aij-wrap" style={{ maxWidth: 860 }}>
           <h2 id="aij-faq" className="aij-h2">أسئلة <span className="aij-mk">سريعة</span></h2>
           <div className="aij-faq">
-            {FAQS.map((f) => (
+            {(card ? [...FAQS.slice(0, 3), CARD_FAQ, ...FAQS.slice(3)] : FAQS).map((f) => (
               <details key={f.q}><summary>{f.q}</summary><p>{f.a}</p></details>
             ))}
           </div>

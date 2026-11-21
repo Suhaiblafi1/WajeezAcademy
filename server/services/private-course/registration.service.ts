@@ -84,7 +84,31 @@ export function cleanZoomUrl(raw: string): string {
 
 export async function publicCourseState(prisma: PrismaClient, slug: string) {
   const course = await ensureCourse(prisma, slug)
-  return { open: course.open }
+  return { open: course.open, card: Boolean(course.cardUrl) }
+}
+
+/* ═══ الدفعُ بالبطاقة لمن هو خارج الأردن (٢١ نوفمبر ٢٠٢٦) ═══
+   CliQ لا يعمل إلّا داخل الأردن. فصاحبُ الدورة ينشئ صفحةَ دفعٍ عند مزوّده (Stripe أو PayPal أو غيرهما) ويلصق رابطَها
+   في لوحته، فيظهر للحاجز خيارُ «بطاقة». ولا مفتاحَ ولا سرَّ هنا: الدفعُ في صفحة المزوّد، والإيصالُ يُرفع بعده كالحوالة،
+   ويؤكّد صاحبُ الدورة بيده كما يؤكّد CliQ. */
+
+/** رابطُ الدفع يُقبل https وحدَه — رابطٌ ملصوقٌ خطأً يصل كلَّ من يدفع */
+export function cleanCardUrl(raw: string): string {
+  const v = raw.trim()
+  if (!v) return ''
+  let u: URL
+  try { u = new URL(v) } catch { throw new AuthError('bad_card_url', 'رابط الدفع غير صحيح — انسخه كاملا من صفحة المزوّد', 400) }
+  if (u.protocol !== 'https:') throw new AuthError('bad_card_url', 'رابط الدفع يبدأ بـ https://', 400)
+  return u.toString()
+}
+
+/** رابطُ الدفع لحجزٍ بعينه — وروابطُ Stripe تحمل رقمَ مرجعه (`client_reference_id`) فيُطابَق الدفعُ بصاحبه في لوحة Stripe.
+    ولا يُضاف البريد: الرابطُ يُعرض في صفحةٍ يفتحها من معه رابطُ الدفع وحدَه */
+export function cardLinkFor(course: Pick<PrivateCourse, 'cardUrl'>, ref: string): string | null {
+  if (!course.cardUrl) return null
+  const u = new URL(course.cardUrl)
+  if (u.hostname === 'buy.stripe.com') u.searchParams.set('client_reference_id', ref)
+  return u.toString()
 }
 
 /* ── التسجيلُ من الصفحة ── */
@@ -181,6 +205,8 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
       sectionTitle: section.title,
       payToken: row.payToken,
       hasProof: Boolean(row.proofKey),
+      cardUrl: cardLinkFor(course, reference(row.id)),
+      abroad: row.phoneCountry !== 'JO',
     }
   } catch (e) {
     /* لا يبقى على القرص ملفٌّ لا يملكه صفّ */
@@ -196,27 +222,36 @@ const TOKEN_SHAPE = /^[A-Za-z0-9_-]{16,128}$/
 async function byToken(prisma: PrismaClient, slug: string, token: string) {
   assertKnownCourse(slug)
   if (!TOKEN_SHAPE.test(token)) throw new AuthError('not_found', 'الرابط غير صحيح — راسلنا على واتساب', 404)
-  const r = await prisma.privateRegistration.findUnique({ where: { payToken: token } })
+  const r = await prisma.privateRegistration.findUnique({ where: { payToken: token }, include: { course: true } })
   if (!r || r.courseSlug !== slug) throw new AuthError('not_found', 'الرابط غير صحيح — راسلنا على واتساب', 404)
   return r
 }
 
 /** ما تعرضه صفحةُ الدفع — الاسمُ الأوّلُ والشعبةُ والحال، لا البريدُ ولا الرقم: الرابطُ قد يُرسَل في محادثة */
-function payView(r: PrivateRegistration) {
+function payView(r: PrivateRegistration, course: Pick<PrivateCourse, 'cardUrl'>) {
   return {
     firstName: r.fullName.split(' ')[0],
     reference: reference(r.id),
     sectionTitle: aiJobsSection(r.sectionKey)?.title ?? '',
     status: r.status as RegistrationStatus,
     hasProof: Boolean(r.proofKey),
+    /** خيارُ البطاقة إن ضُبط رابطُه — ويُقدَّم لمن رقمُه خارجَ الأردن */
+    cardUrl: cardLinkFor(course, reference(r.id)),
+    abroad: r.phoneCountry !== 'JO',
   }
 }
 
 export async function payInfo(prisma: PrismaClient, slug: string, token: string) {
-  return payView(await byToken(prisma, slug, token))
+  const r = await byToken(prisma, slug, token)
+  return payView(r, r.course)
 }
 
-export async function submitProof(prisma: PrismaClient, slug: string, token: string, input: { proof: ProofInput; note?: string }) {
+export type PayMethod = 'cliq' | 'card'
+
+export async function submitProof(
+  prisma: PrismaClient, slug: string, token: string,
+  input: { proof: ProofInput; note?: string; payMethod?: PayMethod },
+) {
   const r = await byToken(prisma, slug, token)
   if (r.status === 'confirmed') throw new AuthError('already_confirmed', 'مقعدك مؤكد — تفقد بريدك', 409)
   const proof = await storeProof(input.proof)
@@ -224,10 +259,13 @@ export async function submitProof(prisma: PrismaClient, slug: string, token: str
     const row = await prisma.privateRegistration.update({
       where: { id: r.id },
       /* ومن رُفض فرفع حوالةً جديدةً عاد للمراجعة */
-      data: { ...proof, status: 'pending', rejectedAt: null, ...(input.note?.trim() ? { note: input.note.trim() } : {}) },
+      data: {
+        ...proof, status: 'pending', rejectedAt: null, payMethod: input.payMethod ?? 'cliq',
+        ...(input.note?.trim() ? { note: input.note.trim() } : {}),
+      },
     })
     if (r.proofKey) await deleteObject(r.proofKey)
-    return payView(row)
+    return payView(row, r.course)
   } catch (e) {
     await deleteObject(proof.proofKey)
     throw e
@@ -252,6 +290,7 @@ function view(r: PrivateRegistration, course: PrivateCourse) {
     proofUploadedAt: r.proofUploadedAt?.toISOString() ?? null,
     payToken: r.payToken,
     source: r.source,
+    payMethod: (r.payMethod as PayMethod | null) ?? null,
     status: r.status as RegistrationStatus,
     createdAt: r.createdAt.toISOString(),
     confirmedAt: r.confirmedAt?.toISOString() ?? null,
@@ -281,6 +320,7 @@ export async function ownerOverview(prisma: PrismaClient, slug: string) {
       title: AI_JOBS.title,
       open: course.open,
       priceJod: AI_JOBS.priceJod,
+      cardUrl: course.cardUrl,
       file: await fileView(course),
       sections: AI_JOBS.sections.map((s) => ({
         key: s.key,
@@ -296,7 +336,7 @@ export async function ownerOverview(prisma: PrismaClient, slug: string) {
 
 export async function updateCourse(
   prisma: PrismaClient, slug: string,
-  input: { open?: boolean; zoom?: Record<string, { url: string; passcode?: string } | null> },
+  input: { open?: boolean; zoom?: Record<string, { url: string; passcode?: string } | null>; cardUrl?: string },
 ) {
   const course = await ensureCourse(prisma, slug)
   const zoom = zoomMap(course)
@@ -310,7 +350,11 @@ export async function updateCourse(
   }
   await prisma.privateCourse.update({
     where: { slug },
-    data: { ...(input.open !== undefined ? { open: input.open } : {}), zoom: zoom as object },
+    data: {
+      ...(input.open !== undefined ? { open: input.open } : {}),
+      ...(input.cardUrl !== undefined ? { cardUrl: cleanCardUrl(input.cardUrl) || null } : {}),
+      zoom: zoom as object,
+    },
   })
   return ownerOverview(prisma, slug)
 }
@@ -463,6 +507,7 @@ export async function exportXlsx(
     { header: 'تأكد في', key: 'confirmed', width: 20 },
     { header: 'وصله البريد', key: 'mailed', width: 20 },
     { header: 'الحوالة', key: 'proof', width: 18 },
+    { header: 'طريقة الدفع', key: 'method', width: 14 },
     { header: 'المصدر', key: 'source', width: 26 },
     { header: 'ملاحظة', key: 'note', width: 30 },
   ]
@@ -481,6 +526,7 @@ export async function exportXlsx(
         confirmed: r.confirmedAt ? fmtDateTime(r.confirmedAt) : '',
         mailed: r.mailSentAt ? fmtDateTime(r.mailSentAt) : '',
         proof: r.proofUploadedAt ? fmtDateTime(r.proofUploadedAt) : 'لم يرفعها بعد',
+        method: r.payMethod === 'card' ? 'بطاقة' : r.payMethod === 'cliq' ? 'CliQ' : '',
         source: r.source ?? 'مباشر',
         note: r.note ?? '',
       })

@@ -177,3 +177,21 @@ describe('⑥ احجز أولا، ومن أين جاء، ولمن الدورة،
     expect(page).toMatch(/className=\{`aij-wa/)
   })
 })
+
+/* ═══ ⑦ الدفع بالبطاقة لمن هو خارج الأردن (٢١ نوفمبر ٢٠٢٦) ═══ */
+describe('⑦ الدفع بالبطاقة', () => {
+  const step = read('src/pages/ai-jobs/PayStep.tsx')
+  const page = read('src/pages/ai-jobs/AiJobs.tsx')
+
+  it('⚠️ خطوة الدفع تقدم البطاقة أولا لمن رقمه خارج الأردن — وCliQ لغيره', () => {
+    expect(step).toMatch(/useState<Method>\(info\.cardUrl && info\.abroad \? 'card' : 'cliq'\)/)
+    expect(step).toMatch(/payMethod: card \? 'card' : 'cliq'/)
+  })
+
+  it('⚠️ ولا خيار بطاقة بلا رابط — لا زر يقود إلى لا شيء', () => {
+    expect(step).toMatch(/\{info\.cardUrl && \(\s*<div className="aij-methods"/)
+    expect(step).toMatch(/const card = method === 'card' && Boolean\(info\.cardUrl\)/)
+    expect(page).toMatch(/\{card && \(\s*<p className="aij-card-note">/)
+    expect(page).toMatch(/card \? \[\.\.\.FAQS\.slice\(0, 3\), CARD_FAQ/)
+  })
+})

@@ -345,3 +345,9 @@
 .aij-wa span { display: none; }
 .aij-wa.low { bottom: 16px; }
 @media (min-width: 860px) { .aij-wa { bottom: 24px; left: 24px; padding: 10px 18px 10px 12px; } .aij-wa span { display: inline; } }
+
+/* ── طريقةُ الدفع: CliQ أو بطاقة (٢١ نوفمبر ٢٠٢٦) ── */
+.aij-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
+.aij-card-btn { margin-top: 10px; width: 100%; }
+.aij-card-note { margin-top: 14px; font-size: 15px; color: #e6ecf7; line-height: 1.7; }
+.aij-card-note b { color: var(--y); font-weight: 600; }
