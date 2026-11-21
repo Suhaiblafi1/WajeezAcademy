@@ -394,3 +394,71 @@ describe('⑤ الحجز أولا والدفع بعد', () => {
     expect(res.statusCode).toBe(409)
   })
 })
+
+/* ═══ ⑥ الدفع بالبطاقة لمن هو خارج الأردن (٢١ نوفمبر ٢٠٢٦) ═══
+   CliQ لا يعمل إلّا داخل الأردن. فصاحبُ الدورة يلصق رابطَ صفحة دفعٍ من مزوّده، فيظهر للحاجز خيارُ «بطاقة» —
+   ولمن رقمُه خارجَ الأردن أوّلا — ويرفع الإيصالَ بعدها، ويُكتب كيف دفع. */
+describe('⑥ الدفع بالبطاقة', () => {
+  const STRIPE = 'https://buy.stripe.com/test_abc123'
+  const payUrl = (token: string) => `/api/v1/public/private-courses/${AI_JOBS_SLUG}/pay/${token}`
+
+  it('بلا رابط: لا خيار بطاقة في الصفحة ولا في رابط الدفع', async () => {
+    const state = (await app.inject({ method: 'GET', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}` })).json()
+    expect(state.card).toBe(false)
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'nopay@test.local' } })
+    expect((await app.inject({ method: 'GET', url: payUrl(row.payToken) })).json().cardUrl).toBeNull()
+  })
+
+  it('⚠️ يرد رابطا ليس https', async () => {
+    const res = await asOwner('PATCH', `/api/v1/private/courses/${AI_JOBS_SLUG}`, { cardUrl: 'http://paypal.me/someone' })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('⚠️ برابط Stripe: يظهر الخيار، ويحمل رقم مرجع الحاجز، ومن رقمه خارج الأردن يقال له', async () => {
+    const res = await asOwner('PATCH', `/api/v1/private/courses/${AI_JOBS_SLUG}`, { cardUrl: STRIPE })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json().course.cardUrl).toBe(STRIPE)
+    expect((await app.inject({ method: 'GET', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}` })).json().card).toBe(true)
+
+    const uae = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'nopay@test.local' } })
+    const info = (await app.inject({ method: 'GET', url: payUrl(uae.payToken) })).json()
+    expect(info.abroad).toBe(true)
+    const link = new URL(info.cardUrl)
+    expect(link.origin + link.pathname).toBe(STRIPE)
+    expect(link.searchParams.get('client_reference_id')).toBe(uae.id.slice(0, 8).toUpperCase())
+    expect(info.cardUrl).not.toContain('nopay@test.local')
+
+    const jo = await prisma.privateRegistration.findFirstOrThrow({ where: { phoneCountry: 'JO' } })
+    expect((await app.inject({ method: 'GET', url: payUrl(jo.payToken) })).json().abroad).toBe(false)
+  })
+
+  it('⚠️ والإيصال المرفوع بالبطاقة يكتب طريقته — في اللوحة وExcel', async () => {
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'nopay@test.local' } })
+    const up = await app.inject({
+      method: 'POST', url: payUrl(row.payToken),
+      payload: { proof: { name: 'receipt.png', base64: PNG.toString('base64') }, payMethod: 'card' },
+    })
+    expect(up.statusCode, up.body).toBe(200)
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: row.id } })).payMethod).toBe('card')
+    const o = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json()
+    expect(o.registrations.find((x: { email: string }) => x.email === 'nopay@test.local').payMethod).toBe('card')
+    const x = await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}/export.xlsx`)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(x.rawPayload as never)
+    const all = wb.getWorksheet('الكل')!
+    const col = (all.getRow(1).values as unknown[]).indexOf('طريقة الدفع')
+    const cell = all.getRows(2, all.rowCount - 1)!.find((r) => r.getCell(2).value === 'nopay@test.local')!.getCell(col).value
+    expect(cell).toBe('بطاقة')
+  })
+
+  it('وطريقة غير معروفة ترد، والإفراغ يخفي الخيار', async () => {
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'layla@test.local' } })
+    const bad = await app.inject({
+      method: 'POST', url: payUrl(row.payToken),
+      payload: { proof: { name: 'r.png', base64: PNG.toString('base64') }, payMethod: 'bitcoin' },
+    })
+    expect(bad.statusCode).toBe(422)
+    await asOwner('PATCH', `/api/v1/private/courses/${AI_JOBS_SLUG}`, { cardUrl: '' })
+    expect((await app.inject({ method: 'GET', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}` })).json().card).toBe(false)
+  })
+})

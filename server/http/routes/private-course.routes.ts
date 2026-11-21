@@ -85,6 +85,7 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
     const body = z.object({
       proof: proofSchema,
       note: z.string().max(500, 'الملاحظة أطول من 500 حرف').optional(),
+      payMethod: z.enum(['cliq', 'card']).optional(),
     }).parse(req.body)
     return submitProof(prisma, slug, token, body)
   })
@@ -109,6 +110,8 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
     const body = z.object({
       open: z.boolean().optional(),
       zoom: z.record(z.string(), z.object({ url: z.string().max(600), passcode: z.string().max(40).optional() }).nullable()).optional(),
+      /* رابطُ الدفع بالبطاقة لمن هو خارج الأردن — وفارغُه يُخفي الخيار */
+      cardUrl: z.string().max(600).optional(),
     }).parse(req.body)
     return updateCourse(prisma, slug, body)
   })

@@ -5274,6 +5274,9 @@ model PrivateCourse {
   fileKey   String?
   fileName  String?
   fileMime  String?
+  /// رابطُ الدفع بالبطاقة لمن هو خارج الأردن — صفحةُ دفعٍ جاهزةٌ عند مزوّد صاحب الدورة (Stripe أو PayPal أو غيرهما)،
+  /// وفارغُه يُخفي الخيار. والإيصالُ يُرفع بعدها كالحوالة (٢١ نوفمبر ٢٠٢٦)
+  cardUrl   String?
   updatedAt DateTime @updatedAt
 
   registrations PrivateRegistration[]
@@ -5298,6 +5301,8 @@ model PrivateRegistration {
   proofMime    String?
   proofSize    Int?
   proofUploadedAt DateTime?
+  /// كيف دفع — يختاره حين يرفع الإيصال، وفارغُه لما قبل الخيار
+  payMethod    String? // cliq | card
   /// رابطُ الدفع باسمه — `/ai-jobs/pay/<payToken>`: يرفع منه الحوالةَ متى حوّل، ولا يكشف غيرَ اسمه الأوّل وشعبته
   payToken     String    @unique
   /// من أين جاء — `Instagram · story · bf1` من `?src=` و`utm_*` أو الموقعِ الذي أحاله، وفارغُه دخولٌ مباشر

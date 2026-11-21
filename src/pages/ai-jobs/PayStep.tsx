@@ -17,7 +17,13 @@ export interface PayInfo {
   sectionTitle: string
   status: 'pending' | 'confirmed' | 'rejected'
   hasProof: boolean
+  /** رابطُ الدفع بالبطاقة إن ضبطه صاحبُ الدورة — وإلّا CliQ وحدَه (٢١ نوفمبر ٢٠٢٦) */
+  cardUrl: string | null
+  /** رقمُه خارجَ الأردن — فالبطاقةُ هي الخيارُ الأوّل له */
+  abroad: boolean
 }
+
+type Method = 'cliq' | 'card'
 
 function payUrl(token: string): string {
   return `${window.location.origin}/ai-jobs/pay/${token}`
@@ -61,7 +67,9 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
   const [again, setAgain] = useState(false)
+  const [method, setMethod] = useState<Method>(info.cardUrl && info.abroad ? 'card' : 'cliq')
   const link = payUrl(token)
+  const card = method === 'card' && Boolean(info.cardUrl)
 
   async function pick(file: File | undefined) {
     if (!file) return
@@ -86,6 +94,7 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
       const next = await apiPost<PayInfo>(`/api/v1/public/private-courses/${AI_JOBS.slug}/pay/${token}`, {
         proof: { name: proof.name, base64: proof.base64 },
         note: note.trim() || undefined,
+        payMethod: card ? 'card' : 'cliq',
       })
       setProof(null)
       setAgain(false)
@@ -136,17 +145,43 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
         <div className="aij-alert" role="alert">لم نتمكن من تأكيد الحوالة السابقة. ارفع صورة أوضح، أو راسلنا على واتساب.</div>
       )}
 
-      <p className="aij-step-label">الخطوة الأخيرة: حوّل وارفع صورة الحوالة</p>
-      <div className="aij-cliq">
-        <small>حوّل {AI_JOBS.priceJod} دينار عبر CliQ إلى الاسم المستعار</small>
-        <div className="aij-alias">
-          <b>{AI_JOBS.cliqAlias}</b>
-          <Copy text={AI_JOBS.cliqAlias} label="انسخ" />
+      <p className="aij-step-label">الخطوة الأخيرة: ادفع وارفع الإيصال</p>
+      {info.cardUrl && (
+        <div className="aij-methods" role="radiogroup" aria-label="طريقة الدفع">
+          <label className={`aij-choice${method === 'cliq' ? ' on' : ''}`}>
+            <input type="radio" name="pay-method" checked={method === 'cliq'} onChange={() => setMethod('cliq')} />
+            <b>CliQ</b>
+            <span>داخل الأردن · {AI_JOBS.priceJod} دينار</span>
+          </label>
+          <label className={`aij-choice${method === 'card' ? ' on' : ''}`}>
+            <input type="radio" name="pay-method" checked={method === 'card'} onChange={() => setMethod('card')} />
+            <b>بطاقة</b>
+            <span>من خارج الأردن · <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi></span>
+          </label>
         </div>
-      </div>
+      )}
+      {card
+        ? (
+          <div className="aij-cliq">
+            <small>ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة في صفحة الدفع، ثم ارجع هنا وارفع صورة الإيصال أو رسالة التأكيد.</small>
+            <a className="aij-cta aij-cta-y aij-card-btn" href={info.cardUrl!} target="_blank" rel="noopener noreferrer">
+              ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة
+            </a>
+            <small style={{ marginTop: 8 }}>رقم المرجع <b dir="ltr">{info.reference}</b> — اكتبه في الملاحظة إن طلبتها صفحة الدفع.</small>
+          </div>
+        )
+        : (
+          <div className="aij-cliq">
+            <small>حوّل {AI_JOBS.priceJod} دينار عبر CliQ إلى الاسم المستعار</small>
+            <div className="aij-alias">
+              <b>{AI_JOBS.cliqAlias}</b>
+              <Copy text={AI_JOBS.cliqAlias} label="انسخ" />
+            </div>
+          </div>
+        )}
 
       <div className="aij-field">
-        <span className="aij-label" id="aij-pay-proof-label">صورة الحوالة <em>— صورة أو لقطة شاشة أو PDF</em></span>
+        <span className="aij-label" id="aij-pay-proof-label">{card ? 'صورة إيصال الدفع' : 'صورة الحوالة'} <em>— صورة أو لقطة شاشة أو PDF</em></span>
         <label className={`aij-drop${over ? ' over' : ''}`}
           onDragOver={(e) => { e.preventDefault(); setOver(true) }}
           onDragLeave={() => setOver(false)}
@@ -161,7 +196,7 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
                 : <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#142240" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>}
           </span>
           <span className="txt">
-            <b>{busy ? 'نجهّز الملف…' : proof ? 'تم اختيار الملف — اضغط لتغييره' : 'اضغط لاختيار صورة الحوالة'}</b>
+            <b>{busy ? 'نجهّز الملف…' : proof ? 'تم اختيار الملف — اضغط لتغييره' : card ? 'اضغط لاختيار صورة الإيصال' : 'اضغط لاختيار صورة الحوالة'}</b>
             <small>{proof ? proof.name : 'من الهاتف أو الكمبيوتر'}</small>
           </span>
         </label>
@@ -175,12 +210,12 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
       {error && <div className="aij-alert" role="alert">{error}</div>}
 
       <button type="submit" className="aij-cta aij-cta-lg aij-submit" disabled={sending || busy || !proof}>
-        {sending ? 'نرسل الصورة…' : 'أرسل صورة الحوالة'}
+        {sending ? 'نرسل الصورة…' : card ? 'أرسل صورة الإيصال' : 'أرسل صورة الحوالة'}
       </button>
 
       <div className="aij-later">
-        <b>لا تستطيع التحويل الآن؟</b>
-        <span>مقعدك محجوز. احفظ رابط الدفع وارجع له متى حوّلت:</span>
+        <b>لا تستطيع الدفع الآن؟</b>
+        <span>مقعدك محجوز. احفظ رابط الدفع وارجع له متى دفعت:</span>
         <span className="aij-link" dir="ltr">{link}</span>
         <div className="aij-row" style={{ marginTop: 10 }}>
           <Copy text={link} label="انسخ الرابط" />
