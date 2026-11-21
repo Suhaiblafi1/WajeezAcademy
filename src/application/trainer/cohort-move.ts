@@ -13,9 +13,9 @@
    بلا React ولا قاعدة — ويحرسه `src/tests/trainer/cohort-move.test.ts`. */
 
 import { TRAINING_SEASONS, type TrainingSeason } from './application-options'
-import { SEASON_MONTHS, termBounds, termOf, termTitleAr } from '../terms/season'
+import { nextSeason, seasonAfter, termBounds, termTitleAr, type SeasonRef } from '../terms/season'
 
-export interface TermRef { year: number; season: TrainingSeason }
+export type TermRef = SeasonRef
 
 /** كم فصلا قادما يُعرض للاختيار */
 export const MOVE_CHOICE_COUNT = 4
@@ -29,26 +29,22 @@ export const MOVE_REASON_MIN = 10
 const DAY_MS = 24 * 60 * 60 * 1000
 const WEEK_MS = 7 * DAY_MS
 
-/** الفصلُ الذي يلي هذا */
-export function nextTerm(t: TermRef): TermRef {
-  const i = TRAINING_SEASONS.findIndex((s) => s.value === t.season)
-  const season = TRAINING_SEASONS[(i + 1) % TRAINING_SEASONS.length]!.value
-  /* الشتاءُ يبدأ في نوفمبر ويعبر رأسَ السنة: ما بعده في السنة التالية */
-  return { year: SEASON_MONTHS[season].start < SEASON_MONTHS[t.season].start ? t.year + 1 : t.year, season }
-}
+/** الفصلُ الذي يلي هذا — بالإيقاع الساري (`nextSeason`): شتاءُ ٢٠٢٦/٢٠٢٧ يتلوه ربيعُ ٢٠٢٧ في أبريل */
+export const nextTerm = (t: TermRef): TermRef => nextSeason(t)
 
 export const sameTerm = (a: TermRef | null, b: TermRef | null): boolean =>
   Boolean(a && b && a.year === b.year && a.season === b.season)
 
 export const termLabelAr = (t: TermRef): string => termTitleAr(t.year, t.season)
 
-/** الفصولُ التي يُطلب النقلُ إليها: ما لم يبدأ بعد، غيرَ فصلِ الشعبة — الأقربُ أوّلا */
+/** الفصولُ التي يُطلب النقلُ إليها: ما لم يبدأ بعد، غيرَ فصلِ الشعبة — الأقربُ أوّلا.
+    وتُعدّ بالإيقاع الساري، فلا يُعرض موسمٌ قديمٌ (فبراير–أبريل وأخواتُه) بعد ٢٠٢٦ */
 export function moveChoices(now: Date, current: TermRef | null, count = MOVE_CHOICE_COUNT): TermRef[] {
   const out: TermRef[] = []
-  let t: TermRef = termOf(now)
+  let t: TermRef = seasonAfter(now)
   for (let guard = 0; out.length < count && guard < 12; guard += 1) {
-    t = nextTerm(t)
     if (!sameTerm(t, current)) out.push(t)
+    t = nextTerm(t)
   }
   return out
 }
@@ -57,6 +53,17 @@ export function moveChoices(now: Date, current: TermRef | null, count = MOVE_CHO
 export function moveShiftMs(from: TermRef, to: TermRef): number {
   const diff = termBounds(to.year, to.season).startsOn.getTime() - termBounds(from.year, from.season).startsOn.getTime()
   return Math.round(diff / WEEK_MS) * WEEK_MS
+}
+
+/* ═══ وشعبةٌ في شهر راحة — لا فصلَ لها يُزاح منه (٢١ نوفمبر ٢٠٢٦) ═══
+   صارت يونيو وسبتمبر وديسمبر ومارس بلا موسم، وفبراير ٢٠٢٧ معها. وشعبةٌ خُطّطت فيها قبل القرار فصلُها `null`،
+   وكانت الإزاحةُ حينئذٍ صفرا: يُعتمَد النقلُ ولا يتحرّك موعد. فتُحسب من أوّل شهرها كأنّه بدايةُ فصل — فيبقى
+   موضعُها من الفصل الجديد كموضعها من شهرها. */
+export function moveShiftFor(current: TermRef | null, anchor: Date | null, to: TermRef): number {
+  if (current) return moveShiftMs(current, to)
+  if (!anchor) return 0
+  const from = Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1)
+  return Math.round((termBounds(to.year, to.season).startsOn.getTime() - from) / WEEK_MS) * WEEK_MS
 }
 
 export const shiftDate = (d: Date | null, ms: number): Date | null => (d ? new Date(d.getTime() + ms) : null)

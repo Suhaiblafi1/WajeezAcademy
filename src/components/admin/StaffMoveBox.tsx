@@ -12,7 +12,7 @@ import Button from "@/components/ui/Button";
 import { Inset } from "@/components/ui/Surface";
 import { controlCls, areaCls } from "@/components/FormKit";
 import { termOf } from "@/application/terms/season";
-import { MOVABLE_STATUSES, MOVE_REASON_MIN, moveChoices, moveShiftMs, termLabelAr, type TermRef } from "@/application/trainer/cohort-move";
+import { MOVABLE_STATUSES, MOVE_REASON_MIN, moveChoices, moveShiftFor, termLabelAr, type TermRef } from "@/application/trainer/cohort-move";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 
 export default function StaffMoveBox({ cohortId, status, startsAt, onDone }: {
@@ -36,7 +36,7 @@ export default function StaffMoveBox({ cohortId, status, startsAt, onDone }: {
   const choices = moveChoices(now, start ? termOf(start) : null);
   const key = (t: TermRef) => `${t.season}:${t.year}`;
   const target = choices.find((t) => key(t) === pick) ?? null;
-  const firstAfter = start && target ? new Date(start.getTime() + moveShiftMs(termOf(start), target)) : null;
+  const firstAfter = start && target ? new Date(start.getTime() + moveShiftFor(termOf(start), start, target)) : null;
 
   if (!open) {
     return (

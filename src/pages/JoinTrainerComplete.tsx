@@ -4,7 +4,7 @@ import { CheckCircle2, FileUp, Loader2, ShieldCheck } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
-import { TRAINING_SEASONS } from "@/application/trainer/application-options";
+import { OFFERED_SEASONS } from "@/application/trainer/application-options";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -246,7 +246,7 @@ export default function JoinTrainerComplete() {
               «المدرّبون المتاحون» لكل فصل تختاره.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {TRAINING_SEASONS.map((s) => (
+              {OFFERED_SEASONS.map((s) => (
                 <Choice
                   key={s.value} on={seasons.includes(s.value)}
                   onClick={() => setSeasons(seasons.includes(s.value) ? seasons.filter((x) => x !== s.value) : [...seasons, s.value])}

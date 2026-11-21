@@ -6,21 +6,34 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  MOVE_REMINDER_DAYS, movedLabelAr, moveChoices, moveProblemAr, moveReminderAt, moveShiftMs, nextTerm, shiftDate, termLabelAr,
+  MOVE_REMINDER_DAYS, movedLabelAr, moveChoices, moveProblemAr, moveReminderAt, moveShiftFor, moveShiftMs, nextTerm, shiftDate, termLabelAr,
 } from '@/application/trainer/cohort-move'
 
 const DAY = 86_400_000
 const now = new Date('2026-10-17T09:00:00Z') // في موسم الخريف ٢٠٢٦
 
 describe('① الفصول المعروضة', () => {
+  /* وما بعد شتاء ٢٠٢٦/٢٠٢٧ ربيعُ ٢٠٢٧ في أبريل — شهران وشهرُ راحة (٢١ نوفمبر ٢٠٢٦) */
   it('الشتاء يعبر رأس السنة — وما بعده ربيع السنة التالية', () => {
     expect(nextTerm({ year: 2026, season: 'aug_oct' })).toEqual({ year: 2026, season: 'nov_jan' })
-    expect(nextTerm({ year: 2026, season: 'nov_jan' })).toEqual({ year: 2027, season: 'feb_apr' })
+    expect(nextTerm({ year: 2026, season: 'nov_jan' })).toEqual({ year: 2027, season: 'apr_may' })
   })
 
   it('القادمة وحدها، الأقرب أوّلا، بلا فصل الشعبة — فتؤجَّل إلى بعده أو تعاد إلى قبله', () => {
-    const c = moveChoices(now, { year: 2027, season: 'feb_apr' })
-    expect(c.map(termLabelAr)).toEqual(['موسم الشتاء 2026/2027', 'موسم الصيف 2027', 'موسم الخريف 2027', 'موسم الشتاء 2027/2028'])
+    const c = moveChoices(now, { year: 2027, season: 'apr_may' })
+    expect(c.map(termLabelAr)).toEqual(['موسم الشتاء 2026/2027', 'موسم الصيف 2027', 'موسم الخريف 2027', 'موسم الشتاء 2028'])
+  })
+
+  it('⚠️ ولا موسم من التقويم القديم بعد شتاء 2026/2027 — فبراير وأبريل وأخواتهما ذهبت', () => {
+    const c = moveChoices(new Date('2026-11-21T09:00:00Z'), null)
+    expect(c).toEqual([
+      { year: 2027, season: 'apr_may' }, { year: 2027, season: 'jul_aug' },
+      { year: 2027, season: 'oct_nov' }, { year: 2028, season: 'jan_feb' },
+    ])
+    expect(moveProblemAr({
+      status: 'open', firstStartsAt: new Date('2026-12-10T16:00:00Z'), current: { year: 2026, season: 'nov_jan' },
+      target: { year: 2027, season: 'feb_apr' }, now: new Date('2026-11-21T09:00:00Z'), reason: 'لا يكفي الطلب هذا الفصل',
+    })).toMatch(/غير فصلها/)
   })
 
   it('ولا فصلَ مضى أو جارٍ', () => {
@@ -39,6 +52,20 @@ describe('② الإزاحة', () => {
     expect(moved.getUTCDay()).toBe(first.getUTCDay())
     expect(moved.getUTCHours()).toBe(16)
     expect(moved.toISOString().slice(0, 7)).toBe('2027-02')
+  })
+
+  /* شعبةٌ خُطّطت في فبراير ٢٠٢٧ — صار شهرَ راحة فلا فصلَ لها (٢١ نوفمبر ٢٠٢٦). وكانت الإزاحةُ صفرا: يُعتمَد ولا يتحرّك موعد */
+  it('⚠️ ومن شهر راحة بلا فصل تزاح من أول شهرها — لا صفرا', () => {
+    const first = new Date('2027-02-15T16:00:00Z')
+    const ms = moveShiftFor(null, first, { year: 2027, season: 'apr_may' })
+    expect(ms % (7 * DAY)).toBe(0)
+    const moved = shiftDate(first, ms)!
+    expect(moved.toISOString().slice(0, 7)).toBe('2027-04')
+    expect(moved.getUTCDay()).toBe(first.getUTCDay())
+    /* وبفصلٍ معروفٍ هي الإزاحةُ نفسُها، وبلا موعدٍ لا شيءَ يُزاح */
+    expect(moveShiftFor({ year: 2026, season: 'nov_jan' }, first, { year: 2027, season: 'apr_may' }))
+      .toBe(moveShiftMs({ year: 2026, season: 'nov_jan' }, { year: 2027, season: 'apr_may' }))
+    expect(moveShiftFor(null, null, { year: 2027, season: 'apr_may' })).toBe(0)
   })
 
   it('والإعادة إلى فصل أقرب إزاحة سالبة', () => {
@@ -65,7 +92,7 @@ describe('②ج وسم الشعبة المنقولة في الإدارة', () =>
 describe('③ ما يمنع الطلب', () => {
   const base = {
     status: 'open', firstStartsAt: new Date('2026-11-10T16:00:00Z'),
-    current: { year: 2026, season: 'nov_jan' as const }, target: { year: 2027, season: 'feb_apr' as const },
+    current: { year: 2026, season: 'nov_jan' as const }, target: { year: 2027, season: 'apr_may' as const },
     now, reason: 'لا يكفي الطلب هذا الفصل',
   }
   it('طلب سليم يمرّ', () => expect(moveProblemAr(base)).toBeNull())

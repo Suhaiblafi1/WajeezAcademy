@@ -38,7 +38,7 @@ import { whenAr } from '../../../src/application/learning/cohort-gate'
 import { CLASH_REASON_PREFIX } from '../../../src/application/terms/schedule-clash'
 import { PROPOSAL_TAIL_AR } from '../../../src/application/trainer/schedule-proposal'
 import { nextTerm } from '../../../src/application/trainer/cohort-move'
-import { termBounds, termOf } from '../../../src/application/terms/season'
+import { seasonAfter, termBounds } from '../../../src/application/terms/season'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -364,7 +364,7 @@ describe('④ب وجدولٌ سقط بعد أن نُقلت لقاءاتُه — 
 })
 
 /* شعبةٌ تبدأ في الفصل القادم بلقاءين — كما في `cohort-move.test.ts` */
-const upcoming = nextTerm(termOf(new Date()))
+const upcoming = seasonAfter(new Date())
 const target = nextTerm(upcoming)
 async function termCohort(tag: string) {
   const first = new Date(termBounds(upcoming.year, upcoming.season).startsOn.getTime() + 10 * DAY)

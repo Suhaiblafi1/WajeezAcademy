@@ -16,6 +16,8 @@
 import type { PrismaClient } from '@prisma/client'
 import { TermService } from './term.service'
 import { APPROVED_TRAINER_PLAN_WHERE } from './registration-window'
+import { termMonthCount } from '../../src/application/terms/season'
+import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
 
 export interface CalendarEntry {
   cohortId: string
@@ -115,13 +117,15 @@ export class TermCalendarService {
       }
     })
 
-    const months = [1, 2, 3].map((month) => ({
+    /* أشهرُ الفصل بعددها — ثلاثةٌ للأرباع القديمة واثنان للمواسم الجديدة (٢١ نوفمبر ٢٠٢٦) */
+    const count = (TRAINING_SEASON_VALUES as readonly string[]).includes(term.season) ? termMonthCount(term.season as TrainingSeason) : 3
+    const months = Array.from({ length: count }, (_, i) => i + 1).map((month) => ({
       month,
       entries: entries.filter((e) => e.monthWithinTerm === month),
     }))
     /* وما لا شهرَ له — شعبةٌ أُنشئت يدويّا في الفصل بلا تخطيط — يُلحق بالأوّل
-       ولا يُحذف: الغيابُ من التقويم أسوأُ من موضعٍ تقريبيّ. */
-    const orphan = entries.filter((e) => e.monthWithinTerm === null)
+       ولا يُحذف: الغيابُ من التقويم أسوأُ من موضعٍ تقريبيّ. ومثلُه شهرٌ خارجَ أشهر الفصل. */
+    const orphan = entries.filter((e) => e.monthWithinTerm === null || e.monthWithinTerm > count)
     if (orphan.length > 0) months[0].entries.push(...orphan)
 
     return {

@@ -39,7 +39,7 @@ import { MIN_SESSION_MINUTES } from '../../application/trainer/session-length'
 import {
   PAYOUT_APPROVAL_DAYS, PAYOUT_OBJECTION_DAYS, PAYOUT_OUTER_DAYS, PAYOUT_TRANSFER_DAYS,
 } from '../../application/trainer/notice-periods'
-import { TRAINING_SEASONS } from '../../application/trainer/application-options'
+import { OFFERED_SEASONS } from '../../application/trainer/application-options'
 import { START_ADVICE } from '../../application/trainer/start-advice'
 import { fmtDayMonth } from '../../application/text/format-ar'
 import { TRAINER_GUIDE_PATH } from '../../application/trainer/trainer-guide'
@@ -61,7 +61,7 @@ export const APPLY_PATH = '/join-trainer'
 const twice = MAX_EXTENSIONS === 2 ? 'مرّتين' : `${MAX_EXTENSIONS} مرّات`
 const extDays = EXTENSION_DAYS === 2 ? 'يومين' : `${EXTENSION_DAYS} أيّام`
 const sessionLen = MIN_SESSION_MINUTES === 120 ? 'ساعتان' : `${MIN_SESSION_MINUTES} دقيقة`
-const seasons = TRAINING_SEASONS.map((s) => `${s.label.replace(/^موسم /, '')} (${s.months})`).join('، ')
+const seasons = OFFERED_SEASONS.map((s) => `${s.label.replace(/^موسم /, '')} (${s.months})`).join('، ')
 const g = (anchor: string) => `${TRAINER_GUIDE_PATH}#${anchor}`
 
 /* ═══ رابطٌ إلى قسمٍ من الدليل يسمّي رقمَه (٥ أكتوبر ٢٠٢٦) ═══

@@ -39,30 +39,40 @@ beforeAll(async () => {
 
 describe('فصل الشعبة', () => {
   it('ينشأ مخططا بحدوده ولا يكرر', async () => {
-    const a = await ensureTerm(prisma, { year: 2093, season: 'feb_apr' })
-    const b = await ensureTerm(prisma, { year: 2093, season: 'feb_apr' })
+    const a = await ensureTerm(prisma, { year: 2093, season: 'apr_may' })
+    const b = await ensureTerm(prisma, { year: 2093, season: 'apr_may' })
     expect(b.id).toBe(a.id)
     const t = await prisma.term.findUniqueOrThrow({ where: { id: a.id } })
     expect(t.status).toBe('planned')
-    expect(t.startsOn.toISOString().slice(0, 10)).toBe('2093-02-01')
+    expect(t.startsOn.toISOString().slice(0, 10)).toBe('2093-04-01')
+    expect(t.endsOn.toISOString().slice(0, 10)).toBe('2093-05-31')
   })
 
   it('ولا تعاد شعبة إلى فصل أغلق', async () => {
-    const t = await ensureTerm(prisma, { year: 2093, season: 'may_jul' })
+    const t = await ensureTerm(prisma, { year: 2093, season: 'jul_aug' })
     await prisma.term.update({ where: { id: t.id }, data: { status: 'closed' } })
+    expect(await ensureTermOf(prisma, new Date('2093-07-10T00:00:00Z'))).toBeNull()
+  })
+
+  /* شهرُ الراحة (٢١ نوفمبر ٢٠٢٦): لا فصلَ فيه — فلا يُنشأ له صفٌّ ولا يُخمَّن له فصلٌ يليه */
+  it('⚠️ ولا فصل ليوم في شهر راحة — ولا ينشأ له صف', async () => {
+    const before = await prisma.term.count({ where: { year: 2093 } })
     expect(await ensureTermOf(prisma, new Date('2093-06-10T00:00:00Z'))).toBeNull()
+    expect(await ensureTermOf(prisma, new Date('2093-12-10T00:00:00Z'))).toBeNull()
+    expect(await prisma.term.count({ where: { year: 2093 } })).toBe(before)
+    expect(await ensureTermOf(prisma, new Date('2093-10-10T00:00:00Z'))).not.toBeNull()
   })
 
   it('ما سقط قبل الإصلاح يملأ — وما لا خطة له لا يخمن', async () => {
     await prisma.term.deleteMany({ where: { year: { in: [2094, 2095] } } })
-    const approved = await cohort('معتمدة', new Date('2094-12-05T00:00:00Z'), { status: 'approved' })
-    const postponed = await cohort('مؤجلة', new Date('2094-12-05T00:00:00Z'), { status: 'changes_requested', postponedTo: new Date('2095-02-01T00:00:00Z') })
+    const approved = await cohort('معتمدة', new Date('2094-11-05T00:00:00Z'), { status: 'approved' })
+    const postponed = await cohort('مؤجلة', new Date('2094-11-05T00:00:00Z'), { status: 'changes_requested', postponedTo: new Date('2095-04-01T00:00:00Z') })
     const bare = await cohort('بلا خطة', new Date('2094-12-05T00:00:00Z'))
     const cancelled = await cohort('ملغاة', new Date('2094-12-05T00:00:00Z'), { status: 'approved' }, 'cancelled')
 
     expect(await assignMissingTerms(prisma)).toBeGreaterThanOrEqual(2)
-    expect(await termOfCohort(approved), 'المعتمدة بقيت بلا فصل').toEqual({ year: 2094, season: 'nov_jan' })
-    expect(await termOfCohort(postponed), 'المؤجلة لم تسم بموسم تأجيلها').toEqual({ year: 2095, season: 'feb_apr' })
+    expect(await termOfCohort(approved), 'المعتمدة بقيت بلا فصل').toEqual({ year: 2094, season: 'oct_nov' })
+    expect(await termOfCohort(postponed), 'المؤجلة لم تسم بموسم تأجيلها').toEqual({ year: 2095, season: 'apr_may' })
     expect(await termOfCohort(bare)).toBeNull()
     expect(await termOfCohort(cancelled)).toBeNull()
   })

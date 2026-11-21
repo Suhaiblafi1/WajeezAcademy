@@ -15,7 +15,7 @@ import { requireAuth } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
-import { TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
+import { OFFERED_SEASON_VALUES } from '../../../src/application/trainer/application-options'
 import { TERM_STATUSES } from '../../../src/application/terms/lifecycle'
 import { readSeasonGate, writeSeasonGate } from '../../services/registration-window'
 import { RegistrationInterestService } from '../../services/registration-interest.service'
@@ -42,7 +42,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
      المكوّنُ واحدٌ والنطاقُ واحد — والفرقُ أنّ المسجَّلَ ترى شعبُه موسومةً.
      ولا جلساتٍ في الاثنين: مواعيدُ الجلسات تفصيلُ من اشترى. */
   app.get('/api/public/term-calendar', {
-    schema: { tags: ['public'], summary: 'تقويم الفصل المنشور — أشهره الثلاثة وشعبها' },
+    schema: { tags: ['public'], summary: 'تقويم الفصل المنشور — أشهره وشعبها' },
   }, async (req) => {
     const { termId } = z.object({ termId: z.string().uuid().optional() }).parse(req.query)
     return { calendar: await calendar.calendar({ termId }) }
@@ -159,7 +159,8 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
   }, async (req, reply) => {
     const body = z.object({
       year: z.number().int().min(2020).max(2100),
-      season: z.enum(TRAINING_SEASON_VALUES),
+      /* فصلٌ جديدٌ بموسمٍ جديد — والقديمةُ للتاريخ (٢١ نوفمبر ٢٠٢٦، `TRAINING_SEASONS`) */
+      season: z.enum(OFFERED_SEASON_VALUES),
     }).parse(req.body)
     return reply.status(201).send(await terms.create(req.auth!.userId, body))
   })

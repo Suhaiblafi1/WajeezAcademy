@@ -73,11 +73,11 @@ beforeAll(async () => {
   profileId = (await prisma.trainerProfile.create({ data: { applicationId: application.id, userId: u.userId } })).id
   cookies.trainer = await login(email)
 
-  /* فصلُ الربيع موجود — فتنتقل إليه الشعبة */
+  /* فصلُ الربيع موجود — فتنتقل إليه الشعبة. وهو أبريل–مايو منذ ٢١ نوفمبر ٢٠٢٦ (شهران وشهرُ راحة) */
   const spring = await prisma.term.upsert({
-    where: { year_season: { year: 2027, season: 'feb_apr' } },
+    where: { year_season: { year: 2027, season: 'apr_may' } },
     update: {},
-    create: { year: 2027, season: 'feb_apr', titleAr: 'موسم الربيع 2027', startsOn: new Date('2027-02-01'), endsOn: new Date('2027-04-30') },
+    create: { year: 2027, season: 'apr_may', titleAr: 'موسم الربيع 2027', startsOn: new Date('2027-04-01'), endsOn: new Date('2027-05-31') },
   })
   springTermId = spring.id
   ;({ cohortId, planId } = await submittedCohort('شعبةُ التفاوض — تُؤجَّل'))
@@ -85,7 +85,13 @@ beforeAll(async () => {
 
 describe('١ — من يؤجّل، وإلى أين', () => {
   it('⚠️ المدرّبُ لا يؤجّل', async () => {
-    expect((await post(`/api/admin/cohort-plans/${planId}/postpone`, 'trainer', { year: 2027, season: 'feb_apr' })).statusCode).toBe(403)
+    expect((await post(`/api/admin/cohort-plans/${planId}/postpone`, 'trainer', { year: 2027, season: 'apr_may' })).statusCode).toBe(403)
+  })
+
+  it('⚠️ ولا إلى موسم من التقويم القديم ذهب بالجديد — ربيع فبراير 2027', async () => {
+    const r = await post(`/api/admin/cohort-plans/${planId}/postpone`, 'admin', { year: 2027, season: 'feb_apr' })
+    expect(r.statusCode).toBe(400)
+    expect((await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: planId } })).status).toBe('submitted')
   })
 
   it('⚠️ ولا يُؤجَّل إلى موسمها نفسِه', async () => {
@@ -97,12 +103,12 @@ describe('١ — من يؤجّل، وإلى أين', () => {
 
 describe('٢ — ما يقع بالتأجيل', () => {
   it('تعود إليه بموسمها الجديد، وتنتقل الشعبةُ إلى فصله', async () => {
-    const r = await post(`/api/admin/cohort-plans/${planId}/postpone`, 'admin', { year: 2027, season: 'feb_apr', note: 'اخترنا لك ثلاثا هذا الفصل.' })
+    const r = await post(`/api/admin/cohort-plans/${planId}/postpone`, 'admin', { year: 2027, season: 'apr_may', note: 'اخترنا لك ثلاثا هذا الفصل.' })
     expect(r.statusCode, r.body).toBe(200)
-    expect(r.json()).toEqual({ status: 'postponed', postponedTo: '2027-02-01' })
+    expect(r.json()).toEqual({ status: 'postponed', postponedTo: '2027-04-01' })
     const plan = await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: planId } })
     expect(plan.status).toBe('changes_requested')
-    expect(plan.postponedTo?.toISOString().slice(0, 10)).toBe('2027-02-01')
+    expect(plan.postponedTo?.toISOString().slice(0, 10)).toBe('2027-04-01')
     expect((await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId } })).termId).toBe(springTermId)
   })
 
@@ -125,7 +131,7 @@ describe('٣ — ولا تُرسَل لهذا الفصل ثانيةً', () => {
   it('⚠️ صفُّ خطوتها الأولى يسمّي موسمَها، والإرسالُ يُردّ به', async () => {
     const plans = new CohortPlanService(prisma)
     const ws = await plans.workspace(trainerUserId, cohortId)
-    expect(ws.plan?.postponedTo).toBe('2027-02-01')
+    expect(ws.plan?.postponedTo).toBe('2027-04-01')
     const identity = ws.checklist.find((c) => c.key === 'identity')!
     expect(identity.done).toBe(false)
     expect(identity.labelAr).toContain('مؤجّلةٌ إلى موسم الربيع 2027')
@@ -136,7 +142,7 @@ describe('٣ — ولا تُرسَل لهذا الفصل ثانيةً', () => {
 
   it('وحين يجعل بدايتَها في موسمها يرتفع السببُ من صفّها', async () => {
     const plans = new CohortPlanService(prisma)
-    await plans.savePlan(trainerUserId, cohortId, { ...winterContent, startsOn: '2027-02-07', endsOn: '2027-04-10' } as never)
+    await plans.savePlan(trainerUserId, cohortId, { ...winterContent, startsOn: '2027-04-07', endsOn: '2027-05-20' } as never)
     const identity = (await plans.workspace(trainerUserId, cohortId)).checklist.find((c) => c.key === 'identity')!
     expect(identity.labelAr).not.toContain('مؤجّلةٌ')
     /* والحفظُ لا يمحو التأجيل — يبقى حتّى يُقرَّر فيها لموسمها */
@@ -146,7 +152,7 @@ describe('٣ — ولا تُرسَل لهذا الفصل ثانيةً', () => {
 
 describe('٤ — ما لا يُؤجَّل', () => {
   it('⚠️ ما ليس بانتظار قرار — ٤٠٩', async () => {
-    expect((await post(`/api/admin/cohort-plans/${planId}/postpone`, 'admin', { year: 2027, season: 'feb_apr' })).statusCode).toBe(409)
+    expect((await post(`/api/admin/cohort-plans/${planId}/postpone`, 'admin', { year: 2027, season: 'apr_may' })).statusCode).toBe(409)
   })
 
   it('⚠️ وشعبةٌ اعتُمدت من قبل وتعمل — مراجعتُها لا تُؤجَّل', async () => {
@@ -154,7 +160,7 @@ describe('٤ — ما لا يُؤجَّل', () => {
     await prisma.cohortDeliveryPlan.create({
       data: { cohortId: running.cohortId, trainerId: profileId, status: 'approved', content: winterContent as never, createdAt: new Date(Date.now() - 86_400_000) },
     })
-    const r = await post(`/api/admin/cohort-plans/${running.planId}/postpone`, 'admin', { year: 2027, season: 'feb_apr' })
+    const r = await post(`/api/admin/cohort-plans/${running.planId}/postpone`, 'admin', { year: 2027, season: 'apr_may' })
     expect(r.statusCode).toBe(409)
     expect(r.json().error.code).toBe('running_cohort')
   })

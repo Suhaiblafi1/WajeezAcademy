@@ -49,7 +49,7 @@ beforeAll(async () => {
   await cohort('بلا خطة')
   await cohort('بلا مدرب', { trainer: false })
   await cohort('معتمدة بلا تاريخ', { plan: 'approved' })
-  await cohort('معتمدة بلقاءات', { plan: 'approved', sessions: [{ at: '2096-08-01T16:00:00Z', status: 'cancelled' }, { at: '2096-12-10T16:00:00Z' }] })
+  await cohort('معتمدة بلقاءات', { plan: 'approved', sessions: [{ at: '2096-08-01T16:00:00Z', status: 'cancelled' }, { at: '2096-11-10T16:00:00Z' }] })
 }, 240_000)
 
 describe('① يتحدد وحده', () => {
@@ -75,7 +75,7 @@ describe('③ العامل يسمي المعتمدة من أول لقاء قائ
     expect((await row('معتمدة بلقاءات'))?.kind).toBe('needs')
     await assignMissingTerms(prisma)
     const t = (await prisma.cohort.findUniqueOrThrow({ where: { id: ids['معتمدة بلقاءات']! }, select: { term: { select: { year: true, season: true } } } })).term
-    expect(t, 'سمي من اللقاء الملغى أو لم يسم').toEqual({ year: 2096, season: 'nov_jan' })
+    expect(t, 'سمي من اللقاء الملغى أو لم يسم').toEqual({ year: 2096, season: 'oct_nov' })
     expect(await row('معتمدة بلقاءات')).toBeUndefined()
     expect((await row('معتمدة بلا تاريخ'))?.kind, 'لا تاريخ لها فلا يخمن').toBe('needs')
     expect((await row('خطة عند مدربها'))?.kind, 'سمي فصل ما لم يعتمد').toBe('auto')

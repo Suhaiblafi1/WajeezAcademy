@@ -33,8 +33,10 @@ beforeAll(async () => {
     where: { year_season: { year, season } }, update: {},
     create: { year, season, titleAr: `${season} ${year}`, startsOn: new Date(startsOn), endsOn: new Date(endsOn) },
   })
-  const winter = await term(2096, 'nov_jan', '2096-11-01', '2097-01-31')
-  const spring = await term(2097, 'feb_apr', '2097-02-01', '2097-04-30')
+  /* بالتقويم الجديد (٢١ نوفمبر ٢٠٢٦): موسمان متتاليان — الخريفُ (أكتوبر–نوفمبر) ثمّ الشتاءُ (يناير–فبراير).
+     والاسمان في الشيفرة بقيا «winter» و«spring» لأوّلهما وثانيهما */
+  const winter = await term(2096, 'oct_nov', '2096-10-01', '2096-11-30')
+  const spring = await term(2097, 'jan_feb', '2097-01-01', '2097-02-28')
   const lead = async (k: number, status: string, termId: string | null, startsAt: string) => {
     const x = await prisma.cohort.create({ data: { courseId: c[k]!, title: `شعبة ${k}`, status, termId, startsAt: new Date(startsAt) } })
     await prisma.cohortTrainer.create({ data: { cohortId: x.id, profileId, role: 'lead' } })
@@ -61,7 +63,7 @@ beforeAll(async () => {
 describe('بطاقة المدرب العامة — الموسم القادم وحده', () => {
   it('⚠️ ① المفتوحة والممتلئة، والأقرب أولا باسمه — وما بعده «المواسم القادمة» بلا اسم', async () => {
     const o = (await card()).offer
-    expect(o.map((g) => g.termAr), 'حمل الرد اسم موسم بعد الأقرب').toEqual(['موسم الشتاء 2096/2097', null])
+    expect(o.map((g) => g.termAr), 'حمل الرد اسم موسم بعد الأقرب').toEqual(['موسم الخريف 2096', null])
     expect(o[0]!.courseIds).toContain(c[0])
     expect(o[1]!.courseIds).toContain(c[1])
   })

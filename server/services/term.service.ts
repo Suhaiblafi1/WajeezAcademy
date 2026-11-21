@@ -11,8 +11,8 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
-import { termBounds, termTitleAr, termOf } from '../../src/application/terms/season'
+import { isOfferedSeason } from '../../src/application/trainer/application-options'
+import { inRhythm, latestStartedTerm, termBounds, termTitleAr } from '../../src/application/terms/season'
 import { LIVE_TERM_STATUSES, TERM_STATUS_AR, canMove, dueByDate, type TermStatus } from '../../src/application/terms/lifecycle'
 import { termWindowVerdict } from './registration-window'
 
@@ -33,10 +33,16 @@ export class TermService {
 
   /** إنشاءُ فصلٍ بحدوده المحسوبة — لا تُكتب التواريخُ باليد فتفترق عن الموسم */
   async create(actorId: string, input: { year: number; season: string }) {
-    if (!(TRAINING_SEASON_VALUES as readonly string[]).includes(input.season)) {
-      throw new AuthError('bad_season', 'موسم غير معروف — المواسم أربعة', 400)
+    if (!isOfferedSeason(input.season)) {
+      throw new AuthError('bad_season', 'موسم غير معروف — المواسم أربعة: الربيع والصيف والخريف والشتاء', 400)
     }
-    const season = input.season as TrainingSeason
+    const season = input.season
+    /* ═══ ولا فصلَ خارج الإيقاع (٢١ نوفمبر ٢٠٢٦) ═══
+       المواسمُ الجديدةُ تبدأ بربيع ٢٠٢٧ — و«ربيع 2026» بأشهرها (أبريل–مايو) يقع داخل ربعٍ قديمٍ مضى، فلا يُنشأ
+       فصلٌ لم يكن. والحدُّ في `season.ts` (`inRhythm`). */
+    if (!inRhythm({ year: input.year, season })) {
+      throw new AuthError('bad_season', `هذا الموسم قبل التقويم الجديد — أول موسم فيه ${termTitleAr(2027, 'apr_may')} (أبريل)`, 400)
+    }
     const existing = await this.prisma.term.findUnique({
       where: { year_season: { year: input.year, season } },
     })
@@ -199,7 +205,7 @@ export class TermService {
      أن يُرى، والتقويمُ العامّ كان يعرض «لا تقويمَ منشورٌ بعد» والمنشورُ خلفه
      لأنّ الاختيارَ كان بالتاريخ وحدَه. (٨ سبتمبر ٢٠٢٦) */
   async upcoming(now = new Date()) {
-    const current = termOf(now)
+    const current = latestStartedTerm(now)
     const candidates = await this.prisma.term.findMany({
       where: {
         status: { in: [...LIVE_TERM_STATUSES] },

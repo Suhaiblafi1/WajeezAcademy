@@ -29,8 +29,7 @@
 
    بلا React ولا قاعدة — ويحرسه `src/tests/trainer/deferral.test.ts`. */
 
-import { SEASON_MONTHS, termBounds, termOf, termTitleAr } from '../terms/season'
-import { TRAINING_SEASONS } from './application-options'
+import { nextSeason, seasonAfter, termAtOrAfter, termBounds, termStartingOn, termTitleAr, type SeasonRef } from '../terms/season'
 
 
 /* ═══ موعدُ التواصل: قبل فصلٍ قادمٍ مسمّى، لا «بعد شهرين» (١٢ أكتوبر ٢٠٢٦) ═══
@@ -53,16 +52,9 @@ export const DEFER_LEAD_DAYS = 42
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** الفصلُ الذي نتواصل قبله: الذي بعد القادم */
-export function deferredTerm(decidedAt: Date): { year: number; season: (typeof TRAINING_SEASONS)[number]['value'] } {
-  let t = termOf(decidedAt)
-  for (let k = 0; k < 2; k += 1) {
-    const i = TRAINING_SEASONS.findIndex((s) => s.value === t.season)
-    const next = TRAINING_SEASONS[(i + 1) % TRAINING_SEASONS.length]!.value
-    /* الشتاءُ يعبر رأسَ السنة: ما بعده (الربيع) في السنة التالية لبدايته */
-    t = { year: SEASON_MONTHS[next].start < SEASON_MONTHS[t.season].start ? t.year + 1 : t.year, season: next }
-  }
-  return t
+/** الفصلُ الذي نتواصل قبله: الذي بعد القادم — والقادمُ أوّلُ ما يبدأ بعد اليوم، ولو كنّا في شهر راحة */
+export function deferredTerm(decidedAt: Date): SeasonRef {
+  return nextSeason(seasonAfter(decidedAt))
 }
 
 /** موعدُ التواصل: قبل بداية الفصل الذي بعد القادم بستّة أسابيع */
@@ -71,9 +63,13 @@ export function deferredFollowUpAt(decidedAt: Date): Date {
   return new Date(termBounds(t.year, t.season).startsOn.getTime() - DEFER_LEAD_DAYS * DAY_MS)
 }
 
-/** اسمُ الفصل الذي نتواصل قبله، من موعد التواصل المحفوظ: «موسم الربيع 2027» */
+/** اسمُ الفصل الذي نتواصل قبله، من موعد التواصل المحفوظ: «موسم الربيع 2027».
+    والموعدُ المحفوظُ قبل الإيقاع الجديد يُقرأ باسم فصله يومَ حُفظ (`termStartingOn`): «قبل موسم الربيع 2027» الذي
+    قيل لصاحبه لا يصير «لا موسم» لأنّ فبراير صار راحة (٢١ نوفمبر ٢٠٢٦) */
 export function followUpTermAr(followUpAt: Date | string): string {
-  const t = termOf(new Date(new Date(followUpAt).getTime() + DEFER_LEAD_DAYS * DAY_MS))
+  const at = new Date(new Date(followUpAt).getTime() + DEFER_LEAD_DAYS * DAY_MS)
+  const day = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()))
+  const t = termStartingOn(day) ?? termAtOrAfter(at)
   return termTitleAr(t.year, t.season)
 }
 

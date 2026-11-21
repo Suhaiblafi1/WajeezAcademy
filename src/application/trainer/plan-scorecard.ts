@@ -154,8 +154,8 @@ export interface ScoreItem {
 export function seasonLastDay(startsOn: string): string | null {
   const start = new Date(`${startsOn}T12:00:00Z`)
   if (Number.isNaN(start.getTime())) return null
-  const { year, season } = termOf(start)
-  return season === 'nov_jan' ? `${year + 1}-${WINTER_LAST_DAY}` : null
+  const t = termOf(start)
+  return t?.season === 'nov_jan' ? `${t.year + 1}-${WINTER_LAST_DAY}` : null
 }
 
 /** تنتهي الشعبةُ بعد آخر يومٍ لموسمها؟ — بلغة من يصحّحه، أو `null` */

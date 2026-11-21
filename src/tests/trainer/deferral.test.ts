@@ -54,18 +54,18 @@ const code = (p: string) => strip(readFileSync(join(process.cwd(), p), 'utf8'))
 
 describe('① موعد التواصل — قبل فصل مسمّى، لا يوم بعينه', () => {
   it('الفصل الذي بعد القادم — فالقادم لا طلب فيه كافيا', () => {
-    /* في الخريف: القادم الشتاء، فالمسمّى الربيع من السنة التالية */
-    expect(deferredTerm(new Date('2026-10-08T10:00:00Z'))).toEqual({ year: 2027, season: 'feb_apr' })
+    /* في الخريف: القادم الشتاء، فالمسمّى الربيع من السنة التالية — وهو أبريل منذ ٢١ نوفمبر ٢٠٢٦ */
+    expect(deferredTerm(new Date('2026-10-08T10:00:00Z'))).toEqual({ year: 2027, season: 'apr_may' })
     /* وفي الشتاء (يعبر رأس السنة): القادم الربيع، فالمسمّى الصيف */
-    expect(deferredTerm(new Date('2026-11-20T08:00:00Z'))).toEqual({ year: 2027, season: 'may_jul' })
-    expect(deferredTerm(new Date('2027-01-15T08:00:00Z'))).toEqual({ year: 2027, season: 'may_jul' })
-    /* وفي الصيف: القادم الخريف، فالمسمّى الشتاء من السنة نفسها */
-    expect(deferredTerm(new Date('2027-06-01T08:00:00Z'))).toEqual({ year: 2027, season: 'nov_jan' })
+    expect(deferredTerm(new Date('2026-11-20T08:00:00Z'))).toEqual({ year: 2027, season: 'jul_aug' })
+    expect(deferredTerm(new Date('2027-01-15T08:00:00Z'))).toEqual({ year: 2027, season: 'jul_aug' })
+    /* وفي شهر الراحة (يونيو): القادم الصيف، فالمسمّى الخريف من السنة نفسها */
+    expect(deferredTerm(new Date('2027-06-01T08:00:00Z'))).toEqual({ year: 2027, season: 'oct_nov' })
   })
 
   it('يحلّ قبل بدايته بستّة أسابيع — وفي المستقبل دائما', () => {
     expect(DEFER_LEAD_DAYS).toBe(42)
-    expect(deferredFollowUpAt(new Date('2026-10-08T10:00:00Z')).toISOString()).toBe('2026-12-21T00:00:00.000Z')
+    expect(deferredFollowUpAt(new Date('2026-10-08T10:00:00Z')).toISOString()).toBe('2027-02-18T00:00:00.000Z')
     for (let m = 0; m < 24; m += 1) {
       const d = new Date(Date.UTC(2026, m, 28))
       expect(deferredFollowUpAt(d).getTime(), d.toISOString()).toBeGreaterThan(d.getTime())
@@ -74,7 +74,9 @@ describe('① موعد التواصل — قبل فصل مسمّى، لا يوم
 
   it('واسم الفصل يقرأ من الموعد المحفوظ نفسه', () => {
     expect(followUpTermAr(deferredFollowUpAt(new Date('2026-10-08T10:00:00Z')))).toBe('موسم الربيع 2027')
+    /* والمحفوظُ قبل التقويم الجديد (قبل ربيع فبراير) يبقى باسمه — لا «لا موسم» لأنّ فبراير صار راحة */
     expect(followUpTermAr('2026-12-21T00:00:00.000Z')).toBe('موسم الربيع 2027')
+    expect(followUpTermAr('2027-03-20T00:00:00.000Z')).toBe('موسم الصيف 2027')
   })
 })
 

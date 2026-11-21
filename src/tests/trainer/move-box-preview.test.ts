@@ -14,7 +14,8 @@ const box = readFileSync(join(process.cwd(), 'src/components/trainer/CohortMoveB
 
 describe('صندوق النقل', () => {
   it('يحسب أول لقاء بعد النقل كما يحسبه الخادم', () => {
-    expect(box).toMatch(/moveShiftMs\(termOf\(start\), target\)/)
+    /* والدالّةُ نفسُها التي يعتمد بها الخادم — ومن شهر راحةٍ بلا فصلٍ تُزاح من أوّل شهرها (`moveShiftFor`) */
+    expect(box).toMatch(/moveShiftFor\(termOf\(start\), start, target\)/)
   })
 
   it('ويقوله قبل الإرسال', () => {

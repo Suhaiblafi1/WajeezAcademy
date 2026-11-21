@@ -32,7 +32,7 @@ import DateField from "@/components/ui/DateField";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
   APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_INVITE_ONLY, INTERVIEW_BOOKING_PAUSE,
-  RECORDING_ANSWERS, RECORDINGS_WHY, recordingAnswerPatch, TRAINING_SEASONS, WANTS_RECORDING_ANSWERS,
+  RECORDING_ANSWERS, RECORDINGS_WHY, isOfferedSeason, OFFERED_SEASONS, recordingAnswerPatch, TRAINING_SEASONS, WANTS_RECORDING_ANSWERS,
   type ContactChannel,
 } from "@/application/trainer/application-options";
 
@@ -356,7 +356,8 @@ export default function JoinTrainer() {
     );
     setDays(d.days ?? []);
     setPeriods(d.periods ?? []);
-    setSeasons(d.seasons ?? []);
+    /* ومسودّةٌ حُفظت قبل المواسم الجديدة لا تحمل موسما قديما يردّه الخادم (٢١ نوفمبر ٢٠٢٦) */
+    setSeasons((d.seasons ?? []).filter(isOfferedSeason));
     setHoursPerWeek(d.hoursPerWeek ?? "");
     setStartFrom(d.startFrom ?? "");
     setHasRecordings(d.hasRecordings ?? "");
@@ -1631,7 +1632,7 @@ export default function JoinTrainer() {
                       لا كلّها — فيختار ما يشاء منها، واحدا أو أكثر. */}
                   <FieldSet legend="وفي أي مواسم السنة؟" required hint="اختر موسما أو أكثر — الشعب تفتح في مواسم محددة." wide>
                     <OptionGrid
-                      items={TRAINING_SEASONS.map((sn) => ({ value: sn.value, label: `${sn.label} · ${sn.months} (${sn.monthNums})` }))}
+                      items={OFFERED_SEASONS.map((sn) => ({ value: sn.value, label: `${sn.label} · ${sn.months} (${sn.monthNums})` }))}
                       isOn={(v) => seasons.includes(v)}
                       onToggle={(v) => toggle(seasons, v, setSeasons)}
                       cols={2}

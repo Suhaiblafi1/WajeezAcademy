@@ -269,9 +269,11 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
      فتُجهَّز هنا كما يجهّزها مدرّبُها في الشاشة، ثمّ تُرسَل. والمحروسُ لم
      يتبدّل: لا إرسالَ بلا تأكيد، وبتأكيدٍ تصير بانتظار الاعتماد. */
   const makeSubmittable = async () => {
+    /* وفصلُ فبراير–أبريل ٢٠٢٧ ألغاه ترحيلُ التقويم الجديد فارغا (٢١ نوفمبر ٢٠٢٦) — والاختبارُ يحتاج فصلا مفتوحا يحيط
+       بالمدّة، فيُفتح هنا كما كان يُنشأ */
     const term = await prisma.term.upsert({
       where: { year_season: { year: 2027, season: 'feb_apr' } },
-      update: {},
+      update: { status: 'open' },
       create: {
         year: 2027, season: 'feb_apr', titleAr: 'فصلُ الاختبار',
         startsOn: new Date('2027-02-01'), endsOn: new Date('2027-04-30'), status: 'open',

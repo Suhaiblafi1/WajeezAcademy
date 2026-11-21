@@ -30,7 +30,7 @@ import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from 
 import { PUBLIC_TRAINER_WHERE, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 import { photoPublicUrl } from './storage.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
-import { termOf, termTitleAr } from '../../src/application/terms/season'
+import { termAtOrAfter, termTitleAr } from '../../src/application/terms/season'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
 import type { CourseScope } from '../../src/application/commerce/grant-scope'
 
@@ -48,9 +48,9 @@ export interface BuyableCohort {
   trainer: { id: string; name: string; photoUrl: string | null } | null
 }
 
-/** فصلُ الشعبة بيوم بدئها في عمّان — مفتاحُه وعنوانُه */
+/** فصلُ الشعبة بيوم بدئها في عمّان — مفتاحُه وعنوانُه. وفي شهر راحةٍ الموسمُ الذي بعده */
 function termAt(at: Date): { key: string; titleAr: string } {
-  const t = termOf(new Date(`${zonedDay(at)}T00:00:00Z`))
+  const t = termAtOrAfter(new Date(`${zonedDay(at)}T00:00:00Z`))
   return { key: `${t.year}-${t.season}`, titleAr: termTitleAr(t.year, t.season) }
 }
 

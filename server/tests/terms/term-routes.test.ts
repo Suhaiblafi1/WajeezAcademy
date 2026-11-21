@@ -45,13 +45,13 @@ describe('مساراتُ الفصول مسجَّلةٌ في التطبيق', () 
   it('والإدارةُ تُنشئ فصلا بحدوده المحسوبة، وتراه في القائمة، وتنشر تقويمَه', async () => {
     const created = await app.inject({
       method: 'POST', url: '/api/admin/terms', headers: { cookie: adminCookie },
-      payload: { year: 2031, season: 'feb_apr' },
+      payload: { year: 2031, season: 'apr_may' },
     })
     expect(created.statusCode, created.body).toBe(201)
     const term = created.json() as { id: string; titleAr: string; startsOn: string; endsOn: string }
     expect(term.titleAr).toBe('موسم الربيع 2031')
-    expect(term.startsOn.slice(0, 10)).toBe('2031-02-01')
-    expect(term.endsOn.slice(0, 10)).toBe('2031-04-30')
+    expect(term.startsOn.slice(0, 10)).toBe('2031-04-01')
+    expect(term.endsOn.slice(0, 10)).toBe('2031-05-31')
 
     const list = await app.inject({ method: 'GET', url: '/api/admin/terms?all=true', headers: { cookie: adminCookie } })
     expect(list.statusCode).toBe(200)
@@ -62,14 +62,23 @@ describe('مساراتُ الفصول مسجَّلةٌ في التطبيق', () 
     expect((published.json() as { calendarPublishedAt: string | null }).calendarPublishedAt).not.toBeNull()
   })
 
+  /* شهران وشهرُ راحة (٢١ نوفمبر ٢٠٢٦): لا يُنشأ فصلٌ بموسمٍ قديم، ولا بموسمٍ جديدٍ قبل ربيع ٢٠٢٧ */
+  it('⚠️ ولا تنشئ فصلا من التقويم القديم — ولا موسما جديدا قبل ربيع 2027', async () => {
+    const old = await app.inject({ method: 'POST', url: '/api/admin/terms', headers: { cookie: adminCookie }, payload: { year: 2031, season: 'feb_apr' } })
+    expect(old.statusCode).toBe(422)
+    const early = await app.inject({ method: 'POST', url: '/api/admin/terms', headers: { cookie: adminCookie }, payload: { year: 2026, season: 'apr_may' } })
+    expect(early.statusCode).toBe(400)
+    expect(await prisma.term.findUnique({ where: { year_season: { year: 2026, season: 'apr_may' } } })).toBeNull()
+  })
+
   it('و«الفصل القادم» هو المنشورُ لا الأقربُ تاريخا — فالمنشورُ قُصد أن يُرى', async () => {
     const mk = async (season: string) => {
       const res = await app.inject({ method: 'POST', url: '/api/admin/terms', headers: { cookie: adminCookie }, payload: { year: 2029, season } })
       expect(res.statusCode, res.body).toBe(201)
       return (res.json() as { id: string }).id
     }
-    const unpublishedEarlier = await mk('aug_oct')
-    const publishedLater = await mk('nov_jan')
+    const unpublishedEarlier = await mk('jul_aug')
+    const publishedLater = await mk('oct_nov')
     const published = await app.inject({ method: 'POST', url: `/api/admin/terms/${publishedLater}/publish-calendar`, headers: { cookie: adminCookie }, payload: {} })
     expect(published.statusCode).toBe(200)
 
@@ -90,25 +99,25 @@ describe('مساراتُ الفصول مسجَّلةٌ في التطبيق', () 
       return (res.json() as { id: string }).id
     }
     /* ١· فارغٌ وغيرُ منشور — يُحذف ويختفي من القائمة */
-    const empty = await mk(2033, 'may_jul')
+    const empty = await mk(2033, 'apr_may')
     const del = await app.inject({ method: 'DELETE', url: `/api/admin/terms/${empty}`, headers: { cookie: adminCookie } })
     expect(del.statusCode, del.body).toBe(200)
     const list = await app.inject({ method: 'GET', url: '/api/admin/terms?all=true', headers: { cookie: adminCookie } })
     expect((list.json() as { id: string }[]).map((t) => t.id)).not.toContain(empty)
 
     /* ٢· منشورٌ — يُردّ، فالزائرُ رآه */
-    const published = await mk(2033, 'aug_oct')
+    const published = await mk(2033, 'jul_aug')
     await app.inject({ method: 'POST', url: `/api/admin/terms/${published}/publish-calendar`, headers: { cookie: adminCookie }, payload: {} })
     const delPublished = await app.inject({ method: 'DELETE', url: `/api/admin/terms/${published}`, headers: { cookie: adminCookie } })
     expect(delPublished.statusCode).toBe(409)
 
     /* ٣· فيه شعبة — يُردّ، فالشعبةُ تفقد فصلَها بصمت */
-    const withCohort = await mk(2033, 'nov_jan')
+    const withCohort = await mk(2033, 'oct_nov')
     const course = await prisma.course.findFirst({ select: { id: true } })
     await prisma.cohort.create({
       data: {
         courseId: course!.id, title: 'شعبةٌ تمنع الحذف', status: 'open', registrationOpen: true, financialReady: true,
-        price: 100, currency: 'USD', capacity: 10, startsAt: new Date('2033-11-10'), termId: withCohort,
+        price: 100, currency: 'USD', capacity: 10, startsAt: new Date('2033-10-10'), termId: withCohort,
       },
     })
     const delWithCohort = await app.inject({ method: 'DELETE', url: `/api/admin/terms/${withCohort}`, headers: { cookie: adminCookie } })

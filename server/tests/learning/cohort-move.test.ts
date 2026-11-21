@@ -12,7 +12,7 @@ import { AuthService } from '../../services/auth.service'
 import { CohortMoveService } from '../../services/cohort-move.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { moveReminderAt, nextTerm } from '../../../src/application/trainer/cohort-move'
-import { termBounds, termOf } from '../../../src/application/terms/season'
+import { seasonAfter, termBounds, termOf } from '../../../src/application/terms/season'
 import type { TrainingSeason } from '../../../src/application/trainer/application-options'
 import { forgetZoomToken } from '../../services/zoom.service'
 import { periodBounds } from '../../../src/application/trainer/cohort-period'
@@ -54,7 +54,7 @@ let adminId = ''
 let learnerId = ''
 
 /* شعبةٌ تبدأ في الفصل القادم بلقاءين — والهدفُ الفصلُ الذي بعده */
-const upcoming = nextTerm(termOf(new Date()))
+const upcoming = seasonAfter(new Date())
 const target = nextTerm(upcoming)
 
 async function mkCohort(title: string, profileId: string, opts: { termOf?: { year: number; season: TrainingSeason } } = {}) {

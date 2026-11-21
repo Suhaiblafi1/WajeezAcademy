@@ -18,7 +18,7 @@ import {
 import { assertSafeKey } from '../../services/object-store'
 import { publicTrainerWhere } from '../../services/trainer-visibility'
 import { requirePermission } from '../auth-plugin'
-import { CONTACT_CHANNEL_VALUES, TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
+import { CONTACT_CHANNEL_VALUES, OFFERED_SEASON_VALUES } from '../../../src/application/trainer/application-options'
 import { assertNotBot } from '../honeypot'
 
 /* ═══ روابطُ المتقدّم: تُطبَّع ولا تُردّ لأجل «https» (٢١ سبتمبر ٢٠٢٦) ═══
@@ -238,7 +238,8 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
            المتاحون لهذا الفصل» أبدا.
 
            فصار شرطا: واحدٌ على الأقلّ. ومن لا يستطيع فصلا لا يُجدوَل. */
-        seasons: z.array(z.enum(TRAINING_SEASON_VALUES)).min(1, 'اختر فصلا واحدا على الأقلّ تستطيع التدريس فيه').max(4),
+        /* المواسمُ الجديدةُ وحدَها (٢١ نوفمبر ٢٠٢٦) — والقديمةُ تُقرأ في ملفّ من اختارها ولا تُختار */
+        seasons: z.array(z.enum(OFFERED_SEASON_VALUES)).min(1, 'اختر فصلا واحدا على الأقلّ تستطيع التدريس فيه').max(4),
       }),
       /* تسجيلاتُ دوراته — والثاني تابعٌ للأوّل.
 

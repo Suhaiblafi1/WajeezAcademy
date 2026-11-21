@@ -71,14 +71,15 @@ describe('والترحيل لا يفقد بيانا', () => {
 describe('٥٣ · الموسم لا يسقط صامتا', () => {
   it('النموذج القديم يجمع المواسم ويرسلها — وكان يسقطها', () => {
     const form = read('src/pages/JoinTrainerComplete.tsx')
-    expect(form, 'النموذج القديم ما زال بلا مواسم').toContain('TRAINING_SEASONS')
+    /* والمعروضُ المواسمُ الجديدةُ وحدَها منذ ٢١ نوفمبر ٢٠٢٦ (`OFFERED_SEASONS`) */
+    expect(form, 'النموذج القديم ما زال بلا مواسم').toContain('OFFERED_SEASONS')
     expect(form).toMatch(/availability: \{\s*\n?\s*days, seasons, periods/)
   })
 
   it('والخادم يشترطها — فلا يمرّ مسار آخر بلا موسم', () => {
     const routes = read('server/http/routes/trainer-applications.routes.ts')
     expect(routes, 'الموسم ما زال اختياريّا في الخادم')
-      .toMatch(/seasons: z\.array\(z\.enum\(TRAINING_SEASON_VALUES\)\)\.min\(1/)
+      .toMatch(/seasons: z\.array\(z\.enum\(OFFERED_SEASON_VALUES\)\)\.min\(1/)
   })
 })
 

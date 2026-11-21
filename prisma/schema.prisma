@@ -2744,7 +2744,7 @@ model Term {
   id                   String                    @id @default(uuid()) @db.Uuid
   year                 Int
   /// رمزُ الموسم — القيمُ نفسُها في `TRAINING_SEASONS` لا جدولٌ ثانٍ يفترق عنها
-  season               String // nov_jan | feb_apr | may_jul | aug_oct
+  season               String // apr_may | jul_aug | oct_nov | jan_feb — والقديمةُ للتاريخ: nov_jan | feb_apr | may_jul | aug_oct
   titleAr              String
   startsOn             DateTime                  @db.Date
   endsOn               DateTime                  @db.Date
