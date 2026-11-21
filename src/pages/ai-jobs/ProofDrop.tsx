@@ -5,15 +5,13 @@ import { useState } from 'react'
 import { PROOF_ACCEPT } from '@/application/private-course/ai-jobs'
 import type { Proof } from './proof-file'
 
-export default function ProofDrop({ id, label, hint, proof, busy, invalid, card = false, onPick }: {
+export default function ProofDrop({ id, label, hint, proof, busy, invalid, onPick }: {
   id: string
   label: string
   hint: string
   proof: Proof | null
   busy: boolean
   invalid?: boolean
-  /** إيصالُ بطاقةٍ لا حوالة — يتبدّل النصُّ وحدَه */
-  card?: boolean
   onPick: (file: File | undefined) => void
 }) {
   const [over, setOver] = useState(false)
@@ -34,7 +32,7 @@ export default function ProofDrop({ id, label, hint, proof, busy, invalid, card 
               : <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#142240" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>}
         </span>
         <span className="txt">
-          <b>{busy ? 'نجهّز الملف…' : proof ? 'تم اختيار الملف — اضغط لتغييره' : card ? 'اضغط لاختيار صورة الإيصال' : 'اضغط لاختيار صورة الحوالة'}</b>
+          <b>{busy ? 'نجهّز الملف…' : proof ? 'تم اختيار الملف — اضغط لتغييره' : 'اضغط لاختيار صورة الحوالة'}</b>
           <small>{proof ? proof.name : 'من الهاتف أو الكمبيوتر'}</small>
         </span>
       </label>

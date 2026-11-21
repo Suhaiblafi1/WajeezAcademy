@@ -387,8 +387,20 @@ function RegistrationCard({ r, onChange, onRemove }: {
           )
           : (
             <Inset tone="warn" className="flex w-full flex-col items-start gap-2 p-3 text-read md:w-56">
-              <b>لم يرفع الحوالة بعد</b>
-              <span className="text-fine leading-5 text-muted-foreground">حجز مقعده ولم يدفع. ذكّره برابط الدفع باسمه:</span>
+              {/* البطاقةُ لا إيصالَ لها: يُطابَق دفعُه في Stripe برقم مرجعه (٢١ نوفمبر ٢٠٢٦) */}
+              {r.payMethod === 'card'
+                ? (
+                  <>
+                    <b>اختار الدفع بالبطاقة</b>
+                    <span className="text-fine leading-5 text-muted-foreground">ابحث في Stripe عن رقم المرجع <b dir="ltr" className="text-foreground">{r.reference}</b>. إن وصل الدفع فأكّده. وإن لم يصل ذكّره:</span>
+                  </>
+                )
+                : (
+                  <>
+                    <b>لم يرفع الحوالة بعد</b>
+                    <span className="text-fine leading-5 text-muted-foreground">حجز مقعده ولم يدفع. ذكّره برابط الدفع باسمه:</span>
+                  </>
+                )}
               <Button as="a" href={reminder} target="_blank" rel="noopener noreferrer" size="sm" icon={MessageCircle}>ذكّره على واتساب</Button>
               <Button size="sm" tone="ghost" icon={Copy} onClick={() => { void navigator.clipboard?.writeText(payLink).then(() => toast('نسخنا رابط الدفع')) }}>انسخ رابط الدفع</Button>
             </Inset>

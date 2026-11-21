@@ -44,7 +44,6 @@ export default function RegisterForm() {
      من لم يحوّل بعد يحجز، وتأتيه خطوةُ الدفع بعدها (`PayStep`) */
   const [proof, setProof] = useState<Proof | null>(null)
   const [proofBusy, setProofBusy] = useState(false)
-  const [paidBy, setPaidBy] = useState<'cliq' | 'card' | null>(null)
   const doneRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -66,9 +65,6 @@ export default function RegisterForm() {
       setProofBusy(false)
     }
   }
-
-  /* بطاقةٌ أم CliQ — يُسأل حين يرفع إيصالا والبطاقةُ مضبوطة، والافتراضُ من مفتاح رقمه */
-  const method = paidBy ?? (state?.card && country !== 'JO' ? 'card' : 'cliq')
 
   function validate(): Record<string, string> {
     const e: Record<string, string> = {}
@@ -92,23 +88,23 @@ export default function RegisterForm() {
     }
     setSending(true)
     try {
-      const r = await apiPost<{ reference: string; updated: boolean; sectionTitle: string; payToken: string; hasProof: boolean; cardUrl: string | null; abroad: boolean }>(
+      const r = await apiPost<{ reference: string; updated: boolean; sectionTitle: string; payToken: string; hasProof: boolean; cardUrl: string | null; abroad: boolean; cardChosen: boolean }>(
         `/api/v1/public/private-courses/${AI_JOBS.slug}/registrations`,
         {
           fullName, email, phoneCountry: country, phone, sectionKey: section,
           source: storedSource() ?? undefined,
-          ...(proof ? { proof: { name: proof.name, base64: proof.base64 }, payMethod: method } : {}),
+          ...(proof ? { proof: { name: proof.name, base64: proof.base64 } } : {}),
           website: hp.value,
         },
       )
       /* الحجزُ هو الحدثُ الذي يُحسَّن عليه الإعلان — مرّةً لكلّ حجز */
       trackPixel('Lead', { content_name: AI_JOBS.title, value: AI_JOBS.priceUsd, currency: 'USD' })
-      if (proof) trackPixel('AddPaymentInfo', { payment_method: method, value: method === 'card' ? AI_JOBS.priceUsd : AI_JOBS.priceJod, currency: method === 'card' ? 'USD' : 'JOD' })
+      if (proof) trackPixel('AddPaymentInfo', { payment_method: 'cliq', value: AI_JOBS.priceJod, currency: 'JOD' })
       setReserved({
         token: r.payToken,
         info: {
           firstName: fullName.trim().split(/\s+/)[0], reference: r.reference, sectionTitle: r.sectionTitle,
-          status: 'pending', hasProof: r.hasProof, cardUrl: r.cardUrl, abroad: r.abroad,
+          status: 'pending', hasProof: r.hasProof, cardUrl: r.cardUrl, abroad: r.abroad, cardChosen: r.cardChosen,
         },
       })
     } catch (err) {
@@ -198,23 +194,8 @@ export default function RegisterForm() {
       </div>
 
       <ProofDrop id="aij-proof" label="صورة الحوالة" hint="اختياري الآن — صورة أو لقطة شاشة أو PDF"
-        proof={proof} busy={proofBusy} invalid={Boolean(errors.proof)} card={method === 'card'} onPick={(f) => void pick(f)} />
+        proof={proof} busy={proofBusy} invalid={Boolean(errors.proof)} onPick={(f) => void pick(f)} />
       {errors.proof && <p className="aij-err">{errors.proof}</p>}
-
-      {proof && state?.card && (
-        <div className="aij-methods" role="radiogroup" aria-label="طريقة الدفع">
-          <label className={`aij-choice${method === 'cliq' ? ' on' : ''}`}>
-            <input type="radio" name="paid-by" checked={method === 'cliq'} onChange={() => setPaidBy('cliq')} />
-            <b>دفعت عبر CliQ</b>
-            <span>{AI_JOBS.priceJod} دينار</span>
-          </label>
-          <label className={`aij-choice${method === 'card' ? ' on' : ''}`}>
-            <input type="radio" name="paid-by" checked={method === 'card'} onChange={() => setPaidBy('card')} />
-            <b>دفعت بالبطاقة</b>
-            <span><bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi></span>
-          </label>
-        </div>
-      )}
 
       {hp.field}
 
@@ -227,7 +208,7 @@ export default function RegisterForm() {
         {proof
           ? <>نراجع الحوالة ويصلك التأكيد ورابط Zoom على بريدك.</>
           : state?.card
-          ? <>بعدها تدفع {AI_JOBS.priceJod} دينار عبر CliQ، أو <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة من خارج الأردن، وترفع الإيصال. ويصلك التأكيد ورابط Zoom على بريدك.</>
+          ? <>بعدها تحوّل {AI_JOBS.priceJod} دينار عبر CliQ وترفع صورة الحوالة، أو تدفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة من خارج الأردن. ويصلك التأكيد ورابط Zoom على بريدك.</>
           : <>بعدها تحوّل {AI_JOBS.priceJod} دينار عبر CliQ وترفع صورة الحوالة، ويصلك التأكيد ورابط Zoom على بريدك.</>}
       </p>
     </form>

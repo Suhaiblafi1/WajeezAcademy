@@ -23,6 +23,8 @@ export interface PayInfo {
   cardUrl: string | null
   /** رقمُه خارجَ الأردن — فالبطاقةُ هي الخيارُ الأوّل له */
   abroad: boolean
+  /** ضغط «ادفع بالبطاقة» ولم يرفع حوالة */
+  cardChosen: boolean
 }
 
 type Method = 'cliq' | 'card'
@@ -68,7 +70,7 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
   const [again, setAgain] = useState(false)
-  const [method, setMethod] = useState<Method>(info.cardUrl && info.abroad ? 'card' : 'cliq')
+  const [method, setMethod] = useState<Method>(info.cardUrl && (info.abroad || info.cardChosen) ? 'card' : 'cliq')
   const link = payUrl(token)
   const card = method === 'card' && Boolean(info.cardUrl)
 
@@ -86,6 +88,16 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
     }
   }
 
+  /* البطاقةُ لا إيصالَ لها: يصله إيصالُها ويصلنا الدفع، فنؤكد مقعده — قرارُ صاحب المنصّة (٢١ نوفمبر ٢٠٢٦).
+     فيكفي أن نكتب أنّه ذهب إليها، ولا يُنتظر الردّ: صفحةُ الدفع تُفتح في نافذةٍ أخرى */
+  function goCard() {
+    trackPixel('InitiateCheckout', { value: AI_JOBS.priceUsd, currency: 'USD' })
+    if (info.cardChosen) return
+    apiPost<PayInfo>(`/api/v1/public/private-courses/${AI_JOBS.slug}/pay/${token}/card`, {})
+      .then(onChange)
+      .catch(() => { /* لا يمنع الدفع شيء — يطابقه صاحبُ الدورة برقم المرجع في Stripe */ })
+  }
+
   async function submit(ev: FormEvent) {
     ev.preventDefault()
     if (!proof) { setError('اختر صورة الحوالة'); return }
@@ -95,9 +107,8 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
       const next = await apiPost<PayInfo>(`/api/v1/public/private-courses/${AI_JOBS.slug}/pay/${token}`, {
         proof: { name: proof.name, base64: proof.base64 },
         note: note.trim() || undefined,
-        payMethod: card ? 'card' : 'cliq',
       })
-      trackPixel('AddPaymentInfo', { payment_method: card ? 'card' : 'cliq', value: card ? AI_JOBS.priceUsd : AI_JOBS.priceJod, currency: card ? 'USD' : 'JOD' })
+      trackPixel('AddPaymentInfo', { payment_method: 'cliq', value: AI_JOBS.priceJod, currency: 'JOD' })
       setProof(null)
       setAgain(false)
       onChange(next)
@@ -147,7 +158,7 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
         <div className="aij-alert" role="alert">لم نتمكن من تأكيد الحوالة السابقة. ارفع صورة أوضح، أو راسلنا على واتساب.</div>
       )}
 
-      <p className="aij-step-label">الخطوة الأخيرة: ادفع وارفع الإيصال</p>
+      <p className="aij-step-label">{card ? 'الخطوة الأخيرة: ادفع بالبطاقة' : 'الخطوة الأخيرة: حوّل وارفع صورة الحوالة'}</p>
       {info.cardUrl && (
         <div className="aij-methods" role="radiogroup" aria-label="طريقة الدفع">
           <label className={`aij-choice${method === 'cliq' ? ' on' : ''}`}>
@@ -165,37 +176,38 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
       {card
         ? (
           <div className="aij-cliq">
-            <small>ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة في صفحة الدفع، ثم ارجع هنا وارفع صورة الإيصال أو رسالة التأكيد.</small>
-            <a className="aij-cta aij-cta-y aij-card-btn" href={info.cardUrl!} target="_blank" rel="noopener noreferrer"
-              onClick={() => trackPixel('InitiateCheckout', { value: AI_JOBS.priceUsd, currency: 'USD' })}>
+            <small>ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة في صفحة الدفع. يصلك إيصال الدفع على بريدك، ثم نؤكد مقعدك ونرسل لك رابط Zoom — لا حاجة لرفع شيء.</small>
+            <a className="aij-cta aij-cta-y aij-card-btn" href={info.cardUrl!} target="_blank" rel="noopener noreferrer" onClick={goCard}>
               ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة
             </a>
-            <small style={{ marginTop: 8 }}>رقم المرجع <b dir="ltr">{info.reference}</b> — اكتبه في الملاحظة إن طلبتها صفحة الدفع.</small>
+            {info.cardChosen && <small style={{ marginTop: 8 }}>دفعت؟ نؤكد مقعدك فور وصول الدفع، ويصلك البريد ورابط Zoom.</small>}
           </div>
         )
         : (
-          <div className="aij-cliq">
-            <small>حوّل {AI_JOBS.priceJod} دينار عبر CliQ إلى الاسم المستعار</small>
-            <div className="aij-alias">
-              <b>{AI_JOBS.cliqAlias}</b>
-              <Copy text={AI_JOBS.cliqAlias} label="انسخ" />
+          <>
+            <div className="aij-cliq">
+              <small>حوّل {AI_JOBS.priceJod} دينار عبر CliQ إلى الاسم المستعار</small>
+              <div className="aij-alias">
+                <b>{AI_JOBS.cliqAlias}</b>
+                <Copy text={AI_JOBS.cliqAlias} label="انسخ" />
+              </div>
             </div>
-          </div>
+
+            <ProofDrop id="aij-pay-proof" label="صورة الحوالة" hint="صورة أو لقطة شاشة أو PDF"
+              proof={proof} busy={busy} invalid={Boolean(error)} onPick={(f) => void pick(f)} />
+
+            <div className="aij-field">
+              <label className="aij-label" htmlFor="aij-pay-note">ملاحظة <em>— اختياري، مثل اسم صاحب الحساب المحوّل إن اختلف</em></label>
+              <textarea id="aij-pay-note" className="aij-textarea" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
+            </div>
+
+            {error && <div className="aij-alert" role="alert">{error}</div>}
+
+            <button type="submit" className="aij-cta aij-cta-lg aij-submit" disabled={sending || busy || !proof}>
+              {sending ? 'نرسل الصورة…' : 'أرسل صورة الحوالة'}
+            </button>
+          </>
         )}
-
-      <ProofDrop id="aij-pay-proof" label={card ? 'صورة إيصال الدفع' : 'صورة الحوالة'} hint="صورة أو لقطة شاشة أو PDF"
-        proof={proof} busy={busy} invalid={Boolean(error)} card={card} onPick={(f) => void pick(f)} />
-
-      <div className="aij-field">
-        <label className="aij-label" htmlFor="aij-pay-note">ملاحظة <em>— اختياري، مثل اسم صاحب الحساب المحوّل إن اختلف</em></label>
-        <textarea id="aij-pay-note" className="aij-textarea" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
-      </div>
-
-      {error && <div className="aij-alert" role="alert">{error}</div>}
-
-      <button type="submit" className="aij-cta aij-cta-lg aij-submit" disabled={sending || busy || !proof}>
-        {sending ? 'نرسل الصورة…' : card ? 'أرسل صورة الإيصال' : 'أرسل صورة الحوالة'}
-      </button>
 
       <div className="aij-later">
         <b>لا تستطيع الدفع الآن؟</b>

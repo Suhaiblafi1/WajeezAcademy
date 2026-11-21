@@ -129,8 +129,6 @@ export interface PublicRegistrationInput {
   proof?: ProofInput
   /** من أين جاء — تكتبه الصفحةُ من `?src=` و`utm_*` أو الموقعِ الذي أحاله (`source.ts`) */
   source?: string
-  /** كيف دفع — مع صورة الحوالة في النموذج نفسِه (٢١ نوفمبر ٢٠٢٦) */
-  payMethod?: 'cliq' | 'card'
 }
 
 function decodeProof(base64: string): Buffer {
@@ -187,7 +185,8 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
     phone: phone.e164,
     phoneCountry: phone.country.iso2,
     ...(input.note?.trim() ? { note: input.note.trim() } : {}),
-    ...(proof ? { ...proof, payMethod: input.payMethod ?? 'cliq' } : {}),
+    /* الإيصالُ لا يُرفع إلّا لـCliQ: من دفع بالبطاقة يصله إيصالُها ويصل صاحبَ الدورة الدفعُ (٢١ نوفمبر ٢٠٢٦) */
+    ...(proof ? { ...proof, payMethod: 'cliq' } : {}),
   }
   try {
     /* وتسجيلٌ ثانٍ بالبريد نفسِه يحدّث الأوّل: رابطُ دفعه كما هو، وحوالتُه كما هي ما لم تُرفع أخرى،
@@ -209,6 +208,7 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
       hasProof: Boolean(row.proofKey),
       cardUrl: cardLinkFor(course, reference(row.id)),
       abroad: row.phoneCountry !== 'JO',
+      cardChosen: row.payMethod === 'card' && !row.proofKey,
     }
   } catch (e) {
     /* لا يبقى على القرص ملفٌّ لا يملكه صفّ */
@@ -240,6 +240,8 @@ function payView(r: PrivateRegistration, course: Pick<PrivateCourse, 'cardUrl'>)
     /** خيارُ البطاقة إن ضُبط رابطُه — ويُقدَّم لمن رقمُه خارجَ الأردن */
     cardUrl: cardLinkFor(course, reference(r.id)),
     abroad: r.phoneCountry !== 'JO',
+    /** ضغط «ادفع بالبطاقة» ولم يرفع حوالة — فيرى «نؤكد مقعدك بعد وصول الدفع» إن عاد للرابط */
+    cardChosen: r.payMethod === 'card' && !r.proofKey,
   }
 }
 
@@ -250,9 +252,11 @@ export async function payInfo(prisma: PrismaClient, slug: string, token: string)
 
 export type PayMethod = 'cliq' | 'card'
 
+/** صورةُ حوالة CliQ من رابط الدفع. والبطاقةُ لا إيصالَ لها هنا — قرارُ صاحب المنصّة (٢١ نوفمبر ٢٠٢٦): «لو دفع
+    يصل له التأكيد مباشرة، لا حاجة ليثبته» — فيكفي أن يُعلَم أنّه ذهب إليها (`chooseCard`) */
 export async function submitProof(
   prisma: PrismaClient, slug: string, token: string,
-  input: { proof: ProofInput; note?: string; payMethod?: PayMethod },
+  input: { proof: ProofInput; note?: string },
 ) {
   const r = await byToken(prisma, slug, token)
   if (r.status === 'confirmed') throw new AuthError('already_confirmed', 'مقعدك مؤكد — تفقد بريدك', 409)
@@ -262,7 +266,7 @@ export async function submitProof(
       where: { id: r.id },
       /* ومن رُفض فرفع حوالةً جديدةً عاد للمراجعة */
       data: {
-        ...proof, status: 'pending', rejectedAt: null, payMethod: input.payMethod ?? 'cliq',
+        ...proof, status: 'pending', rejectedAt: null, payMethod: 'cliq',
         ...(input.note?.trim() ? { note: input.note.trim() } : {}),
       },
     })
@@ -272,6 +276,15 @@ export async function submitProof(
     await deleteObject(proof.proofKey)
     throw e
   }
+}
+
+/** ضغط «ادفع بالبطاقة» — يُكتب أنّه اختارها، فيرى صاحبُ الدورة في لوحته من يطابقه في Stripe برقم مرجعه،
+    ولا يصله تذكيرٌ يقول «لم تدفع» كأنّه لم يفعل شيئا. ومن رفع حوالةً أو تأكّد لا يتغيّر عنده شيء */
+export async function chooseCard(prisma: PrismaClient, slug: string, token: string) {
+  const r = await byToken(prisma, slug, token)
+  if (!r.course.cardUrl || r.status === 'confirmed' || r.proofKey || r.payMethod === 'card') return payView(r, r.course)
+  const row = await prisma.privateRegistration.update({ where: { id: r.id }, data: { payMethod: 'card' } })
+  return payView(row, r.course)
 }
 
 /* ── اللوحة ── */
