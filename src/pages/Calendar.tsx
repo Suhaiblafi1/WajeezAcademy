@@ -74,7 +74,7 @@ export default function CalendarPage() {
         <EmptyState
           icon={CalendarDays}
           titleAr="لا تقويم منشور بعد"
-          reasonAr="عند نشر تقويم الفصل القادم تظهر هنا دوراته في أشهره الثلاثة ومواعيد بدايتها. لا نعرض الفصل قبل اعتماده."
+          reasonAr="عند نشر تقويم الفصل القادم تظهر هنا دوراته في أشهره ومواعيد بدايتها. لا نعرض الفصل قبل اعتماده."
         />
       ) : (
         <>
@@ -108,7 +108,7 @@ export default function CalendarPage() {
             </div>
           )}
 
-          <div className="mt-8 grid gap-5 lg:grid-cols-3">
+          <div className={`mt-8 grid gap-5 ${data.months.length === 2 ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
             {data.months.map((m) => {
               const shown = m.entries.filter((e) => domain === "الكل" || e.domainAr === domain);
               return (

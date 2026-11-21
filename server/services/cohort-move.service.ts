@@ -21,7 +21,7 @@ import { fmtDateWith } from '../../src/application/text/format-ar'
 import { ACADEMY_ZONE, asPeriod, periodBounds, realDate } from '../../src/application/trainer/cohort-period'
 import { shiftDatesIn, shiftDay, shiftInstant, shiftPlan, type CopyablePlan } from '../../src/application/trainer/plan-copy'
 import {
-  moveProblemAr, moveReminderAt, moveShiftMs, shiftDate, termLabelAr, type TermRef,
+  moveProblemAr, moveReminderAt, moveShiftFor, shiftDate, termLabelAr, type TermRef,
 } from '../../src/application/trainer/cohort-move'
 import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
 import { ensureTerm } from './term-ensure'
@@ -162,8 +162,11 @@ export class CohortMoveService {
       fromStartsAt: r.fromStartsAt,
       fromAr: r.fromYear !== null && isSeason(r.fromSeason) ? termLabelAr({ year: r.fromYear, season: r.fromSeason }) : null,
       toAr: isSeason(r.toSeason) ? termLabelAr({ year: r.toYear, season: r.toSeason }) : r.toSeason,
-      newStartsAt: r.fromYear !== null && isSeason(r.fromSeason) && isSeason(r.toSeason)
-        ? shiftDate(r.fromStartsAt, moveShiftMs({ year: r.fromYear, season: r.fromSeason }, { year: r.toYear, season: r.toSeason }))
+      /* ومن شهر راحةٍ بلا فصلٍ يُحسب من أوّل شهره (`moveShiftFor`) */
+      newStartsAt: isSeason(r.toSeason) && (r.fromStartsAt || (r.fromYear !== null && isSeason(r.fromSeason)))
+        ? shiftDate(r.fromStartsAt, moveShiftFor(
+          r.fromYear !== null && isSeason(r.fromSeason) ? { year: r.fromYear, season: r.fromSeason } : null,
+          r.fromStartsAt, { year: r.toYear, season: r.toSeason }))
         : null,
     }))
   }
@@ -215,8 +218,9 @@ export class CohortMoveService {
       const problem = moveProblemAr({ ...w, target, now: new Date(), reason: r.reason })
       if (problem) throw new AuthError('move_refused', problem, 409)
       /* وشعبةٌ لا موعدَ فيها ولا مقترحَ ولا فصلَ — شعبةُ إعدادٍ لم يكتب مدرّبُها مدّتَها بعد — لا شيءَ فيها يُزاح:
-         نقلُها ربطُها بفصلها الجديد وحدَه. وكان يُردّ «حدّد لقاءاتها أولا»، أي يُطلب منه عملٌ قبل أن يؤجّل. */
-      shiftMs = w.current ? moveShiftMs(w.current, target) : 0
+         نقلُها ربطُها بفصلها الجديد وحدَه. وكان يُردّ «حدّد لقاءاتها أولا»، أي يُطلب منه عملٌ قبل أن يؤجّل.
+         وشعبةٌ في شهر راحةٍ — فصلُها `null` وموعدُها قائم — تُزاح من أوّل شهرها (`moveShiftFor`، ٢١ نوفمبر ٢٠٢٦). */
+      shiftMs = moveShiftFor(w.current, w.firstStartsAt ?? w.proposedStartsAt, target)
     }
 
     const decided = await this.prisma.$transaction(async (tx) => {

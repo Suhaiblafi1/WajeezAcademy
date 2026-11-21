@@ -21,7 +21,7 @@
    تقولان الشيءَ نفسَه، ويحرسهما `src/tests/trainers-page.test.ts`. */
 
 import type { Prisma } from '@prisma/client'
-import { termBounds, termOf } from '../../src/application/terms/season'
+import { latestStartedTerm, termBounds } from '../../src/application/terms/season'
 
 /** ما تحتاجه البوّابةُ من الملفّ — يُنتقى في `select` حيث يُقرأ ضمن علاقة */
 export interface TrainerVisibilityFields {
@@ -58,9 +58,11 @@ export const PUBLIC_TRAINER_WHERE: Prisma.TrainerProfileWhereInput = {
    ولماذا دالّةٌ لا ثابت: اليومُ جزءٌ من الشرط، وثابتٌ يُحسب عند تحميل الوحدة
    يتجمّد على يوم الإقلاع والخادمُ يعمل أسابيع. */
 
-/** أوّلُ يومٍ في الفصل الجاري — ما انتهى قبله ليس «هذا الفصلَ أو بعده» */
+/** أوّلُ يومٍ في الفصل الجاري — ما انتهى قبله ليس «هذا الفصلَ أو بعده».
+    وفي شهر الراحة (منذ ٢١ نوفمبر ٢٠٢٦: يونيو وسبتمبر وديسمبر ومارس) «الجاري» آخرُ فصلٍ بدأ: من درّس فيه
+    يبقى اسمُه شهرَ الراحة كما كان يبقى في فصله، ويذهب حين يبدأ الذي بعده ولا دورةَ له فيه */
 export function currentTermStart(now: Date): Date {
-  const t = termOf(now)
+  const t = latestStartedTerm(now)
   return termBounds(t.year, t.season).startsOn
 }
 

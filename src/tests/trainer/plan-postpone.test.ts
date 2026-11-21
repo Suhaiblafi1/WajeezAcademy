@@ -14,11 +14,20 @@ import {
 const TODAY = '2026-10-08'
 
 describe('المواسم تدور', () => {
-  it('الشتاء يتلوه ربيع السنة التالية، والخريف يتلوه شتاء سنته', () => {
-    expect(nextSeason({ year: 2026, season: 'nov_jan' })).toEqual({ year: 2027, season: 'feb_apr' })
-    expect(nextSeason({ year: 2027, season: 'feb_apr' })).toEqual({ year: 2027, season: 'may_jul' })
-    expect(nextSeason({ year: 2027, season: 'may_jul' })).toEqual({ year: 2027, season: 'aug_oct' })
-    expect(nextSeason({ year: 2027, season: 'aug_oct' })).toEqual({ year: 2027, season: 'nov_jan' })
+  it('الشتاء يتلوه ربيع السنة التالية، والخريف يتلوه شتاء سنته — في التقويم القديم', () => {
+    expect(nextSeason({ year: 2025, season: 'nov_jan' })).toEqual({ year: 2026, season: 'feb_apr' })
+    expect(nextSeason({ year: 2026, season: 'feb_apr' })).toEqual({ year: 2026, season: 'may_jul' })
+    expect(nextSeason({ year: 2026, season: 'may_jul' })).toEqual({ year: 2026, season: 'aug_oct' })
+    expect(nextSeason({ year: 2026, season: 'aug_oct' })).toEqual({ year: 2026, season: 'nov_jan' })
+  })
+
+  /* شهران وشهرُ راحة (٢١ نوفمبر ٢٠٢٦): بعد شتاء ٢٠٢٦/٢٠٢٧ ربيعُ ٢٠٢٧ في أبريل */
+  it('⚠️ وشتاء 2026/2027 يتلوه ربيع 2027 في أبريل — ثمّ الصيف فالخريف فشتاء السنة التالية', () => {
+    expect(nextSeason({ year: 2026, season: 'nov_jan' })).toEqual({ year: 2027, season: 'apr_may' })
+    expect(nextSeason({ year: 2027, season: 'apr_may' })).toEqual({ year: 2027, season: 'jul_aug' })
+    expect(nextSeason({ year: 2027, season: 'jul_aug' })).toEqual({ year: 2027, season: 'oct_nov' })
+    expect(nextSeason({ year: 2027, season: 'oct_nov' })).toEqual({ year: 2028, season: 'jan_feb' })
+    expect(nextSeason({ year: 2028, season: 'jan_feb' })).toEqual({ year: 2028, season: 'apr_may' })
   })
 
   it('وأوّل يوم في الموسم واسمه', () => {
@@ -38,7 +47,13 @@ describe('المواسم تدور', () => {
 describe('ما يختار منه', () => {
   it('الموسمان التاليان لموسمها — والأوّل المقترح', () => {
     expect(postponeChoices({ startsOn: '2026-12-06' }, TODAY)).toEqual([
-      { year: 2027, season: 'feb_apr' }, { year: 2027, season: 'may_jul' },
+      { year: 2027, season: 'apr_may' }, { year: 2027, season: 'jul_aug' },
+    ])
+  })
+
+  it('وشعبة تبدأ في شهر راحة يعرض لها الموسم الذي يليه — لم يبدأ يوم بدئها', () => {
+    expect(postponeChoices({ startsOn: '2027-03-08' }, TODAY)).toEqual([
+      { year: 2027, season: 'apr_may' }, { year: 2027, season: 'jul_aug' },
     ])
   })
 
@@ -46,7 +61,12 @@ describe('ما يختار منه', () => {
     const p = { startsOn: '2026-12-06' }
     expect(validPostponeTarget({ year: 2026, season: 'nov_jan' }, p, TODAY)).toBe(false)
     expect(validPostponeTarget({ year: 2026, season: 'aug_oct' }, p, TODAY)).toBe(false)
-    expect(validPostponeTarget({ year: 2027, season: 'feb_apr' }, p, TODAY)).toBe(true)
+    expect(validPostponeTarget({ year: 2027, season: 'apr_may' }, p, TODAY)).toBe(true)
+  })
+
+  it('⚠️ ولا إلى موسم من التقويم القديم ذهب بالجديد — ربيع فبراير 2027', () => {
+    expect(validPostponeTarget({ year: 2027, season: 'feb_apr' }, { startsOn: '2026-12-06' }, TODAY)).toBe(false)
+    expect(validPostponeTarget({ year: 2027, season: 'may_jul' }, { startsOn: '2026-12-06' }, TODAY)).toBe(false)
   })
 })
 
@@ -65,6 +85,13 @@ describe('حاجز الإرسال', () => {
 
   it('وسطر الحال', () => {
     expect(postponedLineAr('2027-02-01')).toBe('مؤجّلة إلى موسم الربيع 2027')
+    expect(postponedLineAr('2027-04-01')).toBe('مؤجّلة إلى موسم الربيع 2027')
+  })
+
+  /* والمؤجَّلةُ قبل التقويم الجديد إلى «موسم الصيف 2027» (مايو) تبقى صيفا — لا تُقرأ ربيعا لأنّ مايو صار منه */
+  it('⚠️ وما أجّل قبل التقويم الجديد يقرأ باسمه يوم أجّل', () => {
+    expect(postponedLineAr('2027-05-01')).toBe('مؤجّلة إلى موسم الصيف 2027')
+    expect(postponedLineAr('2027-08-01')).toBe('مؤجّلة إلى موسم الخريف 2027')
   })
 })
 

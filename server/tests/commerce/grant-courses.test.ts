@@ -132,12 +132,13 @@ describe('④ ومن الفصل القادم القريب وحده', () => {
   it('⚠️ فصل أقرب شعبة لم تبدأ بيومها في عمان — وما بعده لا يعرض، وبلا شعبة لم تبدأ يعرض ما يشترى كله', async () => {
     const [near, edge, late] = [nextCourse(), nextCourse(), nextCourse()]
     await cohort(near)
-    /* آخرُ ساعةٍ من أبريل في عمّان، وأوّلُ ساعةٍ من مايو — وكلتاهما ٣٠ أبريل بتوقيت غرينتش */
-    await cohort(edge, { startsAt: new Date(Date.UTC(2099, 3, 30, 20)) })
-    await cohort(late, { startsAt: new Date(Date.UTC(2099, 3, 30, 21)) })
+    /* آخرُ ساعةٍ من فبراير في عمّان، وأوّلُ ساعةٍ من مارس — وكلتاهما ٢٨ فبراير بتوقيت غرينتش. والشتاءُ يناير–فبراير
+       منذ ٢١ نوفمبر ٢٠٢٦، ومارسُ راحةٌ تُعدّ للربيع بعده */
+    await cohort(edge, { startsAt: new Date(Date.UTC(2099, 1, 28, 20)) })
+    await cohort(late, { startsAt: new Date(Date.UTC(2099, 1, 28, 21)) })
 
     const o = await courses.openCourses(NOW)
-    expect(o.termAr).toBe('موسم الربيع 2099')
+    expect(o.termAr).toBe('موسم الشتاء 2099')
     const ids = o.courses.map((x) => x.courseId)
     expect(ids).toContain(near)
     expect(ids, 'أسقط شعبة من الفصل نفسه').toContain(edge)

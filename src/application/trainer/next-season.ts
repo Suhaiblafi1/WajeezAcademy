@@ -15,7 +15,7 @@
    «انظر شيئا معتمدا للفصل القادم وأنت تكتبه في صفحة المدرّب خطأ» (صاحب المنصّة). فالموسمُ يُقرأ من أوّل لقاءٍ قائمٍ
    في الشعبة (`termOf`) لا من صفّ فصلها، فلا يفترقان؛ والشتاءُ بسنتيه (`termTitleAr`). */
 
-import { termBounds, termOf, termTitleAr } from '../terms/season'
+import { termAtOrAfter, termBounds, termTitleAr } from '../terms/season'
 import type { TrainingSeason } from './application-options'
 
 export interface SeasonItem {
@@ -25,9 +25,9 @@ export interface SeasonItem {
   at?: string | Date | null
 }
 
-/** موسمُ الشعبة: من أوّل لقائها إن كان، وإلّا من فصلها المسمّى */
+/** موسمُ الشعبة: من أوّل لقائها إن كان — وفي شهر راحةٍ الموسمُ الذي بعده — وإلّا من فصلها المسمّى */
 export function cohortSeason(firstAt: Date | null, term: { year: number; season: string } | null): { year: number; season: string } | null {
-  return firstAt ? termOf(firstAt) : term
+  return firstAt ? termAtOrAfter(firstAt) : term
 }
 
 export interface SeasonGroup { termAr: string | null; courseIds: string[] }

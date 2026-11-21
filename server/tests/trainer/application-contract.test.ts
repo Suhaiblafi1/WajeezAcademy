@@ -91,10 +91,19 @@ describe('ما تشترطه الواجهةُ هو ما يشترطه الخادم
 
   it('والخادمُ يقبل ما تبنيه الواجهةُ حين يختار المتقدّمُ موسما', async () => {
     const p1 = await phase1(`contract-ok-${Date.now()}@wajeez.test`)
-    const res = await postPhase2(p1.reference, p1.candidateToken, { seasons: ['nov_jan'] })
+    const res = await postPhase2(p1.reference, p1.candidateToken, { seasons: ['apr_may'] })
     expect(res.statusCode, res.body).toBeLessThan(300)
     const row = await prisma.trainerApplication.findUnique({ where: { reference: p1.reference } })
     expect(row?.status, 'الطلبُ المكتملُ يجب أن يغادر `draft`').not.toBe('draft')
+  })
+
+  /* المواسمُ الجديدةُ وحدَها تُختار (٢١ نوفمبر ٢٠٢٦) — والقديمُ يُقرأ في ملفّ من اختاره قبلها ولا يُختار */
+  it('⚠️ وموسم من التقويم القديم يرد ٤٢٢ — والطلب يبقى `draft`', async () => {
+    const p1 = await phase1(`contract-old-${Date.now()}@wajeez.test`)
+    const res = await postPhase2(p1.reference, p1.candidateToken, { seasons: ['nov_jan'] })
+    expect(res.statusCode).toBe(422)
+    const row = await prisma.trainerApplication.findUnique({ where: { reference: p1.reference } })
+    expect(row?.status).toBe('draft')
   })
 
   it('وبلا موسمٍ يُردّ ٤٢٢ بعربيّةٍ — والطلبُ يبقى `draft` فلا يُظنّ مقدَّما', async () => {

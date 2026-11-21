@@ -29,8 +29,8 @@ import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { termlessAutoAr, termlessWaitAr, type TermlessKind } from "@/application/terms/termless";
-import { TRAINING_SEASONS } from "@/application/trainer/application-options";
-import { termHorizon } from "@/application/terms/season";
+import { OFFERED_SEASONS, TRAINING_SEASONS } from "@/application/trainer/application-options";
+import { seasonAfter, termHorizon } from "@/application/terms/season";
 import { toast, toastError } from "@/components/Toast";
 import { TERM_STATUS_AR, TERM_STATUS_EFFECT_AR, nextStatuses, type TermStatus } from "@/application/terms/lifecycle";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
@@ -74,7 +74,11 @@ export default function Terms() {
   const [terms, setTerms] = useState<Term[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [form, setForm] = useState({ year: new Date().getFullYear(), season: "nov_jan" });
+  /* الافتراضُ أوّلُ موسمٍ قادم بالتقويم الجديد — ربيعُ 2027 اليوم (٢١ نوفمبر ٢٠٢٦) */
+  const [form, setForm] = useState(() => {
+    const next = seasonAfter(new Date());
+    return { year: next.year, season: next.season as string };
+  });
   const [windows, setWindows] = useState<Record<string, { opensAt: string; closesAt: string }>>({});
   const [showAllTerms, setShowAllTerms] = useState(false);
   /* الحذفُ بضغطتين: الأولى تكشف زرَّ التأكيد، والثانية تحذف — لا حوارَ متصفّح */
@@ -84,7 +88,7 @@ export default function Terms() {
   const [pickTerm, setPickTerm] = useState<Record<string, string>>({});
   /* بابُ التسجيل للمنصّة كلِّها — قرارٌ واحدٌ فوق الشعب والفصول */
   const [gate, setGate] = useState<GateState | null>(null);
-  const [gateSeason, setGateSeason] = useState("nov_jan");
+  const [gateSeason, setGateSeason] = useState<string>(() => seasonAfter(new Date()).season);
   const [gateMessage, setGateMessage] = useState("");
 
   const load = useCallback(async () => {
@@ -241,7 +245,14 @@ export default function Terms() {
     setConfirmDelete(null);
   }, "حذف الموسم");
 
-  const seasonLabel = (s: string) => TRAINING_SEASONS.find((x) => x.value === s)?.months ?? s;
+  /* والموسمُ القديمُ يُقرأ باسمه وأشهره، ويُقال إنّه من التقويم القديم (٢١ نوفمبر ٢٠٢٦) */
+  const seasonLabel = (s: string) => {
+    const found = TRAINING_SEASONS.find((x) => x.value === s);
+    if (!found) return s;
+    return found.retired ? `${found.months} (التقويم القديم)` : found.months;
+  };
+  /* بابُ التسجيل يختار من المواسم الجديدة — ويبقى المحفوظُ فيه ظاهرا ولو كان قديما، فلا يُبدَّل بصمت */
+  const gateChoices = TRAINING_SEASONS.filter((s) => !s.retired || s.value === gateSeason);
 
   /* ═══ ولماذا لا تُعرض المواسمُ كلُّها ═══
 
@@ -252,7 +263,10 @@ export default function Terms() {
      والقسمةُ في `application/terms/season` لا هنا: هي قرارٌ يُفحص، وحارسُها
      يمنع أن يُخفى الموسمُ الجاري مع المخفيّ — وفيه الشعبُ التي تعمل اليوم.
      ولا يُحذف شيء: ما طُوي يبقى خلفَ إفصاحٍ ينادي عددَه. */
-  const { shown: visibleTerms, hidden: foldedTerms } = termHorizon(terms ?? [], new Date());
+  /* والملغى لا يأخذ مكانَ موسمٍ قادم — يُطوى مع الماضي (مواسمُ التقويم القديم الفارغةُ أُلغيت، ٢١ نوفمبر ٢٠٢٦) */
+  const horizon = termHorizon((terms ?? []).filter((t) => t.status !== "cancelled"), new Date());
+  const visibleTerms = horizon.shown;
+  const foldedTerms = [...horizon.hidden, ...(terms ?? []).filter((t) => t.status === "cancelled")];
   const listed = showAllTerms ? [...visibleTerms, ...foldedTerms] : visibleTerms;
 
   return (
@@ -292,7 +306,7 @@ export default function Terms() {
             <label>
               <span className="mb-1.5 block text-read font-bold text-muted-foreground">الموسم المنتظر</span>
               <select value={gateSeason} onChange={(e) => setGateSeason(e.target.value)} className={staffSelectCls}>
-                {TRAINING_SEASONS.map((s) => <option key={s.value} value={s.value}>{s.label} — {s.months}</option>)}
+                {gateChoices.map((s) => <option key={s.value} value={s.value}>{s.label} — {s.months}</option>)}
               </select>
             </label>
             <label>
@@ -336,7 +350,7 @@ export default function Terms() {
       <Panel as="section" className="mb-6">
         <h2 className="flex items-center gap-2 text-sm font-black"><CalendarPlus className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> موسم جديد</h2>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          أربعة مواسم في السنة بحدود ثابتة (الشتاء: نوفمبر إلى يناير). اختر السنة والموسم، وتحسب التواريخ تلقائيّا.
+          أربعة مواسم في السنة، كل موسم شهران وبعده شهر راحة: الربيع أبريل ومايو، والصيف يوليو وأغسطس، والخريف أكتوبر ونوفمبر، والشتاء يناير وفبراير. أول موسم بهذا التقويم ربيع 2027. اختر السنة والموسم، وتحسب التواريخ تلقائيّا.
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-end">
           <label>
@@ -346,7 +360,7 @@ export default function Terms() {
           <label>
             <span className="mb-1.5 block text-read font-bold text-muted-foreground">الموسم</span>
             <select value={form.season} onChange={(e) => setForm({ ...form, season: e.target.value })} className={staffSelectCls}>
-              {TRAINING_SEASONS.map((s) => <option key={s.value} value={s.value}>{s.label} — {s.months}</option>)}
+              {OFFERED_SEASONS.map((s) => <option key={s.value} value={s.value}>{s.label} — {s.months}</option>)}
             </select>
           </label>
           <Button tone="confirm" disabled={busy !== null} onClick={create}>أنشئ الموسم</Button>

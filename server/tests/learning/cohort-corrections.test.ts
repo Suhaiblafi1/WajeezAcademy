@@ -14,7 +14,7 @@ import { AuthService } from '../../services/auth.service'
 import { applyCohortCorrections, type CohortCorrection } from '../../worker/jobs'
 import { CohortMoveService } from '../../services/cohort-move.service'
 import { nextTerm } from '../../../src/application/trainer/cohort-move'
-import { termBounds, termOf } from '../../../src/application/terms/season'
+import { seasonAfter, termBounds, termOf } from '../../../src/application/terms/season'
 
 const DAY = 86_400_000
 let prisma: PrismaClient
@@ -22,7 +22,7 @@ let adminId = ''
 let trainerUserId = ''
 let cohortId = ''
 let list: CohortCorrection[] = []
-const upcoming = nextTerm(termOf(new Date()))
+const upcoming = seasonAfter(new Date())
 /* الموسمُ نفسُه بعد سنة — كما وقع: «الشتاء 2027» بدل الشتاء القادم */
 const yearLater = nextTerm(nextTerm(nextTerm(nextTerm(upcoming))))
 

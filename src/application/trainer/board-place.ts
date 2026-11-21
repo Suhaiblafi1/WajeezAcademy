@@ -23,8 +23,8 @@
    وفصلُ الشعبة من صفّ فصلها أوّلا (`term`) — فالتأجيلُ قبل الاعتماد يربطها بفصلها الجديد ولا يمسّ مواعيدَ
    خطّتها (`postpone`) — ثمّ من أوّل لقائها، ثمّ من بدئها المقترح. */
 
-import { termBounds, termOf } from '../terms/season'
-import { nextTerm, type TermRef } from './cohort-move'
+import { seasonAfter, termAtOrAfter, termBounds } from '../terms/season'
+import type { TermRef } from './cohort-move'
 import { TRAINING_SEASON_VALUES } from './application-options'
 
 export type BoardPlace = 'current' | 'finished' | 'courses' | 'later'
@@ -41,8 +41,8 @@ export interface PlacedCohort {
   proposedStartsOn?: string | null
 }
 
-/** الفصلُ الذي نعمل له: الذي يلي الجاري */
-export const workingTerm = (now: Date): TermRef => nextTerm(termOf(now))
+/** الفصلُ الذي نعمل له: الذي يلي الجاري — أوّلُ ما يبدأ بعد اليوم، ولو كنّا في شهر راحة */
+export const workingTerm = (now: Date): TermRef => seasonAfter(now)
 
 const isTermRef = (t: { year: number; season: string }): t is TermRef =>
   (TRAINING_SEASON_VALUES as readonly string[]).includes(t.season)
@@ -51,7 +51,8 @@ const isTermRef = (t: { year: number; season: string }): t is TermRef =>
 export function cohortTerm(c: PlacedCohort): TermRef | null {
   if (c.term && isTermRef(c.term)) return { year: c.term.year, season: c.term.season }
   const at = c.startsAt ? new Date(c.startsAt) : c.proposedStartsOn ? new Date(`${c.proposedStartsOn}T12:00:00Z`) : null
-  return at && !Number.isNaN(at.getTime()) ? termOf(at) : null
+  /* وبدءٌ في شهر راحةٍ يُعدّ للفصل الذي بعده (`termAtOrAfter`) */
+  return at && !Number.isNaN(at.getTime()) ? termAtOrAfter(at) : null
 }
 
 const startOf = (t: TermRef) => termBounds(t.year, t.season).startsOn.getTime()

@@ -27,9 +27,12 @@ export async function ensureTerm(db: Db, t: { year: number; season: TrainingSeas
   })
 }
 
-/** فصلُ يومٍ بعينه — و`null` إن كان فصلُه أُغلق أو أُلغي: لا تُعاد شعبةٌ إلى موسمٍ انتهى */
+/** فصلُ يومٍ بعينه — و`null` إن كان فصلُه أُغلق أو أُلغي: لا تُعاد شعبةٌ إلى موسمٍ انتهى.
+    و`null` كذلك ليومٍ في شهر راحة (٢١ نوفمبر ٢٠٢٦): لا فصلَ فيه يُنشأ، ولا يُخمَّن له فصلٌ يليه */
 export async function ensureTermOf(db: Db, day: Date) {
-  const term = await ensureTerm(db, termOf(day))
+  const at = termOf(day)
+  if (!at) return null
+  const term = await ensureTerm(db, at)
   return term.status === 'closed' || term.status === 'cancelled' ? null : term
 }
 

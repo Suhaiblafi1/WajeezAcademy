@@ -4,17 +4,40 @@
    ثلاثة ملفّات لاختلف ما يراه المتقدّم عمّا يراه المراجع عمّا يفحصه
    الخادم. والوحدةُ نقيّة — لا React ولا Prisma — فتُستورد من الطرفين. */
 
-/** مواسمُ التدريب — أربعةُ أرباعٍ تبدأ بنوفمبر لا بيناير، لأنّ موسمَ
-    التدريب العربيّ يبدأ بعد الصيف ويقف في رمضان والصيف لا عند رأس السنة. */
+/** مواسمُ التدريب — القيمةُ تُخزَّن والاسمُ يُقرأ.
+
+    ═══ شهران عملٌ وشهرٌ راحة (٢١ نوفمبر ٢٠٢٦) ═══
+
+    كانت أربعةَ أرباعٍ تبدأ بنوفمبر (`nov_jan` وأخواتُها، ثلاثةُ أشهرٍ لكلٍّ تغطّي السنة). وقرّر صاحبُ المنصّة:
+    «يجب أن نبدأ الفصل القادم ... لنبتعد عن شهر رمضان»، و«اجعلها تبدأ من 1 أبريل إلى نهاية مايو، شهرين فقط».
+    فصارت أربعةً من شهرين: الربيعُ أبريل–مايو، والصيفُ يوليو–أغسطس، والخريفُ أكتوبر–نوفمبر، والشتاءُ يناير–فبراير؛
+    ويونيو وسبتمبر وديسمبر ومارس بلا موسم. وأوّلُها ربيعُ ٢٠٢٧.
+
+    والأربعةُ القديمةُ **باقيةٌ تُقرأ** (`retired`): بها سُمّيت فصولٌ وشعبٌ وطلباتٌ مضت، وشتاءُ ٢٠٢٦/٢٠٢٧ يجري
+    عليها اليوم — فلا يُعاد كتابةُ التاريخ. لكنّها لا تُعرض لفصلٍ جديدٍ ولا لمتقدّمٍ ولا لنقلٍ أو تأجيل
+    (`OFFERED_SEASONS`). وأيُّ موسمٍ في أيّ تاريخٍ — حسابُه في `src/application/terms/season.ts`. */
 export const TRAINING_SEASONS = [
-  { value: 'nov_jan', label: 'موسم الشتاء', months: 'نوفمبر – يناير', monthNums: '١١ – ١' },
-  { value: 'feb_apr', label: 'موسم الربيع', months: 'فبراير – أبريل', monthNums: '٢ – ٤' },
-  { value: 'may_jul', label: 'موسم الصيف', months: 'مايو – يوليو', monthNums: '٥ – ٧' },
-  { value: 'aug_oct', label: 'موسم الخريف', months: 'أغسطس – أكتوبر', monthNums: '٨ – ١٠' },
+  { value: 'nov_jan', label: 'موسم الشتاء', months: 'نوفمبر – يناير', monthNums: '١١ – ١', retired: true },
+  { value: 'feb_apr', label: 'موسم الربيع', months: 'فبراير – أبريل', monthNums: '٢ – ٤', retired: true },
+  { value: 'may_jul', label: 'موسم الصيف', months: 'مايو – يوليو', monthNums: '٥ – ٧', retired: true },
+  { value: 'aug_oct', label: 'موسم الخريف', months: 'أغسطس – أكتوبر', monthNums: '٨ – ١٠', retired: true },
+  { value: 'apr_may', label: 'موسم الربيع', months: 'أبريل – مايو', monthNums: '٤ – ٥', retired: false },
+  { value: 'jul_aug', label: 'موسم الصيف', months: 'يوليو – أغسطس', monthNums: '٧ – ٨', retired: false },
+  { value: 'oct_nov', label: 'موسم الخريف', months: 'أكتوبر – نوفمبر', monthNums: '١٠ – ١١', retired: false },
+  { value: 'jan_feb', label: 'موسم الشتاء', months: 'يناير – فبراير', monthNums: '١ – ٢', retired: false },
 ] as const
 
 export type TrainingSeason = (typeof TRAINING_SEASONS)[number]['value']
+/** كلُّ الرموز — ما يُقرأ ويُسمّى، قديمُها وجديدُها */
 export const TRAINING_SEASON_VALUES = TRAINING_SEASONS.map((s) => s.value) as [TrainingSeason, ...TrainingSeason[]]
+
+/** ما يُعرض للاختيار اليوم — المواسمُ الجديدة وحدَها، بترتيب السنة من الربيع */
+export const OFFERED_SEASONS = TRAINING_SEASONS.filter((s) => !s.retired)
+export const OFFERED_SEASON_VALUES = OFFERED_SEASONS.map((s) => s.value) as [TrainingSeason, ...TrainingSeason[]]
+
+/** أموسمٌ يُعرض للاختيار؟ — والقديمُ يُقرأ ولا يُختار */
+export const isOfferedSeason = (value: string): value is TrainingSeason =>
+  (OFFERED_SEASON_VALUES as readonly string[]).includes(value)
 
 /** الاسمُ الكامل كما يُقرأ في الملفّ والبريد: «موسم الشتاء (نوفمبر – يناير)» */
 export function seasonLabel(value: string): string {

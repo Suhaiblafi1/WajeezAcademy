@@ -33,7 +33,10 @@ describe('① الموعدُ ديسمبر', () => {
     const at = intakeFollowUpAt()
     expect(at.toISOString()).toBe('2026-12-21T00:00:00.000Z')
     expect(at.getUTCMonth() + 1, 'وعدنا بشهر ١٢').toBe(12)
-    expect(at.getTime()).toBeLessThan(termBounds(2027, 'feb_apr').startsOn.getTime())
+    /* والفصلُ ربيعُ ٢٠٢٧ بأشهره الجديدة (أبريل–مايو، ٢١ نوفمبر ٢٠٢٦) — والوعدُ بديسمبر باقٍ كما قيل */
+    expect(TRAINER_INTAKE_CLOSED.nextTerm).toEqual({ year: 2027, season: 'apr_may' })
+    expect(TRAINER_INTAKE_CLOSED.nextMonthsAr).toBe('أبريل – مايو')
+    expect(at.getTime()).toBeLessThan(termBounds(TRAINER_INTAKE_CLOSED.nextTerm.year, TRAINER_INTAKE_CLOSED.nextTerm.season).startsOn.getTime())
   })
 
   it('⚠️ وشارةُ الطابور تسمّي الفصلَ الذي وعدناه — لا الشتاء', () => {

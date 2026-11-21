@@ -13,19 +13,23 @@ import {
 } from '../../application/terms/season'
 
 describe('الأربعة تغطّي السنة — لا شهر بلا فصل ولا شهر في فصلين', () => {
-  it('كلّ شهر من الاثني عشر يقع في فصل واحد لا غير', () => {
+  /* الأرباعُ القديمةُ تغطّي السنة؛ والمواسمُ الجديدةُ (٢١ نوفمبر ٢٠٢٦) تترك بعد كلّ موسمٍ شهرَ راحة —
+     وحارسُها في `two-month-seasons.test.ts` */
+  const claim = (seasons: readonly { value: (typeof TRAINING_SEASONS)[number]['value'] }[], m: number) => seasons.filter((s) => {
+    const { start, end } = SEASON_MONTHS[s.value]
+    return crossesYearEnd(s.value) ? m >= start || m <= end : m >= start && m <= end
+  })
+
+  it('كلّ شهر من الاثني عشر يقع في فصل واحد لا غير — في التقويم القديم', () => {
+    const old = TRAINING_SEASONS.filter((s) => s.retired)
     for (let m = 1; m <= 12; m++) {
-      const owners = TRAINING_SEASONS.filter((s) => {
-        const { start, end } = SEASON_MONTHS[s.value]
-        return crossesYearEnd(s.value) ? m >= start || m <= end : m >= start && m <= end
-      })
-      expect(owners.map((o) => o.value), `الشهر ${m} — عدد الفصول التي تدّعيه`).toHaveLength(1)
+      expect(claim(old, m).map((o) => o.value), `الشهر ${m} — عدد الفصول التي تدّعيه`).toHaveLength(1)
     }
   })
 
-  it('ولكلّ فصل ثلاثة أشهر بالضبط', () => {
+  it('ولكلّ فصل قديم ثلاثة أشهر بالضبط، ولكلّ جديد شهران', () => {
     for (const s of TRAINING_SEASONS) {
-      expect(termMonths(2026, s.value), s.value).toHaveLength(3)
+      expect(termMonths(2026, s.value), s.value).toHaveLength(s.retired ? 3 : 2)
     }
   })
 })

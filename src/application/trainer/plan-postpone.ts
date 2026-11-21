@@ -18,52 +18,54 @@
    ── والمواسمُ أربعةٌ تدور ──
 
    الشتاءُ (نوفمبر–يناير) يعبر رأسَ السنة فسنتُه سنةُ بدايته، فما بعده الربيعُ من السنة
-   التالية. والحسابُ كلُّه على `application/terms/season.ts` لا بيدٍ هنا. */
+   التالية. ومنذ ٢١ نوفمبر ٢٠٢٦ شهران وشهرُ راحة: بعد شتاء ٢٠٢٦/٢٠٢٧ ربيعُ ٢٠٢٧ (أبريل–مايو).
+   والحسابُ كلُّه على `application/terms/season.ts` لا بيدٍ هنا. */
 
-import { termBounds, termOf, termTitleAr } from '../terms/season'
-import type { TrainingSeason } from './application-options'
+import {
+  inRhythm, nextSeason as seasonAfterTerm, seasonAfter, termAtOrAfter, termBounds, termStartingOn, termTitleAr, type SeasonRef,
+} from '../terms/season'
 import { cohortDayAr } from '../learning/cohort-gate'
 import type { CohortPeriod } from './cohort-period'
 
-export interface Season { year: number; season: TrainingSeason }
+export type Season = SeasonRef
 
-/** الموسمُ الذي يلي هذا — والشتاءُ يتلوه ربيعُ السنة التالية */
-export function nextSeason(s: Season): Season {
-  switch (s.season) {
-    case 'nov_jan': return { year: s.year + 1, season: 'feb_apr' }
-    case 'feb_apr': return { year: s.year, season: 'may_jul' }
-    case 'may_jul': return { year: s.year, season: 'aug_oct' }
-    case 'aug_oct': return { year: s.year, season: 'nov_jan' }
-  }
-}
+/** الموسمُ الذي يلي هذا — بالإيقاع الساري: شتاءُ ٢٠٢٦/٢٠٢٧ يتلوه ربيعُ ٢٠٢٧ (أبريل)، ثمّ الصيفُ فالخريفُ
+    فشتاءُ السنة التالية (يناير). والحسابُ في `season.ts` لا هنا (٢١ نوفمبر ٢٠٢٦) */
+export const nextSeason = (s: Season): Season => seasonAfterTerm(s)
 
 const iso = (d: Date) => d.toISOString().slice(0, 10)
 
 /** أوّلُ يومٍ في الموسم — `YYYY-MM-DD` */
 export const seasonStart = (s: Season): string => iso(termBounds(s.year, s.season).startsOn)
 
-/** الموسمُ الذي يقع فيه يومٌ ما */
-export const seasonOfDay = (day: string): Season => termOf(new Date(`${day}T12:00:00.000Z`))
+/** الموسمُ الذي يقع فيه يومٌ ما. وأوّلُ يومٍ حُفظ لموسمٍ يُقرأ باسمه يومَ حُفظ (`termStartingOn`) — فالمؤجَّلةُ
+    إلى «موسم الربيع 2027» قبل الإيقاع الجديد (١ فبراير) تبقى كذلك. وشهرُ الراحة يُعدّ للموسم الذي بعده */
+export const seasonOfDay = (day: string): Season => {
+  const at = new Date(`${day}T12:00:00.000Z`)
+  return termStartingOn(new Date(`${day}T00:00:00.000Z`)) ?? termAtOrAfter(at)
+}
 
 /** «موسم الربيع 2027» */
 export const seasonAr = (s: Season): string => termTitleAr(s.year, s.season)
 
 /** موسمُ الشعبة كما خطّط لها مدرّبُها — أو موسمُ اليوم إن لم يحدّد مدّتها بعد */
 export function plannedSeason(period: { startsOn?: string | null } | null, today: string): Season {
-  return seasonOfDay(period?.startsOn || today)
+  return termAtOrAfter(new Date(`${period?.startsOn || today}T12:00:00.000Z`))
 }
 
-/** ما يُختار منه في زرّ التأجيل: الموسمان التاليان لموسمها — والأوّلُ هو المقترَح */
+/** ما يُختار منه في زرّ التأجيل: الموسمان اللذان يبدآن بعد بدئها — والأوّلُ هو المقترَح.
+    وشعبةٌ تبدأ في شهر راحةٍ يُعرض لها الموسمُ الذي يليه مباشرة: لم يبدأ بعد يومَ بدئها */
 export function postponeChoices(period: { startsOn?: string | null } | null, today: string, n = 2): Season[] {
   const out: Season[] = []
-  let s = plannedSeason(period, today)
-  for (let i = 0; i < n; i++) { s = nextSeason(s); out.push(s) }
+  let s = seasonAfter(new Date(`${period?.startsOn || today}T12:00:00.000Z`))
+  for (let i = 0; i < n; i++) { out.push(s); s = nextSeason(s) }
   return out
 }
 
-/** أيصحّ التأجيلُ إلى هذا الموسم؟ — بعد موسمها لا فيه ولا قبله */
+/** أيصحّ التأجيلُ إلى هذا الموسم؟ — موسمٌ في التقويم الساري (لا «فبراير–أبريل 2027» الذي ذهب بالإيقاع
+    الجديد، `inRhythm`)، ويبدأ بعد بدئها لا فيه ولا قبله */
 export function validPostponeTarget(target: Season, period: { startsOn?: string | null } | null, today: string): boolean {
-  return seasonStart(target) > seasonStart(plannedSeason(period, today))
+  return inRhythm(target) && seasonStart(target) > (period?.startsOn || today)
 }
 
 /** ما يمنع إرسالَ مؤجَّلةٍ — بلغة من يصحّحه، أو `null`.

@@ -24,7 +24,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { CohortService } from './cohort.service'
 import { planTerm, type PlannableCourse, type PlannerSlot } from '../../src/application/terms/planner'
-import { monthWithinTerm } from '../../src/application/terms/season'
+import { monthWithinTerm, plannedMonthOk } from '../../src/application/terms/season'
 import type { TrainingSeason } from '../../src/application/trainer/application-options'
 
 /* الشعبُ الحيّةُ أو المهيّأةُ لا تُكرَّر — النمطُ نفسُه في «افتح كلَّ الشعب» */
@@ -169,6 +169,11 @@ export class TermPlanningService {
     const service = new CohortService(this.prisma)
     const actor = opts.actorId ?? null
     const capacity = Math.min(Math.max(opts.capacity ?? DEFAULT_CAPACITY, 1), 500)
+
+    /* شهرُ الفصل من أشهره — والموسمُ الجديدُ شهران (٢١ نوفمبر ٢٠٢٦). ولا يُكتب شهرٌ ثالثٌ لفصلٍ من شهرين،
+       ويُفحص قبل أن تُنشأ شعبةٌ واحدة */
+    const outside = rows.find((r) => !plannedMonthOk(term.season as TrainingSeason, r.monthWithinTerm))
+    if (outside) throw new AuthError('bad_month', `الشهر ${outside.monthWithinTerm} خارج أشهر ${term.titleAr}`, 500)
 
     for (const row of rows) {
       const startsAt = new Date(row.startsAt)
