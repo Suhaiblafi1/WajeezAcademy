@@ -397,7 +397,8 @@ describe('⑤ الحجز أولا والدفع بعد', () => {
 
 /* ═══ ⑥ الدفع بالبطاقة لمن هو خارج الأردن (٢١ نوفمبر ٢٠٢٦) ═══
    CliQ لا يعمل إلّا داخل الأردن. فصاحبُ الدورة يلصق رابطَ صفحة دفعٍ من مزوّده، فيظهر للحاجز خيارُ «بطاقة» —
-   ولمن رقمُه خارجَ الأردن أوّلا — ويرفع الإيصالَ بعدها، ويُكتب كيف دفع. */
+   ولمن رقمُه خارجَ الأردن أوّلا. ولا إيصالَ يُرفع لها: «لو دفع يصل له التأكيد مباشرة، لا حاجة ليثبته» — فيُكتب
+   أنّه ذهب إليها، ويطابقه صاحبُ الدورة في Stripe برقم مرجعه. والصورةُ المرفوعةُ حوالةُ CliQ دائما. */
 describe('⑥ الدفع بالبطاقة', () => {
   const STRIPE = 'https://buy.stripe.com/test_abc123'
   const payUrl = (token: string) => `/api/v1/public/private-courses/${AI_JOBS_SLUG}/pay/${token}`
@@ -432,16 +433,17 @@ describe('⑥ الدفع بالبطاقة', () => {
     expect((await app.inject({ method: 'GET', url: payUrl(jo.payToken) })).json().abroad).toBe(false)
   })
 
-  it('⚠️ والإيصال المرفوع بالبطاقة يكتب طريقته — في اللوحة وExcel', async () => {
+  it('⚠️ ضغط «ادفع بالبطاقة» يكتب أنه اختارها بلا إيصال — في رابطه واللوحة وExcel', async () => {
     const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'nopay@test.local' } })
-    const up = await app.inject({
-      method: 'POST', url: payUrl(row.payToken),
-      payload: { proof: { name: 'receipt.png', base64: PNG.toString('base64') }, payMethod: 'card' },
-    })
-    expect(up.statusCode, up.body).toBe(200)
+    const res = await app.inject({ method: 'POST', url: `${payUrl(row.payToken)}/card` })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toMatchObject({ cardChosen: true, hasProof: false, status: 'pending' })
+    expect((await app.inject({ method: 'GET', url: payUrl(row.payToken) })).json().cardChosen).toBe(true)
     expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: row.id } })).payMethod).toBe('card')
     const o = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json()
-    expect(o.registrations.find((x: { email: string }) => x.email === 'nopay@test.local').payMethod).toBe('card')
+    const mine = o.registrations.find((x: { email: string }) => x.email === 'nopay@test.local')
+    expect(mine.payMethod).toBe('card')
+    expect(mine.proof).toBeNull()
     const x = await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}/export.xlsx`)
     const wb = new ExcelJS.Workbook()
     await wb.xlsx.load(x.rawPayload as never)
@@ -451,14 +453,51 @@ describe('⑥ الدفع بالبطاقة', () => {
     expect(cell).toBe('بطاقة')
   })
 
-  it('وطريقة غير معروفة ترد، والإفراغ يخفي الخيار', async () => {
-    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'layla@test.local' } })
-    const bad = await app.inject({
+  it('⚠️ والصورة المرفوعة حوالة CliQ دائما — ولو قال الطلب «بطاقة»، وضغط البطاقة بعدها لا يغيرها', async () => {
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'nopay@test.local' } })
+    const up = await app.inject({
       method: 'POST', url: payUrl(row.payToken),
-      payload: { proof: { name: 'r.png', base64: PNG.toString('base64') }, payMethod: 'bitcoin' },
+      payload: { proof: { name: 'receipt.png', base64: PNG.toString('base64') }, payMethod: 'card' },
     })
-    expect(bad.statusCode).toBe(422)
+    expect(up.statusCode, up.body).toBe(200)
+    expect(up.json()).toMatchObject({ hasProof: true, cardChosen: false })
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: row.id } })).payMethod).toBe('cliq')
+    const again = await app.inject({ method: 'POST', url: `${payUrl(row.payToken)}/card` })
+    expect(again.statusCode, again.body).toBe(200)
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: row.id } })).payMethod).toBe('cliq')
+  })
+
+  it('والإفراغ يخفي الخيار — وضغط البطاقة بعده لا يكتب شيئا', async () => {
     await asOwner('PATCH', `/api/v1/private/courses/${AI_JOBS_SLUG}`, { cardUrl: '' })
     expect((await app.inject({ method: 'GET', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}` })).json().card).toBe(false)
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'layla@test.local' } })
+    const res = await app.inject({ method: 'POST', url: `${payUrl(row.payToken)}/card` })
+    expect(res.statusCode, res.body).toBe(200)
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: row.id } })).payMethod).toBe(row.payMethod)
+  })
+})
+
+/* ═══ ⑦ النموذج مع صورة الحوالة — «اعمل فورم التسجيل مع رفع صورة الحوالة» (٢١ نوفمبر ٢٠٢٦) ═══ */
+describe('⑦ التسجيل وصورة الحوالة معا', () => {
+  it('⚠️ يحفظ الصورة مع التسجيل حوالة CliQ — ولا يحتاج خطوة ثانية', async () => {
+    ip += 1
+    const res = await app.inject({
+      method: 'POST', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}/registrations`, remoteAddress: `10.79.0.${ip}`,
+      payload: {
+        fullName: 'رنا عادل', email: 'rana@test.local', phoneCountry: 'QA', phone: '33123456', sectionKey: 'morning',
+        proof: { name: 'receipt.png', base64: PNG.toString('base64') }, payMethod: 'card',
+      },
+    })
+    expect(res.statusCode, res.body).toBe(201)
+    expect(res.json().hasProof).toBe(true)
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'rana@test.local' } })
+    /* البطاقةُ لا إيصالَ لها — فما رُفع حوالةٌ ولو قال الطلبُ «بطاقة» */
+    expect(row.payMethod).toBe('cliq')
+    expect(row.proofUploadedAt).not.toBeNull()
+  })
+
+  it('وبلا طريقة مذكورة فهي CliQ', async () => {
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'sara@test.local' } })
+    expect(row.payMethod).toBe('cliq')
   })
 })

@@ -154,12 +154,17 @@ describe('⑥ احجز أولا، ومن أين جاء، ولمن الدورة،
     expect(readSource('', 'https://notinstagram.com.evil.io/', 'www.wajeezacademy.com')).toBe('notinstagram.com.evil.io')
   })
 
-  it('⚠️ النموذج يحجز بلا صورة حوالة — والرفع في الخطوة الثانية', () => {
+  it('⚠️ النموذج فيه صورة الحوالة اختيارية — من حوّل يرفعها معه، ومن لم يحوّل يحجز وتأتيه الخطوة الثانية', () => {
+    /* قرارُ صاحب المنصّة (٢١ نوفمبر ٢٠٢٦): «اعمل فورم التسجيل مع رفع صورة الحوالة» — والحجزُ بلاها باقٍ */
     const form = read('src/pages/ai-jobs/RegisterForm.tsx')
-    expect(form).not.toMatch(/type="file"/)
+    expect(form).toMatch(/<ProofDrop id="aij-proof"/)
+    expect(form).toMatch(/\.\.\.\(proof \? \{ proof: \{ name: proof\.name, base64: proof\.base64 \} \} : \{\}\)/)
+    /* والصورةُ حوالةُ CliQ وحدَها — لا سؤالَ «دفعت بالبطاقة» (٢١ نوفمبر ٢٠٢٦) */
+    expect(form, 'عاد سؤال «دفعت بالبطاقة» مع الصورة').not.toMatch(/name="paid-by"|payMethod/)
+    expect(form, 'صارت الصورة شرطا للحجز').not.toMatch(/e\.proof = /)
     expect(form).toMatch(/<PayStep /)
     expect(form).toMatch(/storedSource\(\)/)
-    expect(read('src/pages/ai-jobs/PayStep.tsx')).toMatch(/type="file"/)
+    expect(read('src/pages/ai-jobs/ProofDrop.tsx')).toMatch(/type="file"/)
   })
 
   it('ورابط الدفع صفحة عامة قبل حارس الأدوار', () => {
@@ -183,9 +188,17 @@ describe('⑦ الدفع بالبطاقة', () => {
   const step = read('src/pages/ai-jobs/PayStep.tsx')
   const page = read('src/pages/ai-jobs/AiJobs.tsx')
 
-  it('⚠️ خطوة الدفع تقدم البطاقة أولا لمن رقمه خارج الأردن — وCliQ لغيره', () => {
-    expect(step).toMatch(/useState<Method>\(info\.cardUrl && info\.abroad \? 'card' : 'cliq'\)/)
-    expect(step).toMatch(/payMethod: card \? 'card' : 'cliq'/)
+  it('⚠️ خطوة الدفع تقدم البطاقة أولا لمن رقمه خارج الأردن أو اختارها — وCliQ لغيره', () => {
+    expect(step).toMatch(/useState<Method>\(info\.cardUrl && \(info\.abroad \|\| info\.cardChosen\) \? 'card' : 'cliq'\)/)
+  })
+
+  it('⚠️ والبطاقة زر دفع وحده — لا إيصال يرفع لها، ويكتب أنه ذهب إليها', () => {
+    /* قرارُ صاحب المنصّة (٢١ نوفمبر ٢٠٢٦): «الغ خيار البطاقة لأنه لو دفع يصل له التأكيد مباشرة، لا حاجة ليثبته» */
+    const branch = /\{card\s*\? \(([\s\S]*?)\)\s*: \(/.exec(step)?.[1] ?? ''
+    expect(branch).toMatch(/href=\{info\.cardUrl!\}[^>]*onClick=\{goCard\}/)
+    expect(branch, 'عاد رفع إيصال البطاقة').not.toMatch(/<ProofDrop|type="submit"/)
+    expect(step).toMatch(/\/pay\/\$\{token\}\/card`/)
+    expect(step, 'عاد إرسال طريقة الدفع مع الصورة').not.toMatch(/payMethod:/)
   })
 
   it('⚠️ ولا خيار بطاقة بلا رابط — لا زر يقود إلى لا شيء', () => {

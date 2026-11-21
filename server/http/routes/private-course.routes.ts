@@ -14,7 +14,7 @@ import { requirePrivateOwner } from '../../services/private-course/owner'
 import { saveGmailConfig } from '../../services/private-course/mailer'
 import {
   clearCourseFile, confirmRegistration, courseFile, deleteRegistration, exportXlsx, moveSection, ownerOverview,
-  payInfo, proofOf, publicCourseState, submitProof, registerPublic, rejectRegistration, reopenRegistration, sendConfirmation, sendTestMail,
+  chooseCard, payInfo, proofOf, publicCourseState, submitProof, registerPublic, rejectRegistration, reopenRegistration, sendConfirmation, sendTestMail,
   setCourseFile, updateCourse,
 } from '../../services/private-course/registration.service'
 import { COURSE_FILE_MAX_BYTES, PROOF_MAX_BYTES } from '../../../src/application/private-course/ai-jobs'
@@ -85,9 +85,17 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
     const body = z.object({
       proof: proofSchema,
       note: z.string().max(500, 'الملاحظة أطول من 500 حرف').optional(),
-      payMethod: z.enum(['cliq', 'card']).optional(),
     }).parse(req.body)
     return submitProof(prisma, slug, token, body)
+  })
+
+  /* ضغط «ادفع بالبطاقة» — لا إيصالَ يُرفع لها، فيُكتب أنّه ذهب إليها (٢١ نوفمبر ٢٠٢٦) */
+  app.post('/api/v1/public/private-courses/:slug/pay/:token/card', {
+    config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
+    schema: { tags: ['private-course'], summary: 'اختار الدفع بالبطاقة من رابط الدفع' },
+  }, async (req) => {
+    const { slug, token } = z.object({ slug: z.string().min(1).max(60), token: z.string().min(1).max(200) }).parse(req.params)
+    return chooseCard(prisma, slug, token)
   })
 
   /* ═══ الخاصّ — صاحبُ المنصّة وحدَه ═══ */
