@@ -154,12 +154,15 @@ describe('⑥ احجز أولا، ومن أين جاء، ولمن الدورة،
     expect(readSource('', 'https://notinstagram.com.evil.io/', 'www.wajeezacademy.com')).toBe('notinstagram.com.evil.io')
   })
 
-  it('⚠️ النموذج يحجز بلا صورة حوالة — والرفع في الخطوة الثانية', () => {
+  it('⚠️ النموذج فيه صورة الحوالة اختيارية — من حوّل يرفعها معه، ومن لم يحوّل يحجز وتأتيه الخطوة الثانية', () => {
+    /* قرارُ صاحب المنصّة (٢١ نوفمبر ٢٠٢٦): «اعمل فورم التسجيل مع رفع صورة الحوالة» — والحجزُ بلاها باقٍ */
     const form = read('src/pages/ai-jobs/RegisterForm.tsx')
-    expect(form).not.toMatch(/type="file"/)
+    expect(form).toMatch(/<ProofDrop id="aij-proof"/)
+    expect(form).toMatch(/\.\.\.\(proof \? \{ proof: \{ name: proof\.name, base64: proof\.base64 \}, payMethod: method \} : \{\}\)/)
+    expect(form, 'صارت الصورة شرطا للحجز').not.toMatch(/e\.proof = /)
     expect(form).toMatch(/<PayStep /)
     expect(form).toMatch(/storedSource\(\)/)
-    expect(read('src/pages/ai-jobs/PayStep.tsx')).toMatch(/type="file"/)
+    expect(read('src/pages/ai-jobs/ProofDrop.tsx')).toMatch(/type="file"/)
   })
 
   it('ورابط الدفع صفحة عامة قبل حارس الأدوار', () => {

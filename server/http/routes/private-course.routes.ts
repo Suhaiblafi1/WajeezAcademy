@@ -60,6 +60,8 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
       note: z.string().max(500, 'الملاحظة أطول من 500 حرف').optional(),
       /* اختياريّةٌ منذ «احجز أوّلا وادفع بعد» — تُرفع من رابط الدفع */
       proof: proofSchema.optional(),
+      /* كيف دفع — مع صورة الحوالة في النموذج نفسِه */
+      payMethod: z.enum(['cliq', 'card']).optional(),
       source: z.string().max(300).optional(),
     }).parse(req.body)
     const r = await registerPublic(prisma, slug, body)

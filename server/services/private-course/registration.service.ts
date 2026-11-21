@@ -129,6 +129,8 @@ export interface PublicRegistrationInput {
   proof?: ProofInput
   /** من أين جاء — تكتبه الصفحةُ من `?src=` و`utm_*` أو الموقعِ الذي أحاله (`source.ts`) */
   source?: string
+  /** كيف دفع — مع صورة الحوالة في النموذج نفسِه (٢١ نوفمبر ٢٠٢٦) */
+  payMethod?: 'cliq' | 'card'
 }
 
 function decodeProof(base64: string): Buffer {
@@ -185,7 +187,7 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
     phone: phone.e164,
     phoneCountry: phone.country.iso2,
     ...(input.note?.trim() ? { note: input.note.trim() } : {}),
-    ...(proof ?? {}),
+    ...(proof ? { ...proof, payMethod: input.payMethod ?? 'cliq' } : {}),
   }
   try {
     /* وتسجيلٌ ثانٍ بالبريد نفسِه يحدّث الأوّل: رابطُ دفعه كما هو، وحوالتُه كما هي ما لم تُرفع أخرى،

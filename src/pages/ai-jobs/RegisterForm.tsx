@@ -16,6 +16,8 @@ import { SeatPill } from './Seats'
 import PayStep, { type PayInfo } from './PayStep'
 import { useCourseState } from './course-state'
 import { trackPixel } from './meta-pixel'
+import { readProof, type Proof } from './proof-file'
+import ProofDrop from './ProofDrop'
 
 interface Reserved {
   token: string
@@ -38,6 +40,11 @@ export default function RegisterForm() {
   const [sending, setSending] = useState(false)
   const [alert, setAlert] = useState('')
   const [reserved, setReserved] = useState<Reserved | null>(null)
+  /* صورةُ الحوالة في النموذج نفسِه — لمن حوّل قبل أن يسجّل، كما يقول المنشور (٢١ نوفمبر ٢٠٢٦). واختياريّةٌ:
+     من لم يحوّل بعد يحجز، وتأتيه خطوةُ الدفع بعدها (`PayStep`) */
+  const [proof, setProof] = useState<Proof | null>(null)
+  const [proofBusy, setProofBusy] = useState(false)
+  const [paidBy, setPaidBy] = useState<'cliq' | 'card' | null>(null)
   const doneRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -45,6 +52,23 @@ export default function RegisterForm() {
   }, [reserved])
 
   const example = useMemo(() => MOBILE_FORMATS[country]?.example ?? '', [country])
+
+  async function pick(file: File | undefined) {
+    if (!file) return
+    setProofBusy(true)
+    setErrors((e) => ({ ...e, proof: '' }))
+    try {
+      setProof(await readProof(file))
+    } catch (err) {
+      setProof(null)
+      setErrors((e) => ({ ...e, proof: err instanceof Error ? err.message : 'تعذر قراءة الملف' }))
+    } finally {
+      setProofBusy(false)
+    }
+  }
+
+  /* بطاقةٌ أم CliQ — يُسأل حين يرفع إيصالا والبطاقةُ مضبوطة، والافتراضُ من مفتاح رقمه */
+  const method = paidBy ?? (state?.card && country !== 'JO' ? 'card' : 'cliq')
 
   function validate(): Record<string, string> {
     const e: Record<string, string> = {}
@@ -73,11 +97,13 @@ export default function RegisterForm() {
         {
           fullName, email, phoneCountry: country, phone, sectionKey: section,
           source: storedSource() ?? undefined,
+          ...(proof ? { proof: { name: proof.name, base64: proof.base64 }, payMethod: method } : {}),
           website: hp.value,
         },
       )
       /* الحجزُ هو الحدثُ الذي يُحسَّن عليه الإعلان — مرّةً لكلّ حجز */
       trackPixel('Lead', { content_name: AI_JOBS.title, value: AI_JOBS.priceUsd, currency: 'USD' })
+      if (proof) trackPixel('AddPaymentInfo', { payment_method: method, value: method === 'card' ? AI_JOBS.priceUsd : AI_JOBS.priceJod, currency: method === 'card' ? 'USD' : 'JOD' })
       setReserved({
         token: r.payToken,
         info: {
@@ -114,8 +140,8 @@ export default function RegisterForm() {
 
   return (
     <form className="aij-box aij-form" onSubmit={submit} noValidate aria-labelledby="aij-form-title">
-      <h2 id="aij-form-title">احجز مقعدك</h2>
-      <p className="aij-small" style={{ marginTop: 6 }}>اكتب بياناتك واختر شعبتك، ثم حوّل وارفع صورة الحوالة — الآن أو لاحقا.</p>
+      <h2 id="aij-form-title">سجّل واحجز مقعدك</h2>
+      <p className="aij-small" style={{ marginTop: 6 }}>اكتب بياناتك واختر شعبتك، وارفع صورة الحوالة إن حوّلت. لم تحوّل بعد؟ احجز الآن وارفعها لاحقا.</p>
 
       <div className="aij-field">
         <label className="aij-label" htmlFor="aij-fullName">الاسم الكامل</label>
@@ -167,15 +193,40 @@ export default function RegisterForm() {
         {errors.section && <p className="aij-err">{errors.section}</p>}
       </fieldset>
 
+      <div className="aij-cliq" style={{ marginTop: 18 }}>
+        <small>الدفع: {AI_JOBS.priceJod} دينار عبر CliQ إلى الاسم المستعار <b dir="ltr">{AI_JOBS.cliqAlias}</b>{state?.card ? <> — أو <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة من خارج الأردن بعد الحجز</> : null}</small>
+      </div>
+
+      <ProofDrop id="aij-proof" label="صورة الحوالة" hint="اختياري الآن — صورة أو لقطة شاشة أو PDF"
+        proof={proof} busy={proofBusy} invalid={Boolean(errors.proof)} card={method === 'card'} onPick={(f) => void pick(f)} />
+      {errors.proof && <p className="aij-err">{errors.proof}</p>}
+
+      {proof && state?.card && (
+        <div className="aij-methods" role="radiogroup" aria-label="طريقة الدفع">
+          <label className={`aij-choice${method === 'cliq' ? ' on' : ''}`}>
+            <input type="radio" name="paid-by" checked={method === 'cliq'} onChange={() => setPaidBy('cliq')} />
+            <b>دفعت عبر CliQ</b>
+            <span>{AI_JOBS.priceJod} دينار</span>
+          </label>
+          <label className={`aij-choice${method === 'card' ? ' on' : ''}`}>
+            <input type="radio" name="paid-by" checked={method === 'card'} onChange={() => setPaidBy('card')} />
+            <b>دفعت بالبطاقة</b>
+            <span><bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi></span>
+          </label>
+        </div>
+      )}
+
       {hp.field}
 
       {alert && <div className="aij-alert" role="alert">{alert}</div>}
 
-      <button type="submit" className="aij-cta aij-cta-lg aij-submit" disabled={sending}>
-        {sending ? 'نحجز مقعدك…' : 'احجز مقعدي'}
+      <button type="submit" className="aij-cta aij-cta-lg aij-submit" disabled={sending || proofBusy}>
+        {sending ? 'نرسل تسجيلك…' : proof ? 'أرسل التسجيل وصورة الحوالة' : 'احجز مقعدي'}
       </button>
       <p className="aij-small" style={{ marginTop: 12, textAlign: 'center' }}>
-        {state?.card
+        {proof
+          ? <>نراجع الحوالة ويصلك التأكيد ورابط Zoom على بريدك.</>
+          : state?.card
           ? <>بعدها تدفع {AI_JOBS.priceJod} دينار عبر CliQ، أو <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة من خارج الأردن، وترفع الإيصال. ويصلك التأكيد ورابط Zoom على بريدك.</>
           : <>بعدها تحوّل {AI_JOBS.priceJod} دينار عبر CliQ وترفع صورة الحوالة، ويصلك التأكيد ورابط Zoom على بريدك.</>}
       </p>

@@ -462,3 +462,27 @@ describe('⑥ الدفع بالبطاقة', () => {
     expect((await app.inject({ method: 'GET', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}` })).json().card).toBe(false)
   })
 })
+
+/* ═══ ⑦ النموذج مع صورة الحوالة — «اعمل فورم التسجيل مع رفع صورة الحوالة» (٢١ نوفمبر ٢٠٢٦) ═══ */
+describe('⑦ التسجيل وصورة الحوالة معا', () => {
+  it('⚠️ يحفظ الصورة وطريقة الدفع مع التسجيل — ولا يحتاج خطوة ثانية', async () => {
+    ip += 1
+    const res = await app.inject({
+      method: 'POST', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}/registrations`, remoteAddress: `10.79.0.${ip}`,
+      payload: {
+        fullName: 'رنا عادل', email: 'rana@test.local', phoneCountry: 'QA', phone: '33123456', sectionKey: 'morning',
+        proof: { name: 'receipt.png', base64: PNG.toString('base64') }, payMethod: 'card',
+      },
+    })
+    expect(res.statusCode, res.body).toBe(201)
+    expect(res.json().hasProof).toBe(true)
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'rana@test.local' } })
+    expect(row.payMethod).toBe('card')
+    expect(row.proofUploadedAt).not.toBeNull()
+  })
+
+  it('وبلا طريقة مذكورة فهي CliQ', async () => {
+    const row = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'sara@test.local' } })
+    expect(row.payMethod).toBe('cliq')
+  })
+})

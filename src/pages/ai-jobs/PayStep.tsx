@@ -6,10 +6,11 @@
 
 import { useState, type FormEvent } from 'react'
 import { ApiError, apiPost } from '@/services/api'
-import { AI_JOBS, PROOF_ACCEPT } from '@/application/private-course/ai-jobs'
+import { AI_JOBS } from '@/application/private-course/ai-jobs'
 import { whatsappLink } from '@/application/private-course/phone'
 import { waShare } from '@/application/site/whatsapp'
 import { readProof, type Proof } from './proof-file'
+import ProofDrop from './ProofDrop'
 import { trackPixel } from './meta-pixel'
 
 export interface PayInfo {
@@ -63,7 +64,6 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
 }) {
   const [proof, setProof] = useState<Proof | null>(null)
   const [busy, setBusy] = useState(false)
-  const [over, setOver] = useState(false)
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
@@ -183,27 +183,8 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
           </div>
         )}
 
-      <div className="aij-field">
-        <span className="aij-label" id="aij-pay-proof-label">{card ? 'صورة إيصال الدفع' : 'صورة الحوالة'} <em>— صورة أو لقطة شاشة أو PDF</em></span>
-        <label className={`aij-drop${over ? ' over' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setOver(true) }}
-          onDragLeave={() => setOver(false)}
-          onDrop={(e) => { e.preventDefault(); setOver(false); void pick(e.dataTransfer.files?.[0]) }}>
-          <input id="aij-pay-proof" type="file" accept={`${PROOF_ACCEPT},image/*`} aria-labelledby="aij-pay-proof-label"
-            aria-invalid={Boolean(error)} onChange={(e) => void pick(e.target.files?.[0])} />
-          <span className="thumb" aria-hidden="true">
-            {proof?.preview
-              ? <img src={proof.preview} alt="" />
-              : proof?.pdf
-                ? <b style={{ fontSize: 14 }}>PDF</b>
-                : <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#142240" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>}
-          </span>
-          <span className="txt">
-            <b>{busy ? 'نجهّز الملف…' : proof ? 'تم اختيار الملف — اضغط لتغييره' : card ? 'اضغط لاختيار صورة الإيصال' : 'اضغط لاختيار صورة الحوالة'}</b>
-            <small>{proof ? proof.name : 'من الهاتف أو الكمبيوتر'}</small>
-          </span>
-        </label>
-      </div>
+      <ProofDrop id="aij-pay-proof" label={card ? 'صورة إيصال الدفع' : 'صورة الحوالة'} hint="صورة أو لقطة شاشة أو PDF"
+        proof={proof} busy={busy} invalid={Boolean(error)} card={card} onPick={(f) => void pick(f)} />
 
       <div className="aij-field">
         <label className="aij-label" htmlFor="aij-pay-note">ملاحظة <em>— اختياري، مثل اسم صاحب الحساب المحوّل إن اختلف</em></label>
