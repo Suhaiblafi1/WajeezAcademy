@@ -12,6 +12,8 @@ import { z } from 'zod'
 import { assertNotBot } from '../honeypot'
 import { requirePrivateOwner } from '../../services/private-course/owner'
 import { saveGmailConfig } from '../../services/private-course/mailer'
+import { dismissUnmatched, saveStripeSecret } from '../../services/private-course/stripe-config'
+import { handleStripeWebhook } from '../../services/private-course/stripe-webhook'
 import {
   clearCourseFile, confirmRegistration, courseFile, deleteRegistration, exportXlsx, moveSection, ownerOverview,
   chooseCard, payInfo, proofOf, publicCourseState, submitProof, registerPublic, rejectRegistration, reopenRegistration, sendConfirmation, sendTestMail,
@@ -96,6 +98,18 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req) => {
     const { slug, token } = z.object({ slug: z.string().min(1).max(60), token: z.string().min(1).max(200) }).parse(req.params)
     return chooseCard(prisma, slug, token)
+  })
+
+  /* ═══ Stripe يخبر بدفع البطاقة — فيتأكّد الحجزُ ويصله بريدُ Zoom (٢١ نوفمبر ٢٠٢٦) ═══
+     لا جلسةَ ولا هويّة: التوقيعُ هو الإذن (`stripe-webhook.ts`). والجسمُ الخامُّ كما وصل — يلتقطه محلّلُ JSON في `app.ts` */
+  app.post('/api/v1/public/private-courses/:slug/stripe-webhook', {
+    config: { rateLimit: { max: 300, timeWindow: '1 minute' } },
+    schema: { tags: ['webhooks'], summary: 'Stripe يخبر بدفع البطاقة — توقيع إلزامي، فيتأكد الحجز ويصله بريد Zoom' },
+  }, async (req) => {
+    const { slug } = slugParam.parse(req.params)
+    const signature = String(req.headers['stripe-signature'] ?? '')
+    const rawBody = (req as unknown as { rawBody?: string }).rawBody ?? ''
+    return handleStripeWebhook(prisma, slug, rawBody, signature)
   })
 
   /* ═══ الخاصّ — صاحبُ المنصّة وحدَه ═══ */
@@ -226,6 +240,24 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
       appPassword: z.string().max(64).optional(),
     }).parse(req.body)
     return saveGmailConfig(prisma, body)
+  })
+
+  /* ═══ ربطُ Stripe — مفتاحُ التوقيع لا يعاد إلّا مقنّعا، وفارغُه يفصل الربط ═══ */
+
+  app.put('/api/v1/private/stripe', {
+    preHandler: requirePrivateOwner,
+    schema: { tags: ['private-course'], summary: 'مفتاح توقيع webhook من Stripe — يؤكد دفع البطاقة تلقائيا' },
+  }, async (req) => {
+    const body = z.object({ webhookSecret: z.string().max(300) }).parse(req.body)
+    return saveStripeSecret(prisma, body.webhookSecret)
+  })
+
+  app.delete('/api/v1/private/stripe/unmatched/:sessionId', {
+    preHandler: requirePrivateOwner,
+    schema: { tags: ['private-course'], summary: 'رفع دفعة لم تطابق من القائمة بعد مطابقتها باليد' },
+  }, async (req) => {
+    const { sessionId } = z.object({ sessionId: z.string().min(1).max(300) }).parse(req.params)
+    return dismissUnmatched(prisma, sessionId)
   })
 
   app.post('/api/v1/private/mail/test', {

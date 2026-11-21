@@ -5319,6 +5319,13 @@ model PrivateRegistration {
   lastChanceAt DateTime?
   /// آخرُ إخفاقٍ في التذكير — يُعاد في الساعة التالية، ويُمحى بأوّل إرسالٍ ينجح
   reminderError String?
+  /// الدفعُ بالبطاقة كما أخبر به Stripe — يؤكّد الحجزَ وحدَه (`stripe-webhook.ts`). والجلسةُ فريدةٌ: الخبرُ المعادُ لا يؤكّد مرّتين
+  cardPaidAt      DateTime?
+  stripeSessionId String?   @unique
+  stripePaymentId String?
+  /// بأصغر وحدةٍ في العملة: 2000 = 20.00
+  cardAmount      Int?
+  cardCurrency    String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

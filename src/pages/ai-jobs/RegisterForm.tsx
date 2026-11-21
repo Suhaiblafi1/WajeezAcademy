@@ -88,7 +88,7 @@ export default function RegisterForm() {
     }
     setSending(true)
     try {
-      const r = await apiPost<{ reference: string; updated: boolean; sectionTitle: string; payToken: string; hasProof: boolean; cardUrl: string | null; abroad: boolean; cardChosen: boolean }>(
+      const r = await apiPost<{ reference: string; updated: boolean; sectionTitle: string; payToken: string; hasProof: boolean; cardUrl: string | null; abroad: boolean; cardChosen: boolean; cardAuto: boolean }>(
         `/api/v1/public/private-courses/${AI_JOBS.slug}/registrations`,
         {
           fullName, email, phoneCountry: country, phone, sectionKey: section,
@@ -104,7 +104,7 @@ export default function RegisterForm() {
         token: r.payToken,
         info: {
           firstName: fullName.trim().split(/\s+/)[0], reference: r.reference, sectionTitle: r.sectionTitle,
-          status: 'pending', hasProof: r.hasProof, cardUrl: r.cardUrl, abroad: r.abroad, cardChosen: r.cardChosen,
+          status: 'pending', hasProof: r.hasProof, cardUrl: r.cardUrl, abroad: r.abroad, cardChosen: r.cardChosen, cardAuto: r.cardAuto,
         },
       })
     } catch (err) {

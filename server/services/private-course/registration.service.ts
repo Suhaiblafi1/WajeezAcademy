@@ -26,6 +26,7 @@ import { normalizePhone } from '../../../src/application/private-course/phone'
 import { fmtDateTime } from '../../../src/application/text/format-ar'
 import { gmailView, getGmailConfig, sendPrivateMail } from './mailer'
 import { confirmationHtml, confirmationIcs, confirmationSubject, confirmationText } from './confirmation-mail'
+import { stripeAutoReady, stripeView } from './stripe-config'
 
 export type RegistrationStatus = 'pending' | 'confirmed' | 'rejected'
 
@@ -209,6 +210,7 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
       cardUrl: cardLinkFor(course, reference(row.id)),
       abroad: row.phoneCountry !== 'JO',
       cardChosen: row.payMethod === 'card' && !row.proofKey,
+      cardAuto: Boolean(course.cardUrl) && await stripeAutoReady(prisma),
     }
   } catch (e) {
     /* لا يبقى على القرص ملفٌّ لا يملكه صفّ */
@@ -230,7 +232,7 @@ async function byToken(prisma: PrismaClient, slug: string, token: string) {
 }
 
 /** ما تعرضه صفحةُ الدفع — الاسمُ الأوّلُ والشعبةُ والحال، لا البريدُ ولا الرقم: الرابطُ قد يُرسَل في محادثة */
-function payView(r: PrivateRegistration, course: Pick<PrivateCourse, 'cardUrl'>) {
+function payView(r: PrivateRegistration, course: Pick<PrivateCourse, 'cardUrl'>, auto: boolean) {
   return {
     firstName: r.fullName.split(' ')[0],
     reference: reference(r.id),
@@ -242,12 +244,14 @@ function payView(r: PrivateRegistration, course: Pick<PrivateCourse, 'cardUrl'>)
     abroad: r.phoneCountry !== 'JO',
     /** ضغط «ادفع بالبطاقة» ولم يرفع حوالة — فيرى «نؤكد مقعدك بعد وصول الدفع» إن عاد للرابط */
     cardChosen: r.payMethod === 'card' && !r.proofKey,
+    /** Stripe مربوط: دفعُ البطاقة يؤكّد مقعده وحدَه (`stripe-webhook.ts`) */
+    cardAuto: Boolean(course.cardUrl) && auto,
   }
 }
 
 export async function payInfo(prisma: PrismaClient, slug: string, token: string) {
   const r = await byToken(prisma, slug, token)
-  return payView(r, r.course)
+  return payView(r, r.course, await stripeAutoReady(prisma))
 }
 
 export type PayMethod = 'cliq' | 'card'
@@ -271,7 +275,7 @@ export async function submitProof(
       },
     })
     if (r.proofKey) await deleteObject(r.proofKey)
-    return payView(row, r.course)
+    return payView(row, r.course, await stripeAutoReady(prisma))
   } catch (e) {
     await deleteObject(proof.proofKey)
     throw e
@@ -282,9 +286,10 @@ export async function submitProof(
     ولا يصله تذكيرٌ يقول «لم تدفع» كأنّه لم يفعل شيئا. ومن رفع حوالةً أو تأكّد لا يتغيّر عنده شيء */
 export async function chooseCard(prisma: PrismaClient, slug: string, token: string) {
   const r = await byToken(prisma, slug, token)
-  if (!r.course.cardUrl || r.status === 'confirmed' || r.proofKey || r.payMethod === 'card') return payView(r, r.course)
+  const auto = await stripeAutoReady(prisma)
+  if (!r.course.cardUrl || r.status === 'confirmed' || r.proofKey || r.payMethod === 'card') return payView(r, r.course, auto)
   const row = await prisma.privateRegistration.update({ where: { id: r.id }, data: { payMethod: 'card' } })
-  return payView(row, r.course)
+  return payView(row, r.course, auto)
 }
 
 /* ── اللوحة ── */
@@ -315,6 +320,11 @@ function view(r: PrivateRegistration, course: PrivateCourse) {
     remindedAt: r.remindedAt?.toISOString() ?? null,
     lastChanceAt: r.lastChanceAt?.toISOString() ?? null,
     reminderError: r.reminderError,
+    /** دفعُ البطاقة كما أخبر به Stripe — ومعرّفُه يفتح الدفعةَ في لوحة Stripe */
+    cardPaidAt: r.cardPaidAt?.toISOString() ?? null,
+    cardAmount: r.cardAmount,
+    cardCurrency: r.cardCurrency,
+    stripePaymentId: r.stripePaymentId,
     mailError: r.mailError,
     /** مؤكَّدٌ لم يصله رابطُ Zoom الحاليّ لشعبته — بريدٌ قبل ضبط الرابط، أو قبل تغييره */
     zoomMissing: r.status === 'confirmed' && Boolean(zoom) && r.mailZoomUrl !== zoom?.url,
@@ -349,6 +359,7 @@ export async function ownerOverview(prisma: PrismaClient, slug: string) {
       })),
     },
     gmail: await gmailView(prisma),
+    stripe: await stripeView(prisma),
     registrations: rows.map((r) => view(r, course)),
   }
 }
@@ -544,7 +555,7 @@ export async function exportXlsx(
         created: fmtDateTime(r.createdAt),
         confirmed: r.confirmedAt ? fmtDateTime(r.confirmedAt) : '',
         mailed: r.mailSentAt ? fmtDateTime(r.mailSentAt) : '',
-        proof: r.proofUploadedAt ? fmtDateTime(r.proofUploadedAt) : 'لم يرفعها بعد',
+        proof: r.proofUploadedAt ? fmtDateTime(r.proofUploadedAt) : r.cardPaidAt ? `دفع بالبطاقة ${fmtDateTime(r.cardPaidAt)}` : 'لم يرفعها بعد',
         method: r.payMethod === 'card' ? 'بطاقة' : r.payMethod === 'cliq' ? 'CliQ' : '',
         source: r.source ?? 'مباشر',
         note: r.note ?? '',

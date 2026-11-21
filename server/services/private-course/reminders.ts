@@ -2,7 +2,7 @@
 
    قرارُ صاحب المنصّة: «if they haven't paid, remind them next day as reminder, after three days last chance».
 
-   - **من**: حجزٌ «بانتظار الدفع» — قيدُ المراجعة بلا صورة حوالة. فمن رفعها لا يُذكَّر (نحن من يتأخّر لا هو)،
+   - **من**: حجزٌ «بانتظار الدفع» — قيدُ المراجعة بلا صورة حوالةٍ ولا دفعِ بطاقةٍ أخبر به Stripe. فمن دفع لا يُذكَّر (نحن من يتأخّر لا هو)،
      ومن رُفض أو تأكّد لا يُذكَّر. ومن ضغط «ادفع بالبطاقة» يُذكَّر، وتقول له الرسالةُ إنّه لا يفعل شيئا إن دفع.
    - **متى**: «تذكير» بعد يومٍ من الحجز، و«آخر فرصة» بعد ثلاثة أيّام — وبعد يومٍ من التذكير على الأقلّ، فمن حجز
      قبل هذه الوظيفة لا تصله الرسالتان في ساعة. ومن فاته اليومُ الأوّل حتى بلغ الثالث تصله «آخر فرصة» وحدَها.
@@ -32,6 +32,8 @@ const BATCH = 50
 export interface ReminderCandidate {
   status: string
   proofKey: string | null
+  /** دفع بالبطاقة وأخبر به Stripe — ولو بقي للمراجعة فقد دفع */
+  cardPaidAt: Date | null
   sectionKey: string
   createdAt: Date
   remindedAt: Date | null
@@ -50,7 +52,7 @@ export function inSendHours(now: Date): boolean {
 
 /** أيُّ رسالةٍ حان موعدُها لهذا الحجز — أو لا شيء */
 export function dueReminder(r: ReminderCandidate, now: Date): ReminderKind | null {
-  if (r.status !== 'pending' || r.proofKey) return null
+  if (r.status !== 'pending' || r.proofKey || r.cardPaidAt) return null
   const section = aiJobsSection(r.sectionKey)
   if (!section || now.getTime() >= Date.parse(section.startsAt)) return null
   const age = now.getTime() - r.createdAt.getTime()
@@ -79,7 +81,7 @@ export async function runPrivateCourseReminders(prisma: PrismaClient, now = new 
   /* الشرطُ نفسُه في الاستعلام لا بعده — كي لا يملأ الدفعةَ من ينتظر موعدَه فلا يُبلغ من حان */
   const rows = await prisma.privateRegistration.findMany({
     where: {
-      courseSlug: AI_JOBS_SLUG, status: 'pending', proofKey: null, lastChanceAt: null,
+      courseSlug: AI_JOBS_SLUG, status: 'pending', proofKey: null, cardPaidAt: null, lastChanceAt: null,
       OR: [
         { remindedAt: null, createdAt: { lte: ago(REMIND_AFTER_MS), gt: ago(LAST_CHANCE_AFTER_MS) } },
         { createdAt: { lte: ago(LAST_CHANCE_AFTER_MS) }, OR: [{ remindedAt: null }, { remindedAt: { lte: ago(DAY) } }] },
