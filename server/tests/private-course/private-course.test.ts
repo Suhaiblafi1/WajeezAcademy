@@ -20,7 +20,7 @@ import { buildApp } from '../../http/app'
 import {
   PRIVATE_SENDER_EMAIL, setPrivateMailSenderForTests, type GmailConfig, type PrivateMail,
 } from '../../services/private-course/mailer'
-import { AI_JOBS, AI_JOBS_SLUG, CLAUDE_LINKS, seatsLabel, seatsLeft } from '../../../src/application/private-course/ai-jobs'
+import { ABROAD_PAY_LINE, AI_JOBS, AI_JOBS_SLUG, CLAUDE_LINKS, seatsLabel, seatsLeft } from '../../../src/application/private-course/ai-jobs'
 import { dueReminder, runPrivateCourseReminders } from '../../services/private-course/reminders'
 import { setCardPaymentsForTests } from '../../services/private-course/registration.service'
 import { createHmac } from 'node:crypto'
@@ -832,5 +832,33 @@ describe('⑩ البطاقة مخفية كليا', () => {
     expect(mail.text).not.toMatch(/بالبطاقة/)
 
     expect((await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json().course.cardPayments).toBe(false)
+  })
+})
+
+/* ═══ ⑪ من خارج الأردن في بريد التذكير (٢١ نوفمبر ٢٠٢٦) ═══
+   «نفّذ ١»: CliQ داخل الأردن وحدَه والبطاقةُ مخفيّة — فمن رقمُه خارجَه يُدعى في التذكير إلى واتساب برقم مرجعه. */
+describe('⑪ من خارج الأردن في التذكير', () => {
+  it('⚠️ رقم خارج الأردن يصله سطر واتساب برقم مرجعه — ورقم أردني لا', async () => {
+    const make = (email: string, phone: string, phoneCountry: string) => prisma.privateRegistration.create({
+      data: {
+        courseSlug: AI_JOBS_SLUG, sectionKey: 'evening', fullName: 'نور سالم', email, phone, phoneCountry,
+        payToken: `abroad-${email}`.replace(/[^A-Za-z0-9_-]/g, '-').padEnd(24, 'x'), createdAt: new Date('2026-11-26T05:00:00.000Z'),
+      },
+    })
+    const gulf = await make('abroad-gulf@test.local', '+966501234567', 'SA')
+    const home = await make('abroad-home@test.local', '+962791234567', 'JO')
+    await runPrivateCourseReminders(prisma, new Date('2026-11-27T09:00:00.000Z'))
+    const mailTo = (e: string) => sent.filter((x) => x.mail.to === e).map((x) => x.mail)[0]
+    const g = mailTo('abroad-gulf@test.local')
+    expect(g, 'لم يصله التذكير').toBeTruthy()
+    expect(g.html).toContain(ABROAD_PAY_LINE)
+    expect(g.text).toContain(ABROAD_PAY_LINE)
+    const ref = gulf.id.slice(0, 8).toUpperCase()
+    expect(decodeURIComponent(g.text)).toContain(ref)
+    expect(g.html).toContain('wa.me/962797708080')
+    const h = mailTo('abroad-home@test.local')
+    expect(h, 'لم يصله التذكير').toBeTruthy()
+    expect(h.html, 'سطر الخارج لرقم أردني').not.toContain(ABROAD_PAY_LINE)
+    void home
   })
 })

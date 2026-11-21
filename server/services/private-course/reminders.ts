@@ -110,6 +110,8 @@ export async function runPrivateCourseReminders(prisma: PrismaClient, now = new 
       card: cardOn(r.course),
       cardChosen: cardOn(r.course) && r.payMethod === 'card',
       seats: seatsLeft(r.sectionKey as AiJobsSectionKey, now.getTime()),
+      abroad: r.phoneCountry !== 'JO',
+      reference: r.id.slice(0, 8).toUpperCase(),
     }
     const sent = await sendPrivateMail(prisma, {
       to: r.email, toName: r.fullName, subject: reminderSubject(kind), html: reminderHtml(input), text: reminderText(input),

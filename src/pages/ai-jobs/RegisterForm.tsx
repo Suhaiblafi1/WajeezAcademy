@@ -18,6 +18,7 @@ import { useCourseState } from './course-state'
 import { trackPixel } from './meta-pixel'
 import { readProof, type Proof } from './proof-file'
 import ProofDrop from './ProofDrop'
+import AbroadPay from './AbroadPay'
 
 interface Reserved {
   token: string
@@ -192,6 +193,8 @@ export default function RegisterForm() {
       <div className="aij-cliq" style={{ marginTop: 18 }}>
         <small>الدفع: {AI_JOBS.priceJod} دينار عبر CliQ إلى الاسم المستعار <b dir="ltr">{AI_JOBS.cliqAlias}</b>{state?.card ? <> — أو <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة من خارج الأردن بعد الحجز</> : null}</small>
       </div>
+      {/* CliQ داخل الأردن وحدَه — فمن اختار مفتاحَ دولةٍ غيرِها يُدعى إلى واتساب لترتيب الدفع (٢١ نوفمبر ٢٠٢٦) */}
+      {country !== 'JO' && !state?.card && <AbroadPay country={COUNTRIES_SORTED.find((c) => c.iso2 === country)?.ar} />}
 
       <ProofDrop id="aij-proof" label="صورة الحوالة" hint="اختياري الآن — صورة أو لقطة شاشة أو PDF"
         proof={proof} busy={proofBusy} invalid={Boolean(errors.proof)} onPick={(f) => void pick(f)} />

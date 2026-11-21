@@ -10,7 +10,9 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { normalizePhone } from '@/application/private-course/phone'
 import { renderAiJobsPage } from '@/application/private-course/landing-seo'
-import { AI_JOBS, AI_JOBS_SEO, seatsLabel, seatsLeft } from '@/application/private-course/ai-jobs'
+import { ABROAD_PAY_LINE, AI_JOBS, AI_JOBS_SEO, abroadPayMessage, seatsLabel, seatsLeft, shareInviteText } from '@/application/private-course/ai-jobs'
+import { ABROAD_FAQ, CARD_FAQ, FAQS, faqsFor } from '@/pages/ai-jobs/content'
+import { readSource } from '@/application/private-course/source'
 import { allSections } from '@/pages/admin/nav-map'
 import { PUBLIC_PAGES } from '@/application/site/public-pages'
 import { markedTexts } from '../helpers/marked-text'
@@ -232,7 +234,47 @@ describe('⑦ الدفع بالبطاقة', () => {
     expect(step).toMatch(/\{info\.cardUrl && \(\s*<div className="aij-methods"/)
     expect(step).toMatch(/const card = method === 'card' && Boolean\(info\.cardUrl\)/)
     expect(page).toMatch(/\{card && \(\s*<p className="aij-card-note">/)
-    expect(page).toMatch(/card \? \[\.\.\.FAQS\.slice\(0, 3\), CARD_FAQ/)
+    expect(page).toMatch(/faqsFor\(card\)\.map/)
+  })
+})
+
+/* ═══ ⑨ لزيادة التسجيل: من خارج الأردن، و«سجّل معي»، وكلفة الاشتراك (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «نفّذ ١ و٢ و٣». */
+describe('⑨ من خارج الأردن، وسجل معي، والاشتراك', () => {
+  const form = read('src/pages/ai-jobs/RegisterForm.tsx')
+  const step = read('src/pages/ai-jobs/PayStep.tsx')
+
+  it('⚠️ «١» من اختار دولة غير الأردن والبطاقة مخفية يدعى إلى واتساب — برسالة فيها بلده ومرجعه', () => {
+    expect(form).toMatch(/\{country !== 'JO' && !state\?\.card && <AbroadPay country=/)
+    /* وفي خطوة الدفع فرعُ CliQ وحدَه — لا فرعُ البطاقة */
+    const cliq = /\)\s*: \(\s*<>([\s\S]*?)<\/>\s*\)\}/.exec(step)?.[1] ?? ''
+    expect(cliq).toMatch(/\{info\.abroad && <AbroadPay reference=\{info\.reference\} \/>\}/)
+    expect(abroadPayMessage({ country: 'السعودية', reference: 'AB12CD34' })).toMatch(/من السعودية[\s\S]*AB12CD34/)
+    expect(read('src/pages/ai-jobs/AbroadPay.tsx')).toMatch(/whatsappLink\(AI_JOBS\.whatsapp, abroadPayMessage/)
+    expect(ABROAD_PAY_LINE).toMatch(/واتساب/)
+  })
+
+  it('⚠️ «٢» بعد الحجز «سجل معي» برابط الصفحة ومصدره share — لا لمن عاد يدفع من رابطه', () => {
+    const text = shareInviteText('https://www.wajeezacademy.com')
+    expect(text).toContain('https://www.wajeezacademy.com/ai-jobs?src=share')
+    expect(text).toContain(AI_JOBS.headline)
+    expect(readSource('?src=share', '', 'www.wajeezacademy.com')).toBe('share')
+    expect((step.match(/<ShareInvite \/>/g) ?? []).length, 'المؤكد ومن رفع الحوالة ومن حجز الآن').toBe(3)
+    expect(step).toMatch(/\{fresh && <ShareInvite \/>\}/)
+    expect(step).toMatch(/<ShareInvite \/>\s*<\/div>\s*\)\s*\}\s*\n\s*if \(info\.hasProof/)
+  })
+
+  it('⚠️ «٣» كلفة الاشتراك تقال صراحة — وسؤال من هو خارج الأردن بعد «كيف أدفع؟»', () => {
+    const sub = FAQS.find((f) => f.q.includes('اشتراكا مدفوعا'))
+    expect(sub?.a).toMatch(/Pro/)
+    expect(sub?.a).toMatch(/20\$/)
+    expect(sub?.a).toMatch(/إلغاءها/)
+    const off = faqsFor(false)
+    expect(off[off.findIndex((f) => f.q === 'كيف أدفع؟') + 1]).toBe(ABROAD_FAQ)
+    expect(off).not.toContain(CARD_FAQ)
+    const on = faqsFor(true)
+    expect(on[on.findIndex((f) => f.q === 'كيف أدفع؟') + 1]).toBe(CARD_FAQ)
+    expect(on).not.toContain(ABROAD_FAQ)
   })
 })
 
