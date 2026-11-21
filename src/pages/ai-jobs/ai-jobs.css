@@ -248,7 +248,10 @@
 .aij-input:focus, .aij-select:focus, .aij-textarea:focus { outline: none; box-shadow: 0 0 0 4px rgba(45, 108, 223, .25); border-color: var(--b); }
 .aij-input[aria-invalid="true"], .aij-select[aria-invalid="true"] { border-color: var(--red); }
 .aij-textarea { min-height: 80px; resize: vertical; }
-.aij-phone { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.3fr); gap: 10px; }
+.aij-phone { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 10px; }
+/* اسمُ الدولة كاملا (٢١ نوفمبر ٢٠٢٦): «الأردن» كان يُقصّ «أردن» في الهاتف. فالدولةُ فوق الرقم في الشاشة الضيّقة،
+   وأعرضُ منه في العريضة — قيس على كلّ دولةٍ عربيّة من 320 إلى 1366 بكسل */
+@media (max-width: 560px) { .aij-phone { grid-template-columns: minmax(0, 1fr); } }
 .aij-phone .aij-select { padding-inline: 10px; font-size: 15px; }
 .aij-hint { font-size: 13px; color: var(--ink2); margin-top: 6px; }
 .aij-err { font-size: 14px; color: #c62828; margin-top: 6px; font-weight: 600; }
