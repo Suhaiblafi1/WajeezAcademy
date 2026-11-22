@@ -280,3 +280,53 @@ export function pathCandidatesWithin<T extends { courseId: string }>(ranked: rea
   const allowed = new Set(grantCourseIds)
   return ranked.filter((r) => allowed.has(r.courseId))
 }
+
+/* ═══ «مسارٌ عامّ» برابطٍ واحدٍ للجميع — `/go/BF80` (٢٢ نوفمبر ٢٠٢٦) ═══
+
+   طلبُ صاحب المنصّة: «ضع هذه الدورات الثلاث في الرابط … ولكن اجعل الرابط عامّا: يسجّل دخوله أو ينشئ حسابا إن لم يكن له،
+   فيظهر المسارُ باسمه». ومن دخل ولا كودَ له في بلاك فرايدي اختار له **«Give code instantly»**: يُعطى كودَها على حسابه فورا،
+   بلا هاتف (`publicPathCode` في `private-path.service.ts`).
+   ثمّ قرارُه في اليوم نفسِه: **لا «استبدالها» ولا «أضف دورة»** في المسار العامّ — يختار ما يشتريه من دوراته الثلاث وحدَها:
+   واحدةً أو اثنتين أو كلَّها، ولا يتابع بلا واحدة. والسعرُ للمختار من الخادم بكوده، والدفعُ بالمختار وحدَه. والمسارُ الخاصّ
+   (`/go/<رمز عشوائي>`) باقٍ باستبداله وإضافته.
+
+   · الرمزُ هنا ثابتٌ قصير (أربعةُ أحرف) — لا يصطدم برموز المسارات الخاصّة (ثمانيةٌ عشوائيّة، `GO_CODE_LENGTH`)، ولا يمرّ
+     بحارس تجربة الرموز: ليس سرّا.
+   · والحارس: `src/tests/commerce/public-path.test.ts` و`server/tests/commerce/public-path.test.ts`. */
+
+export interface PublicPathDef {
+  code: string
+  /** معرّفُ الحملة التي يُعطى كودُها — `wajeez-black-friday` (`BLACK_FRIDAY_GRANT_SLUG`) */
+  campaign: string
+  courseIds: readonly string[]
+}
+
+/** المساراتُ العامّة برموزها — والرمزُ بحروفٍ كبيرة */
+export const PUBLIC_PATHS: Readonly<Record<string, PublicPathDef>> = {
+  BF80: { code: 'BF80', campaign: 'wajeez-black-friday', courseIds: ['C-JOB-104', 'C-MGR-107', 'C-BIZ-107'] },
+}
+
+/** المسارُ العامّ برمزه — بأيّ حالةٍ للحروف — أو `null` */
+export function publicPathOf(raw: string | null | undefined): PublicPathDef | null {
+  const code = (raw ?? '').trim().toUpperCase()
+  return Object.prototype.hasOwnProperty.call(PUBLIC_PATHS, code) ? PUBLIC_PATHS[code] : null
+}
+
+/** أيُفتح هذا الرمزُ في `/go/` — مسارٌ خاصّ بشكله، أو مسارٌ عامّ باسمه */
+export const isGoCode = (raw: string): boolean => GO_CODE_RE.test(raw.trim().toUpperCase()) || publicPathOf(raw) !== null
+
+/** لا استبدالَ ولا إضافةَ في المسار العامّ — قرارُ صاحب المنصّة (٢٢ نوفمبر ٢٠٢٦) */
+export const pathEditable = (isPublic: boolean): boolean => !isPublic
+
+/** ما اختاره من دورات المسار العامّ — بترتيب المسار ومن دوراته وحدَها. و`null` لاختيارٍ لا يُتابع به: لا شيء، أو ما ليس منه */
+export function publicPathSelection(courseIds: readonly string[], selected: readonly string[]): string[] | null {
+  const own = new Set(courseIds)
+  if (selected.some((id) => !own.has(id))) return null
+  const chosen = courseIds.filter((id) => selected.includes(id))
+  return chosen.length >= 1 ? chosen : null
+}
+
+/** فوق مربّعات الاختيار */
+export const PUBLIC_PATH_PICK_AR = 'اختر الدورات التي تريدها: واحدة أو أكثر'
+/** ومن لم يدخل: ما يُقال فوق زرّ الدخول */
+export const PUBLIC_PATH_SIGN_IN_AR = 'سجل دخولك أو أنشئ حسابا، فيظهر المسار باسمك وسعرك بالمنحة.'

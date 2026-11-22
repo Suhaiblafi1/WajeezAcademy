@@ -31,7 +31,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router";
 import { CalendarClock, Gift, Layers, Loader2, Plus, Sparkles, UserRound } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
-import { useRealSession } from "@/services/session";
+import { useRealSession, type SessionUser } from "@/services/session";
+import { fetchMe } from "@/services/me";
 import { rememberBuyLink } from "@/services/buy-link-token";
 import { takeEarly } from "@/services/early-fetch";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
@@ -58,7 +59,8 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { addCandidates, chosenCohorts, swapCandidates } from "@/application/catalog/pathway-swap";
 import CohortPicker from "@/components/CohortPicker";
 import {
-  giftMissingAr, giftRuleAr, goPath, GO_CODE_RE, pathAddsLeft, pathAddsLeftAr, pathCandidatesWithin, pathCourseRemovable,
+  giftMissingAr, giftRuleAr, goPath, isGoCode, pathAddsLeft, pathEditable, publicPathOf, publicPathSelection,
+  PUBLIC_PATH_PICK_AR, PUBLIC_PATH_SIGN_IN_AR, pathAddsLeftAr, pathCandidatesWithin, pathCourseRemovable,
   privatePathGrantLabelAr, privatePathHeadline, privatePathPrice, REASON_LABEL_AR, restoredPathCourses,
   type GiftRule, type PathPreviewNumbers, type PrivatePathPrice,
 } from "@/application/commerce/private-path";
@@ -77,7 +79,11 @@ interface PathView {
   coursesLeft?: number | null;
   /** دوراتُ صفحة منحة الكود — منها وحدَها البدائلُ والإضافة. و`null` بلا كود منحة */
   grantCourseIds?: string[] | null;
-  buyLinkToken: string;
+  buyLinkToken: string | null;
+  /** المسارُ العامّ (`/go/BF80`، ٢٢ نوفمبر ٢٠٢٦): هل يُطلب الدخول، وسطرٌ إن لم يُعطَ كودا */
+  publicPath?: { code: string; signIn: boolean; noteAr: string | null };
+  /** لماذا لا يسع كودُه دوراتِه كلَّها — فينقص ما اختاره */
+  priceProblemAr?: string | null;
   /** الدورةُ المجانيّة وشرطُها (`private-path-gift.ts`) — وسعرُها الأصليّ يُعرض مشطوبا */
   gift?: {
     courseId: string; cohortId: string; titleAr: string; trainerName: string | null; firstSessionAt: string | null;
@@ -104,15 +110,23 @@ const GONE_AR = "إحدى دوراتك لم تعد متاحة للشراء. اس
 export default function PrivatePath() {
   const { code: raw = "" } = useParams();
   const code = raw.trim().toUpperCase();
-  const [loaded, setLoaded] = useState<Loaded>(() => (GO_CODE_RE.test(code) ? { state: "loading" } : { state: "failed", messageAr: NOT_FOUND_AR }));
+  const [loaded, setLoaded] = useState<Loaded>(() => (isGoCode(code) ? { state: "loading" } : { state: "failed", messageAr: NOT_FOUND_AR }));
   const [resumed] = useState(() => resumedCheckoutFor(goPath(code)));
+  /* ═══ والمسارُ العامّ (`/go/BF80`، ٢٢ نوفمبر ٢٠٢٦) يُقرأ بحسابه ═══
+     بلا حساب: دوراتُه و«سجل دخولك». ومن دخل من الصفحة نفسِها تُقرأ جلستُه ثانيةً فيُعاد المسارُ باسمه وكودِه */
+  const isPublic = publicPathOf(code) !== null;
+  const real = useRealSession();
+  const [signedIn, setSignedIn] = useState<SessionUser | null>(null);
+  const me = signedIn ?? real.user;
+  const waitSession = isPublic && !real.checked && !signedIn;
+  const asLearner = isPublic && me !== null;
 
   useEffect(() => {
-    if (!GO_CODE_RE.test(code)) return;
+    if (!isGoCode(code) || waitSession) return;
     let on = true;
     /* والطلبُ بدأ مع الصفحة قبل وصول شيفرتها (`index.html` → `early-fetch.ts`) — يُؤخذ، وما خاب منه يُعاد عاديّا */
-    const path = `/api/public/go/${code}`;
-    const early = takeEarly(path);
+    const path = asLearner ? `/api/learner/go/${code}` : `/api/public/go/${code}`;
+    const early = isPublic ? undefined : takeEarly(path);
     const request: Promise<PathView | { movedTo: string }> = early
       ? early
         .then((res) => (res.ok ? (res.json() as Promise<PathView | { movedTo: string }>) : Promise.reject(new Error("early"))))
@@ -123,15 +137,24 @@ export default function PrivatePath() {
         if (!on) return;
         if ("movedTo" in r) { setLoaded({ state: "moved", to: r.movedTo }); return; }
         /* ورمزُ من ولّد الرابط يُحفظ — فيُرسَل مع الشراء ويُنسب الطلبُ إليه (`buyLinkForOrder`) */
-        rememberBuyLink(r.buyLinkToken);
+        if (r.buyLinkToken) rememberBuyLink(r.buyLinkToken);
         setLoaded({ state: "ready", view: r });
       })
       .catch((e) => { if (on) setLoaded({ state: "failed", messageAr: e instanceof ApiError && e.status !== 404 ? e.message : NOT_FOUND_AR }); });
     return () => { on = false; };
-  }, [code]);
+  }, [code, waitSession, asLearner, isPublic]);
 
   if (loaded.state === "moved") return <Navigate replace to={goPath(loaded.to)} />;
-  if (loaded.state === "ready") return <PathPage view={loaded.view} resumed={resumed} />;
+  if (loaded.state === "ready") {
+    return (
+      <PathPage
+        view={loaded.view}
+        resumed={resumed}
+        session={isPublic ? me : undefined}
+        onSignedIn={() => { fetchMe(true).then((r) => { if (r.user) setSignedIn(r.user); }).catch(() => undefined); }}
+      />
+    );
+  }
 
   return (
     <Frame title="مسارك في أكاديمية وجيز">
@@ -148,8 +171,17 @@ export default function PrivatePath() {
   );
 }
 
-function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingCheckout | null }) {
-  const { user: session } = useRealSession();
+function PathPage({ view: v, resumed, session: given, onSignedIn }: {
+  view: PathView; resumed: PendingCheckout | null;
+  /** جلسةُ المسار العامّ كما قرأها الأعلى — فلا تبقى فارغةً بعد الدخول من الصفحة نفسِها */
+  session?: SessionUser | null;
+  onSignedIn: () => void;
+}) {
+  const real = useRealSession();
+  const session = given !== undefined ? given : real.user;
+  /* المسارُ العامّ: لا استبدالَ ولا إضافة، والمتعلّمُ يختار ما يشتريه من دوراته (قرارُ صاحب المنصّة، ٢٢ نوفمبر ٢٠٢٦) */
+  const isPublic = Boolean(v.publicPath);
+  const signIn = Boolean(v.publicPath?.signIn);
   /* والخفيفةُ لا الكاملة (٨ نوفمبر ٢٠٢٦): الرحلةُ تقرأ عنوانَ الوحدة ومخرجَها وساعاتِها لا متونَها — كـ«ابنِ مسارك».
      والكاملةُ ٢ ميغا مضغوطا كانت أكثرَ ما تنتظره الصفحة (`?lite=1` في `public.routes.ts`) */
   const catalogVersion = usePublishedContent({ lite: true });
@@ -177,13 +209,20 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
     [v],
   );
 
+  /* ═══ وما يختاره من دورات المسار العامّ — واحدةً أو أكثر، وكلُّها أوّلا (٢٢ نوفمبر ٢٠٢٦) ═══ */
+  const [chosen, setChosen] = useState<string[]>(
+    () => (resumed?.intent.courseIds && publicPathSelection(originalIds, resumed.intent.courseIds)) || originalIds,
+  );
+  const buyIds = isPublic ? publicPathSelection(originalIds, chosen) ?? [] : courseIds;
+  const toggle = (id: string) => setChosen((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
+
   /* ═══ والسعرُ بعد كلّ تغيير — من الخادم بالكود نفسِه ═══ */
-  const cohortIds = courseIds.map((id) => picked[id]).filter((id): id is string => Boolean(id));
+  const cohortIds = buyIds.map((id) => picked[id]).filter((id): id is string => Boolean(id));
   const key = cohortIds.join();
   /* وما سأله الخادمُ آخرَ مرّة بمفتاحه — فسلّةُ الرابط كما هي سعرُها من فتحه، وسلّةٌ لم يصل جوابُها «نحدث السعر» */
   const [answered, setAnswered] = useState<Extract<Priced, { state: "ready" }> | null>(null);
   useEffect(() => {
-    if (key === originalKey) return;
+    if (key === originalKey || !key || signIn) return;
     let on = true;
     apiPost<PreviewReply>("/api/public/checkout/preview", {
       cohortIds: key.split(","),
@@ -200,9 +239,9 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         if (on) setAnswered({ key, state: "ready", price: null, problemAr: e instanceof ApiError && e.status < 500 ? e.message : REPRICE_FAILED_AR });
       });
     return () => { on = false; };
-  }, [key, originalKey, v.couponCode]);
+  }, [key, originalKey, v.couponCode, signIn]);
   const current: Priced = key === originalKey
-    ? { key, state: "ready", price: v.price, problemAr: null }
+    ? { key, state: "ready", price: v.price, problemAr: v.priceProblemAr ?? null }
     : answered?.key === key ? answered : { key, state: "loading" };
 
   /* ═══ و«استبدالها» — بقاعدة المسار الجاهز (`pathway-swap.ts`): ما يُشترى هذا الموسم، وما لا يتعارض أوّلا ═══
@@ -227,7 +266,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
 
   /* ═══ و«أضف دورة» ما دام على الكود دورات (٢١ نوفمبر ٢٠٢٦، «Allow adding») ═══
      العددُ من الخادم (`coursesLeft`)، والمرشّحون بقاعدة البدائل: مسارُ دوراته أوّلا، وما لا يتعارض أوّلا، ومن قائمة منحته */
-  const addsLeft = pathAddsLeft({ coursesLeft: v.coursesLeft, baseCount: originalIds.length, current: courseIds.length });
+  const addsLeft = pathEditable(isPublic) ? pathAddsLeft({ coursesLeft: v.coursesLeft, baseCount: originalIds.length, current: courseIds.length }) : 0;
   const [addOpen, setAddOpen] = useState(false);
   const addChoices = useMemo(() => {
     void catalogVersion;
@@ -268,7 +307,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
   const pathTimed = chosenCohorts(courseIds, (id) => cohorts.get(id) ?? [], picked, (id) => courseById(id)?.name ?? id);
 
   const changed = courseIds.join() !== originalIds.join() || key !== originalKey;
-  const reset = () => { setCourseIds(originalIds); setPicked(originalPicked); setSwapForId(null); setAddOpen(false); };
+  const reset = () => { setCourseIds(originalIds); setChosen(originalIds); setPicked(originalPicked); setSwapForId(null); setAddOpen(false); };
   const titleOf = (id: string) => courseFullById(id)?.title ?? v.courses.find((c) => c.courseId === id)?.titleAr ?? id;
   /* ودورةٌ لا يعرفها كتالوجُ الواجهة لا تسقط من الصفحة وهي في السلّة — تُعرض ببطاقتها المختصرة */
   const outsideCatalog = v.courses.filter((c) => courseIds.includes(c.courseId) && !courseFullById(c.courseId));
@@ -282,8 +321,8 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
     courses: courseIds.map((id) => ({ courseId: id, titleAr: titleOf(id), domainAr: courseDomain(id) })),
   });
 
-  const ready = current.state === "ready" && current.price !== null && !current.problemAr && courseIds.length > 0;
-  const showPrice = Boolean(v.price || changed) && courseIds.length > 0;
+  const ready = current.state === "ready" && current.price !== null && !current.problemAr && buyIds.length > 0;
+  const showPrice = Boolean(v.price || changed) && buyIds.length > 0 && !signIn;
   /* بكم غيّر الاستبدالُ ما يدفعه — عن سعر الرابط كما وصل. وصفرٌ حين لم يتغيّر شيء أو لم يصل السعرُ بعد */
   const priceShift = current.state === "ready" && current.price && v.price && current.price.currency === v.price.currency
     ? Math.round((current.price.total - v.price.total) * 100) / 100
@@ -303,8 +342,8 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
     /* يُحفظ ما يشتريه قبل أن يُطلب منه حساب — فإن خرج ليوثّق بريده عاد إلى مساره (`ResumeCheckout`) */
     savePendingCheckout({
       path: goPath(v.code),
-      intent: { title: headline.titleAr, amount: current.price?.total ?? 0, kind: "courses", courseIds },
-      cohortByCourse: Object.fromEntries(courseIds.flatMap((id) => (picked[id] ? [[id, picked[id]]] : []))),
+      intent: { title: headline.titleAr, amount: current.price?.total ?? 0, kind: "courses", courseIds: buyIds },
+      cohortByCourse: Object.fromEntries(buyIds.flatMap((id) => (picked[id] ? [[id, picked[id]]] : []))),
       ...(v.couponCode ? { couponCode: v.couponCode } : {}),
     });
     if (session) setBuyOpen(true);
@@ -353,7 +392,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         showSchedule
         picked={picked}
         onPick={(courseId, cohortId) => setPicked((prev) => ({ ...prev, [courseId]: cohortId }))}
-        edit={{
+        edit={!pathEditable(isPublic) ? undefined : {
           swapOnly: true,
           swapForId,
           /* والدورةُ المجانيّةُ لا تُستبدل بها دورةٌ مدفوعة — هي في بطاقتها */
@@ -487,6 +526,31 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
         </Inset>
       )}
 
+      {/* ═══ المسارُ العامّ: يختار ما يشتريه من دوراته، أو يدخل أوّلا (٢٢ نوفمبر ٢٠٢٦) ═══ */}
+      {isPublic && !signIn && journeyReady && (
+        <Card className="mt-4 p-4" data-testid="public-path-pick">
+          <p className="text-read font-bold text-foreground">{PUBLIC_PATH_PICK_AR}</p>
+          <div className="mt-3 grid gap-1.5">
+            {originalIds.map((id) => (
+              <label key={id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-read">
+                <input type="checkbox" checked={chosen.includes(id)} onChange={() => toggle(id)} className="h-4 w-4 accent-teal-light" />
+                <span className="font-bold text-foreground">{titleOf(id)}</span>
+              </label>
+            ))}
+          </div>
+          {buyIds.length === 0 && <p className="mt-2 text-read text-gold-ink">اختر دورة واحدة على الأقل.</p>}
+        </Card>
+      )}
+      {isPublic && v.publicPath?.noteAr && (
+        <Inset tone="warn" className="mt-3 text-read" data-testid="public-path-note"><p>{v.publicPath.noteAr}</p></Inset>
+      )}
+      {signIn && (
+        <Card className="mt-6 p-5 text-center" data-testid="public-path-sign-in">
+          <p className="text-read text-foreground">{PUBLIC_PATH_SIGN_IN_AR}</p>
+          <Button tone="confirm" className="mt-4 w-full" onClick={() => setAuthOpen(true)}>سجل دخولك أو أنشئ حسابا</Button>
+        </Card>
+      )}
+
       <PathwayEcosystemPanel />
 
       <p className="mt-8 flex items-center justify-center gap-2 text-center text-read leading-5 text-muted-foreground">
@@ -581,8 +645,13 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
       {authOpen && (
         <Modal onClose={() => setAuthOpen(false)} label="التسجيل قبل الدفع" panelClassName="w-full max-w-md">
           <Inset tone="solid">
-            <p className="mb-4 text-center text-sm">خطوة واحدة قبل الدفع: حساب يحفظ مسارك وشهاداتك.</p>
-            <AuthGate onDone={() => { setAuthOpen(false); setBuyOpen(true); }} initialMode="signup" source="private_path_checkout" verifyLater />
+            <p className="mb-4 text-center text-sm">{signIn ? PUBLIC_PATH_SIGN_IN_AR : "خطوة واحدة قبل الدفع: حساب يحفظ مسارك وشهاداتك."}</p>
+            <AuthGate
+              onDone={() => { setAuthOpen(false); if (signIn) onSignedIn(); else setBuyOpen(true); }}
+              initialMode="signup"
+              source={isPublic ? "public_path" : "private_path_checkout"}
+              verifyLater
+            />
           </Inset>
         </Modal>
       )}
@@ -593,7 +662,7 @@ function PathPage({ view: v, resumed }: { view: PathView; resumed: PendingChecko
           kind="courses"
           initialCoupon={v.couponCode ?? ""}
           lines={[
-            ...courseIds.map((id) => ({ courseId: id, name: titleOf(id), cohortId: picked[id] })),
+            ...buyIds.map((id) => ({ courseId: id, name: titleOf(id), cohortId: picked[id] })),
             /* والمجانيّةُ في الطلب إن تحقّق شرطُها — والخادمُ يسعّرها بصفرٍ برمز الرابط ويحكم ثانيةً (`private-path-gift.ts`) */
             ...(giftOn && gift && giftChosen ? [{ courseId: gift.courseId, name: courseFullById(gift.courseId)?.title ?? gift.titleAr, cohortId: giftChosen.id }] : []),
           ]}
