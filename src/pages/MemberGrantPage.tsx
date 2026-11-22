@@ -63,6 +63,7 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import type { TimedSession } from "@/application/learning/cohort-overlap";
 import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
 import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } from "@/application/commerce/influencer";
+import { influencerCourseOrder, trainerShortNameAr } from "@/application/commerce/influencer-cards";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, advisorSourceOf, campaignParams, withGrantRef, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
@@ -340,22 +341,6 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     return () => { alive = false };
   }, [mailedCode, storedCode, storeKey]);
 
-  /* ما نقترحه مرّةً واحدةً حين يصير له كود: خمسُ دوراتٍ لا تتعارض ولا يتكرّر فيها مدرّب، أوّلُها دوراتُ المسار الرئيسيّ
-     الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، ثمّ ما يناسبهما (`suggestCourses`) — ويختار منها حتّى الحدّ. قرارُ صاحب
-     المنصّة (٢٧ أكتوبر ٢٠٢٦). وتُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه** — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦)
-     «لا تختر عنه أنت، فقط اكتب له بخطٍّ صغير: نقترحها لك» — **إلّا أولاها**: «ابدأ بها» تُختار له إن لم يختر شيئا
-     (١٣ نوفمبر ٢٠٢٦، `firstPicks`). ويعود ما تركه قبل أن يخرج ليوثّق بريده مختارا كما كان */
-  useEffect(() => {
-    if (!view || !stored || seeded) return;
-    const max = view.campaign.maxCourses;
-    const found = suggestPaths(GRANT_PATHS, view.openCourses, stored.interests, stored.workField);
-    const ours = suggestCourses(view.openCourses, stored.interests, stored.workField, GRANT_SUGGESTED_COURSES, found.main?.courseIds ?? []);
-    const open = new Set(view.openCourses.map((x) => x.courseId));
-    setSuggested(ours);
-    setPicked(firstPicks((resumed ? resumed.intent.courseIds : linkPicks.length > 0 ? linkPicks : stored.picks ?? []).filter((id) => open.has(id)), ours, max));
-    setSeeded(true);
-  }, [view, stored, seeded, resumed, linkPicks]);
-
   /* ونسبةُ كوده إن كان له — كلُّ كودٍ يحمل نسبتَه يومَ أُعطي (`grant.service.ts`)، فإن غيّر صاحبُ المنصّة نسبةَ الحملة بعده
      سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة.
      ولا خصمَ يُرى لمن لا منحةَ يستعملها (مراجعةُ ٢٨ أكتوبر ٢٠٢٦): من عبّأ النموذجَ والمنحةُ مغلقةٌ أو نفدت أكوادُها فلا كودَ له
@@ -363,6 +348,41 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
      ويدفعون كاملا. فالخصمُ ما دام له كودٌ أو بريدٌ به والمنحةُ مفتوحة */
   const grantOn = !!view?.campaign.open && !!(stored?.code || stored?.sentTo);
   const pct = grantOn ? stored?.percentOff ?? view?.campaign.percentOff ?? 0 : 0;
+  /* ═══ وصفحةُ المؤثّر قائمةٌ واحدةٌ بترتيبها (٢٢ نوفمبر ٢٠٢٦، `influencerCourseOrder`) ═══
+     قرارُ صاحب المنصّة: «ابدأ الدوراتِ بالأرخص — وابدأ بالثلاث التي استعملناها قبل». فالثلاثُ أوّلا ثمّ الأرخصُ بما يراه هو
+     (`grantPrice` بنسبته)، و«ابدأ بها» أوّلُ صفٍّ فيها — لا أولى ما يقترحه مجالُه. وصفحاتُ المنح الأخرى على حالها */
+  const flat = useMemo(
+    () => (forInfluencer && view ? influencerCourseOrder(view.openCourses, (x) => grantPrice(x.price, pct)) : null),
+    [forInfluencer, view, pct],
+  );
+  /* ما نقترحه مرّةً واحدةً حين يصير له كود: خمسُ دوراتٍ لا تتعارض ولا يتكرّر فيها مدرّب، أوّلُها دوراتُ المسار الرئيسيّ
+     الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، ثمّ ما يناسبهما (`suggestCourses`) — ويختار منها حتّى الحدّ. قرارُ صاحب
+     المنصّة (٢٧ أكتوبر ٢٠٢٦). وتُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه** — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦)
+     «لا تختر عنه أنت، فقط اكتب له بخطٍّ صغير: نقترحها لك» — **إلّا أولاها**: «ابدأ بها» تُختار له إن لم يختر شيئا
+     (١٣ نوفمبر ٢٠٢٦، `firstPicks`). ويعود ما تركه قبل أن يخرج ليوثّق بريده مختارا كما كان */
+  useEffect(() => {
+    if (!view || !stored || seeded) return;
+    /* وصفحةُ المؤثّر تُبذر في أثرها تحته — «ابدأ بها» أوّلُ قائمتها */
+    if (flat) return;
+    const max = view.campaign.maxCourses;
+    const found = suggestPaths(GRANT_PATHS, view.openCourses, stored.interests, stored.workField);
+    const ours = suggestCourses(view.openCourses, stored.interests, stored.workField, GRANT_SUGGESTED_COURSES, found.main?.courseIds ?? []);
+    const open = new Set(view.openCourses.map((x) => x.courseId));
+    setSuggested(ours);
+    setPicked(firstPicks((resumed ? resumed.intent.courseIds : linkPicks.length > 0 ? linkPicks : stored.picks ?? []).filter((id) => open.has(id)), ours, max));
+    setSeeded(true);
+  }, [view, stored, seeded, resumed, linkPicks, flat]);
+  /* وفي صفحة المؤثّر: «ابدأ بها» أوّلُ صفٍّ في قائمتها الواحدة (أولى الثلاث، أو أرخصُها إن غابت) — تُختار له إن لم يختر
+     شيئا، كما تُختار أولى المقترحات في المنح الأخرى (`firstPicks`) */
+  useEffect(() => {
+    if (!flat || !view || !stored || seeded) return;
+    const start = flat.slice(0, 1).map((x) => x.courseId);
+    const open = new Set(flat.map((x) => x.courseId));
+    setSuggested(start);
+    setPicked(firstPicks((resumed ? resumed.intent.courseIds : linkPicks.length > 0 ? linkPicks : stored.picks ?? []).filter((id) => open.has(id)), start, view.campaign.maxCourses));
+    setSeeded(true);
+  }, [flat, view, stored, seeded, resumed, linkPicks]);
+
   /* ═══ ومن اشترى بكوده قبلُ يختار ما بقي له — لا الحدَّ كلَّه (٣١ أكتوبر ٢٠٢٦) ═══
      الكودُ يُستعمل حتى حدّ دوراته في كلّ المشتريات (`coursesLeft`)، والصفحةُ كانت تعرض الحدَّ كاملا لمن عاد بعد شرائه:
      يختار أربعا وقد بقيت له اثنتان، فيرى سعرَ المنحة، ثمّ يردّ الخادمُ الكودَ فيُسعَّر بلا منحة. فما بقي على كوده من حسابه
@@ -511,13 +531,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       /* وأولى المقترحات «ابدأ بها» — دورةٌ أوّلا والكودُ يبقى لباقي المسار (صاحب المنصّة، ١٣ نوفمبر ٢٠٢٦). ولا تُختار عنه */
       const tag = ours.has(x.courseId) ? (suggested[0] === x.courseId ? "ابدأ بها" : "نقترحها لك") : fits(x) > 0 ? "يناسب ما تريد تطويره" : null;
       const sum = x.summary ?? null;
-      /* و«نبذة» لأهدافها ولمن هي — وعدُها ظاهرٌ فوقُ، فلا نبذةَ إن لم يكن لها غيرُه */
-      const more = !!sum && (sum.goalsAr.length > 0 || !!sum.audienceAr);
-      const open = more && summaryOf === x.courseId;
       const meetings = x.sessions?.length ?? 0;
       const pay = grantPrice(x.price, pct);
       const perMeeting = grantPerSession(pay, meetings);
-      const sumId = `sum-${x.courseId}`;
       /* وتعارضُها مع ما اختاره قبلها — يُقال فورَ اختيارها، ولا يمنعه */
       const clash = on ? grantClashAr(x, chosen.slice(0, chosen.findIndex((c) => c.courseId === x.courseId))) : null;
       /* الصفُّ كلُّه يختار — والسهمُ خارجَ وسمه، فنبذتُه تُفتح ولا تختار. ولا رابطَ فيه إلى الموقع: قرارُ صاحب المنصّة
@@ -563,6 +579,19 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               )}
             </span>
           </label>
+          {about(x)}
+        </Inset>
+      );
+    };
+    /* و«نبذة» لأهدافها ولمن هي تحت سهمٍ في الصفّ — لصفّ المنح كلّها ولصفّ المؤثّر الخفيف. وعدُها ظاهرٌ فوقُ في صفّ المنح، فلا
+       نبذةَ إن لم يكن لها غيرُه */
+    const about = (x: GrantCourse) => {
+      const sum = x.summary ?? null;
+      const more = !!sum && (sum.goalsAr.length > 0 || !!sum.audienceAr);
+      const open = more && summaryOf === x.courseId;
+      const sumId = `sum-${x.courseId}`;
+      return (
+        <>
           {sum && more && (
             <>
               <button
@@ -593,6 +622,55 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               )}
             </>
           )}
+        </>
+      );
+    };
+    /* ═══ وصفُّ صفحة المؤثّر أخفّ وأصغر (٢٢ نوفمبر ٢٠٢٦) ═══
+       قرارُ صاحب المنصّة: «اجعل صناديقَ الدورات أخفّ: اسمُ المدرّب تحت الصورة بكلمتين فقط، واحذف النصوصَ تحت اسم الدورة،
+       واجعل الصندوقَ أصغر.. والتغييرُ لحملات المؤثّرين فقط». فصورةٌ أصغرُ تحتها اسمُ مدرّبها بكلمتين (`trainerShortNameAr`)،
+       ثمّ اسمُ الدورة وسطرُ سعرها ويومُ بدئها قصيرا — يومُها لازمٌ ليختار. ولا «مع …» ولا وعدٌ ولا سطرُ مجالٍ ولقاءات، ولا ثمنُ
+       لقاء («ازل كلمة السعر للقاء فهو يشتت»). والاختيارُ على الصورة، والنبذةُ مطويّةٌ تحت سهمها كما في صفّ المنح (`about`) */
+    const lightRow = (x: GrantCourse) => {
+      const on = picked.includes(x.courseId);
+      const full = !on && picked.length >= max;
+      const seats = seatsLeftAr(x.seatsLeft);
+      /* «ابدأ بها» على أوّل صفٍّ في القائمة — وإن تغيّر ترتيبُها بنسبة كوده بعد أن تُبذر */
+      const startHere = flat?.[0]?.courseId === x.courseId;
+      const pay = grantPrice(x.price, pct);
+      const clash = on ? grantClashAr(x, chosen.slice(0, chosen.findIndex((c) => c.courseId === x.courseId))) : null;
+      return (
+        <Inset key={x.courseId} tone={on ? "accent" : "default"} interactive={!full} className={`px-3 py-2.5 ${full ? "opacity-50" : ""}`}>
+          <label className="flex cursor-pointer items-start gap-3" data-card="light">
+            <span className="flex w-20 shrink-0 flex-col items-center gap-1">
+              <span className="relative">
+                {x.trainer?.photoUrl
+                  ? <img src={x.trainer.photoUrl} alt="" loading="lazy" className="h-20 w-20 rounded-xl object-cover shadow" />
+                  : <span className="grid h-20 w-20 place-items-center rounded-xl bg-teal/10 text-teal-light-ink"><UserRound className="h-8 w-8" aria-hidden="true" /></span>}
+                <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} aria-label={x.titleAr} className="absolute start-1.5 top-1.5 h-5 w-5 shadow" />
+              </span>
+              {x.trainer && <span className="w-full truncate text-center text-fine font-bold text-teal-light-ink">{trainerShortNameAr(x.trainer.name)}</span>}
+            </span>
+            <span className="min-w-0 flex-1">
+              {(startHere || seats) && (
+                <span className="flex flex-wrap items-center gap-x-3">
+                  {startHere && <span className="inline-flex items-center gap-1 text-fine text-muted-foreground"><Sparkles className="h-3 w-3 text-gold-ink" aria-hidden="true" />ابدأ بها</span>}
+                  {seats && <span className="inline-flex items-center gap-1 text-fine font-bold text-red-300"><Flame className="h-3 w-3" aria-hidden="true" />{seats}</span>}
+                </span>
+              )}
+              <span className="block text-read font-bold leading-6">{x.titleAr}</span>
+              <span className="mt-1 flex flex-wrap items-baseline gap-x-2">
+                {pct > 0 && <bdi dir="ltr" className="text-fine text-muted-foreground line-through">{money(x.price)}</bdi>}
+                <bdi dir="ltr" className="text-base font-black">{money(pay)}</bdi>
+                <span className="text-fine text-muted-foreground">· تبدأ {cohortDayAr(x.startsAt, { day: "numeric", month: "long" })}</span>
+              </span>
+              {clash && (
+                <span role="status" className="mt-1 flex items-start gap-1.5 text-fine font-bold leading-5 text-gold-ink">
+                  <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />{clash}
+                </span>
+              )}
+            </span>
+          </label>
+          {about(x)}
         </Inset>
       );
     };
@@ -636,7 +714,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         <h2 className="mt-6 text-xl font-black">
           اختر دوراتك{view.termAr && <span className="text-read font-normal text-muted-foreground"> · {view.termAr}</span>}
         </h2>
-        {suggested.length > 0 && (
+        {/* وفي صفحة المؤثّر لا «نقترح لك» — أولاها «ابدأ بها» في القائمة نفسِها */}
+        {flat && flat.length > 0 && <p className="mt-2 text-read">ابدأ بالأولى، وكودك يبقى لباقيها بنفس الخصم.</p>}
+        {!flat && suggested.length > 0 && (
           <p className="mt-2 text-read">
             {/* «لا تتعارض» قولٌ يُقاس: يُقال حين لكلِّ مقترحةٍ لقاءاتٌ معتمَدة، وإلّا فـ«تناسبك» وحدَها */}
             {/* «أرى الناس تستصعب شراء أربع دورات» — صاحب المنصّة (١٣ نوفمبر ٢٠٢٦). فيُقال: دورةٌ أوّلا، والكودُ يبقى لباقيها
@@ -647,6 +727,12 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 
         {view.openCourses.length === 0 ? (
           <Card as="p" className="mt-5 text-read text-muted-foreground">لا دورات متاحة الآن. تواصل مع مستشار ليقترح عليك.</Card>
+        ) : flat ? (
+          /* وصفحةُ المؤثّر قائمةٌ واحدةٌ بلا أقسام — المميّزةُ ثمّ الأرخص (`influencerCourseOrder`) */
+          <>
+            <div className="mt-4 space-y-2" data-list="flat">{flat.map((x) => lightRow(x))}</div>
+            {picked.length >= max && <p className="mt-2 text-read text-muted-foreground">وصلت الحد: {max} دورات. احذف دورة لتضيف غيرها.</p>}
+          </>
         ) : (
           <>
             {top.length > 0 && <div className="mt-5 space-y-3">{top.map((x) => row(x))}</div>}
