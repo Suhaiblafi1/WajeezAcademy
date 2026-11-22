@@ -277,7 +277,9 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
     ? publicPathAddsLeft({ coursesLeft: v.coursesLeft, baseCount: originalIds.length, selected: buyIds.length })
     : pathAddsLeft({ coursesLeft: v.coursesLeft, baseCount: originalIds.length, current: courseIds.length });
   const canAdd = addsLeft > 0;
-  const [addOpen, setAddOpen] = useState(false);
+  /* ومفتوحةٌ دائما (٢٢ نوفمبر ٢٠٢٦، «الإضافة غير واضحة.. يجب أن تكون واضحة لهم»): زرٌّ صغيرٌ في آخر الصفحة لا يُرى، فالدوراتُ
+     تُعرض بنفسها تحت عنوانٍ يقول ما هي وبكم */
+  const addOpen = true;
   const addChoices = useMemo(() => {
     void catalogVersion;
     if (!addOpen || !canAdd) return [];
@@ -299,7 +301,6 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
   const addCourse = (courseId: string, cohortId: string) => {
     setCourseIds((ids) => (ids.includes(courseId) ? ids : [...ids, courseId]));
     setPicked((prev) => ({ ...prev, [courseId]: cohortId }));
-    setAddOpen(false);
   };
   /* والمضافُ وحدَه يُحذف — وهو ما بعد دورات المسار (الاستبدالُ في مكانه لا يحرّكه) */
   const removableIds = courseIds.filter((_, i) => pathCourseRemovable(i, originalIds.length));
@@ -328,7 +329,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
   const pathTimed = chosenCohorts(courseIds, (id) => cohorts.get(id) ?? [], picked, (id) => courseById(id)?.name ?? id);
 
   const changed = courseIds.join() !== originalIds.join() || key !== originalKey;
-  const reset = () => { setCourseIds(originalIds); setChosen(originalIds); setPicked(originalPicked); setSwapForId(null); setAddOpen(false); };
+  const reset = () => { setCourseIds(originalIds); setChosen(originalIds); setPicked(originalPicked); setSwapForId(null); };
   const titleOf = (id: string) => courseFullById(id)?.title ?? v.courses.find((c) => c.courseId === id)?.titleAr ?? id;
   /* ودورةٌ لا يعرفها كتالوجُ الواجهة لا تسقط من الصفحة وهي في السلّة — تُعرض ببطاقتها المختصرة */
   const outsideCatalog = v.courses.filter((c) => courseIds.includes(c.courseId) && !courseFullById(c.courseId));
@@ -453,29 +454,29 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
 
       {/* «أضف دورة» — ما دام على الكود دورات، ويختفي عند الحدّ (٢١ نوفمبر ٢٠٢٦) */}
       {addsLeft > 0 && (
-        <Card className="mt-4 p-4" data-testid="private-path-add">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-read text-muted-foreground">{pathAddsLeftAr(addsLeft)}</p>
-            <Button tone="secondary" size="sm" onClick={() => setAddOpen((o) => !o)} aria-expanded={addOpen}>
-              <Plus className="h-3.5 w-3.5" /> {addOpen ? "إخفاء الدورات" : "أضف دورة"}
-            </Button>
+        <Card className="mt-4 border-2 border-gold/60 p-4 sm:p-5" data-testid="private-path-add">
+          <h2 className="flex items-center gap-2 text-lg font-black">
+            <Plus className="h-5 w-5 text-gold-ink" aria-hidden="true" />
+            {v.price?.grantPct ? `أضف دورات أخرى بخصم ${v.price.grantPct}%` : "أضف دورات أخرى"}
+          </h2>
+          <p className="mt-1 text-read text-muted-foreground">{pathAddsLeftAr(addsLeft)}</p>
+          <div className="mt-3 grid gap-2">
+            {addChoices.map((s) => (
+              <div
+                key={s.courseId}
+                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5"
+              >
+                <span className="min-w-0">
+                  <span className="block text-read font-bold text-foreground">{courseById(s.courseId)?.name ?? s.courseId}</span>
+                  <span className="mt-0.5 block text-read text-muted-foreground">{s.noteAr}</span>
+                </span>
+                <Button tone="primary" size="sm" onClick={() => addCourse(s.courseId, s.cohortId)} aria-label={`أضف ${courseById(s.courseId)?.name ?? s.courseId}`}>
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" /> أضف
+                </Button>
+              </div>
+            ))}
+            {addChoices.length === 0 && <p className="text-read text-muted-foreground">لا دورة لها شعبة الآن.</p>}
           </div>
-          {addOpen && (
-            <div className="mt-3 grid gap-1.5">
-              {addChoices.map((s) => (
-                <button
-                  key={s.courseId}
-                  type="button"
-                  onClick={() => addCourse(s.courseId, s.cohortId)}
-                  className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right transition hover:border-teal-light/50 hover:bg-white/[0.07]"
-                >
-                  <span className="block text-xs font-bold text-foreground">{courseById(s.courseId)?.name ?? s.courseId}</span>
-                  <span className="mt-0.5 block text-fine text-muted-foreground">{s.noteAr}</span>
-                </button>
-              ))}
-              {addChoices.length === 0 && <p className="text-read text-muted-foreground">لا دورة لها شعبة الآن.</p>}
-            </div>
-          )}
         </Card>
       )}
 
