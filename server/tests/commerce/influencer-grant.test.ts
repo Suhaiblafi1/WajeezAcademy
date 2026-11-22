@@ -126,7 +126,7 @@ describe('③ والكود يحمل مؤثره وعمولته — والأول �
     expect(code).toMatchObject({ influencerId: sara, commissionPercent: 15 })
     const mail = await prisma.outboxMail.findFirst({ where: { to: p.email, purpose: 'grant.code' }, orderBy: { createdAt: 'desc' } })
     expect(mail?.text, 'بريد الكود لا يعيده إلى صفحة مؤثره').toContain('/grant/i/SARA')
-    expect(mail?.subject).toBe('كود منحة مؤثرين وجيز الخاص بك')
+    expect(mail?.subject, 'سمى المنحة باسم الحملة لا باسم مؤثره').toBe('كود منحة مؤثر SARA الخاص بك')
     expect(mail?.text, 'بريد منحة المؤثرين يقول «من قراء وجيز»').not.toContain('قراء وجيز')
     /* وهديّتُها برابطٍ قصيرٍ إلى صفحة مؤثّرها — ولا رابطَ لمؤثّرٍ غيرِ معروف (٢٧ أكتوبر ٢٠٢٦) */
     const view = await landing.influencerView('SARA')

@@ -19,7 +19,7 @@ export default function MyGrantCard({ className = "" }: { className?: string }) 
     <Panel as="section" tone="accent" className={`flex flex-wrap items-center justify-between gap-3 ${className}`.trim()}>
       <div className="min-w-0">
         <p className="flex items-center gap-2 text-sm font-bold text-foreground">
-          <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> {grant.nameAr}: <bdi dir="ltr">{grant.code}</bdi>
+          <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> {grant.titleAr ?? grant.nameAr}: <bdi dir="ltr">{grant.code}</bdi>
         </p>
         <p className="mt-1 text-read text-muted-foreground">
           بقي لك {coursesAr(grant.left)} من {grant.max} بخصم {grant.percentOff}٪. يطبق تلقائيا عند الشراء.

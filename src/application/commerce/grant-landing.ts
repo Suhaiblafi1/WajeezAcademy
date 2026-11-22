@@ -68,6 +68,14 @@ export function grantRemainingAr(picked: number, max: number): string {
 export const GRANT_VALUE_AR = 'قيمة منحتك'
 export const GRANT_VALUE_PAID_AR = 'تدفعها الأكاديمية عنك'
 
+/* ═══ ولمتابع المؤثّر: قيمةُ خصمه لا ما تدفعه الأكاديميّةُ عنه (٢٢ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «استبدل هذا النصّ بنصٍّ يركّز على قيمة الخصم، لا كم تدفع الأكاديميّةُ عنك». فالنسبةُ أوّلا ثمّ ما
+   يوفّره: «خصمك 70% — توفر $480.00». والسطرُ الكبيرُ «4 دورات بـ$X بدل $Y» كما هو، والحملاتُ الأخرى كما كانت. */
+export const grantDiscountAr = (percentOff: number): string => `خصمك ${percentOff}%`
+export const GRANT_SAVES_AR = 'توفر'
+/** «خصمك 70% — توفر $480.00» — للبريد ونصوصٍ بلا عزلٍ للمبلغ */
+export const grantDiscountLineAr = (percentOff: number, value: string): string => `${grantDiscountAr(percentOff)} — ${GRANT_SAVES_AR} ${value}`
+
 /* ═══ قيمةُ المنحة بما يخرج به لا بسعرها وحدَه (٣١ أكتوبر ٢٠٢٦) ═══
 
    سأل صاحبُ المنصّة: «كيف نُري الناسَ قيمةَ المنحة فيُقبلوا عليها — ماذا سيخرجون به من كلّ دورة؟ لا أريد صفحةً طويلة».
@@ -349,6 +357,9 @@ export function parsePicksParam(search: string): string[] {
 
 /** سطرُ ما يُرى قبل فتح البريد — «ما اخترته: 3 دورات، ومنحتك تدفع عنك $330.00.» */
 export const grantPicksPreheaderAr = (n: number, value: string): string => `ما اخترته: ${grantCountAr(n)}، ومنحتك تدفع عنك ${value}.`
+/** ولمتابع المؤثّر بقيمة خصمه — «ما اخترته: 3 دورات، خصمك 70% — توفر $330.00.» (٢٢ نوفمبر ٢٠٢٦) */
+export const grantPicksSavingPreheaderAr = (n: number, percentOff: number, value: string): string =>
+  `ما اخترته: ${grantCountAr(n)}، ${grantDiscountLineAr(percentOff, value)}.`
 export const GRANT_PICKS_INTRO_AR = 'هذه الدورات التي اخترتها، بسعرها بعد منحتك:'
 export const GRANT_PICKS_CTA_AR = 'أكمل حجزك'
 

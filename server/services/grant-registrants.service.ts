@@ -161,7 +161,7 @@ export async function registrantsFull(prisma: PrismaClient, now = new Date()) {
     return {
       id: r.id, fullName: r.fullName, phone: r.phone, email: r.email, workField: r.workField, careerLevel: r.careerLevel,
       interests: r.interests, channel: r.channel, wave: r.wave, createdAt: r.createdAt, code: r.code, codeActive: r.codeActive,
-      state: r.state, advisor: r.advisor, picks: r.picks, influencer: r.influencer, influencerCode: r.influencerCode,
+      state: r.state, advisor: r.advisor, picks: r.picks, influencer: r.influencer, influencerCode: r.influencerCode, influencerNameAr: r.influencerNameAr,
       orders: r.orders, revenue: r.revenue,
       /* من أين جاء شراؤه — «حملة واتساب» وأخواتها، فارغةٌ لما سواها */
       boughtVia: viaFor(r),

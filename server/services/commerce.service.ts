@@ -335,7 +335,7 @@ export class CommerceService {
      فالتطابقُ بنيةٌ لا اتّفاق: لا حسابَ في الواجهة يُقارَن بحسابٍ في الخادم.
 
      ولا يكتب هذا النداءُ شيئا: لا حجزَ مقعد، ولا عدَّ استعمالٍ للكوبون. */
-  async quote(userId: string | null, cohortIds: string[], couponCode?: string, buyLinkToken: string | null = null) {
+  async quote(userId: string | null, cohortIds: string[], couponCode?: string, buyLinkToken: string | null = null, anonymous = false) {
     /* التسعيرُ لا يُسقط السلّةَ بمانعٍ في بندٍ منها.
 
        كان ينادي `validatedCart` الصارم، فيرمي عند أوّل شعبةٍ يملكها المشتري
@@ -350,7 +350,9 @@ export class CommerceService {
        سيُرسَل إلى `checkout`، فالمعروضُ هو المُصدَر */
     /* وهديّةُ رابط المسار إن كان له رمزٌ وفي رابطه هديّة — تُسعَّر بصفرٍ إن استحقّها، ويُقال لماذا إن لم يستحقّها */
     const gift = await giftForCart(this.prisma, userId, buyLinkToken, buyable.map((c) => ({ courseId: c.courseId })))
-    const { pricing, couponCode: code, grantPct, grantNameAr } = await this.cart.priceFor(userId, buyable, couponCode, currency, gift?.applies ? gift.courseId : null)
+    const { pricing, couponCode: code, grantPct, grantNameAr: ownName, grantPublicNameAr } = await this.cart.priceFor(userId, buyable, couponCode, currency, gift?.applies ? gift.courseId : null)
+    /* اسمُ المنحة كما يراه صاحبُ الكود — «منحة كاسيت» (٢٢ نوفمبر ٢٠٢٦، `grantTitleAr`). وفي المعاينة بلا مؤثّره (`anonymous`) */
+    const grantNameAr = anonymous ? grantPublicNameAr : ownName
     return {
       currency,
       gift,
@@ -413,7 +415,7 @@ export class CommerceService {
       q = await this.quote(userId, ids, undefined, buyLinkToken)
     } else {
       try {
-        q = await this.quote(userId, ids, code, buyLinkToken)
+        q = await this.quote(userId, ids, code, buyLinkToken, true)
       } catch (e) {
         if (!code || !(e instanceof AuthError) || !PREVIEW_COUPON_ERRORS.has(e.code)) throw e
         /* وما يُعدّ تجربةً هو الكودُ غيرُ الصالح وحدَه — لا كودٌ صالحٌ لا يسع سلّتَه */

@@ -58,8 +58,8 @@ import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_CONTINUE_AR, GRANT_SLUG
 import { influencerLink } from '../../src/application/commerce/influencer'
 import { optedOut, unsubscribeLinks } from './mail-optout.service'
 import {
-  GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, GRANT_VALUE_AR, grantCallDueAt, grantCodeLink, grantDaysLeftAr, grantPicksLink, grantPicksPreheaderAr,
-  grantShortTitleAr, leadProfileAr,
+  GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, GRANT_SAVES_AR, GRANT_VALUE_AR, grantCallDueAt, grantCodeLink, grantDaysLeftAr, grantDiscountAr, grantPicksLink,
+  grantPicksPreheaderAr, grantPicksSavingPreheaderAr, grantShortTitleAr, leadProfileAr,
 } from '../../src/application/commerce/grant-landing'
 import { grantPrice } from '../../src/application/commerce/grant'
 import { isPartnerCampaign } from '../../src/application/commerce/partner-grant'
@@ -108,7 +108,7 @@ export async function grantRegistrants(prisma: PrismaClient) {
     orderBy: { createdAt: 'desc' },
     select: {
       id: true, fullName: true, phone: true, email: true, workField: true, careerLevel: true, interests: true,
-      channel: true, wave: true, createdAt: true, grantPicks: true, campaign: true, influencer: { select: { code: true } },
+      channel: true, wave: true, createdAt: true, grantPicks: true, campaign: true, influencer: { select: { code: true, nameAr: true } },
       firstTouch: true, pageTouch: true, pageOpenedAt: true,
       grantCode: { select: { coupon: { select: { code: true, active: true, orders: { select: { status: true, total: true } } } } } },
       cases: {
@@ -134,6 +134,8 @@ export async function grantRegistrants(prisma: PrismaClient) {
       careerLevel: l.careerLevel, interests: l.interests,
       channel: l.channel, wave: l.wave, createdAt: l.createdAt,
       influencer: isInfluencerGrant(l.campaign), influencerCode: l.influencer?.code ?? null,
+      /* واسمُ مؤثّره — فرسالةُ واتساب إليه تقول «منحة كاسيت» (٢٢ نوفمبر ٢٠٢٦، `influencerGrantNameAr`) */
+      influencerNameAr: l.influencer?.nameAr ?? null,
       code: l.grantCode?.coupon.code ?? null, state,
       picks: l.grantPicks.map((id) => titles.get(id) ?? id),
       advisor: l.cases[0] ? (l.cases[0].assignments[0]?.advisor.displayName ?? 'بلا مستشار بعد') : null,
@@ -357,6 +359,11 @@ async function remindUnbought(
     const mine = lead.grantPicks.map((id) => pool.get(id)).filter((c): c is NonNullable<typeof c> => !!c)
     const listTotal = mine.reduce((sum, c) => sum + c.price, 0)
     const payTotal = grantPrice(listTotal, pct)
+    /* ═══ ومتابعُ المؤثّر يقرأ قيمةَ خصمه لا ما تدفعه الأكاديميّةُ عنه (٢٢ نوفمبر ٢٠٢٦) ═══
+       قرارُ صاحب المنصّة: «نصٌّ يركّز على قيمة الخصم، لا كم تدفع الأكاديميّةُ عنك» — «خصمك 70% — توفر $480.00»
+       (`grantDiscountLineAr`). والحملاتُ الأخرى كما كانت */
+    const follower = isInfluencerGrant(slug)
+    const saved = fmtMoney(listTotal - payTotal)
     const blocks: MailBlock[] = mine.length > 0
       ? [
           { kind: 'p', text: GRANT_PICKS_INTRO_AR },
@@ -364,7 +371,7 @@ async function remindUnbought(
           ...closing,
           { kind: 'facts', rows: [
             { label: 'تدفع', value: `${fmtMoney(payTotal)} بدل ${fmtMoney(listTotal)}` },
-            { label: GRANT_VALUE_AR, value: fmtMoney(listTotal - payTotal) },
+            follower ? { label: grantDiscountAr(pct), value: `${GRANT_SAVES_AR} ${saved}` } : { label: GRANT_VALUE_AR, value: saved },
             { label: 'كود منحتك', value: coupon.code },
             ...lastDayRow,
           ] },
@@ -396,7 +403,7 @@ async function remindUnbought(
           greetingName: lead.fullName,
           /* المنحةُ بنسبتها لا بما يبقى — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، كسطر الصفحة الأولى. ومن اختار: ما اختاره وقيمتُه */
           preheader: mine.length > 0
-            ? grantPicksPreheaderAr(mine.length, fmtMoney(listTotal - payTotal))
+            ? (follower ? grantPicksSavingPreheaderAr(mine.length, pct, saved) : grantPicksPreheaderAr(mine.length, saved))
             : `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`,
           heading: subject,
           blocks,

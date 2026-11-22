@@ -94,7 +94,8 @@ describe('بعد النموذج', () => {
     expect(big, 'السطر الكبير').toBeGreaterThan(-1)
     expect(panel.slice(big)).toMatch(/^<p className="text-lg font-black">\s*\{grantCountAr\(chosen\.length\)\} بـ<bdi dir="ltr">\{money\(payTotal\)\}<\/bdi>/)
     expect(panel).toMatch(/بدل <bdi dir="ltr" className="line-through">\{money\(listTotal\)\}<\/bdi>/)
-    expect(panel, 'قيمة المنحة بخط صغير').toMatch(/<p className="mt-0\.5 text-read text-muted-foreground">\{GRANT_VALUE_AR\} <bdi dir="ltr">\{money\(listTotal - payTotal\)\}<\/bdi> \{GRANT_VALUE_PAID_AR\}<\/p>/)
+    /* وفي صفحة المؤثّر قيمةُ خصمه بدلَها (٢٢ نوفمبر ٢٠٢٦، `influencer-grant-name.test.ts`) — وما سواها كما كان */
+    expect(panel, 'قيمة المنحة بخط صغير').toMatch(/<p className="mt-0\.5 text-read text-muted-foreground">[^]*?: <>\{GRANT_VALUE_AR\} <bdi dir="ltr">\{money\(listTotal - payTotal\)\}<\/bdi> \{GRANT_VALUE_PAID_AR\}<\/>\}\s*<\/p>/)
     expect(PAGE, 'عاد «ووجيز تتحمل»').not.toMatch(/تتحمل|grantSavingAr/)
     expect([1, 2, 4, 10, 11].map(grantCountAr)).toEqual(['دورة واحدة', 'دورتان', '4 دورات', '10 دورات', '11 دورة'])
     expect(PAGE).toMatch(/prefill=\{\{ name: stored\.name, email: stored\.email \}\}/)
@@ -131,7 +132,7 @@ describe('بعد النموذج', () => {
     ])
     const card = PAGE.slice(PAGE.indexOf(TOP_CARD), PAGE.indexOf('<h2 className="mt-6'))
     /* ثمّ (١٥ نوفمبر ٢٠٢٦): «ابدأ بمقدّمةٍ ترحيبيّة ولماذا هو هنا» — الحدُّ في سطر الترحيب لا سطرا وحدَه */
-    expect(card).toMatch(/\{grantOn && \([\s\S]*?<h1[^>]*>\{grantWelcomeAr\(stored\.name\)\}<\/h1>[\s\S]*?grantWhyHereAr\(\{ grantNameAr: nameAr, percentOff: pct, max, lastDay: lastDayShort \}\)/)
+    expect(card).toMatch(/\{grantOn && \([\s\S]*?<h1[^>]*>\{grantWelcomeAr\(stored\.name\)\}<\/h1>[\s\S]*?grantWhyHereAr\(\{ grantNameAr: shownNameAr, percentOff: pct, max, lastDay: lastDayShort \}\)/)
     expect(card.indexOf('grantWelcomeAr'), 'الترحيب ليس أول الصندوق').toBeLessThan(card.indexOf('stored.code ?'))
     expect(PAGE, 'عاد سطر الحد وحده').not.toMatch(/grantLimitAr\(/)
     expect(grantWelcomeAr('صهيب الخوالدة')).toBe('أهلا صهيب، منحتك جاهزة')
@@ -435,7 +436,7 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/const grantOn = !!view\?\.campaign\.open && !!\(stored\?\.code \|\| stored\?\.sentTo\);/)
     const sum = PAGE.slice(PAGE.indexOf('{grantCountAr(chosen.length)}'), PAGE.indexOf('</Card>', PAGE.indexOf('{grantCountAr(chosen.length)}')))
     expect(sum).toMatch(/\{grantOn && <span className="text-read font-normal text-muted-foreground">بدل/)
-    expect(sum).toMatch(/\{grantOn && \(\s*<>\s*<p className="mt-0\.5 text-read text-muted-foreground">\{GRANT_VALUE_AR\}/)
+    expect(sum).toMatch(/\{grantOn && \(\s*<>\s*<p className="mt-0\.5 text-read text-muted-foreground">\s*\{forInfluencer[^]*?\{GRANT_VALUE_AR\}/)
     expect(sum).toMatch(/\{grantOn \? "احصل على المنحة" : "اشتر الدورات"\}/)
     expect(PAGE).toMatch(/\{\(stored\.code \|\| stored\.sentTo\) && !c\.open && <p className="mt-2 text-read font-bold">\{GRANT_CLOSED_AR\}<\/p>\}/)
     /* ومن نفدت أكوادُها يبقى عند سببه — ويعود إلى النموذج حين تُزاد */
@@ -709,7 +710,7 @@ describe('بعد النموذج', () => {
     expect(advisorSourceOf({})).toBeNull()
     expect(PAGE).toMatch(/source: advisorSourceOf\(\{ influencer: stored\.influencer \?\? null, page: opened, first: firstTouch\(\) \}\),/)
     expect(PAGE).toMatch(/name: stored\.name, email: stored\.email, code: stored\.code, courses: chosen\.map\(\(x\) => x\.titleAr\),/)
-    expect(PAGE).toMatch(/recordLink: grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref\), grantNameAr: nameAr,/)
+    expect(PAGE).toMatch(/recordLink: grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref\), grantNameAr: shownNameAr,/)
     expect(PAGE, 'عاد الطلب المكتوب').not.toMatch(/\/api\/public\/grant\/advisor|<textarea|اطلب مستشارا/)
     /* ويختار المستشارُ الدوراتِ بنفسه من سيرته وحدَها (٨ نوفمبر ٢٠٢٦) — لا «راسل مستشارك» */
     /* ثمّ (٨ نوفمبر ٢٠٢٦) صار الزرُّ «تواصل معنا على واتساب» في «لست متأكدا مما تحتاجه؟»، ونصُّه يقول السيرةَ الذاتيّة */

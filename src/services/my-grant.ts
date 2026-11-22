@@ -12,6 +12,8 @@ export interface MyGrant {
   code: string | null;
   percentOff?: number | null;
   nameAr?: string;
+  /** اسمُ منحته كما يراه — «منحة كاسيت» لمتابع المؤثّر (٢٢ نوفمبر ٢٠٢٦) */
+  titleAr?: string;
   left?: number;
   max?: number;
   /** نهايةُ حملته — «حتى آخر يوم» في شاشة الشكر */

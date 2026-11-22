@@ -141,7 +141,7 @@ describe('من عبأ النموذج', () => {
     expect(REG).toMatch(/apiGet<List>\("\/api\/admin\/member-grant\/registrants"\)/)
     expect(REG).toMatch(/<ListToolbar q=\{q\}/)
     /* وباسم منحته كلّها — «بلاك فرايدي وجيز» رابعتُها (١٥ نوفمبر ٢٠٢٦) */
-    expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.grant === "member" \? undefined : GRANT_CAMPAIGNS\[GRANT_KIND_SLUG\[r\.grant\]\]\.nameAr\)\)/)
+    expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName, r\.grant === "member" \? undefined : r\.grant === "influencer" \? influencerGrantNameAr\(r\.influencerNameAr\) : GRANT_CAMPAIGNS\[GRANT_KIND_SLUG\[r\.grant\]\]\.nameAr\)\)/)
     expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/registrants', \{\s*preHandler: canManage/)
     /* ومتابعُ المؤثّر قناتُه كودُ مؤثّره نفسُه — فلا يُعاد في «المصدر» بعد «كود …» (٢٨ أكتوبر ٢٠٢٦). وصار العمودُ «المصدر»
        (٣١ أكتوبر ٢٠٢٦)، وحارسُه على السلوك في `grant-registrants.test.ts` */
