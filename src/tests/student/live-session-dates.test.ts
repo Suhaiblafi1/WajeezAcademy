@@ -67,7 +67,7 @@ describe('منتقي الموعد يعرضها — في «تفاصيل الشع�
   })
 
   it('⚠️ وإذا فتحها: لقاءاتها هي — عددها وأوّلها، والقائمة كلها في صفحة الدورة ومطويّة في القوائم', () => {
-    expect(picker).toMatch(/function CohortMore\(\{ c, compact \}[\s\S]*?useState\(false\)[\s\S]*?\{open && \([\s\S]*?<LiveSessionDates sessions=\{c\.sessions\} defaultOpen=\{!compact\} \/>/)
+    expect(picker).toMatch(/function CohortMore\(\{ c, compact(?:, lean = false)? \}[\s\S]*?useState\(false\)[\s\S]*?\{open && \([\s\S]*?<LiveSessionDates sessions=\{c\.sessions\} defaultOpen=\{!compact\} \/>/)
     const live = renderToStaticMarkup(createElement(LiveSessionDates, { sessions: options[0].sessions, defaultOpen: true }))
     for (const at of [S1, S2, S3]) expect(live, `موعد ${at} غائب`).toContain(whenAr(at))
     expect(live).toContain('اللقاء الثالث')
@@ -85,7 +85,7 @@ describe('منتقي الموعد يعرضها — في «تفاصيل الشع�
   })
 
   it('⚠️ ولكل شعبة تفاصيلها هي — لا لقاءات أقربها', () => {
-    expect(picker).toMatch(/\(c\.summaryAr \|\| c\.sessions\.length > 0\) && <CohortMore key=\{c\.id\} c=\{c\} compact=\{compact\} \/>/)
+    expect(picker).toMatch(/\(c\.summaryAr \|\| c\.sessions\.length > 0\) && <CohortMore key=\{c\.id\} c=\{c\} compact=\{compact\}(?: lean=\{lean\})? \/>/)
     const later = row({ id: 'c-2', startsAt: '2099-05-01T00:00:00.000Z', sessions: [{ startsAt: '2099-05-05T15:00:00.000Z', title: 'لقاء الثانية' }] })
     const both = cohortOptionsFrom([row(), later]).get('C-1') ?? []
     const html = renderToStaticMarkup(createElement(CohortPicker, { cohorts: both, selectedId: 'c-2', onSelect: () => undefined }))

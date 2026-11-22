@@ -408,6 +408,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
         reasons={reasons}
         reasonsProminentLabelAr={REASON_LABEL_AR}
         cohortHintOneLine
+        lean
         extraBusy={giftOn ? giftTimed : undefined}
         delivery={delivery}
         headingLevel="h2"

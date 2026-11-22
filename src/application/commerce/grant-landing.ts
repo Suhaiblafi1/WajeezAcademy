@@ -68,6 +68,14 @@ export function grantRemainingAr(picked: number, max: number): string {
 export const GRANT_VALUE_AR = 'قيمة منحتك'
 export const GRANT_VALUE_PAID_AR = 'تدفعها الأكاديمية عنك'
 
+/* ═══ ولمتابع المؤثّر: قيمةُ خصمه لا ما تدفعه الأكاديميّةُ عنه (٢٢ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «استبدل هذا النصّ بنصٍّ يركّز على قيمة الخصم، لا كم تدفع الأكاديميّةُ عنك». فالنسبةُ أوّلا ثمّ ما
+   يوفّره: «خصمك 70% — توفر $480.00». والسطرُ الكبيرُ «4 دورات بـ$X بدل $Y» كما هو، والحملاتُ الأخرى كما كانت. */
+export const grantDiscountAr = (percentOff: number): string => `خصمك ${percentOff}%`
+export const GRANT_SAVES_AR = 'توفر'
+/** «خصمك 70% — توفر $480.00» — للبريد ونصوصٍ بلا عزلٍ للمبلغ */
+export const grantDiscountLineAr = (percentOff: number, value: string): string => `${grantDiscountAr(percentOff)} — ${GRANT_SAVES_AR} ${value}`
+
 /* ═══ قيمةُ المنحة بما يخرج به لا بسعرها وحدَه (٣١ أكتوبر ٢٠٢٦) ═══
 
    سأل صاحبُ المنصّة: «كيف نُري الناسَ قيمةَ المنحة فيُقبلوا عليها — ماذا سيخرجون به من كلّ دورة؟ لا أريد صفحةً طويلة».
@@ -251,16 +259,19 @@ export function grantCertificateLineAr(rules: readonly { type: string; threshold
    لم تكملها أو لم تستفد منها، أو دورةٍ لم تكن تحتاجها منذ البداية ولا تناسب احتياجك.. بطريقةٍ جميلةٍ للعرض». فالعنوانُ
    يسمّي الخسارة وآخرُه «بل وقتك» مُبرَزا (`titleMark`)، وتحته الأوقاتُ الثلاثةُ الضائعةُ وسوما (`GRANT_WHY_LOSSES_AR`)،
    ثمّ سطرٌ يقول إنّ المنحةَ صُمّمت لعكسها: تختار ما يناسبك — ومعها المستشارُ والتشخيص — وتكمله. */
+/* ═══ وبالإيجابيّ لا بالخسارة (٢٢ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «أكبر ما تخسره ليس سعر الدورة، بل وقتك.. الجملة سلبيّة.. يجب أن نركّز على الإيجابيّة». نسخا لعنوان
+   الخسارة (١ نوفمبر). فالعنوانُ ما يكسبه، وآخرُه مُبرَزٌ (`titleMark`)، والسطرُ تحته ما تكون عليه دورتُه — لا ما يضيع. */
 export const GRANT_WHY_AR = {
   eyebrow: 'لماذا هذه المنحة؟',
-  title: 'أكبر ما تخسره ليس سعر الدورة،',
-  titleMark: 'بل وقتك',
-  lossesLead: 'الوقت الذي تصرفه على دورة',
-  lead: 'لهذا صممنا المنحة لتختار ما يناسبك، وتكمله بنتيجة.',
+  title: 'استثمر وقتك في دورة',
+  titleMark: 'تكملها وتستفيد منها',
+  lossesLead: 'دورة تختارها لحاجتك',
+  lead: 'ومستشارك معك حتى النهاية.',
 } as const
 
-/** الأوقاتُ الثلاثةُ الضائعة — كلٌّ يُكمل «الوقت الذي تصرفه على دورة…» */
-export const GRANT_WHY_LOSSES_AR: readonly string[] = ['لم تكملها', 'لم تستفد منها', 'لم تكن تحتاجها من البداية']
+/** ما تكون عليه دورتُه — كلٌّ يُكمل «دورة تختارها لحاجتك…» (والاسمُ باقٍ من عهد الخسارة) */
+export const GRANT_WHY_LOSSES_AR: readonly string[] = ['تكملها', 'تطبقها في عملك', 'وتخرج منها بنتيجة']
 
 /** قصيرةٌ بطلبه: «النصوص مكتظّة.. صغّرها» — عنوانٌ بكلمتين وسطرٌ واحد. وهي وحدَها ما يأخذه مع كلّ دورة في الصفحة */
 export const GRANT_WHY_POINTS_AR: readonly { id: 'live' | 'practice' | 'proof' | 'advisor'; title: string; body: string }[] = [
@@ -346,6 +357,9 @@ export function parsePicksParam(search: string): string[] {
 
 /** سطرُ ما يُرى قبل فتح البريد — «ما اخترته: 3 دورات، ومنحتك تدفع عنك $330.00.» */
 export const grantPicksPreheaderAr = (n: number, value: string): string => `ما اخترته: ${grantCountAr(n)}، ومنحتك تدفع عنك ${value}.`
+/** ولمتابع المؤثّر بقيمة خصمه — «ما اخترته: 3 دورات، خصمك 70% — توفر $330.00.» (٢٢ نوفمبر ٢٠٢٦) */
+export const grantPicksSavingPreheaderAr = (n: number, percentOff: number, value: string): string =>
+  `ما اخترته: ${grantCountAr(n)}، ${grantDiscountLineAr(percentOff, value)}.`
 export const GRANT_PICKS_INTRO_AR = 'هذه الدورات التي اخترتها، بسعرها بعد منحتك:'
 export const GRANT_PICKS_CTA_AR = 'أكمل حجزك'
 

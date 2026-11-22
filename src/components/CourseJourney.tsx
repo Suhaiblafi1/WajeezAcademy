@@ -87,6 +87,7 @@ export default function CourseJourney({
   graduationProjectAr,
   picked: pickedFromParent,
   onPick,
+  lean = false,
 }: {
   courseIds: string[];
   /** سبب وجود كل دورة في الخطة (للخطط المركبة) — يظهر سطرا واحدا تحت الاسم */
@@ -125,6 +126,13 @@ export default function CourseJourney({
      تأخذ أقربَ شعبة. فصار لمن يملك زرَّ الشراء أن يمسك الاختيار (`picked` و`onPick`) ويمرّره إليها. */
   picked?: Record<string, string>;
   onPick?: (courseId: string, cohortId: string) => void;
+  /* ═══ ونسخةٌ أبسط لصفحة المسار الشخصيّ ‎/go وحدَها (٢٢ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «اجعل الشكلَ أبسط مثل تسجيل البلاك فرايدي: كلماتٌ أصغر مثل "تفاصيل الدورة"، وما تحت "تفاصيل
+     الشعبة" يُحذف، وصغّر سطرَ "تفاصيل الدورة"، وعبارةُ "نبذة المدرب" لا داعي لها — يضغط على صورة المدرب فتفتح النبذة،
+     ولا داعي لـ"بعد 13 يوما" لكلّ دورة». فبها: «تفاصيل الدورة» سطرٌ صغيرٌ بلا «الأهداف · 8 وحدات · المخرج العملي»،
+     ولا شاراتِ المدّة والمهارات تحت الشعبة، والصورةُ بابُ النبذة والموعدُ بلا بُعده (`CohortPicker` بـ`lean`)، ولا جملةُ
+     «نعلن اسم مدرب كل دورة عند اعتماد شعبتها» — فالصفحةُ تعرض أسماءهم. وصفحاتُ المسار المعتادة كما كانت. */
+  lean?: boolean;
 }) {
   /* نداءٌ واحد للمواعيد، والاختيار محفوظٌ بالدورة — يُقرأ عند الشراء */
   const { cohorts, loaded: cohortsLoaded } = useCourseCohorts();
@@ -180,9 +188,11 @@ export default function CourseJourney({
       {/* سياسة المدربين تُقال مرة واحدة هنا بدل أن تتكرر شارةً على كل بطاقة —
           كانت خمس دورات تحمل خمس نسخ من الجملة نفسها فتغرق ما يختلف بينها.
           والشارة أدناه تبقى للمدرب المُعلَن، لأن اسمه معلومة تخص بطاقته وحدها. */}
-      <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
-        نعلن اسم مدرب كل دورة عند اعتماد شعبتها — ولا نعرض اسما قبل ذلك.
-      </p>
+      {!lean && (
+        <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
+          نعلن اسم مدرب كل دورة عند اعتماد شعبتها — ولا نعرض اسما قبل ذلك.
+        </p>
+      )}
 
       <ol className="mt-6">
         {list.map((c, i) => {
@@ -236,18 +246,19 @@ export default function CourseJourney({
                       تنفتح في مكانها فوق الشعب. والعنوانُ نفسُه يفتحها كما كان. وكانت «كل تفاصيل الدورة» فصارت «تفاصيل
                       الدورة» بلا «كل» (قرارُه، ٨ نوفمبر ٢٠٢٦) */}
                   <CollapsibleTrigger
-                    className="group mt-3 flex w-full items-center gap-2.5 rounded-lg bg-teal/[0.08] px-3 py-2.5 text-right ring-1 ring-teal/30 transition hover:bg-teal/[0.14] data-[state=open]:bg-teal/[0.12]"
+                    className={`group flex w-full items-center rounded-lg bg-teal/[0.08] text-right ring-1 ring-teal/30 transition hover:bg-teal/[0.14] data-[state=open]:bg-teal/[0.12] ${
+                      lean ? "mt-2 gap-2 px-2.5 py-1.5" : "mt-3 gap-2.5 px-3 py-2.5"}`}
                     data-testid="course-details-toggle"
                   >
-                    <BookOpen className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+                    <BookOpen className={`${lean ? "h-3.5 w-3.5" : "h-4 w-4"} shrink-0 text-teal-light-ink`} aria-hidden="true" />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-black text-teal-light-ink group-data-[state=open]:hidden">تفاصيل الدورة</span>
-                      <span className="hidden text-sm font-black text-teal-light-ink group-data-[state=open]:block">إخفاء التفاصيل</span>
-                      {detailsSummaryAr(c) && (
+                      <span className={`block ${lean ? "text-read font-bold" : "text-sm font-black"} text-teal-light-ink group-data-[state=open]:hidden`}>تفاصيل الدورة</span>
+                      <span className={`hidden ${lean ? "text-read font-bold" : "text-sm font-black"} text-teal-light-ink group-data-[state=open]:block`}>إخفاء التفاصيل</span>
+                      {!lean && detailsSummaryAr(c) && (
                         <span className="mt-0.5 block text-fine font-semibold text-muted-foreground group-data-[state=open]:hidden">{detailsSummaryAr(c)}</span>
                       )}
                     </span>
-                    <ChevronDown className="h-5 w-5 shrink-0 text-teal-light-ink transition-transform duration-300 group-data-[state=open]:rotate-180" aria-hidden="true" />
+                    <ChevronDown className={`${lean ? "h-4 w-4" : "h-5 w-5"} shrink-0 text-teal-light-ink transition-transform duration-300 group-data-[state=open]:rotate-180`} aria-hidden="true" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-[accordion-up_0.25s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
                     <Inset className="mt-2 space-y-5 p-4 text-read leading-7">
@@ -345,6 +356,7 @@ export default function CourseJourney({
                         running={runningOnly(c.id)}
                         others={othersOf(c.id)}
                         hintOneLine={cohortHintOneLine}
+                        lean={lean}
                       />
                     </div>
                   )}
@@ -364,7 +376,10 @@ export default function CourseJourney({
                   {cohortsLoaded && (cohorts.get(c.id)?.length ?? 0) === 0 && (
                     <CourseInterestForm courseId={c.id} next={runningOnly(c.id)} />
                   )}
-                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  {/* وفي `/go` لا شاراتِ المدّة والمهارات تحت الشعبة (`lean`) — ويبقى المدرّبُ حيث لا منتقي */}
+                  {(!lean || !showSchedule) && (
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5" data-testid="course-chips">
+                    {!lean && (<>
                     <span className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-fine font-semibold text-muted-foreground">
                       <Clock3 className="h-3 w-3 text-teal-light-ink" />
                       {weeksLabel(Math.max(1, Math.ceil(c.totalHours / 7)))}
@@ -377,10 +392,12 @@ export default function CourseJourney({
                         {s}
                       </span>
                     ))}
+                    </>)}
                     {/* وحيث الشعبُ ظاهرةٌ فمدرّبُ كلٍّ في صندوقها — والشارةُ التي تجمعهم («المدرب: أحمد، إيناس»)
                         كانت تُقرأ شعبةً واحدةً بمدرّبَين (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦). فتبقى حيث لا منتقي. */}
                     {!showSchedule && <CourseTrainer courseId={c.id} />}
                   </div>
+                  )}
                   {/* ═══ والسببُ البارزُ أسفلَ الدورة لا تحت عنوانها (٨ نوفمبر ٢٠٢٦) ═══
                       قرارُ صاحب المنصّة: «ضع سبب الاختيار أسفل الدورة». فيُقرأ بعد أن يُعرف ما هي الدورةُ وشعبتُها */}
                   {reasonsProminentLabelAr && reasons?.[c.id] && (

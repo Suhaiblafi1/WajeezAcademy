@@ -26,7 +26,7 @@ import {
   type GrantFunnel, type MailState, type RegistrantSource, type SourceGroup, type Upcoming,
 } from "@/application/commerce/grant-registrants";
 import { shortCourseTitleAr } from "@/application/text/course-lines";
-import { GRANT_CAMPAIGNS, GRANT_KIND_SLUG, type GrantKind } from "@/application/commerce/grant";
+import { GRANT_CAMPAIGNS, GRANT_KIND_SLUG, influencerGrantNameAr, type GrantKind } from "@/application/commerce/grant";
 import { waToPerson } from "@/application/site/whatsapp";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { staffAreaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
@@ -50,6 +50,8 @@ interface Registrant {
   boughtVia: string[];
   /** من «منحة مؤثرين وجيز» — وبكود أيّ مؤثّر */
   influencer: boolean; influencerCode: string | null;
+  /** اسمُ مؤثّره — ورسالتُه إليه «منحة <مؤثّره>» (٢٢ نوفمبر ٢٠٢٦) */
+  influencerNameAr?: string | null;
   /** أيُّ منحةٍ عبّأ — والثالثةُ «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) */
   grant: GrantKind;
   /** ردّ «توقف» على واتساب — فلا زرَّ واتساب له (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
@@ -231,7 +233,7 @@ export default function GrantRegistrants({ grant: pageGrant = "" }: { grant?: ""
               </thead>
               <tbody>
                 {view.rows.map((r) => {
-                  const wa = waToPerson(r.phone, grantFollowupAr(r.fullName, r.grant === "member" ? undefined : GRANT_CAMPAIGNS[GRANT_KIND_SLUG[r.grant]].nameAr));
+                  const wa = waToPerson(r.phone, grantFollowupAr(r.fullName, r.grant === "member" ? undefined : r.grant === "influencer" ? influencerGrantNameAr(r.influencerNameAr) : GRANT_CAMPAIGNS[GRANT_KIND_SLUG[r.grant]].nameAr));
                   const isOpen = openId === r.id;
                   const next = r.upcoming[0];
                   return (

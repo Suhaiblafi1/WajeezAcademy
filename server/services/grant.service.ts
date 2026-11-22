@@ -42,7 +42,7 @@ import { cohortLeadTrainers } from './cohort-lead'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
   GRANT_CAMPAIGNS, GRANT_CLOSED_AR, GRANT_CODE_PREFIX, GRANT_ONCE_AR, GRANT_SOLD_OUT_AR,
-  BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantUsedUpAr, isInfluencerGrant, type CampaignSlug,
+  BLACK_FRIDAY_GRANT_SLUG, MEMBER_GRANT_SLUG, grantCoursesLeftAr, grantMaxCoursesAr, grantPrice, grantTitleAr, grantUsedUpAr, isInfluencerGrant, type CampaignSlug,
 } from '../../src/application/commerce/grant'
 import { emailMatchesDomains, isPartnerCampaign, PARTNER_NOT_FOUND_AR, partnerCodeEmailAr, partnerShare, partnerTypeOf } from '../../src/application/commerce/partner-grant'
 import { influencerCommission, influencerPercentOff, withInfluencerEnd } from '../../src/application/commerce/influencer'
@@ -363,6 +363,9 @@ export interface LearnerGrant {
   code: string | null
   percentOff?: number | null
   nameAr?: string
+  /** اسمُ منحته كما يراه هو — «منحة كاسيت» لمتابع المؤثّر، واسمُ الحملة فيما سواها (٢٢ نوفمبر ٢٠٢٦، `grantTitleAr`).
+      و`nameAr` اسمُ الحملة الداخليّ تُقرأ به حملتُه (`coursesLeftOn`) */
+  titleAr?: string
   left?: number
   max?: number
   /** نهايةُ حملته — يُقال بها «حتى آخر يوم» في شاشة الشكر (١٣ نوفمبر ٢٠٢٦) */
@@ -373,7 +376,7 @@ const LEARNER_COUPON = {
   id: true, code: true, percentOff: true, usedCount: true, maxUses: true,
   grantCode: { select: {
     campaign: { select: { id: true, slug: true, active: true, closesAt: true, maxCourses: true, nameAr: true } },
-    influencer: { select: { closesAt: true } },
+    influencer: { select: { closesAt: true, nameAr: true } },
   } },
 } as const
 
@@ -420,7 +423,8 @@ export async function learnerGrant(prisma: PrismaClient, userId: string, now = n
   const left = await new GrantService(prisma).coursesLeft(coupon)
   if (left <= 0) return { code: null }
   return {
-    code: coupon.code, percentOff: coupon.percentOff, nameAr: campaign.nameAr, left, max: campaign.maxCourses,
+    code: coupon.code, percentOff: coupon.percentOff, nameAr: campaign.nameAr,
+    titleAr: grantTitleAr(campaign, coupon.grantCode?.influencer), left, max: campaign.maxCourses,
     closesAt: campaign.closesAt ? campaign.closesAt.toISOString() : null,
   }
 }

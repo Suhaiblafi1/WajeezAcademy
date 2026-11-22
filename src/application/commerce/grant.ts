@@ -26,6 +26,21 @@ export const INFLUENCER_GRANT_SLUG = 'wajeez-influencers'
 export const INFLUENCER_GRANT_NAME_AR = 'منحة مؤثرين وجيز'
 export const INFLUENCER_GRANT_DEFAULTS = { percentOff: 45, maxCodes: 1000, maxCourses: 4 } as const
 
+/* ═══ واسمُها عند متابع المؤثّر «منحة <المؤثّر>» (٢٢ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «لا تذكر "منحة مؤثرين وجيز" لأنّها منحةُ كاسيت». فمن جاء بكود مؤثّرٍ يرى «منحة كاسيت» حيث رأى اسمَ
+   الحملة: رأسُ الصفحة، وما بعد النموذج، ولوحُ الشراء، وبطاقةُ كوده، وبريدُه، ورسالةُ واتساب إليه. وشاشاتُ الإدارة تبقى
+   باسم الحملة الداخليّ. ومن لا مؤثّرَ معروفا له (لا كود صحيح) يرى «منحة وجيز». */
+export function influencerGrantNameAr(influencerNameAr: string | null | undefined): string {
+  const n = (influencerNameAr ?? '').trim()
+  return n ? `منحة ${n}` : MEMBER_GRANT_NAME_AR
+}
+
+/** اسمُ منحة الكود كما يراه صاحبُه — باسم مؤثّره في منحة المؤثّرين، وباسم الحملة فيما سواها */
+export function grantTitleAr(campaign: { slug: string; nameAr: string }, influencer?: { nameAr: string } | null): string {
+  return isInfluencerGrant(campaign.slug) ? influencerGrantNameAr(influencer?.nameAr) : campaign.nameAr
+}
+
 /* ═══ والثالثة: «منحة وجيز العامة» (١ نوفمبر ٢٠٢٦) ═══
 
    قرارُ صاحب المنصّة: «منحةٌ أخرى عامّةٌ بـ٥٠٪.. تكون مطابقةً تماما لمنحة وجيز الأولى ولكن عامّة»، وخُيّر بين بنائها

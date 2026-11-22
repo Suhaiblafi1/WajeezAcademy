@@ -61,12 +61,12 @@ import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import type { TimedSession } from "@/application/learning/cohort-overlap";
-import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
+import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, influencerGrantNameAr, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
 import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import { influencerCourseOrder, trainerShortNameAr } from "@/application/commerce/influencer-cards";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, advisorSourceOf, campaignParams, withGrantRef, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, type GrantCourseSummary, GRANT_SAVES_AR, grantDiscountAr, advisorSourceOf, campaignParams, withGrantRef, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, type GrantOutcomeLine, GRANT_OUTCOMES_TITLE_AR, grantOutcomeLinesAr, grantOutcomeTotalsAr, grantPerSession, grantSessionsAr, grantShortTitleAr, parseGrantCodeParam, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_HUMAN_DIAG_AR,
 } from "@/application/commerce/grant-landing";
@@ -265,9 +265,12 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [influencerCode, setInfluencerCode] = useState(urlCode ?? "");
   /* ومن حُسب له: مؤثّرُ ما حُفظ إن أخذ كودا، وإلّا مؤثّرُ الرابط */
   const creditedCode = stored?.influencer ?? urlCode;
+  /* ═══ واسمُها كما يراه المتابع: «منحة <مؤثّره>» لا «منحة مؤثرين وجيز» (٢٢ نوفمبر ٢٠٢٦، `influencerGrantNameAr`) ═══
+     و`nameAr` اسمُ الحملة الداخليّ — به يُقرأ ما بقي على كوده (`coursesLeftOn`) */
+  const shownNameAr = forInfluencer ? influencerGrantNameAr(view?.influencer?.nameAr) : nameAr;
   const pickPath = forInfluencer ? (creditedCode ? influencerPickPath(influencerBase, creditedCode) : null) : forBlackFriday ? BF_PICK_PATH : forOpen ? OPEN_PICK_PATH : PICK_PATH;
   const shell = forInfluencer
-    ? { title: nameAr, path: `${influencerBase}${urlCode ? `/${urlCode}` : ""}`, description: forBlackFriday
+    ? { title: shownNameAr, path: `${influencerBase}${urlCode ? `/${urlCode}` : ""}`, description: forBlackFriday
         ? "بلاك فرايدي في أكاديمية وجيز: دورات مباشرة على Zoom بخصم كبير، والعدد محدود."
         : "منحة من أكاديمية وجيز: دورات مباشرة تختارها بخصم كبير، والعدد محدود." }
     : forBlackFriday
@@ -513,7 +516,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
     const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr({
       name: stored.name, email: stored.email, code: stored.code, courses: chosen.map((x) => x.titleAr),
-      recordLink: grantRecordLink(BARE_HOST, stored.code ?? stored.ref), grantNameAr: nameAr,
+      recordLink: grantRecordLink(BARE_HOST, stored.code ?? stored.ref), grantNameAr: shownNameAr,
       /* ومصدرُه في آخرها — كودُ مؤثّره أو وسمُ رابطه (١٧ نوفمبر ٢٠٢٦، `advisorSourceOf`) */
       source: advisorSourceOf({ influencer: stored.influencer ?? null, page: opened, first: firstTouch() }),
     }));
@@ -692,7 +695,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             <>
               <h1 className="text-2xl font-black leading-9">{grantWelcomeAr(stored.name)}</h1>
               <p className="mx-auto mt-1 max-w-md text-read leading-6 text-muted-foreground">
-                {grantWhyHereAr({ grantNameAr: nameAr, percentOff: pct, max, lastDay: lastDayShort })}
+                {grantWhyHereAr({ grantNameAr: shownNameAr, percentOff: pct, max, lastDay: lastDayShort })}
               </p>
             </>
           )}
@@ -840,7 +843,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             {/* وقيمةُ المنحة وما بقي منها لمن له منحةٌ يستعملها — ومن لا منحةَ له يرى ما يدفعه وزرَّ الشراء وحدَهما */}
             {grantOn && (
               <>
-                <p className="mt-0.5 text-read text-muted-foreground">{GRANT_VALUE_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi> {GRANT_VALUE_PAID_AR}</p>
+                <p className="mt-0.5 text-read text-muted-foreground">
+                  {/* قيمةُ خصمه لا ما تدفعه الأكاديميّةُ عنه — لكلّ المنح (٢٢ نوفمبر ٢٠٢٦، «طبّق هذا لكافّة المنح أيضا»، `grantDiscountAr`) */}
+                  {grantDiscountAr(pct)} — {GRANT_SAVES_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi>
+                </p>
                 {/* وما يخسره إن تأخّر — أقوى ممّا يوفّره (٣١ أكتوبر ٢٠٢٦) */}
                 {/* وما بقي له ضمن منحته — فلا يترك منها شيئا (قرارُه: «اختر ٤ دوراتٍ بحدٍّ أقصى») */}
                 <p className="mt-1 text-read font-bold text-gold-ink">{grantRemainingAr(chosen.length, max)}</p>
@@ -918,7 +924,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         {cobrand && <InfluencerCobrand cobrand={cobrand} className="mb-6" />}
         <div className="text-center">
           {!cobrand && <Gift className="mx-auto h-10 w-10 text-gold-ink" aria-hidden="true" />}
-          <h1 className="mt-2 text-3xl font-black">{nameAr}</h1>
+          <h1 className="mt-2 text-3xl font-black">{shownNameAr}</h1>
           {c.open ? (
             <>
               {/* المنحةُ بنسبتها لا بما يبقى عليه — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من

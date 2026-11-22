@@ -31,7 +31,7 @@ import { TrainerCodeBudgetService, type PurchaseLine } from '../trainer-code-bud
 import { budgetCovers, CODE_UNAVAILABLE_AR, MAX_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from '../registration-window'
 import { GrantService } from '../grant.service'
-import { GRANT_NOT_BETTER_AR, grantCoursesLeftAr, grantMaxCoursesAr, grantUsedUpAr } from '../../../src/application/commerce/grant'
+import { GRANT_NOT_BETTER_AR, grantCoursesLeftAr, grantMaxCoursesAr, grantTitleAr, grantUsedUpAr } from '../../../src/application/commerce/grant'
 
 export class CartService {
   private prisma: PrismaClient
@@ -312,7 +312,7 @@ export class CartService {
       include: {
         trainerCode: { select: { id: true, profileId: true, percentOff: true, amountOff: true } },
         trainerShareCode: { select: { profileId: true } },
-        grantCode: { select: { campaign: { select: { id: true, slug: true, active: true, closesAt: true, maxCourses: true, nameAr: true } }, influencer: { select: { closesAt: true } } } },
+        grantCode: { select: { campaign: { select: { id: true, slug: true, active: true, closesAt: true, maxCourses: true, nameAr: true } }, influencer: { select: { closesAt: true, nameAr: true } } } },
       },
     })
     /* كودُ المنحة يُسأل قبل الفحص العامّ — فيُقال سببُ ردّه بلغة المنحة («استعمل من قبل»)
@@ -438,8 +438,10 @@ export class CartService {
       couponMaxUses: coupon?.maxUses ?? null,
       /* نسبةُ المنحة إن كان الكودُ كودَها — ليُسمّى بندُها في اللوح باسمها */
       grantPct: coupon?.grantCode ? coupon.percentOff : null,
-      /* واسمُ حملته — «منحة وجيز» أو «منحة مؤثرين وجيز» */
-      grantNameAr: coupon?.grantCode?.campaign.nameAr ?? null,
+      /* واسمُ منحته كما يراه — «منحة وجيز»، وفي منحة المؤثّرين باسم مؤثّره «منحة كاسيت» (٢٢ نوفمبر ٢٠٢٦، `grantTitleAr`) */
+      grantNameAr: coupon?.grantCode ? grantTitleAr(coupon.grantCode.campaign, coupon.grantCode.influencer) : null,
+      /* واسمُها بلا مؤثّر — لمعاينة رابط الشراء: من جرّب كودا لا يُعرف منه صاحبُه (`preview`، «ولا اسمَ لصاحب الكود») */
+      grantPublicNameAr: coupon?.grantCode ? grantTitleAr(coupon.grantCode.campaign, null) : null,
       /* وحدُّ دوراته — يُعاد فحصُه في معاملة الطلب بعد القفل (`GrantService.assertHeld`) */
       grantMaxCourses: coupon?.grantCode?.campaign.maxCourses ?? null,
       trainerCode: trainerCode ? { id: trainerCode.id, profileId: trainerCode.profileId } : null,

@@ -53,7 +53,7 @@ import {
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
 import { resolveCompletionRules } from '../../src/application/learning/completion-rules'
-import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
+import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, grantTitleAr, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
 import { PARTNER_SLUG_PREFIX } from '../../src/application/commerce/partner-grant'
 import { INFLUENCER_CODE_BAD_AR, blackFridayCommission, influencerBrand, influencerClosesAt, influencerGrantPath, influencerLink, influencerPercentOff, influencerWhatsAppTextAr, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
 import { influencerCodeWhere } from './influencer.service'
@@ -384,7 +384,7 @@ export class GrantLandingService {
           : null,
       }, now)
       const to = lead.email ?? email
-      await this.mailCode(to, lead.fullName, g.code, g.percentOff, g.closesAt, credited?.code ?? null)
+      await this.mailCode(to, lead.fullName, g.code, g.percentOff, g.closesAt, credited ?? null)
       grant = g.reused
         ? { code: null, sentTo: maskEmail(to), percentOff: g.percentOff, closesAt: g.closesAt }
         : { code: g.code, sentTo: null, percentOff: g.percentOff, closesAt: g.closesAt }
@@ -514,14 +514,16 @@ export class GrantLandingService {
   /* ═══ بريدُ الكود — بقالب الأكاديمية لا نصّا خاما (٢٧ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة». فعنوانٌ وشكرٌ وكودٌ في جدولٍ وزرٌّ يفتح الدورات،
      ولا «عضو» ولا «مستخدم»: «قرّاءُ وجيز» (قرارُه في اليوم نفسِه). ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
-  private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
+  private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencer: { code: string; nameAr: string } | null = null) {
+    const influencerCode = influencer?.code ?? null
     /* وصاحبُ «منحة وجيز العامة» يعود إلى صفحتها هي — فيها نسبتُها ودوراتُها (`grantPagePath`) */
     /* وزرُّه يحمل كودَه، فيُفتح على اختيار دوراته ولو في جهازٍ آخر (١٧ نوفمبر ٢٠٢٦، `grantCodeLink`) */
     const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode, this.formSlug) : grantCodeLink(`${publicSiteUrl()}${grantPagePath(this.slug)}`, code)
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
     const member = this.slug === MEMBER_GRANT_SLUG
     /* والنموذجُ للحملات الأربع وحدَها — منحةُ الشريك لا تمرّ بـ`apply` */
-    const { nameAr } = GRANT_CAMPAIGNS[this.formSlug]
+    /* ومتابعُ المؤثّر يقرأ «كود منحة كاسيت» لا «منحة مؤثرين وجيز» (٢٢ نوفمبر ٢٠٢٦، `grantTitleAr`) */
+    const nameAr = grantTitleAr({ slug: this.formSlug, nameAr: GRANT_CAMPAIGNS[this.formSlug].nameAr }, influencer)
     await enqueueMail(this.prisma, {
       to, purpose: 'grant.code',
       subject: `كود ${nameAr} الخاص بك`,

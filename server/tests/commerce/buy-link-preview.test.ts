@@ -255,7 +255,9 @@ describe('⑦ ولا اسم لصاحب الكود', () => {
     expect(json).not.toContain(`سرية ${STAMP}`)
     expect(json).not.toContain(`صاحب نموذج ${STAMP}`)
     expect(json).not.toContain(`SEC${STAMP % 100000}`)
-    expect(json).toContain('منحة مؤثرين وجيز')
+    /* واسمُ المنحة بلا مؤثّرها — «منحة <المؤثّر>» يكشف صاحبَ الكود، و«منحة مؤثرين وجيز» لا يُقال لمتابع (٢٢ نوفمبر ٢٠٢٦) */
+    expect(json).toContain('"grantNameAr":"منحة وجيز"')
+    expect(json).not.toContain('منحة مؤثرين وجيز')
   })
 })
 
