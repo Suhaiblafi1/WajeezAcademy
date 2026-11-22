@@ -66,7 +66,7 @@ import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } f
 import { influencerCourseOrder, trainerShortNameAr } from "@/application/commerce/influencer-cards";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, GRANT_VALUE_AR, type GrantCourseSummary, GRANT_VALUE_PAID_AR, GRANT_SAVES_AR, grantDiscountAr, advisorSourceOf, campaignParams, withGrantRef, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_SHARE_PATH, OPEN_GRANT_SHARE_PATH, openGrantLineAr, blackFridayLineAr, type GrantCourseSummary, GRANT_SAVES_AR, grantDiscountAr, advisorSourceOf, campaignParams, withGrantRef, grantAdvisorTextAr, grantClashAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantWelcomeAr, grantWhyHereAr, grantShareAr, grantShareMailto, grantThanksAr, firstPicks, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption, type GrantOutcomeLine, GRANT_OUTCOMES_TITLE_AR, grantOutcomeLinesAr, grantOutcomeTotalsAr, grantPerSession, grantSessionsAr, grantShortTitleAr, parseGrantCodeParam, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_HUMAN_DIAG_AR,
 } from "@/application/commerce/grant-landing";
@@ -844,10 +844,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             {grantOn && (
               <>
                 <p className="mt-0.5 text-read text-muted-foreground">
-                  {/* ومتابعُ المؤثّر يقرأ قيمةَ خصمه لا ما تدفعه الأكاديميّةُ عنه (٢٢ نوفمبر ٢٠٢٦، `grantDiscountAr`) */}
-                  {forInfluencer
-                    ? <>{grantDiscountAr(pct)} — {GRANT_SAVES_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi></>
-                    : <>{GRANT_VALUE_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi> {GRANT_VALUE_PAID_AR}</>}
+                  {/* قيمةُ خصمه لا ما تدفعه الأكاديميّةُ عنه — لكلّ المنح (٢٢ نوفمبر ٢٠٢٦، «طبّق هذا لكافّة المنح أيضا»، `grantDiscountAr`) */}
+                  {grantDiscountAr(pct)} — {GRANT_SAVES_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi>
                 </p>
                 {/* وما يخسره إن تأخّر — أقوى ممّا يوفّره (٣١ أكتوبر ٢٠٢٦) */}
                 {/* وما بقي له ضمن منحته — فلا يترك منها شيئا (قرارُه: «اختر ٤ دوراتٍ بحدٍّ أقصى») */}

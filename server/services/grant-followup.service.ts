@@ -58,8 +58,8 @@ import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_CONTINUE_AR, GRANT_SLUG
 import { influencerLink } from '../../src/application/commerce/influencer'
 import { optedOut, unsubscribeLinks } from './mail-optout.service'
 import {
-  GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, GRANT_SAVES_AR, GRANT_VALUE_AR, grantCallDueAt, grantCodeLink, grantDaysLeftAr, grantDiscountAr, grantPicksLink,
-  grantPicksPreheaderAr, grantPicksSavingPreheaderAr, grantShortTitleAr, leadProfileAr,
+  GRANT_PICKS_CTA_AR, GRANT_PICKS_INTRO_AR, GRANT_SAVES_AR, grantCallDueAt, grantCodeLink, grantDaysLeftAr, grantDiscountAr, grantPicksLink,
+  grantPicksSavingPreheaderAr, grantShortTitleAr, leadProfileAr,
 } from '../../src/application/commerce/grant-landing'
 import { grantPrice } from '../../src/application/commerce/grant'
 import { isPartnerCampaign } from '../../src/application/commerce/partner-grant'
@@ -361,8 +361,7 @@ async function remindUnbought(
     const payTotal = grantPrice(listTotal, pct)
     /* ═══ ومتابعُ المؤثّر يقرأ قيمةَ خصمه لا ما تدفعه الأكاديميّةُ عنه (٢٢ نوفمبر ٢٠٢٦) ═══
        قرارُ صاحب المنصّة: «نصٌّ يركّز على قيمة الخصم، لا كم تدفع الأكاديميّةُ عنك» — «خصمك 70% — توفر $480.00»
-       (`grantDiscountLineAr`). والحملاتُ الأخرى كما كانت */
-    const follower = isInfluencerGrant(slug)
+       (`grantDiscountLineAr`). ثمّ لكلّ المنح (٢٢ نوفمبر ٢٠٢٦، «طبّق هذا لكافّة المنح أيضا») */
     const saved = fmtMoney(listTotal - payTotal)
     const blocks: MailBlock[] = mine.length > 0
       ? [
@@ -371,7 +370,7 @@ async function remindUnbought(
           ...closing,
           { kind: 'facts', rows: [
             { label: 'تدفع', value: `${fmtMoney(payTotal)} بدل ${fmtMoney(listTotal)}` },
-            follower ? { label: grantDiscountAr(pct), value: `${GRANT_SAVES_AR} ${saved}` } : { label: GRANT_VALUE_AR, value: saved },
+            { label: grantDiscountAr(pct), value: `${GRANT_SAVES_AR} ${saved}` },
             { label: 'كود منحتك', value: coupon.code },
             ...lastDayRow,
           ] },
@@ -403,7 +402,7 @@ async function remindUnbought(
           greetingName: lead.fullName,
           /* المنحةُ بنسبتها لا بما يبقى — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، كسطر الصفحة الأولى. ومن اختار: ما اختاره وقيمتُه */
           preheader: mine.length > 0
-            ? (follower ? grantPicksSavingPreheaderAr(mine.length, pct, saved) : grantPicksPreheaderAr(mine.length, saved))
+            ? grantPicksSavingPreheaderAr(mine.length, pct, saved)
             : `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`,
           heading: subject,
           blocks,

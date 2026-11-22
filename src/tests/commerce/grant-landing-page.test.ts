@@ -95,7 +95,9 @@ describe('بعد النموذج', () => {
     expect(panel.slice(big)).toMatch(/^<p className="text-lg font-black">\s*\{grantCountAr\(chosen\.length\)\} بـ<bdi dir="ltr">\{money\(payTotal\)\}<\/bdi>/)
     expect(panel).toMatch(/بدل <bdi dir="ltr" className="line-through">\{money\(listTotal\)\}<\/bdi>/)
     /* وفي صفحة المؤثّر قيمةُ خصمه بدلَها (٢٢ نوفمبر ٢٠٢٦، `influencer-grant-name.test.ts`) — وما سواها كما كان */
-    expect(panel, 'قيمة المنحة بخط صغير').toMatch(/<p className="mt-0\.5 text-read text-muted-foreground">[^]*?: <>\{GRANT_VALUE_AR\} <bdi dir="ltr">\{money\(listTotal - payTotal\)\}<\/bdi> \{GRANT_VALUE_PAID_AR\}<\/>\}\s*<\/p>/)
+    /* وقيمةُ الخصم لا ما تدفعه الأكاديميّةُ عنه — لكلّ المنح (٢٢ نوفمبر ٢٠٢٦، «طبّق هذا لكافّة المنح أيضا») */
+    expect(panel, 'قيمة الخصم بخط صغير').toMatch(/<p className="mt-0\.5 text-read text-muted-foreground">[^]*?\{grantDiscountAr\(pct\)\} — \{GRANT_SAVES_AR\} <bdi dir="ltr">\{money\(listTotal - payTotal\)\}<\/bdi>\s*<\/p>/)
+    expect(PAGE, 'عاد «تدفعها الأكاديمية عنك»').not.toMatch(/\{GRANT_VALUE_PAID_AR\}|\{GRANT_VALUE_AR\}/)
     expect(PAGE, 'عاد «ووجيز تتحمل»').not.toMatch(/تتحمل|grantSavingAr/)
     expect([1, 2, 4, 10, 11].map(grantCountAr)).toEqual(['دورة واحدة', 'دورتان', '4 دورات', '10 دورات', '11 دورة'])
     expect(PAGE).toMatch(/prefill=\{\{ name: stored\.name, email: stored\.email \}\}/)
@@ -436,7 +438,7 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/const grantOn = !!view\?\.campaign\.open && !!\(stored\?\.code \|\| stored\?\.sentTo\);/)
     const sum = PAGE.slice(PAGE.indexOf('{grantCountAr(chosen.length)}'), PAGE.indexOf('</Card>', PAGE.indexOf('{grantCountAr(chosen.length)}')))
     expect(sum).toMatch(/\{grantOn && <span className="text-read font-normal text-muted-foreground">بدل/)
-    expect(sum).toMatch(/\{grantOn && \(\s*<>\s*<p className="mt-0\.5 text-read text-muted-foreground">\s*\{forInfluencer[^]*?\{GRANT_VALUE_AR\}/)
+    expect(sum).toMatch(/\{grantOn && \(\s*<>\s*<p className="mt-0\.5 text-read text-muted-foreground">[^]*?\{grantDiscountAr\(pct\)\}/)
     expect(sum).toMatch(/\{grantOn \? "احصل على المنحة" : "اشتر الدورات"\}/)
     expect(PAGE).toMatch(/\{\(stored\.code \|\| stored\.sentTo\) && !c\.open && <p className="mt-2 text-read font-bold">\{GRANT_CLOSED_AR\}<\/p>\}/)
     /* ومن نفدت أكوادُها يبقى عند سببه — ويعود إلى النموذج حين تُزاد */

@@ -70,9 +70,10 @@ describe('③ الصفحة تبنيهما منهما', () => {
     expect(PAGE, 'عرض اسم الحملة في الصفحة').not.toMatch(/\{nameAr\}|grantNameAr: nameAr|title: nameAr, path: `\$\{influencerBase\}/)
   })
 
-  it('⚠️ وسطر القيمة في صفحة المؤثر «خصمك … — توفر» — و«تدفعها الأكاديمية عنك» لغيرها وحدها', () => {
-    expect(PAGE).toMatch(/forInfluencer\s*\?\s*<>\{grantDiscountAr\(pct\)\} — \{GRANT_SAVES_AR\} <bdi dir="ltr">\{money\(listTotal - payTotal\)\}<\/bdi><\/>\s*:\s*<>\{GRANT_VALUE_AR\} <bdi dir="ltr">\{money\(listTotal - payTotal\)\}<\/bdi> \{GRANT_VALUE_PAID_AR\}<\/>\}/)
-    expect(PAGE.match(/\{GRANT_VALUE_PAID_AR\}/g), 'قيل «تدفعها الأكاديمية عنك» في موضع آخر').toHaveLength(1)
+  it('⚠️ وسطر القيمة «خصمك … — توفر» لكل المنح — ولا «تدفعها الأكاديمية عنك» في الصفحة', () => {
+    /* ثمّ لكلّ المنح (٢٢ نوفمبر ٢٠٢٦، «طبّق هذا لكافّة المنح أيضا»): لا «تدفعها الأكاديمية عنك» في الصفحة أصلا */
+    expect(PAGE).toMatch(/\{grantDiscountAr\(pct\)\} — \{GRANT_SAVES_AR\} <bdi dir="ltr">\{money\(listTotal - payTotal\)\}<\/bdi>/)
+    expect(PAGE, 'قيل «تدفعها الأكاديمية عنك»').not.toMatch(/\{GRANT_VALUE_PAID_AR\}/)
     expect(PAGE, 'نص حرفي يقول ما تدفعه الأكاديمية').not.toMatch(PAYS_FOR_YOU)
   })
 
