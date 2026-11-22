@@ -381,7 +381,8 @@ describe('بعد النموذج', () => {
 
   /* كلُّ كودٍ يحمل نسبتَه يومَ أُعطي — فإن غُيّرت نسبةُ الحملة بعده سُعّرت الصفحةُ بالجديدة ودُفع بالقديمة (٢٧ أكتوبر ٢٠٢٦) */
   it('⚠️ الصفحة تسعر بنسبة كوده إن كان له — من النموذج ومن حسابه', () => {
-    expect(PAGE).toMatch(/const pct = grantOn \? stored\?\.percentOff \?\? view\?\.campaign\.percentOff \?\? 0 : 0;/)
+    /* ونسبةُ كوده من الخادم قبلها — رفعُ خصم المؤثّر يرفع أكوادَه القائمة (٢٢ نوفمبر ٢٠٢٦، `grant-percent-shown.test.ts`) */
+    expect(PAGE).toMatch(/const pct = grantOn \? grantPercentShown\(view\?\.myPercentOff, stored\?\.percentOff, view\?\.campaign\.percentOff\) : 0;/)
     expect(PAGE).toMatch(/influencer: out\.influencer\?\.code \?\? null, percentOff: out\.grant\?\.percentOff \?\? null,/)
     expect(PAGE).toMatch(/saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null, percentOff: percentOff \?\? kept\.percentOff \}, storeKey\)/)
     const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', interests: [], at: Date.now() }

@@ -295,7 +295,7 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
               <input type="number" min={0} max={100} value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="نسبة المنحة" className={staffControlCls} />
             </label>
             <Button size="sm" disabled={busy || discountNum === undefined || discountNum === x.percentOff} onClick={() => setConfirm("discount")}>احفظ الخصم</Button>
-            <p className="w-full text-read text-muted-foreground">فارغ يعني نسبة المنحة. والخصم الجديد على من يأخذ كودا بعد الحفظ فقط.</p>
+            <p className="w-full text-read text-muted-foreground">فارغ يعني نسبة المنحة. الخصم الأعلى يرفع أكواد متابعيه القائمة أيضا، والأقل على الأكواد الجديدة فقط.</p>
           </div>
 
           {/* وآخرُ يومٍ لمتابعيه — يغلب نهايةَ المنحة له وحدَه (١٧ نوفمبر ٢٠٢٦، `influencerClosesAt`) */}
@@ -415,7 +415,7 @@ function InfluencerRow({ x, open, onToggle, onChanged }: { x: Influencer; open: 
       {confirm === "discount" && (
         <ConfirmAction tone="default" titleAr="تغيير خصم متابعي المؤثر" confirmLabelAr="احفظ" busy={busy} onCancel={() => setConfirm(null)}
           onConfirm={() => void run(() => apiPatch(`/api/admin/influencers/${x.id}`, { percentOff: discountNum ?? null }), "حفظ الخصم", "تعذر حفظ الخصم")}>
-          <p>{discountNum === null || discountNum === undefined ? "يأخذ متابعوه نسبة المنحة" : `يأخذ متابعوه ${discountNum}%`} على أكواد المنحة التي تعطى بكوده بعد الحفظ. وما أعطي قبله يبقى بخصمه.</p>
+          <p>{discountNum === null || discountNum === undefined ? "يأخذ متابعوه نسبة المنحة" : `يأخذ متابعوه ${discountNum}%`} على أكواد المنحة التي تعطى بكوده بعد الحفظ. ومن أخذ كوده قبله بخصم أقل يرتفع خصمه إليه، ومن أخذه بخصم أعلى يبقى بخصمه.</p>
         </ConfirmAction>
       )}
       {confirm === "closes" && (

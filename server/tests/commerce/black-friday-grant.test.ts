@@ -7,7 +7,7 @@
    ② **وصفحتُها تقول ما يأخذه المتابع** — نسبتَها، أو خصمَ المؤثّر إن كُتب له.
    ③ **ونموذجُها نموذجُ المؤثّرين** — كودُ المؤثّر لازم، وكودُ المنحة بخصمه وعمولتِه، وبريدُه وهديّتُه إلى رابطه فيها،
       والشراءُ بخصمه وعمولتُه في كشفه.
-   ④ **وخصمُ المؤثّر في منحة المؤثّرين أيضا** — على ما يُعطى بعد الحفظ، وبأثرٍ يسمّي من غيّره.
+   ④ **وخصمُ المؤثّر في منحة المؤثّرين أيضا** — على ما يُعطى بعد الحفظ، ورفعُه يرفع القائمَ (٢٢ نوفمبر ٢٠٢٦)، وبأثرٍ يسمّي من غيّره.
    ⑤ **والكودُ يتغيّر ورابطُه القديمُ يعمل** — والقديمُ لا يأخذه مؤثّرٌ غيرُه، ويعود إلى صاحبه إن أراده.
    ⑥ **ومنحةٌ واحدةٌ لكلّ متعلّم على الحملات الأربع.**
    ⑦ **والمتابعةُ والتذكيرُ كمنحة المؤثّرين** — حالةٌ تسمّيها، وتذكيرٌ بنهايتها يعيد إلى رابط مؤثّره فيها.
@@ -171,7 +171,7 @@ describe('③ نموذجها منحة وجيز بلا كود مؤثر (١٦ نو
 })
 
 describe('④ خصم المؤثر في منحة المؤثرين أيضا', () => {
-  it('⚠️ خصمه بدل نسبتها، وتغييره على ما يعطى بعده، وبأثر يسمي من غيره — وفارغه يعيد نسبتها', async () => {
+  it('⚠️ خصمه بدل نسبتها، ورفعه يرفع القائم، وبأثر يسمي من غيره — وفارغه يعيد نسبتها', async () => {
     await infGrant.update({ active: true, maxCodes: null, closesAt: null, percentOff: 45 }, ownerId)
     const id = await addInfluencer('INFOWN', 55)
     const first = await infLanding.apply(person({ influencerCode: 'INFOWN' }))
@@ -182,7 +182,8 @@ describe('④ خصم المؤثر في منحة المؤثرين أيضا', () =
     const second = await infLanding.apply(person({ influencerCode: 'INFOWN' }))
     expect(second.grant?.percentOff).toBe(65)
     const firstCoupon = await prisma.coupon.findUniqueOrThrow({ where: { code: first.grant!.code! } })
-    expect(firstCoupon.percentOff, 'غير الخصم الجديد كودا أعطي قبله').toBe(55)
+    /* ورفعُه يرفع كودَه القائمَ معه — قرارُ صاحب المنصّة (٢٢ نوفمبر ٢٠٢٦): «Raise to 65%» (`influencer-codes-raise.test.ts`) */
+    expect(firstCoupon.percentOff, 'بقي كوده القائم دون خصمه الجديد').toBe(65)
     const audit = await prisma.auditEvent.findFirstOrThrow({ where: { action: 'influencer.discount.set', entityId: id }, orderBy: { createdAt: 'desc' } })
     expect(audit).toMatchObject({ actorId: ownerId, before: { percentOff: 55 }, after: { percentOff: 65 } })
 

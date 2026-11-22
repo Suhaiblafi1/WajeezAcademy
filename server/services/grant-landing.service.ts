@@ -171,14 +171,17 @@ export class GrantLandingService {
       : null
     const closesAt = influencerClosesAt(s.closesAt, own)
     const isOpenNow = own ? s.active && (closesAt === null || closesAt > now) : s.open
-    const [summaries, sessions, outcomes] = await Promise.all([
+    const [summaries, sessions, outcomes, mine] = await Promise.all([
       this.summaries(open.courses.map((c) => c.courseId)), this.sessions(open.courses.map((c) => c.cohortId)),
-      this.outcomes(open.courses),
+      this.outcomes(open.courses), this.myPercentOff(ref),
     ])
     return {
       /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
       /* و`soldOut`: نفدت أكوادُها والمنحةُ مفتوحة — فمن عبّأ ولم يأخذ كودا يبقى عند سببه، ويعود إلى النموذج حين تُزاد (٢٨ أكتوبر ٢٠٢٦) */
       campaign: { open: isOpenNow, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt, soldOut: s.left === 0 },
+      /* ونسبةُ كود صاحب المرجع اليومَ — فإن رُفع خصمُ مؤثّره بعد أن أخذه قالتها صفحتُه لا ما حُفظ في جهازه (٢٢ نوفمبر ٢٠٢٦، «Raise to 65%»).
+         ولمن له كودٌ بمرجعه وحدَه — فالردُّ لغيره كما كان */
+      ...(mine !== null ? { myPercentOff: mine } : {}),
       sharePath: SHARE_PATH[this.slug] ? await this.shareLink(SHARE_PATH[this.slug]!) : null,
       termAr: open.termAr,
       openCourses: open.courses.map((c) => ({
@@ -198,6 +201,15 @@ export class GrantLandingService {
 
   /** ما اختاره صاحبُ المرجع قبلُ في هذه الحملة — يبقى في صفحته ولو خرج من قائمتها (١٧ نوفمبر ٢٠٢٦، `withKeptPicks`).
       والمرجعُ لا يعرفه إلّا متصفّحُه (كـ`savePicks`)، وما يُعاد دوراتٌ بسعرها لا شيءَ من ملفّه */
+  /** نسبةُ كود صاحب المرجع في هذه الحملة كما في كوبونه الآن — وبلا مرجعٍ أو كودٍ فارغة. والمرجعُ لا يعرفه إلّا متصفّحُه */
+  private async myPercentOff(ref: string | null | undefined): Promise<number | null> {
+    if (!ref || !UUID_RE.test(ref)) return null
+    const lead = await this.prisma.lead.findFirst({
+      where: { id: ref, campaign: this.slug, erasedAt: null }, select: { grantCode: { select: { coupon: { select: { percentOff: true } } } } },
+    })
+    return lead?.grantCode?.coupon.percentOff ?? null
+  }
+
   private async keptPicks(ref: string | null | undefined): Promise<string[]> {
     if (!ref || !UUID_RE.test(ref)) return []
     const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: this.slug, erasedAt: null }, select: { grantPicks: true } })
