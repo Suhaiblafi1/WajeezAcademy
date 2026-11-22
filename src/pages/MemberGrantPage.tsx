@@ -648,23 +648,23 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
                   : <span className="grid h-20 w-20 place-items-center rounded-xl bg-teal/10 text-teal-light-ink"><UserRound className="h-8 w-8" aria-hidden="true" /></span>}
                 <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} aria-label={x.titleAr} className="absolute start-1.5 top-1.5 h-5 w-5 shadow" />
               </span>
-              {x.trainer && <span className="w-full truncate text-center text-fine font-bold text-teal-light-ink">{trainerShortNameAr(x.trainer.name)}</span>}
+              {x.trainer && <span className="w-full truncate text-center text-read font-bold text-teal-light-ink">{trainerShortNameAr(x.trainer.name)}</span>}
             </span>
             <span className="min-w-0 flex-1">
               {(startHere || seats) && (
                 <span className="flex flex-wrap items-center gap-x-3">
                   {startHere && <span className="inline-flex items-center gap-1 text-fine text-muted-foreground"><Sparkles className="h-3 w-3 text-gold-ink" aria-hidden="true" />ابدأ بها</span>}
-                  {seats && <span className="inline-flex items-center gap-1 text-fine font-bold text-red-300"><Flame className="h-3 w-3" aria-hidden="true" />{seats}</span>}
+                  {seats && <span className="inline-flex items-center gap-1 text-read font-bold text-red-300"><Flame className="h-3 w-3" aria-hidden="true" />{seats}</span>}
                 </span>
               )}
               <span className="block text-read font-bold leading-6">{x.titleAr}</span>
               <span className="mt-1 flex flex-wrap items-baseline gap-x-2">
-                {pct > 0 && <bdi dir="ltr" className="text-fine text-muted-foreground line-through">{money(x.price)}</bdi>}
+                {pct > 0 && <bdi dir="ltr" className="text-read text-muted-foreground line-through">{money(x.price)}</bdi>}
                 <bdi dir="ltr" className="text-base font-black">{money(pay)}</bdi>
-                <span className="text-fine text-muted-foreground">· تبدأ {cohortDayAr(x.startsAt, { day: "numeric", month: "long" })}</span>
+                <span className="text-read text-muted-foreground">· تبدأ {cohortDayAr(x.startsAt, { day: "numeric", month: "long" })}</span>
               </span>
               {clash && (
-                <span role="status" className="mt-1 flex items-start gap-1.5 text-fine font-bold leading-5 text-gold-ink">
+                <span role="status" className="mt-1 flex items-start gap-1.5 text-read font-bold leading-5 text-gold-ink">
                   <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />{clash}
                 </span>
               )}
