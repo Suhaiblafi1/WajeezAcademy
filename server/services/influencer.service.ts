@@ -55,7 +55,7 @@ import { GRANT_HOLDS, GrantService } from './grant.service'
 import { pageCourses } from './grant-scope.service'
 import { inviteLink, sendStaffInviteEmail } from './account-mail'
 import { renderMail, type MailBlock } from './mail-template'
-import { sendDirectEmail, type DirectMailStatus } from './notification.service'
+import { notifyRole, sendDirectEmail, type DirectMailStatus } from './notification.service'
 import { MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { influencerTermsAr, type InfluencerDealView } from '../../src/application/commerce/influencer-application'
 import { publicSiteUrl } from './site-url'
@@ -319,7 +319,7 @@ export class InfluencerService {
       const after = await tx.influencer.update({ where: { id }, data: { ...data, ...codeData } })
       /* وخصمٌ أعلى يرفع أكوادَ متابعيه القائمة معه — في المعاملة نفسِها (٢٢ نوفمبر ٢٠٢٦، `raiseInfluencerCodes`) */
       const raised = after.percentOff !== before.percentOff
-        ? (await raiseInfluencerCodes(tx, id, actorId)).reduce((s, r) => s + r.raised, 0)
+        ? (await raiseInfluencerCodes(tx, id, actorId, undefined, this.prisma)).reduce((s, r) => s + r.raised, 0)
         : 0
       return { before, after, raised }
     })
@@ -748,9 +748,9 @@ type Tx = Prisma.TransactionClient
 
 /** يرفع كوبوناتِ أكواد متابعيه في منحة المؤثّرين إلى خصمه الساري — وما فوقه أو استُعمل كلُّه يبقى. ويكتب أثرَه إن رفع شيئا */
 export async function raiseInfluencerCodes(
-  tx: Tx, influencerId: string, actorId: string | null, reason = INFLUENCER_CODES_RAISE_REASON,
+  tx: Tx, influencerId: string, actorId: string | null, reason = INFLUENCER_CODES_RAISE_REASON, notifyWith?: PrismaClient,
 ): Promise<{ raised: number; from: number[]; to: number }[]> {
-  const inf = await tx.influencer.findUnique({ where: { id: influencerId }, select: { percentOff: true } })
+  const inf = await tx.influencer.findUnique({ where: { id: influencerId }, select: { percentOff: true, nameAr: true } })
   if (!inf) return []
   const campaigns = await tx.grantCampaign.findMany({
     where: { slug: { in: [...INFLUENCER_GRANT_SLUGS] } }, select: { id: true, slug: true, percentOff: true, maxCourses: true },
@@ -780,10 +780,26 @@ export async function raiseInfluencerCodes(
       actorId, action: 'influencer.codes.raise', entityType: 'influencer', entityId: influencerId, reason,
       before: { percentOff: from }, after: { percentOff: to }, meta: { campaign: c.slug, raised: raised.count, from, to },
     })
+    /* ═══ وما غيّر ما يدفعه متعلّمون يُخبَر به إنسان (`audit-high-reaches-person.test.ts`) ═══
+       يُخبَر من يدير التجارة في جرسه: كم كودا ارتفع ولمتابعي من. ولا بريدَ للمتعلّمين: بريدُ حملات المنح ممسوكٌ حتى يأمر صاحبُ
+       المنصّة (#955)، وما يدفعه يراه في صفحته وعند الدفع. ويُرسَل بالعميل لا بالمعاملة: إشعارٌ يسقط لا يُفسد الرفع */
+    if (notifyWith && raised.count > 0) {
+      await notifyRole(notifyWith, COMMERCE_MANAGERS, {
+        channel: 'in_app', skipEmail: true,
+        title: `ارتفع خصم ${raised.count} من أكواد متابعي ${inf.nameAr}`,
+        body: `صارت ${to}% بدل ${from.join(' و')}% — لمن لم يستعمل كوده كله.`,
+        data: { influencerId, campaign: c.slug, raised: raised.count, from, to },
+      })
+    }
     out.push({ raised: raised.count, from, to })
   }
   return out
 }
+
+/** من يدير التجارة — من يُخبَر برفع أكواد المتابعين */
+const COMMERCE_MANAGERS = Object.entries(ROLE_PERMISSIONS)
+  .filter(([, keys]) => (keys as readonly string[]).includes('commerce.manage'))
+  .map(([role]) => role)
 
 /** يلحق مرّةً ما سبق القرار: كلُّ مؤثّرٍ خصمُه الساري فوق بعض أكواده القائمة ترتفع أكوادُه إليه — بأثرٍ لكلٍّ منهم،
     وبأثرٍ على الحملة يقول إنّه جرى، فلا يجري ثانية (ولا يصير مزامنةً لكلّ تغييرٍ في نسبة الحملة بعده) */
@@ -797,7 +813,7 @@ export async function applyInfluencerCodesCatchUp(prisma: PrismaClient): Promise
     let influencers = 0
     let raised = 0
     for (const inf of all) {
-      const r = await raiseInfluencerCodes(tx, inf.id, null, INFLUENCER_CODES_CATCHUP_REASON)
+      const r = await raiseInfluencerCodes(tx, inf.id, null, INFLUENCER_CODES_CATCHUP_REASON, prisma)
       const n = r.reduce((s, x) => s + x.raised, 0)
       if (n > 0) { influencers += 1; raised += n }
     }
