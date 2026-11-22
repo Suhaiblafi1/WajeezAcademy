@@ -87,7 +87,8 @@ describe('البدائل من دورات صفحة المنحة وحدها (pathC
 
 describe('الصفحة', () => {
   it('⚠️ «أضف دورة» يظهر ما دام على الكود دورات — بعدد الخادم — ويختفي عند الحد', () => {
-    expect(PAGE).toMatch(/const addsLeft = pathAddsLeft\(\{ coursesLeft: v\.coursesLeft, baseCount: originalIds\.length, current: courseIds\.length \}\)/)
+    /* ولا إضافةَ في المسار العامّ (٢٢ نوفمبر ٢٠٢٦، `pathEditable`) */
+    expect(PAGE).toMatch(/const addsLeft = pathEditable\(isPublic\) \? pathAddsLeft\(\{ coursesLeft: v\.coursesLeft, baseCount: originalIds\.length, current: courseIds\.length \}\) : 0;/)
     expect(PAGE).toMatch(/\{addsLeft > 0 && \([\s\S]*?data-testid="private-path-add"[\s\S]*?أضف دورة/)
     expect(PAGE).toMatch(/addCandidates\(\{/)
   })
@@ -101,7 +102,9 @@ describe('الصفحة', () => {
     expect(PAGE.match(/v\.grantCourseIds,\n/g)?.length).toBe(2)
   })
   it('⚠️ والمضاف يصل لوح الدفع والشراء المحفوظ — بدورات الصفحة كما هي الآن', () => {
-    expect(PAGE).toMatch(/intent: \{ title: headline\.titleAr, amount: [^}]*kind: "courses", courseIds \}/)
+    /* وما يُشترى سلّةُ الصفحة الآن: دوراتُها في المسار الخاصّ، وما اختاره من الثلاث في العامّ (٢٢ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const buyIds = isPublic \? publicPathSelection\(originalIds, chosen\) \?\? \[\] : courseIds;/)
+    expect(PAGE).toMatch(/intent: \{ title: headline\.titleAr, amount: [^}]*kind: "courses", courseIds: buyIds \}/)
     expect(PAGE).toMatch(/restoredPathCourses\(resumed\?\.intent\.courseIds, originalIds\.length, v\.coursesLeft\)/)
   })
 })
