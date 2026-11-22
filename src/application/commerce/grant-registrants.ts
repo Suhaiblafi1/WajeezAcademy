@@ -103,6 +103,8 @@ export const GRANT_MAIL_PURPOSE_AR: Record<string, string> = {
   'grant.message': 'رسالة منك',
   /* ورابطُ تأكيد البريد في منحة الشريك (١٥ نوفمبر ٢٠٢٦، `partner-grant.service.ts`) */
   'grant.partner_link': 'رابط تأكيد البريد',
+  /* وحملةٌ من «البريد الجماعي» (٢٢ نوفمبر ٢٠٢٦) */
+  'bulk.message': 'حملة بريد',
 }
 export const mailPurposeAr = (purpose: string | null): string =>
   (purpose && GRANT_MAIL_PURPOSE_AR[purpose]) || 'رسالة من المنصة'

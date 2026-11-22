@@ -63,6 +63,24 @@ export async function apiDownload(path: string, fallbackName: string): Promise<s
   return name;
 }
 
+/* ═══ ملفٌّ يُرسَل بايتاتٍ خامّا وجوابُه JSON (٢٢ نوفمبر ٢٠٢٦) ═══
+
+   قائمةُ البريد تُرفع ملفَّ Excel أو CSV، والخادمُ يردّ بما وجد فيه (كم صفّا، وكم بريدا صالحا). و`apiUpload`
+   لا يردّ شيئا، فهذا له: الجسمُ الملفُّ نفسُه، والاسمُ في الاستعلام. */
+export async function apiPostFile<T>(path: string, file: Blob): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "content-type": "application/octet-stream" },
+    body: file,
+  });
+  const data = (await res.json().catch(() => null)) as (T & { error?: { code: string; message_ar: string } }) | null;
+  if (!res.ok) {
+    throw new ApiError(data?.error?.code ?? "http_error", data?.error?.message_ar ?? `خطأ ${res.status}`, res.status);
+  }
+  return data as T;
+}
+
 /* رسالةُ رفض الصلاحية — من الخادم لا من هنا.
 
    كان هذا السطرُ يقول لكلّ شاشةٍ ممنوعةٍ «تتطلب صلاحية «مدير النظام»» ثمّ

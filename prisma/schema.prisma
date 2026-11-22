@@ -5018,9 +5018,13 @@ model OutboxMail {
   lastError String?
   createdAt DateTime  @default(now())
   sentAt    DateTime?
+  /// لا يُرسَل قبله — مراحلُ حملة البريد الجماعيّ: اليومُ الثاني والثالث (٢٢ نوفمبر ٢٠٢٦، `bulk-mail/drain.ts`)
+  notBefore DateTime?
 
   @@index([status, createdAt])
   @@index([batchId])
+  /// البريدُ الجماعيّ يُفرَّغ وحدَه بغرضه (`bulk.message`) — والعاجلُ بغيره، فلا يقف خلف عشرين ألفا (٢٢ نوفمبر ٢٠٢٦)
+  @@index([purpose, status, createdAt])
   /// ما وصل عنوانا بعينه — يُقرأ في ملفّ من عبّأ نموذج المنحة (`grant-registrants.service.ts`)
   @@index([to])
 }
@@ -5252,6 +5256,83 @@ model MailOptOut {
   createdAt DateTime @default(now())
   /// الرسالةُ التي ألغى منها — `grant.reminder` ونحوُها
   purpose   String?
+}
+
+/**
+ * ═══════════ البريدُ الجماعيّ (٢٢ نوفمبر ٢٠٢٦) ═══════════
+ * طلبُ صاحب المنصّة: «i need to send emails to all leads from my website or leads from excel sheet i upload..
+ * using resend»، ثمّ «ok i need to be easy like i choose which list and what email to them.. multi campaign same place».
+ * فقائمةٌ تُرفع مرّةً وتُعاد، وحملةٌ تُكتب مسودّةً ثمّ تُرسل إلى قائمة. والعلّةُ في `server/services/bulk-mail/`.
+ */
+
+/// قائمةٌ رفعها مدير من ملفّ Excel أو CSV — صفوفُها لا ملفُّها: الملفُّ لا يُحفظ
+model MailList {
+  id            String          @id @default(uuid()) @db.Uuid
+  name          String
+  /// اسمُ الملفّ الذي رُفعت منه — يُقرأ في بطاقتها
+  fileName      String?
+  /// ما كان في الملفّ: صفوفُه، وما ليس بريدا صالحا، وما تكرّر — يُقال عند الإرسال كم سقط منه ولماذا
+  totalRows     Int             @default(0)
+  invalidRows   Int             @default(0)
+  duplicateRows Int             @default(0)
+  createdBy     String?         @db.Uuid
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  entries       MailListEntry[]
+}
+
+/// عنوانٌ في قائمة — بحروفٍ صغيرة، ومرّةً في القائمة الواحدة
+model MailListEntry {
+  id     String   @id @default(uuid()) @db.Uuid
+  listId String   @db.Uuid
+  email  String
+  /// الاسمُ كما في الملفّ إن كان له عمود — تُحيّا به الرسالة
+  name   String?
+  list   MailList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, email])
+}
+
+/// حملةُ بريد: رسالةٌ وقائمة. تُكتب مسودّةً، وتُرسل مرّةً بمرجع دفعةٍ واحد في طابور البريد (`batchId`)
+model MailCampaign {
+  id            String    @id @default(uuid()) @db.Uuid
+  status        String    @default("draft") // draft | sending | sent | stopped
+  subject       String    @default("")
+  body          String    @default("")
+  /// زرٌّ اختياريّ في الرسالة — نصُّه ورابطُه
+  buttonLabel   String?
+  buttonUrl     String?
+  /// من تصله: `list:<id>` أو `leads:all` أو `leads:campaign:<slug>` أو `leads:source:<source>` — وبلا مفتاحٍ أجنبيّ:
+  /// حذفُ قائمةٍ لا يمحو أثرَ حملةٍ أُرسلت إليها
+  audience      String?
+  /// اسمُ الجمهور ساعةَ الإرسال — يبقى ولو حُذفت القائمةُ أو تغيّر اسمُها
+  audienceAr    String?
+  /// المُرسِلُ ساعةَ الإرسال — نطاقٌ فرعيٌّ للحملات لا نطاقُ بريد الحساب (`bulk-mail/sender.ts`)
+  fromName      String?
+  fromEmail     String?
+  /// مراحلُ الإرسال إن أُرسلت على مراحل: `[{ at, count }]` — اليومُ الأوّلُ الآن وما بعده بأيّامه
+  stages        Json?
+  createdBy     String?   @db.Uuid
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  /// الإرسال: من أمر ومتى، وما كُتب في الطابور، وما سقط قبله ولماذا
+  batchId       String?   @unique @db.Uuid
+  sentBy        String?   @db.Uuid
+  sentAt        DateTime?
+  queuedCount   Int       @default(0)
+  skippedOptOut Int       @default(0)
+  skippedInvalid Int      @default(0)
+  skippedDuplicate Int    @default(0)
+  /// الإيقاف: من أوقف ومتى، وكم رسالةً لم تخرج فأُلغيت
+  stoppedBy     String?   @db.Uuid
+  stoppedAt     DateTime?
+  cancelledCount Int      @default(0)
+  /// ما خرج وما سقط — يُكتب حين ينتهي الإرسال، فصفوفُ الطابور المرسلةُ تُقلَّم بعد أسبوعين وتبقى الأرقام
+  sentCount     Int?
+  failedCount   Int?
+  finishedAt    DateTime?
+
+  @@index([status, createdAt])
 }
 
 /// من ردّ «توقف» على واتساب — لا نراسله عليه بعدُ (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`). بذيل رقمه (`phoneTail`) لا بعميلٍ

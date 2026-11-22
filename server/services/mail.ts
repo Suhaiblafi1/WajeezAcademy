@@ -27,6 +27,9 @@ export interface MailInput {
   /** رابطُ الإلغاء بنقرةٍ واحدة — يُرسَل في رأسَي `List-Unsubscribe` و`List-Unsubscribe-Post` (RFC 8058)، فيظهر زرُّ
       «إلغاء الاشتراك» في صندوق الوارد. لرسائل التسويق وحدَها (`mail-optout.service.ts`، ١١ نوفمبر ٢٠٢٦) */
   unsubscribeUrl?: string
+  /** مُرسِلٌ غيرُ مُرسِل الأكاديميّة — حملاتُ البريد الجماعيّ من نطاقها الفرعيّ (٢٢ نوفمبر ٢٠٢٦، `bulk-mail/sender.ts`).
+      ولا رجوعَ إلى المُرسِل الأصليّ إن ردّه Resend: نطاقٌ غيرُ موثَّقٍ يسقط برسالته، ولا تخرج الحملةُ من نطاق الحساب */
+  from?: { name: string; email: string }
   /* مرفقاتٌ أخرى — ملفُّ المتقدّم وسيرتُه حين تُحجز مقابلتُه.
 
      ولماذا حقلٌ عامٌّ بجانب `icsContent` لا بدلا عنه: الدعوةُ مرفقٌ بشروط
@@ -35,6 +38,13 @@ export interface MailInput {
      ويُضاف العامُّ لما سواه — ويجتمعان في رسالةٍ واحدةٍ إن اجتمعا. */
   attachments?: MailAttachment[]
 }
+
+/** ما يقوله `sendEmail` حين يردّه حدُّ Resend في الثانية — به يعرف البريدُ الجماعيُّ أنّ الردَّ مهلةٌ لا سقوط
+    (`server/services/bulk-mail/drain.ts`)، فلا تُحرق محاولةٌ لرسالةٍ لم يرفضها أحد */
+/** نطاقُ المُرسِل لم يُوثَّق في Resend — والرسالةُ تسقط بهذا ولا تُرسَل من نطاقٍ آخر */
+export const UNVERIFIED_DOMAIN_AR = 'نطاق المرسل غير موثق في Resend'
+
+export const RESEND_RATE_LIMIT_AR = 'تجاوز حد الإرسال لدى Resend — أعد المحاولة لاحقا'
 
 export interface MailAttachment {
   filename: string
@@ -68,7 +78,7 @@ export async function sendEmail(config: EmailConfig, input: MailInput): Promise<
   try {
     const resend = new Resend(config.apiKey)
     const { error } = await resend.emails.send({
-      from: `${config.fromName} <${config.fromEmail}>`,
+      from: input.from ? `${input.from.name} <${input.from.email}>` : `${config.fromName} <${config.fromEmail}>`,
       to: input.to,
       /* المُرسِلُ على نطاق الإرسال وحدَه — ومن يضغط «ردّ» إنسانٌ ينتظر جوابا،
          فيُوجَّه ردُّه إلى عنوان الأكاديميّة الواحد الذي يُقرأ. */
@@ -84,8 +94,12 @@ export async function sendEmail(config: EmailConfig, input: MailInput): Promise<
     if (error) {
       /* أخطاء Resend الشائعة بصياغة مفهومة لمن يراجع السجل */
       const name = error.name ?? ''
+      /* نطاقُ المُرسِل غيرُ موثَّق — يُقال بنطاقه، لا «راجع مفتاح API» وهو سليم */
+      if (/domain/i.test(error.message ?? '') && /verif/i.test(error.message ?? '')) {
+        return { ok: false, error: `${UNVERIFIED_DOMAIN_AR}: ${error.message}` }
+      }
       if (/validation|missing_api_key|invalid_api_key/i.test(name)) return { ok: false, error: 'رفض Resend بيانات الدخول — راجع مفتاح API' }
-      if (/rate_limit/i.test(name)) return { ok: false, error: 'تجاوز حد الإرسال لدى Resend — أعد المحاولة لاحقا' }
+      if (/rate_limit/i.test(name)) return { ok: false, error: RESEND_RATE_LIMIT_AR }
       return { ok: false, error: `فشل الإرسال: ${error.message}` }
     }
     return { ok: true }
