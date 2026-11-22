@@ -1004,6 +1004,10 @@ describe('لماذا هذه المنحة؟ · ما ستخرج به · التشخ
     expect(why).toMatch(/<Panel\s+as="section"\s+aria-labelledby="grant-why"/)
     expect(why, 'عادت صناديق داخل «لماذا»').not.toMatch(/<Card|<Inset/)
     expect(why, 'عادت الوسوم').not.toMatch(/GRANT_WHY_LOSSES_AR\.map/)
+    /* وبالإيجابيّ لا بالخسارة (٢٢ نوفمبر ٢٠٢٦، «الجملة سلبيّة.. يجب أن نركّز على الإيجابيّة») */
+    const said = [...Object.values(GRANT_WHY_AR), ...GRANT_WHY_LOSSES_AR].join(' ')
+    expect(said, 'عاد عنوان الخسارة').not.toMatch(/تخسر|لم تكمل|لم تستفد|لم تكن تحتاج|الضائع/)
+    expect(`${GRANT_WHY_AR.title} ${GRANT_WHY_AR.titleMark}`).toBe('استثمر وقتك في دورة تكملها وتستفيد منها')
     expect(why).toMatch(/\{GRANT_WHY_AR\.lossesLead\}: \{GRANT_WHY_LOSSES_AR\.join\("، "\)\}\. \{GRANT_WHY_AR\.lead\}/)
     expect(PAGE, 'عاد شريط السعر').not.toMatch(/تدفعها وجيز عنك|grantWhySplitAr|bg-gold" style=\{\{ width/)
     expect(PAGE.match(/GRANT_WHY_POINTS_AR\.map/g)).toHaveLength(1)
@@ -1024,9 +1028,10 @@ describe('لماذا هذه المنحة؟ · ما ستخرج به · التشخ
       expect(x.body.length, x.body).toBeLessThanOrEqual(40)
     }
     expect(`${GRANT_WHY_AR.title} ${GRANT_WHY_AR.titleMark}`.length).toBeLessThanOrEqual(40)
-    expect(GRANT_WHY_LOSSES_AR).toEqual(['لم تكملها', 'لم تستفد منها', 'لم تكن تحتاجها من البداية'])
-    expect(GRANT_WHY_AR.titleMark).toBe('بل وقتك')
-    expect(fnOf('GrantWhy'), '«بل وقتك» غير مبرز').toMatch(/<span className="text-gold-ink">\{GRANT_WHY_AR\.titleMark\}<\/span>/)
+    /* نُسخت الخسارةُ بالإيجابيّ (٢٢ نوفمبر ٢٠٢٦) — والمُبرَزُ آخرُ العنوان كما كان */
+    expect(GRANT_WHY_LOSSES_AR).toEqual(['تكملها', 'تطبقها في عملك', 'وتخرج منها بنتيجة'])
+    expect(GRANT_WHY_AR.titleMark).toBe('تكملها وتستفيد منها')
+    expect(fnOf('GrantWhy'), 'آخر العنوان غير مبرز').toMatch(/<span className="text-gold-ink">\{GRANT_WHY_AR\.titleMark\}<\/span>/)
   })
 
   it('⚠️ «لست متأكدا» تشخيص بشري على واتساب برسالة المستشار', () => {
