@@ -470,7 +470,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
                   <span className="block text-read font-bold text-foreground">{courseById(s.courseId)?.name ?? s.courseId}</span>
                   <span className="mt-0.5 block text-read text-muted-foreground">{s.noteAr}</span>
                 </span>
-                <Button tone="primary" size="sm" onClick={() => addCourse(s.courseId, s.cohortId)} aria-label={`أضف ${courseById(s.courseId)?.name ?? s.courseId}`}>
+                <Button tone="secondary" size="sm" onClick={() => addCourse(s.courseId, s.cohortId)} aria-label={`أضف ${courseById(s.courseId)?.name ?? s.courseId}`}>
                   <Plus className="h-3.5 w-3.5" aria-hidden="true" /> أضف
                 </Button>
               </div>
