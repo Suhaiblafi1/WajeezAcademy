@@ -52,6 +52,9 @@ describe('② كاسيت ورأسها', () => {
 
   it('⚠️ لها رأس مشترك — بلا شعار حتى يصل، ومن لم يذكر تبقى صفحته كما هي', () => {
     expect(influencerBrand('KASEET')).toEqual({ logoUrl: BUILT_IN_INFLUENCER_LOGOS.KASEET ?? null })
+    /* ووصل شعارُها (٢٢ نوفمبر ٢٠٢٦): ملفٌّ في public، صورةُ PNG حقيقيّة */
+    expect(influencerBrand('KASEET'), 'رأس كاسيت بلا شعارها').toEqual({ logoUrl: '/influencers/kaseet.png' })
+    expect(readFileSync(join(process.cwd(), 'public/influencers/kaseet.png')).subarray(1, 4).toString()).toBe('PNG')
     expect(influencerBrand('CHATTREE')).toBeNull()
     expect(influencerBrand('constructor'), 'قرأ من نموذج الكائن').toBeNull()
     /* وكلُّ شعارٍ مذكورٍ ملفٌّ في public */

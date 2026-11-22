@@ -146,7 +146,7 @@ describe('② والثانية لا شيء', () => {
 
 describe('③ صفحتها برأسها ورسالة واتساب', () => {
   it('⚠️ اسمها ورأسها بلا شعار حتى يصل، ورسالتها — وبكودها السابق، وفي بلاك فرايدي برابطها', async () => {
-    const face = { nameAr: 'كاسيت', code: 'KASEET', brand: { logoUrl: null }, whatsAppText: KASEET_TEXT }
+    const face = { nameAr: 'كاسيت', code: 'KASEET', brand: { logoUrl: '/influencers/kaseet.png' }, whatsAppText: KASEET_TEXT }
     for (const code of ['KASEET', 'kaseet', 'KASSET']) {
       const res = await app.inject({ method: 'GET', url: `/api/public/grant/influencer?code=${code}` })
       expect(res.statusCode).toBe(200)
@@ -209,7 +209,7 @@ describe('⑥ وتغيير كودها لا يسقط عمولتها ولا رأس
       const out = await new GrantLandingService(prisma, BLACK_FRIDAY_GRANT_SLUG).apply(person({ channel: 'kaseetnew' }))
       expect(await prisma.grantCode.findUniqueOrThrow({ where: { leadId: out.ref } }), 'سقطت عمولتها بتغيير كودها')
         .toMatchObject({ influencerId: k.id, commissionPercent: 5 })
-      const face = { nameAr: 'كاسيت', code: 'KASEETNEW', brand: { logoUrl: null }, whatsAppText: KASEET_TEXT }
+      const face = { nameAr: 'كاسيت', code: 'KASEETNEW', brand: { logoUrl: '/influencers/kaseet.png' }, whatsAppText: KASEET_TEXT }
       expect((await app.inject({ method: 'GET', url: '/api/public/grant/bf?ch=kaseetnew' })).json().influencer, 'سقط رأسها').toEqual(face)
       expect((await app.inject({ method: 'GET', url: '/api/public/grant/influencer?code=KASEETNEW' })).json().influencer).toEqual(face)
     } finally {

@@ -87,8 +87,8 @@ describe('البدائل من دورات صفحة المنحة وحدها (pathC
 
 describe('الصفحة', () => {
   it('⚠️ «أضف دورة» يظهر ما دام على الكود دورات — بعدد الخادم — ويختفي عند الحد', () => {
-    /* ولا إضافةَ في المسار العامّ (٢٢ نوفمبر ٢٠٢٦، `pathEditable`) */
-    expect(PAGE).toMatch(/const addsLeft = pathEditable\(isPublic\) \? pathAddsLeft\(\{ coursesLeft: v\.coursesLeft, baseCount: originalIds\.length, current: courseIds\.length \}\) : 0;/)
+    /* والمسارُ العامّ بعدّه هو (٢٢ نوفمبر ٢٠٢٦، `publicPathAddsLeft` — `public-path.test.ts`) */
+    expect(PAGE).toMatch(/: pathAddsLeft\(\{ coursesLeft: v\.coursesLeft, baseCount: originalIds\.length, current: courseIds\.length \}\);/)
     expect(PAGE).toMatch(/\{addsLeft > 0 && \([\s\S]*?data-testid="private-path-add"[\s\S]*?أضف دورة/)
     expect(PAGE).toMatch(/addCandidates\(\{/)
   })
@@ -99,11 +99,11 @@ describe('الصفحة', () => {
   })
   it('⚠️ البدائل والإضافة كلاهما من قائمة المنحة', () => {
     expect(PAGE.match(/pathCandidatesWithin\(/g)?.length, 'الاستبدال أو الإضافة بلا قائمة المنحة').toBe(2)
-    expect(PAGE.match(/v\.grantCourseIds,\n/g)?.length).toBe(2)
+    expect(PAGE.match(/pathCandidatesWithin\([^;]*?v\.grantCourseIds,?\s*\);/g)?.length).toBe(2)
   })
   it('⚠️ والمضاف يصل لوح الدفع والشراء المحفوظ — بدورات الصفحة كما هي الآن', () => {
-    /* وما يُشترى سلّةُ الصفحة الآن: دوراتُها في المسار الخاصّ، وما اختاره من الثلاث في العامّ (٢٢ نوفمبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/const buyIds = isPublic \? publicPathSelection\(originalIds, chosen\) \?\? \[\] : courseIds;/)
+    /* وما يُشترى سلّةُ الصفحة الآن: دوراتُها في المسار الخاصّ، وما اختاره من الثلاث وما أضافه في العامّ (٢٢ نوفمبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const buyIds = isPublic \? publicPathBuyIds\(originalIds, chosen, addedIds\) \?\? \[\] : courseIds;/)
     expect(PAGE).toMatch(/intent: \{ title: headline\.titleAr, amount: [^}]*kind: "courses", courseIds: buyIds \}/)
     expect(PAGE).toMatch(/restoredPathCourses\(resumed\?\.intent\.courseIds, originalIds\.length, v\.coursesLeft\)/)
   })

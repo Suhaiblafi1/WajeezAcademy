@@ -168,9 +168,10 @@ export const blackFridayCommission = (influencer: InfluencerCodes, commissionPer
    لا رفعَ لشعار المؤثّر في الإدارة، فما أرسله صاحبُ المنصّة يُشحن مع الموقع في `public/influencers` بكود المؤثّر.
    ومن ذُكر هنا له رأسُ صفحةٍ مشترك «<اسمه> × أكاديمية وجيز» وزرُّ واتساب برسالته — في صفحته `/grant/i/<كوده>` وفي بلاك فرايدي
    برابطه `?ch=<كوده>`. وقيمتُه `null` حتى يصل ملفُّه، فيظهر اسمُه مكانَ الشعار. ومن لم يُذكر بقيت صفحتُه كما هي.
-   وإضافةُ الشعار: الملفُّ في `public/influencers/` وقيمتُه هنا مسارُه (`'/influencers/kaseet.png'`). */
+   وإضافةُ الشعار: الملفُّ في `public/influencers/` وقيمتُه هنا مسارُه (`'/influencers/kaseet.png'`).
+   ووصل شعارُ كاسيت (٢٢ نوفمبر ٢٠٢٦، «وهذا اللوقو الخاص بالمؤثر ضعه»): شريطُ كاسيت واسمُها، بخلفيّةٍ شفّافة. */
 export const BUILT_IN_INFLUENCER_LOGOS: Readonly<Record<string, string | null>> = {
-  KASEET: null,
+  KASEET: '/influencers/kaseet.png',
 }
 /** رأسُ صفحة المؤثّر المشتركُ بشعاره (أو `null` فاسمُه) — أو `null` لمن لا رأسَ له. ويُعرف بأحد أكواده (`InfluencerCodes`) */
 export function influencerBrand(influencer: InfluencerCodes): { logoUrl: string | null } | null {
