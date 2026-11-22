@@ -145,6 +145,9 @@ export type MailBlock =
 export interface MailDoc {
   /** «مرحبا فلان،» — يُبنى وحدَه فلا يُكتب في كلّ قالب */
   greetingName?: string
+  /** سطرُ التحيّة كاملا — يُقدَّم على `greetingName`. للبريد الجماعيّ: «مرحبا سارة،» أو «مرحبا،» لمن لا اسمَ له
+      في القائمة، لا «مرحبا بك،» (`greetingAr` في `src/application/marketing/bulk-mail.ts`، ٢٢ نوفمبر ٢٠٢٦) */
+  greeting?: string
   /** سطرُ المعاينة في صندوق الوارد — يُعرض بجانب الموضوع ولا يُرى في الرسالة.
    *
    *  وبلا هذا السطر يأخذ عميلُ البريد أوّلَ نصٍّ يجده، وهو «مرحبا فلان،» —
@@ -175,7 +178,8 @@ function richText(v: MailRich): string {
 
 function textOf(doc: MailDoc): string {
   const out: string[] = []
-  if (doc.greetingName) out.push(`مرحبا ${doc.greetingName.trim() || 'بك'}،`, '')
+  if (doc.greeting) out.push(doc.greeting, '')
+  else if (doc.greetingName) out.push(`مرحبا ${doc.greetingName.trim() || 'بك'}،`, '')
   out.push(doc.heading, '')
   for (const b of doc.blocks) {
     switch (b.kind) {
@@ -265,7 +269,9 @@ function htmlOf(doc: MailDoc): string {
   const preheader = (doc.preheader ?? (firstP && 'text' in firstP ? richText(firstP.text as MailRich) : doc.heading))
     .replace(/\s+/g, ' ').trim().slice(0, 140)
 
-  if (doc.greetingName) {
+  if (doc.greeting) {
+    parts.push(`<p style="${P}font-weight:700;">${esc(doc.greeting)}</p>`)
+  } else if (doc.greetingName) {
     parts.push(`<p style="${P}font-weight:700;">مرحبا ${esc(doc.greetingName.trim() || 'بك')}،</p>`)
   }
   parts.push(

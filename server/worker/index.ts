@@ -40,6 +40,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 import { JOBS, runJob, type JobResult } from './jobs'
 import { recordBeat } from './heartbeat'
+import { runBulkMailLoop } from './bulk-mail-loop'
 
 /** رقمُ القفل — ثابتٌ لهذا العامل وحدَه */
 const LOCK_KEY = 918_273_645
@@ -164,6 +165,9 @@ async function main(): Promise<void> {
   }
   process.on('SIGTERM', () => void stop())
   process.on('SIGINT', () => void stop())
+
+  /* والبريدُ الجماعيُّ حلقةٌ إلى جانب الدورة لا داخلها (`bulk-mail-loop.ts`، ٢٢ نوفمبر ٢٠٢٦) */
+  void runBulkMailLoop(prisma, { stopping: () => stopping, log })
 
   let running = false
   const timer = setInterval(() => {

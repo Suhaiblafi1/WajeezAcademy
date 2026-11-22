@@ -5,7 +5,7 @@
  * `AdminLayout.tsx` يكسر التحديثَ الساخن.
  */
 
-import { Activity, Award, BadgePercent, Gift, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardCheck, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Inbox, Languages, Layers, LayoutDashboard, LifeBuoy, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
+import { Activity, Award, BadgePercent, Gift, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardCheck, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Inbox, Languages, Layers, LayoutDashboard, LifeBuoy, Mail, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
 
 /* ═══ سبعةُ أقسامٍ في الشريط، وصفحاتُ كلِّ قسمٍ ألسنةٌ في أعلاه (٢٤ أكتوبر ٢٠٢٦) ═══
 
@@ -250,6 +250,10 @@ export const allSections: AdminNavSection[] = [
       { to: "/admin/partner-grants", label: "منح الشركاء", tab: "الشركاء", icon: Handshake, need: "commerce.manage",
         inTab: "/admin/member-grant",
         descAr: "الجامعات والشركات الشريكة: منحة كل شريك وشعاره ونطاق بريده ودوراته ومن أكد بريده" },
+      /* «البريد الجماعي» (٢٢ نوفمبر ٢٠٢٦): «i choose which list and what email to them.. multi campaign same place» — حملاتٌ
+         لليدات الموقع أو لقائمةٍ تُرفع. بصلاحيّة الكوبونات كرسالة المنحة لمن عبّأ نموذجها، وفي «المال» بجوار المنح */
+      { to: "/admin/bulk-mail", label: "البريد الجماعي", tab: "البريد", icon: Mail, need: "commerce.manage",
+        descAr: "حملات بريد لليدات الموقع أو لقائمة ترفعها من Excel، وتقدم كل حملة" },
       { to: "/admin/reports", label: "التقارير والتصدير", tab: "التقارير", icon: BarChart3, need: "reports.view",
         descAr: "أرقامُ المنصّة مفصَّلةً، وتصديرُها إلى ملفّ" },
     ],

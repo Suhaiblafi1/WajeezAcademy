@@ -17,6 +17,7 @@ import { registerAdminAdvisorRoutes } from './routes/admin-advisors.routes'
 import { registerAdvisorApplicationRoutes } from './routes/advisor-applications.routes'
 import { registerAdminAdvisorPayoutRoutes } from './routes/admin-advisor-payouts.routes'
 import { registerAdminGrantRoutes } from './routes/admin-grant.routes'
+import { registerAdminBulkMailRoutes } from './routes/admin-bulk-mail.routes'
 import { registerPublicGrantRoutes } from './routes/public-grant.routes'
 import { registerPartnerGrantRoutes } from './routes/partner-grant.routes'
 import { registerUnsubscribeRoutes } from './routes/unsubscribe.routes'
@@ -313,6 +314,8 @@ export async function buildApp(prisma: PrismaClient) {
   registerAdvisorApplicationRoutes(app, prisma)
   registerAdminAdvisorPayoutRoutes(app, prisma)
   registerAdminGrantRoutes(app, prisma)
+  /* «البريد الجماعي» — حملاتٌ وقوائم (٢٢ نوفمبر ٢٠٢٦) */
+  registerAdminBulkMailRoutes(app, prisma)
   registerPublicGrantRoutes(app, prisma)
   /* دورةُ صاحب المنصّة الخاصّة — صفحتُها `/ai-jobs` ولوحتُه `/private` (١٩ نوفمبر ٢٠٢٦) */
   registerPrivateCourseRoutes(app, prisma)

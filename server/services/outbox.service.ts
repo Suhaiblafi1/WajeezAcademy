@@ -43,6 +43,7 @@
 
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { sendDirectEmail, type DirectMailResult } from './notification.service'
+import { BULK_MAIL_PURPOSE } from '../../src/application/marketing/bulk-mail'
 
 type Db = PrismaClient | Prisma.TransactionClient
 
@@ -74,6 +75,8 @@ export interface OutboxEntry {
   ics?: OutboxIcs
   /** رابطُ الإلغاء بنقرةٍ واحدة — رسائلُ التسويق وحدَها، يُرسَل في رأسها (`mail-optout.service.ts`) */
   unsubscribeUrl?: string
+  /** لا يُرسَل قبله — مراحلُ حملة البريد الجماعيّ (`bulk-mail/drain.ts`) */
+  notBefore?: Date | null
 }
 
 export interface OutboxIcs {
@@ -82,17 +85,31 @@ export interface OutboxIcs {
   filename: string
 }
 
+const rowOf = (entry: OutboxEntry) => ({
+  to: entry.to, subject: entry.subject, text: entry.text, html: entry.html ?? null,
+  purpose: entry.purpose ?? null, batchId: entry.batchId ?? null,
+  icsContent: entry.ics?.content ?? null, icsMethod: entry.ics?.method ?? null, icsFilename: entry.ics?.filename ?? null,
+  unsubscribeUrl: entry.unsubscribeUrl ?? null, notBefore: entry.notBefore ?? null,
+})
+
 /** يكتب رسالةً في الطابور — يُستعمل داخل المعاملة وخارجَها */
 export async function enqueueMail(db: Db, entry: OutboxEntry): Promise<void> {
-  await db.outboxMail.create({
-    data: {
-      to: entry.to, subject: entry.subject, text: entry.text, html: entry.html ?? null,
-      purpose: entry.purpose ?? null, batchId: entry.batchId ?? null,
-      icsContent: entry.ics?.content ?? null, icsMethod: entry.ics?.method ?? null, icsFilename: entry.ics?.filename ?? null,
-      unsubscribeUrl: entry.unsubscribeUrl ?? null,
-    },
-  })
+  await db.outboxMail.create({ data: rowOf(entry) })
 }
+
+/** يكتب رسائلَ كثيرةً بأمرٍ واحد — حملةُ عشرين ألفا لا تُكتب صفّا صفّا (`server/services/bulk-mail/`) */
+export async function enqueueMails(db: Db, entries: readonly OutboxEntry[]): Promise<number> {
+  if (entries.length === 0) return 0
+  const { count } = await db.outboxMail.createMany({ data: entries.map(rowOf) })
+  return count
+}
+
+/* ═══ والبريدُ الجماعيُّ لا يمرّ من هنا (٢٢ نوفمبر ٢٠٢٦) ═══
+
+   حملةٌ تكتب عشرين ألفَ صفٍّ دفعةً، والطابورُ يُفرَّغ الأقدمَ أوّلا — فرسالةُ كلمة سرٍّ كُتبت بعدها تنتظر ساعاتٍ
+   خلفها. فالحملةُ يُفرّغها بابُها وحدَه بمهلتها (`server/services/bulk-mail/drain.ts`)، وهذا البابُ لما سواها:
+   العاجلُ لا يقف خلفها أبدا. و`purpose` يُسأل عن فراغه صراحةً: «لا يساوي» في SQL لا يُطابق الفارغ. */
+export const NOT_BULK = { OR: [{ purpose: null }, { purpose: { not: BULK_MAIL_PURPOSE } }] } satisfies Prisma.OutboxMailWhereInput
 
 export interface OutboxRun {
   sent: number
@@ -118,11 +135,17 @@ export interface OutboxRun {
    يُحقَن، وافتراضُه المُرسِلُ الحقيقيّ — والعاملُ لا يمرّر شيئا. */
 export type OutboxSender = (
   to: string, subject: string, text: string, html?: string, ics?: OutboxIcs, unsubscribeUrl?: string,
+  /** مُرسِلُ الحملة — يمرّره بابُ البريد الجماعيّ وحدَه (`bulk-mail/drain.ts`)، وهذا البابُ لا يمرّره أبدا */
+  from?: { name: string; email: string },
 ) => Promise<DirectMailResult>
 
 export async function drainOutbox(
   prisma: PrismaClient,
-  opts: { limit: number; gapMs?: number; send?: OutboxSender },
+  opts: {
+    limit: number; gapMs?: number; send?: OutboxSender
+    /** دورٌ من مهلة العامل المشتركة قبل كلّ رسالة (`mail-pacer.ts`) — والمهلةُ بين الرسائل باقيةٌ معه */
+    pace?: () => Promise<void>
+  },
 ): Promise<OutboxRun> {
   const gap = opts.gapMs ?? OUTBOX_GAP_MS
   const send: OutboxSender = opts.send
@@ -132,7 +155,7 @@ export async function drainOutbox(
       ...(unsubscribeUrl ? { unsubscribeUrl } : {}),
     }))
   const due = await prisma.outboxMail.findMany({
-    where: { status: 'queued', attempts: { lt: OUTBOX_MAX_ATTEMPTS } },
+    where: { status: 'queued', attempts: { lt: OUTBOX_MAX_ATTEMPTS }, ...NOT_BULK },
     /* الأقدمُ أوّلا — الوعدُ الأقدمُ أحقُّ بالوفاء */
     orderBy: { createdAt: 'asc' },
     take: opts.limit,
@@ -143,6 +166,7 @@ export async function drainOutbox(
   for (const [i, row] of due.entries()) {
     /* المهلةُ **بين** الرسائل لا قبل أولاها: دورةٌ فيها رسالةٌ واحدةٌ لا تنام */
     if (i > 0 && gap > 0) await sleep(gap)
+    if (opts.pace) await opts.pace()
 
     const ics: OutboxIcs | undefined = row.icsContent
       ? {
@@ -187,7 +211,7 @@ export async function drainOutbox(
   }
 
   const remaining = await prisma.outboxMail.count({
-    where: { status: 'queued', attempts: { lt: OUTBOX_MAX_ATTEMPTS } },
+    where: { status: 'queued', attempts: { lt: OUTBOX_MAX_ATTEMPTS }, ...NOT_BULK },
   })
   return { sent, failed, remaining }
 }

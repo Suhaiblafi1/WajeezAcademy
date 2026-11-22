@@ -120,6 +120,8 @@ export async function sendDirectEmail(
     icsContent?: string; icsFilename?: string; icsMethod?: 'REQUEST' | 'CANCEL' | 'PUBLISH'
     /** رابطُ الإلغاء بنقرةٍ واحدة لرأس الرسالة — رسائلُ التسويق وحدَها */
     unsubscribeUrl?: string
+    /** مُرسِلُ الحملات من نطاقه الفرعيّ — وبلاه مُرسِلُ الأكاديميّة (`mail.ts`) */
+    from?: { name: string; email: string }
     /** مرفقاتٌ تُسلَّم كما هي — ملفُّ المتقدّم وسيرتُه حين تُحجز مقابلتُه */
     attachments?: MailAttachment[]
   },

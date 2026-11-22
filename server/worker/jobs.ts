@@ -26,7 +26,8 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { NotificationService, liveChannels, sendableNow } from '../services/notification.service'
 import { AuthService } from '../services/auth.service'
 import { sendVerifyReminderEmail } from '../services/account-mail'
-import { drainOutbox, OUTBOX_GAP_MS, OUTBOX_MAX_ATTEMPTS } from '../services/outbox.service'
+import { drainOutbox, OUTBOX_GAP_MS, OUTBOX_MAX_ATTEMPTS, NOT_BULK } from '../services/outbox.service'
+import { workerMailPacer } from '../services/mail-pacer'
 import { CohortService } from '../services/cohort.service'
 import { TermService } from '../services/term.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
@@ -140,6 +141,8 @@ export async function dispatchQueuedNotifications(
     if (n.channel !== 'in_app') {
       if (mailed && gap > 0) await new Promise<void>((r) => { setTimeout(r, gap) })
       mailed = true
+      /* ودورٌ من مهلة العامل المشتركة — والعاجلُ يسبق البريدَ الجماعيّ فيها (`mail-pacer.ts`، ٢٢ نوفمبر ٢٠٢٦) */
+      await workerMailPacer.acquire('urgent')
     }
     try {
       const out = await notifications.attemptSend(n.id)
@@ -174,8 +177,9 @@ export async function dispatchQueuedNotifications(
 export async function dispatchOutboxMail(prisma: PrismaClient): Promise<JobResult> {
   const started = Date.now()
 
+  /* والحملةُ تُعدّ في بابها لا هنا (`bulk-mail/drain.ts`): عشرون ألفا تنتظر دورَها ليست عطبا في هذا الطابور */
   const waiting = await prisma.outboxMail.count({
-    where: { status: 'queued', attempts: { lt: OUTBOX_MAX_ATTEMPTS } },
+    where: { status: 'queued', attempts: { lt: OUTBOX_MAX_ATTEMPTS }, ...NOT_BULK },
   })
   if (!(await liveChannels(prisma)).includes('email')) {
     return {
@@ -187,7 +191,7 @@ export async function dispatchOutboxMail(prisma: PrismaClient): Promise<JobResul
     }
   }
 
-  const run = await drainOutbox(prisma, { limit: LIMITS.outbox })
+  const run = await drainOutbox(prisma, { limit: LIMITS.outbox, pace: () => workerMailPacer.acquire('urgent') })
   /* والمستنفَدُ يُقال في الخبر: صفٌّ بلغ حدَّ محاولاته لا يُعاد أبدا، فلو لم
      يُذكَر هنا لَبقي إنسانٌ لم يُخبَر ولا أحدَ يعلم. */
   const dead = await prisma.outboxMail.count({ where: { status: 'failed' } })

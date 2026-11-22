@@ -22,7 +22,8 @@ import { publicSiteUrl } from './site-url'
 type Db = PrismaClient | Prisma.TransactionClient
 
 /** رسائلُ التسويق — ما يحمل رابطَ الإلغاء، وما لا يُرسَل لمن ألغى */
-export const MARKETING_PURPOSES = ['grant.reminder', 'grant.extended', 'grant.message'] as const
+/* و`bulk.message` رسالةُ حملةٍ من «البريد الجماعي» (٢٢ نوفمبر ٢٠٢٦، `server/services/bulk-mail/`) */
+export const MARKETING_PURPOSES = ['grant.reminder', 'grant.extended', 'grant.message', 'bulk.message'] as const
 export type MarketingPurpose = (typeof MARKETING_PURPOSES)[number]
 
 export const UNSUBSCRIBE_PAGE = '/unsubscribe'

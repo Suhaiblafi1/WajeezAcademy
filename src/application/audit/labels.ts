@@ -213,6 +213,15 @@ const PHRASES: Record<string, string> = {
   'coupon.grant_notice': 'بريد تغيير المنحة لصاحب كودها',
   'coupon.grant_registrant_removed': 'حذف مدير شخصا من قائمة من عبأ نموذج المنحة',
   'coupon.grant_message': 'رسالة بريد كتبها مدير لمن عبأ نموذج المنحة',
+  /* «البريد الجماعي» — حملاتٌ وقوائم (٢٢ نوفمبر ٢٠٢٦، `server/services/bulk-mail/`) */
+  'bulk_mail.list_upload': 'رفع قائمة بريد',
+  'bulk_mail.list_rename': 'تغيير اسم قائمة بريد',
+  'bulk_mail.list_delete': 'حذف قائمة بريد',
+  'bulk_mail.test': 'تجربة حملة بريد على بريد المرسل',
+  'bulk_mail.send': 'إرسال حملة بريد',
+  'bulk_mail.stop': 'إيقاف حملة بريد',
+  'bulk_mail.finished': 'انتهاء إرسال حملة بريد',
+  'bulk_mail.sender': 'تغيير مرسل حملات البريد',
   /* ومن ردّ «توقف» على واتساب (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
   'contact.whatsapp_stop': 'تسجيل أن صاحب الرقم طلب ألا نراسله على واتساب',
   'contact.whatsapp_resume': 'الرجوع عن طلب ألا نراسله على واتساب',
@@ -603,6 +612,7 @@ const PHRASES: Record<string, string> = {
 /** معجمُ المقاطع — نطاقاتٌ وأشياءٌ وأفعال */
 const WORDS: Record<string, string> = {
   /* نطاقاتٌ وأشياء */
+  mail_list: 'قائمة بريد', mail_campaign: 'حملة بريد', system_setting: 'إعداد',
   admin: 'الإدارة', user: 'حساب', users: 'حسابات', permission: 'صلاحيّة', permissions: 'صلاحيّات',
   roles: 'أدوار', role: 'دور', advisor: 'مستشار', case: 'حالة', commission: 'عمولة',
   request: 'طلب', catalog: 'كتالوج', cohort: 'شعبة', cohorts: 'شعب', session: 'جلسة', sessions: 'جلسات',
