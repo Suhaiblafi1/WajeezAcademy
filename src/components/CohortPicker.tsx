@@ -52,11 +52,11 @@ const VISIBLE_COHORTS = 3;
 /** «شعبتان» و«3 شعب» — عددٌ يُقرأ */
 const cohortsCountAr = (n: number) => (n === 2 ? "شعبتان" : n >= 3 && n <= 10 ? `${n} شعب` : `${n} شعبة`);
 
-/** سطرُ موعدٍ واحد — التاريخ ثمّ بُعده ثمّ أيّامه */
-function When({ c }: { c: CohortOption }) {
+/** سطرُ موعدٍ واحد — التاريخ ثمّ بُعده ثمّ أيّامه. وفي المسار الشخصيّ بلا بُعده («بعد 13 يوما») — انظر `lean` أدناه */
+function When({ c, relative = true }: { c: CohortOption; relative?: boolean }) {
   /* تاريخُ أوّل لقاءٍ بيومه لا تاريخُ البدء — وبلا جدولٍ معتمَدٍ يبقى البدء (`cohort-when.ts`، ٥ نوفمبر ٢٠٢٦) */
   const when = cohortWhen(c);
-  const until = untilLabelAr(when.at);
+  const until = relative ? untilLabelAr(when.at) : null;
   const days = daysLabelAr(c.daysOfWeek);
   return (
     <span className="block min-w-0 text-fine leading-5 text-muted-foreground">
@@ -101,7 +101,11 @@ const seedOfCohortTrainer = (t: CohortTrainer): TrainerSeed => ({
   name: t.name, slug: t.slug ?? null, photoUrl: t.photoUrl, video: t.video ?? null,
 });
 
-function Portrait({ t, onPlay }: { t: CohortTrainer; onPlay: () => void }) {
+/* ═══ وفي المسار الشخصيّ الصورةُ نفسُها بابُ النبذة — بلا سطر «نبذة المدرب» (٢٢ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة لصفحات `/go`: «عبارة نبذة المدرب لا داعي لها، ويكفي أن يضغط على صورة المدرب فتفتح النبذة».
+   فالصورةُ زرٌّ اسمُه لقارئ الشاشة «نبذة المدرب <اسمه>» يفتح البطاقةَ نفسَها — ولمن له فيديو يعمل فيها كما كان —
+   ولمن لا صفحةَ له رابطٌ إلى بطاقته في صفحة الفريق. وما سوى `/go` كما كان (`lean`). */
+function Portrait({ t, onPlay, lean = false, onAbout }: { t: CohortTrainer; onPlay: () => void; lean?: boolean; onAbout?: () => void }) {
   const [failed, setFailed] = useState(false);
   const box = "grid h-20 w-20 place-items-center overflow-hidden rounded-2xl sm:h-24 sm:w-24";
   const ring = hasVideoRing(t);
@@ -127,14 +131,28 @@ function Portrait({ t, onPlay }: { t: CohortTrainer; onPlay: () => void }) {
         مباشر
       </span>
   );
+  const press = "group relative shrink-0 rounded-[1.2rem] pb-2 transition motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal";
+  const aboutAr = `نبذة المدرب ${t.name}`;
+  if (!ring && lean && t.slug && onAbout) {
+    return (
+      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAbout(); }}
+        aria-label={aboutAr} data-photo-about="" className={press}>
+        {frame}{live}
+      </button>
+    );
+  }
+  if (!ring && lean && t.id) {
+    return <Link to={bioHref(t)} aria-label={aboutAr} data-photo-about="" className={`block ${press}`}>{frame}{live}</Link>;
+  }
   if (!ring) return <span className="relative shrink-0 pb-2">{frame}{live}</span>;
   return (
     <button
       type="button"
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPlay(); }}
-      aria-label={`شغل الفيديو التعريفي: ${t.name}`}
+      aria-label={lean ? aboutAr : `شغل الفيديو التعريفي: ${t.name}`}
+      {...(lean ? { "data-photo-about": "" } : {})}
       data-video-ring=""
-      className="group relative shrink-0 rounded-[1.2rem] pb-2 transition motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
+      className={press}
     >
       {frame}
       <span
@@ -150,7 +168,16 @@ function Portrait({ t, onPlay }: { t: CohortTrainer; onPlay: () => void }) {
 }
 
 /** «مدربك» واسمُه كبيرا وبابُ نبذته — بجانب صورته. والنبذةُ بطاقتُه المنبثقة لمن له صفحة، وإلّا بطاقتُه في صفحة الفريق */
-function Lead({ t, onAbout }: { t: CohortTrainer; onAbout: () => void }) {
+function Lead({ t, onAbout, lean = false }: { t: CohortTrainer; onAbout: () => void; lean?: boolean }) {
+  /* وفي `/go` الاسمُ بلا بابٍ مكتوب — الصورةُ بابُه (`Portrait`) */
+  if (lean) {
+    return (
+      <span className="grid min-w-0 content-center gap-0.5">
+        <span className="text-fine font-bold leading-4 text-muted-foreground">مدربك</span>
+        <span className="text-base font-black leading-6 text-foreground">{t.name}</span>
+      </span>
+    );
+  }
   const look = "inline-flex w-fit items-center gap-0.5 text-read font-bold leading-6 text-teal-light-ink underline-offset-4 hover:underline";
   return (
     <span className="grid min-w-0 content-center gap-0.5">
@@ -174,7 +201,7 @@ function Lead({ t, onAbout }: { t: CohortTrainer; onAbout: () => void }) {
 
 /* المدرّبُ جزءٌ من القرار: «أكثر من شعبة لأكثر من مدرّب وتواريخ مختلفة فيختار ما يشاء»
    (صاحب المنصّة، ٨ سبتمبر ٢٠٢٦). ولا يُعرض اسمٌ ولا وجهٌ لم يُعتمَد نشرُه — الخادمُ يرشّح قبل أن يصل. */
-function Trainers({ c }: { c: CohortOption }) {
+function Trainers({ c, lean = false }: { c: CohortOption; lean?: boolean }) {
   if (c.trainerProfiles.length === 0) return null;
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -184,7 +211,7 @@ function Trainers({ c }: { c: CohortOption }) {
             <Face t={t} />
             <span className="min-w-0">
               <span className="block text-sm font-black leading-5 text-foreground group-hover:underline">{t.name}</span>
-              {t.id && (
+              {t.id && !lean && (
                 <span className="flex items-center gap-0.5 whitespace-nowrap text-fine font-bold leading-4 text-teal-light-ink">
                   نبذة المدرب
                   <ChevronLeft className="h-3 w-3" aria-hidden="true" />
@@ -235,10 +262,10 @@ function titleOfCourse(courseId: string): string | null {
 }
 
 /** «تفاصيل الشعبة»: نبذةُ خطّتها ولقاءاتُها — مطويّةٌ حتّى يفتحها */
-function CohortMore({ c, compact }: { c: CohortOption; compact: boolean }) {
+function CohortMore({ c, compact, lean = false }: { c: CohortOption; compact: boolean; lean?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-3 border-t border-white/10 pt-2">
+    <div className={`border-t border-white/10 ${lean ? "mt-2 pt-1.5" : "mt-3 pt-2"}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -270,6 +297,7 @@ export default function CohortPicker({
   running = false,
   others,
   hintOneLine = false,
+  lean = false,
 }: {
   cohorts: CohortOption[];
   selectedId: string | null;
@@ -283,6 +311,8 @@ export default function CohortPicker({
   others?: readonly TimedCohort[];
   /** كيف يختار بين الشعب في سطرٍ واحد لا ثلاثة — للمسار الشخصيّ ‎/go (`COHORT_CHOICE_ONE_LINE_AR`) */
   hintOneLine?: boolean;
+  /** نسخةُ المسار الشخصيّ ‎/go الأبسط (٢٢ نوفمبر ٢٠٢٦): الصورةُ بابُ النبذة، والموعدُ بلا «بعد N يوما» */
+  lean?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
   /* بطاقةُ مدرّب الشعبة المنبثقة — من صورته (والفيديو يعمل) أو من «نبذة المدرب» */
@@ -375,11 +405,12 @@ export default function CohortPicker({
                     كبيرةٌ واسمُه بجانبها (`Portrait`)، وأكثرُ من واحدٍ وجوهٌ أصغرُ جنبا إلى جنب */}
                 {c.trainerProfiles.length === 1 ? (
                   <span className="mb-1 flex min-w-0 items-center gap-3 sm:gap-4">
-                    <Portrait t={c.trainerProfiles[0]} onPlay={() => setQuick({ t: c.trainerProfiles[0]!, play: true })} />
-                    <Lead t={c.trainerProfiles[0]} onAbout={() => setQuick({ t: c.trainerProfiles[0]!, play: false })} />
+                    <Portrait t={c.trainerProfiles[0]} lean={lean} onPlay={() => setQuick({ t: c.trainerProfiles[0]!, play: true })}
+                      onAbout={() => setQuick({ t: c.trainerProfiles[0]!, play: false })} />
+                    <Lead t={c.trainerProfiles[0]} lean={lean} onAbout={() => setQuick({ t: c.trainerProfiles[0]!, play: false })} />
                   </span>
-                ) : <Trainers c={c} />}
-                <When c={c} />
+                ) : <Trainers c={c} lean={lean} />}
+                <When c={c} relative={!lean} />
                 {/* تحت الموعد لا بجانب الاسم — على الهاتف كانت تقصّ اسمَ المدرّب */}
                 <Seats c={c} />
                 {clashesOf(timed(c), busy).slice(0, 2).map((x) => (
@@ -432,7 +463,7 @@ export default function CohortPicker({
               {/* ═══ وتفاصيلُ كلِّ شعبةٍ مطويّةٌ يفتحها إن أراد (٨ نوفمبر ٢٠٢٦) ═══
                   «أخفِ تفاصيلَ الشعب لأنّها منسدلة، يفتحها إن أراد، فلا تفتح واحدةٌ تلقائيا». وكانت نبذةُ المختارة ولقاءاتُها
                   تظهر وحدَها مفتوحة. فلكلّ شعبةٍ زرُّها — والزرُّ خارجَ لصيقة الاختيار، فيفتح ولا يختار */}
-              {(c.summaryAr || c.sessions.length > 0) && <CohortMore key={c.id} c={c} compact={compact} />}
+              {(c.summaryAr || c.sessions.length > 0) && <CohortMore key={c.id} c={c} compact={compact} lean={lean} />}
             </Inset>
           );
         })}

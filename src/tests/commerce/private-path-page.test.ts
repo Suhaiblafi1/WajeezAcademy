@@ -168,7 +168,7 @@ describe('تفاصيل الدورة زر ظاهر قبل الشعب (٨ نوفم
     const at = (re: RegExp) => JOURNEY.search(re)
     const toggle = at(/data-testid="course-details-toggle"/)
     expect(toggle).toBeGreaterThan(-1)
-    expect(JOURNEY).toMatch(/data-testid="course-details-toggle"[\s\S]*?>تفاصيل الدورة<[\s\S]*?إخفاء التفاصيل[\s\S]*?<ChevronDown className="h-5 w-5/)
+    expect(JOURNEY).toMatch(/data-testid="course-details-toggle"[\s\S]*?>تفاصيل الدورة<[\s\S]*?إخفاء التفاصيل[\s\S]*?<ChevronDown className=[^\n]*"h-5 w-5/)
     /* «تفاصيل الدورة» بلا «كل» (٨ نوفمبر ٢٠٢٦) */
     expect(JOURNEY, 'عادت «كل تفاصيل الدورة»').not.toMatch(/>كل تفاصيل الدورة</)
     const content = at(/<CollapsibleContent className="overflow-hidden/)
@@ -266,7 +266,7 @@ describe('الشعب: لا يكرر اسم الدورة، وتفاصيلها م�
   })
   it('⚠️ تفاصيل كل شعبة مطوية بزرها — لا تفتح واحدة تلقائيا', () => {
     expect(picker).toMatch(/function CohortMore[\s\S]*?useState\(false\)[\s\S]*?data-testid="cohort-details-toggle"[\s\S]*?"تفاصيل الشعبة"/)
-    expect(picker).toMatch(/\(c\.summaryAr \|\| c\.sessions\.length > 0\) && <CohortMore key=\{c\.id\} c=\{c\} compact=\{compact\} \/>/)
+    expect(picker).toMatch(/\(c\.summaryAr \|\| c\.sessions\.length > 0\) && <CohortMore key=\{c\.id\} c=\{c\} compact=\{compact\}(?: lean=\{lean\})? \/>/)
     expect(picker, 'عادت تفاصيل المختارة مفتوحة').not.toMatch(/\{on && \(selected\.summaryAr/)
   })
 })
