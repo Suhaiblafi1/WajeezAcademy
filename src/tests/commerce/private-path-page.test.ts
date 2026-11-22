@@ -28,7 +28,7 @@ describe('صفحة المسار الخاص', () => {
     expect(PAGE).toMatch(/onClick=\{ready \? buy : \(\) => document\.getElementById\("buy"\)/)
     expect(PAGE.match(/<BuyPanel\b/g)?.length, 'لوح دفع ثان').toBe(1)
     /* بدوراتها كما هي الآن — بعد الاستبدال إن كان — وبشعبها المختارة */
-    expect(PAGE).toMatch(/<BuyPanel[\s\S]*?initialCoupon=\{v\.couponCode \?\? ""\}[\s\S]*?lines=\{\[\s*\.\.\.courseIds\.map\(\(id\) => \(\{ courseId: id, name: titleOf\(id\), cohortId: picked\[id\] \}\)\),/)
+    expect(PAGE).toMatch(/<BuyPanel[\s\S]*?initialCoupon=\{v\.couponCode \?\? ""\}[\s\S]*?lines=\{\[\s*\.\.\.buyIds\.map\(\(id\) => \(\{ courseId: id, name: titleOf\(id\), cohortId: picked\[id\] \}\)\),/)
     /* والدورةُ المجانيّةُ بندٌ إن تحقّق شرطُها وحدَه (٨ نوفمبر ٢٠٢٦) */
     expect(PAGE).toMatch(/\.\.\.\(giftOn && gift && giftChosen \? \[\{ courseId: gift\.courseId, [^\]]*cohortId: giftChosen\.id \}\] : \[\]\)/)
     expect(PAGE, 'لا ينسب الطلب إلى مولد الرابط').toMatch(/rememberBuyLink\(r\.buyLinkToken\)/)
@@ -42,7 +42,8 @@ describe('صفحة المسار الخاص', () => {
     expect(PAGE).toMatch(/swapOnly: true,[\s\S]*?maxReached: true,/)
     expect(PAGE, 'بدائل دورات لا تشترى هذا الموسم').not.toMatch(/\bunavailable,\n/)
     /* والمسارُ من الخادم وحدَه — من الطلب المبكر، وما خاب منه عاديّا */
-    expect(PAGE).toMatch(/const path = `\/api\/public\/go\/\$\{code\}`;/)
+    /* والمسارُ العامّ (`/go/BF80`، ٢٢ نوفمبر ٢٠٢٦) بحسابه من نداء المتعلّم */
+    expect(PAGE).toMatch(/const path = asLearner \? `\/api\/learner\/go\/\$\{code\}` : `\/api\/public\/go\/\$\{code\}`;/)
     expect(PAGE).toMatch(/takeEarly\(path\)/)
     expect(PAGE).toMatch(/apiGet<[^>]+>\(path\)/)
   })

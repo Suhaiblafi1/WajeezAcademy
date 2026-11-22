@@ -10,6 +10,7 @@ import { BuyLinkService, type BuyLinkTarget } from '../../services/buy-link.serv
 import { PrivatePathService } from '../../services/private-path.service'
 import { AuthError } from '../../services/auth.service'
 import { CodeAttemptGuard } from '../../services/commerce/code-attempts'
+import { publicPathOf } from '../../../src/application/commerce/private-path'
 
 const COURSE = z.string().trim().regex(/^[A-Za-z0-9_-]{1,80}$/)
 const INPUT = z.object({
@@ -40,6 +41,9 @@ export function registerBuyLinkRoutes(app: FastifyInstance, prisma: PrismaClient
     const { code } = z.object({ code: z.string().trim().max(40) }).parse(req.params)
     const key = req.ip
     const upper = code.toUpperCase()
+    /* والمسارُ العامّ (`/go/BF80`، ٢٢ نوفمبر ٢٠٢٦) ليس سرّا: لا يمرّ بحارس الرموز، وبلا حسابٍ بلا اسمٍ ولا سعرٍ ولا كود */
+    const pub = publicPathOf(upper)
+    if (pub) return paths.publicView(pub, null)
     if (!guesses.allows(key, upper)) {
       return reply.status(429).send({ error: { code: 'too_many_codes', message_ar: 'جربت روابط كثيرة. أعد المحاولة بعد ساعة.' } })
     }
@@ -49,6 +53,17 @@ export function registerBuyLinkRoutes(app: FastifyInstance, prisma: PrismaClient
       if (e instanceof AuthError && e.code === 'not_found') guesses.reject(key, upper)
       throw e
     }
+  })
+  /* وبحسابه: المسارُ العامّ باسمه وكودِ منحته — يُعطاه فورا إن لم يكن له (`publicPathCode`، «Give code instantly») */
+  app.get('/api/learner/go/:code', {
+    preHandler: requireAuth,
+    config: { rateLimit: { max: 60, timeWindow: '10 minutes' } },
+    schema: { tags: ['commerce'], summary: 'المسار العام باسم صاحب الحساب وكود منحته — يعطى الكود فورا إن لم يكن له' },
+  }, async (req) => {
+    const { code } = z.object({ code: z.string().trim().max(40) }).parse(req.params)
+    const pub = publicPathOf(code)
+    if (!pub) throw new AuthError('not_found', 'هذا الرابط غير صحيح.', 404)
+    return paths.publicView(pub, req.auth!.userId)
   })
   const actor = (req: { auth: { userId: string; roles: string[] } | null }) => ({ userId: req.auth!.userId, roles: req.auth!.roles })
   const norm = (b: z.infer<typeof INPUT>) => ({ ...b, adds: b.adds?.map((a) => ({ courseId: a.courseId, cohortId: a.cohortId ?? null })) })
