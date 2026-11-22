@@ -30,6 +30,8 @@
    ٢ب) **ولكلّ مؤثّرٍ خصمُه** — قرارُه (١٥ نوفمبر ٢٠٢٦): «وقيمة الخصم للمؤثر كلا على حدا». فارغٌ يأخذ متابعُه نسبةَ الحملة،
       ومكتوبٌ يأخذ خصمَه — في منحة المؤثّرين و«بلاك فرايدي وجيز» معا. ويُكتب في كوبون كلّ كودٍ يومَ يُعطى كالعمولة، فتغييرُه
       يقع على ما بعده (`grant.service.ts#issue`)، وبأثرٍ يسمّي من غيّره (`influencer.discount.set`).
+      **إلّا أنّ رفعَه يرفع أكوادَ متابعيه القائمة** — قرارُه (٢٢ نوفمبر ٢٠٢٦): «Raise to 65%». فما لم يُستعمل كلُّه منها يرتفع
+      إلى خصمه الجديد، وخفضُه يقع على ما بعده وحدَه (`raiseInfluencerCodes`).
    ٣) **وعمولتُه تُكتب في كود المنحة يومَ يُعطى** (`grant.service.ts#issue`) — فتغييرُها يقع على ما بعده، كنسبة المنحة.
    ٤) **والعمولةُ تُحسب من الطلب لا تُقيَّد بيد**: نسبتُها من سعر الدورات قبل المنحة (`subtotal`)، على كلّ طلبٍ
       دُفع بكود منحةٍ جاء بكوده — ولو أهداه صاحبُه لغيره، فالمؤثّرُ هو من جاء بالكود أصلا. وما رُدّ من الثمن ينقص
@@ -46,10 +48,10 @@
    والحارس: `server/tests/commerce/influencer-grant.test.ts`. */
 
 import { randomBytes } from 'node:crypto'
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
-import { GrantService } from './grant.service'
+import { GRANT_HOLDS, GrantService } from './grant.service'
 import { pageCourses } from './grant-scope.service'
 import { inviteLink, sendStaffInviteEmail } from './account-mail'
 import { renderMail, type MailBlock } from './mail-template'
@@ -306,7 +308,7 @@ export class InfluencerService {
       if (!code) throw new AuthError('bad_code', INFLUENCER_CODE_FORMAT_AR, 400)
     }
     /* والكودُ تحت قفل الأكواد: يُفحص أنّه ليس لغيره، وينتقل القديمُ إلى السابقة، ويخرج الجديدُ منها إن كان له قبلُ */
-    const { before, after } = await this.prisma.$transaction(async (tx) => {
+    const { before, after, raised } = await this.prisma.$transaction(async (tx) => {
       if (code) await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${CODE_LOCK}))`
       const before = await tx.influencer.findUniqueOrThrow({ where: { id } })
       let codeData: { code?: string; formerCodes?: string[] } = {}
@@ -315,7 +317,11 @@ export class InfluencerService {
         codeData = { code, formerCodes: [...new Set([...before.formerCodes.filter((c) => c !== code), before.code])] }
       }
       const after = await tx.influencer.update({ where: { id }, data: { ...data, ...codeData } })
-      return { before, after }
+      /* وخصمٌ أعلى يرفع أكوادَ متابعيه القائمة معه — في المعاملة نفسِها (٢٢ نوفمبر ٢٠٢٦، `raiseInfluencerCodes`) */
+      const raised = after.percentOff !== before.percentOff
+        ? (await raiseInfluencerCodes(tx, id, actorId)).reduce((s, r) => s + r.raised, 0)
+        : 0
+      return { before, after, raised }
     })
     const pick = (x: typeof before) => ({ nameAr: x.nameAr, commissionPercent: x.commissionPercent, active: x.active, phone: x.phone })
     if (JSON.stringify(pick(before)) !== JSON.stringify(pick(after))) {
@@ -352,7 +358,9 @@ export class InfluencerService {
       ...(after.percentOff !== before.percentOff
         ? [after.percentOff === null
             ? 'صار خصم متابعيك نسبة المنحة نفسها، على من يأخذ كود المنحة بكودك من اليوم.'
-            : `صار خصم متابعيك ${after.percentOff}%، على من يأخذ كود المنحة بكودك من اليوم. ومن أخذه قبل ذلك يبقى خصمه كما هو.`]
+            : raised > 0
+              ? `صار خصم متابعيك ${after.percentOff}%، لمن يأخذ كود المنحة بكودك من اليوم ولمن أخذه قبل ذلك بخصم أقل.`
+              : `صار خصم متابعيك ${after.percentOff}%، على من يأخذ كود المنحة بكودك من اليوم. ومن أخذه قبل ذلك يبقى خصمه كما هو.`]
         : []),
       ...(after.active !== before.active
         ? [after.active
@@ -720,4 +728,83 @@ export async function applySuhaibLaunch(prisma: PrismaClient): Promise<string | 
   })
   if ((had.user?.email ?? '').toLowerCase() !== s.email) await service.attachAccount(had.id, s.email, null)
   return had.id
+}
+
+/* ═══ ورفعُ خصمه يرفع أكوادَ متابعيه القائمة — ولا يخفضها (٢٢ نوفمبر ٢٠٢٦) ═══
+
+   رفع صاحبُ المنصّة خصمَ كاسيت من 40% إلى 65%، فرأى الزائرُ الجديدُ 65% وبقي من أخذ كودَه قبلُ على 40%: كان خصمُ المؤثّر
+   يُكتب في كوبون كلّ كودٍ يومَ يُعطى، فتغييرُه يقع على ما بعده وحدَه (②ب). فسُئل، واختار **«Raise to 65%»**: كلُّ كودٍ قائمٍ لم
+   يُستعمل كلُّه يرتفع إلى خصمه الساري، وصفحتُه تقوله (`myPercentOff` في `grant-landing.service.ts#view`).
+   · **في منحة المؤثّرين وحدَها** (`INFLUENCER_GRANT_SLUGS`) — كودُ بلاك فرايدي الذي نُسب إليه بقناته (`?ch=`) يتبع نسبتَها هي.
+   · **رفعا لا خفضا** — خصمٌ أقلُّ يقع على ما يُعطى بعده كما كان، فلا ينقص من أحدٍ ما قيل له.
+   · **وما استُعمل كلُّه لا يُمسّ** (`coursesLeft`)، وما دُفع لا يتغيّر: الكوبونُ يسعّر ما يُشترى به بعدُ، والطلبُ يحفظ سعرَه.
+     والعمولةُ كما هي: نسبتُها في الكود يومَ أُعطي، ومن سعر الدورات قبل المنحة.
+   · **في معاملة الحفظ نفسِها** (`update`)، بأثرٍ يقول كم كودا ومن أيّ نسبةٍ إلى أيّ (`influencer.codes.raise`).
+   ويلحق العاملُ مرّةً ما وقع قبل هذا (`applyInfluencerCodesCatchUp`): كاسيت على 65% وأكوادُها القديمةُ على 40%. */
+export const INFLUENCER_CODES_RAISE_REASON = 'قرار صاحب المنصة (22 نوفمبر 2026): رفع خصم المؤثر يرفع أكواد متابعيه القائمة'
+export const INFLUENCER_CODES_CATCHUP_REASON = 'قرار صاحب المنصة (22 نوفمبر 2026): أكواد المؤثرين القائمة ترتفع إلى خصمهم الساري، مرة واحدة'
+
+type Tx = Prisma.TransactionClient
+
+/** يرفع كوبوناتِ أكواد متابعيه في منحة المؤثّرين إلى خصمه الساري — وما فوقه أو استُعمل كلُّه يبقى. ويكتب أثرَه إن رفع شيئا */
+export async function raiseInfluencerCodes(
+  tx: Tx, influencerId: string, actorId: string | null, reason = INFLUENCER_CODES_RAISE_REASON,
+): Promise<{ raised: number; from: number[]; to: number }[]> {
+  const inf = await tx.influencer.findUnique({ where: { id: influencerId }, select: { percentOff: true } })
+  if (!inf) return []
+  const campaigns = await tx.grantCampaign.findMany({
+    where: { slug: { in: [...INFLUENCER_GRANT_SLUGS] } }, select: { id: true, slug: true, percentOff: true, maxCourses: true },
+  })
+  const out: { raised: number; from: number[]; to: number }[] = []
+  for (const c of campaigns) {
+    const to = influencerPercentOff(c.percentOff, inf.percentOff)
+    const below = await tx.coupon.findMany({
+      where: { grantCode: { influencerId, campaignId: c.id }, OR: [{ percentOff: { lt: to } }, { percentOff: null }] },
+      select: { id: true, percentOff: true },
+    })
+    if (below.length === 0) continue
+    /* ما استُعمل كلُّه: دوراتُه بثمنٍ في طلباتٍ محجوزةٍ أو مدفوعةٍ بلغت حدَّ الحملة — كـ`coursesLeft` */
+    const orders = await tx.order.findMany({
+      where: { couponId: { in: below.map((b) => b.id) }, status: { in: GRANT_HOLDS } },
+      select: { couponId: true, _count: { select: { items: { where: { unitPrice: { gt: 0 } } } } } },
+    })
+    const used = new Map<string, number>()
+    for (const o of orders) if (o.couponId) used.set(o.couponId, (used.get(o.couponId) ?? 0) + o._count.items)
+    const open = below.filter((b) => (used.get(b.id) ?? 0) < c.maxCourses)
+    if (open.length === 0) continue
+    const raised = await tx.coupon.updateMany({
+      where: { id: { in: open.map((b) => b.id) }, OR: [{ percentOff: { lt: to } }, { percentOff: null }] }, data: { percentOff: to },
+    })
+    const from = [...new Set(open.map((b) => b.percentOff ?? 0))].sort((a, b) => a - b)
+    await recordAudit(tx, {
+      actorId, action: 'influencer.codes.raise', entityType: 'influencer', entityId: influencerId, reason,
+      before: { percentOff: from }, after: { percentOff: to }, meta: { campaign: c.slug, raised: raised.count, from, to },
+    })
+    out.push({ raised: raised.count, from, to })
+  }
+  return out
+}
+
+/** يلحق مرّةً ما سبق القرار: كلُّ مؤثّرٍ خصمُه الساري فوق بعض أكواده القائمة ترتفع أكوادُه إليه — بأثرٍ لكلٍّ منهم،
+    وبأثرٍ على الحملة يقول إنّه جرى، فلا يجري ثانية (ولا يصير مزامنةً لكلّ تغييرٍ في نسبة الحملة بعده) */
+export async function applyInfluencerCodesCatchUp(prisma: PrismaClient): Promise<{ influencers: number; raised: number } | null> {
+  const campaign = await prisma.grantCampaign.findUnique({ where: { slug: INFLUENCER_GRANT_SLUG }, select: { id: true } })
+  if (!campaign) return null
+  const done = await prisma.auditEvent.count({ where: { action: 'influencer.codes.raise', actorId: null, reason: INFLUENCER_CODES_CATCHUP_REASON } })
+  if (done > 0) return null
+  return prisma.$transaction(async (tx) => {
+    const all = await tx.influencer.findMany({ select: { id: true } })
+    let influencers = 0
+    let raised = 0
+    for (const inf of all) {
+      const r = await raiseInfluencerCodes(tx, inf.id, null, INFLUENCER_CODES_CATCHUP_REASON)
+      const n = r.reduce((s, x) => s + x.raised, 0)
+      if (n > 0) { influencers += 1; raised += n }
+    }
+    await recordAudit(tx, {
+      actorId: null, action: 'influencer.codes.raise', entityType: 'grant_campaign', entityId: campaign.id,
+      reason: INFLUENCER_CODES_CATCHUP_REASON, meta: { influencers, raised },
+    })
+    return { influencers, raised }
+  })
 }

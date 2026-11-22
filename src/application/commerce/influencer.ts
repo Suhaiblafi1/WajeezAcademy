@@ -48,7 +48,8 @@ export const influencerLink = (siteUrl: string, code: string, slug: GrantSlug = 
     : `${siteUrl}${influencerGrantPath(slug)}/${encodeURIComponent(code)}`
 
 /** ما يأخذه متابعُه: خصمُه هو إن كُتب له، وإلّا نسبةُ الحملة — قرارُ صاحب المنصّة (١٥ نوفمبر ٢٠٢٦): «قيمة الخصم للمؤثر
-    كلا على حدا». ويُكتب في كوبون كلّ كودٍ يومَ يُعطى، فتغييرُه يقع على ما بعده كالعمولة (`grant.service.ts#issue`) */
+    كلا على حدا». ويُكتب في كوبون كلّ كودٍ يومَ يُعطى، فخفضُه يقع على ما بعده كالعمولة (`grant.service.ts#issue`) — ورفعُه
+    يرفع أكوادَ متابعيه القائمة معه (٢٢ نوفمبر ٢٠٢٦: «Raise to 65%»، `influencer.service.ts#raiseInfluencerCodes`) */
 export const influencerPercentOff = (campaignPercent: number, own: number | null | undefined): number => own ?? campaignPercent
 
 /* ═══ وآخرُ يومٍ لمنحة متابعيه — كلٌّ على حدة (١٧ نوفمبر ٢٠٢٦) ═══
