@@ -7,7 +7,10 @@
    ② **وبحسابٍ لا كودَ له**: يُعطى كودَ بلاك فرايدي بنسبتها (80%) فورا، بأثره، وباسمه — والثلاثُ مسعّرةٌ به.
    ③ **ومن له كودُها يأخذه نفسَه** — ولا يُعطى ثانيا.
    ④ **والحملةُ المغلقة**: لا كود، ويُقال «المنحة مغلقة الآن».
-   ⑤ **ومن اشترى بمنحةٍ غيرِها** لا يُعطى كودَها — منحةٌ واحدةٌ لكلّ متعلّم. */
+   ⑤ **ومن اشترى بمنحةٍ غيرِها** لا يُعطى كودَها — منحةٌ واحدةٌ لكلّ متعلّم.
+   ⑥ **و«أضف دورة» من دورات بلاك فرايدي وحدَها** — قرارُ صاحب المنصّة (٢٢ نوفمبر ٢٠٢٦): «اسمح لهم بإضافة دورات، لكن من
+      الدورات الباقية في منحة بلاك فرايدي فقط». فجوابُ المتعلّم يحمل قائمةَ صفحة الحملة (`grantCourseIds`) وما بقي على كوده
+      ناقصا الثلاث (`coursesLeft`) بلا حدٍّ عند الصفر — ومن اشترى بكوده قبلُ نقص ما بقي له. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FastifyInstance } from 'fastify'
@@ -17,6 +20,7 @@ import { approvedPlanBy } from '../helpers/approved-trainer'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
+import { pageCourses } from '../../services/grant-scope.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, OPEN_GRANT_SLUG, grantClosesAt } from '../../../src/application/commerce/grant'
@@ -28,6 +32,7 @@ let auth: AuthService
 let bf: GrantService
 let app: FastifyInstance
 let ownerId = ''
+let profileId = ''
 let seq = 0
 
 async function learner(name = 'ليلى سامي الحسن') {
@@ -48,7 +53,7 @@ beforeAll(async () => {
   /* مدرّبٌ منشور يقود الشعب الثلاث — فتظهر في صفحة الحملة (`GrantCoursesService.pool`) */
   const tu = await prisma.user.create({ data: { email: `pub-tr-${STAMP}@wajeez.test`, displayName: 'مدرب المسار', passwordHash: 'x' } })
   const ta = await prisma.trainerApplication.create({ data: { reference: `WJ-TR-PUB-${STAMP}`, fullName: 'مدرب المسار', email: tu.email, status: 'active' } })
-  const profileId = (await prisma.trainerProfile.create({
+  profileId = (await prisma.trainerProfile.create({
     data: { userId: tu.id, applicationId: ta.id, publicVisibility: true, isVerified: true, publishApprovedAt: new Date() },
   })).id
   for (const courseId of THREE) {
@@ -100,8 +105,6 @@ describe('② بحساب لا كود له', () => {
     expect(v.courses.map((c: { courseId: string }) => c.courseId)).toEqual(THREE)
     expect(v.price.grantPct).toBe(80)
     expect(v.price.total).toBeCloseTo(v.price.before * 0.2, 2)
-    /* ولا استبدال ولا إضافة — قرار صاحب المنصة */
-    expect([v.coursesLeft, v.grantCourseIds]).toEqual([null, null])
   })
 
   it('⚠️ ونقرتان معا كود واحد', async () => {
@@ -150,6 +153,58 @@ describe('④ الحملة المغلقة', () => {
       expect(v.couponCode).toBeNull()
       expect(v.publicPath.noteAr).toBe(GRANT_CLOSED_AR)
       expect(await prisma.lead.count({ where: { email: l.email } })).toBe(0)
+    } finally {
+      await bfOpen()
+    }
+  })
+})
+
+describe('⑥ «أضف دورة» من دورات بلاك فرايدي وحدها', () => {
+  const bfList = async () => [...new Set((await pageCourses(prisma, BLACK_FRIDAY_GRANT_SLUG, null)).courses.map((c) => c.courseId))]
+
+  it('⚠️ قائمة صفحة الحملة نفسها — وكود لأربع ناقصا الثلاث: 1', async () => {
+    const l = await learner()
+    const v = (await get('/api/learner/go/BF80', l.cookie)).json()
+    expect(v.couponCode).toMatch(/^WG-/)
+    const list = await bfList()
+    expect(list.length).toBeGreaterThan(0)
+    expect(v.grantCourseIds).toEqual(list)
+    expect(v.coursesLeft).toBe(1)
+  })
+
+  it('⚠️ ومن اشترى بكوده دورتين قبل: −1 — لا حد عند الصفر، فإن أزال واحدة من الثلاث أضاف واحدة', async () => {
+    const l = await learner()
+    const first = (await get('/api/learner/go/BF80', l.cookie)).json()
+    /* دورتان من خارج المسار بكوده — بشعبتين مفتوحتين لهما */
+    const outside = await prisma.course.findMany({ where: { id: { notIn: THREE } }, select: { id: true }, orderBy: { id: 'asc' }, take: 2 })
+    expect(outside).toHaveLength(2)
+    const extra: string[] = []
+    for (const { id: courseId } of outside) {
+      const c = await prisma.cohort.create({
+        data: {
+          plans: { create: approvedPlanBy(profileId) }, courseId, title: `شعبة خارج المسار ${courseId}`,
+          status: 'open', registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 20,
+          startsAt: new Date(Date.now() + 30 * 86_400_000),
+        } as never,
+      })
+      await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId, role: 'lead', assignedBy: ownerId } })
+      extra.push(c.id)
+    }
+    const commerce = new CommerceService(prisma)
+    const out = await commerce.checkout(l.userId, extra, first.couponCode)
+    await commerce.payOrder(out.orderId, l.userId, `pub-left-${out.orderId}`)
+    const v = (await get('/api/learner/go/BF80', l.cookie)).json()
+    expect(v.couponCode).toBe(first.couponCode)
+    expect(v.coursesLeft).toBe(-1)
+    expect(v.grantCourseIds).toEqual(await bfList())
+  })
+
+  it('⚠️ وبلا كود (الحملة مغلقة) لا إضافة', async () => {
+    await bfOpen(false)
+    try {
+      const l = await learner()
+      const v = (await get('/api/learner/go/BF80', l.cookie)).json()
+      expect([v.coursesLeft, v.grantCourseIds]).toEqual([null, null])
     } finally {
       await bfOpen()
     }
