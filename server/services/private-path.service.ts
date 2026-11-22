@@ -142,8 +142,12 @@ export class PrivatePathService {
   /* ═══ «مسارٌ عامّ» `/go/BF80` (٢٢ نوفمبر ٢٠٢٦) ═══
      القاعدةُ في `src/application/commerce/private-path.ts` (`PUBLIC_PATHS`). وهنا:
      · **بلا حساب**: دوراتُه بشعبها من صفحة حملته (`pageCourses`) — بلا اسمٍ ولا سعرٍ ولا كود، و«سجل دخولك» (`signIn`).
-     · **وبحسابه**: باسمه وكودِ منحته (`publicPathCode`)، والسعرُ من المعاينة نفسِها بكوده. ولا استبدالَ ولا إضافة
-       (`coursesLeft` و`grantCourseIds` فارغان) — يختار من الثلاث ما يشتريه، ويُعاد السعرُ من الخادم.
+     · **وبحسابه**: باسمه وكودِ منحته (`publicPathCode`)، والسعرُ من المعاينة نفسِها بكوده. ولا استبدال — يختار من الثلاث
+       ما يشتريه، ويُعاد السعرُ من الخادم.
+     · **و«أضف دورة» من دورات المنحة وحدَها** — قرارُ صاحب المنصّة (٢٢ نوفمبر ٢٠٢٦): «اسمح لهم بإضافة دورات، لكن من الدورات
+       الباقية في منحة بلاك فرايدي فقط». فـ`grantCourseIds` قائمةُ صفحة حملة المسار (`def.campaign`) أيًّا كان كودُه،
+       و`coursesLeft` ما بقي على كوده ناقصا دوراتِ المسار **بلا حدٍّ عند الصفر**: فمن بقي على كوده دورتان يرى −1، فإن أزال
+       واحدةً من الثلاث أضاف واحدة (`publicPathAddsLeft`). وبلا كود منحةٍ كلاهما `null`: لا إضافة.
      · والكودُ يبقى في الجواب ولو لم يسع الثلاثَ معا (بقي عليه أقلّ): يُقال السببُ (`priceProblemAr`)، فيُنقص ما اختاره
        ويُعاد السعرُ بالكود نفسِه — لا يُسقط الكودُ فيُعرض السعرُ كاملا بلا سبب. */
   async publicView(def: PublicPathDef, userId: string | null, now = new Date()): Promise<PrivatePathView> {
@@ -172,9 +176,12 @@ export class PrivatePathService {
     const got = await publicPathCode(this.prisma, def.campaign as CampaignSlug, userId, now)
     const out = await this.render(def.code, {
       courses, code: got.code, firstName: firstNameAr(account?.displayName), learnerKey: `user:${userId}`, token: '',
-    }, { keepCode: true })
+    }, { keepCode: true, belowZero: true })
+    const grantCourseIds = out.coursesLeft === null
+      ? null
+      : [...new Set((await pageCourses(this.prisma, def.campaign as CampaignSlug, null, now)).courses.map((c) => c.courseId))]
     return {
-      ...out, unavailable: [...out.unavailable, ...unavailable], coursesLeft: null, grantCourseIds: null,
+      ...out, unavailable: [...out.unavailable, ...unavailable], grantCourseIds,
       publicPath: meta(false, got.noteAr),
     }
   }
@@ -183,7 +190,8 @@ export class PrivatePathService {
   private async render(
     code: string,
     p: Pick<PrivatePathPayload, 'courses' | 'code' | 'firstName' | 'learnerKey' | 'token' | 'gift'>,
-    opts: { priced?: boolean; keepCode?: boolean } = {},
+    /** `belowZero`: ما بقي على الكود ناقصا دوراتِ المسار بلا حدٍّ عند الصفر — للمسار العامّ (`publicPathAddsLeft`) */
+    opts: { priced?: boolean; keepCode?: boolean; belowZero?: boolean } = {},
   ): Promise<PrivatePathView> {
     const cohortIds = p.courses.map((c) => c.cohortId)
     const cohorts = await this.prisma.cohort.findMany({
@@ -249,7 +257,8 @@ export class PrivatePathService {
          بكوده دورةً في مكانٍ آخر نقص ما يضيفه هنا. وكوبونٌ ليس كودَ منحةٍ لا حدَّ له يُقال، فلا يُضاف به */
       if (coupon?.grantCode) {
         const left = await new GrantService(this.prisma).coursesLeft(coupon)
-        coursesLeft = Math.max(0, left - courses.length)
+        /* وفي المسار العامّ بلا حدٍّ عند الصفر: يُزال من دوراته ما يفسح لغيرها */
+        coursesLeft = opts.belowZero ? left - courses.length : Math.max(0, left - courses.length)
         /* ═══ والبدائلُ من دورات صفحة منحته وحدَها (٢١ نوفمبر ٢٠٢٦، «Only Black Friday courses») ═══
            قرارُ صاحب المنصّة: ما يُستبدل به أو يُضاف في مسارٍ على كود حملةٍ هو ما تعرضه صفحةُ تلك الحملة — بقائمة المدير
            لها ولمؤثّرها (`pageCourses`)، لا كلُّ ما يُشترى. ودوراتُ المسار نفسُها تبقى ولو لم تكن فيها. والدفعُ لا يتغيّر */

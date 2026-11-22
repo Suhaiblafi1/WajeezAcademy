@@ -22,6 +22,10 @@
      منحةٍ لا إضافة: لم يُطلب أن يضيف بسعرها الكامل.
    · **والبدائلُ والإضافةُ من دورات صفحة المنحة وحدَها** — قرارُه (٢١ نوفمبر ٢٠٢٦، «Only Black Friday courses»): قائمةُ حملة
      الكود من الخادم (`grantCourseIds` ← `pathCandidatesWithin`)، وبلا كود منحةٍ كلُّ ما يُشترى. ودوراتُ المسار تبقى ولو لم تكن فيها.
+   · **والمسارُ العامّ (`/go/BF80`) بلا استبدال، و«أضف دورة» فيه من دورات بلاك فرايدي وحدَها** — قرارُ صاحب المنصّة (٢٢ نوفمبر
+     ٢٠٢٦): «اسمح لهم بإضافة دورات، لكن من الدورات الباقية في منحة بلاك فرايدي فقط». يختار من الثلاث ما شاء (واحدةً على الأقلّ)،
+     ويضيف ما يسعه كودُه بعد ما اختار (`publicPathAddsLeft`)، والمرشّحون من قائمة الحملة خارجَ الثلاث (`publicPathCandidates`)،
+     وما أضافه يُحذف من صندوق الاختيار. والدفعُ بما اختاره وما أضافه (`publicPathBuyIds`).
    · ولا «مسار جاهز يناسبك» ولا «مجّانا لك الآن». والبدائلُ لا تظهر إلّا لمن ضغط «استبدالها» أو «أضف دورة».
 
    ومن فتح نسخةً قديمةً يُحوَّل إلى الأحدث. والاسمُ الأوّلُ وحدَه يُعرض: لا بريدَ ولا هاتف. ومعاينةُ واتساب معاينةُ الموقع
@@ -59,8 +63,8 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { addCandidates, chosenCohorts, swapCandidates } from "@/application/catalog/pathway-swap";
 import CohortPicker from "@/components/CohortPicker";
 import {
-  giftMissingAr, giftRuleAr, goPath, isGoCode, pathAddsLeft, pathEditable, publicPathOf, publicPathSelection,
-  PUBLIC_PATH_PICK_AR, PUBLIC_PATH_SIGN_IN_AR, pathAddsLeftAr, pathCandidatesWithin, pathCourseRemovable,
+  giftMissingAr, giftRuleAr, goPath, isGoCode, pathAddsLeft, pathSwappable, publicPathAddsLeft, publicPathBuyIds,
+  publicPathCandidates, publicPathOf, restoredPublicPath, PUBLIC_PATH_PICK_AR, PUBLIC_PATH_SIGN_IN_AR, pathAddsLeftAr, pathCandidatesWithin, pathCourseRemovable,
   privatePathGrantLabelAr, privatePathHeadline, privatePathPrice, REASON_LABEL_AR, restoredPathCourses,
   type GiftRule, type PathPreviewNumbers, type PrivatePathPrice,
 } from "@/application/commerce/private-path";
@@ -179,7 +183,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
 }) {
   const real = useRealSession();
   const session = given !== undefined ? given : real.user;
-  /* المسارُ العامّ: لا استبدالَ ولا إضافة، والمتعلّمُ يختار ما يشتريه من دوراته (قرارُ صاحب المنصّة، ٢٢ نوفمبر ٢٠٢٦) */
+  /* المسارُ العامّ: لا استبدال، والمتعلّمُ يختار ما يشتريه من دوراته ويضيف من دورات المنحة (قرارا صاحب المنصّة، ٢٢ نوفمبر ٢٠٢٦) */
   const isPublic = Boolean(v.publicPath);
   const signIn = Boolean(v.publicPath?.signIn);
   /* والخفيفةُ لا الكاملة (٨ نوفمبر ٢٠٢٦): الرحلةُ تقرأ عنوانَ الوحدة ومخرجَها وساعاتِها لا متونَها — كـ«ابنِ مسارك».
@@ -199,8 +203,12 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
   const originalIds = useMemo(() => v.courses.map((c) => c.courseId), [v]);
   const originalPicked = useMemo(() => Object.fromEntries(v.courses.map((c) => [c.courseId, c.cohortId])), [v]);
   const originalKey = v.courses.map((c) => c.cohortId).join();
+  /* والعامُّ يعود بما اختاره من الثلاث وما أضافه (`restoredPublicPath`) — وفي السلّة المعروضة الثلاثُ كلُّها ثمّ المضاف */
+  const [resumedPublic] = useState(() => (isPublic ? restoredPublicPath(resumed?.intent.courseIds, originalIds, v.coursesLeft) : null));
   const [courseIds, setCourseIds] = useState<string[]>(
-    () => restoredPathCourses(resumed?.intent.courseIds, originalIds.length, v.coursesLeft) ?? originalIds,
+    () => (isPublic
+      ? [...originalIds, ...(resumedPublic?.added ?? [])]
+      : restoredPathCourses(resumed?.intent.courseIds, originalIds.length, v.coursesLeft) ?? originalIds),
   );
   const [picked, setPicked] = useState<Record<string, string>>(() => ({ ...originalPicked, ...(resumed?.cohortByCourse ?? {}) }));
   const [swapForId, setSwapForId] = useState<string | null>(null);
@@ -210,10 +218,9 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
   );
 
   /* ═══ وما يختاره من دورات المسار العامّ — واحدةً أو أكثر، وكلُّها أوّلا (٢٢ نوفمبر ٢٠٢٦) ═══ */
-  const [chosen, setChosen] = useState<string[]>(
-    () => (resumed?.intent.courseIds && publicPathSelection(originalIds, resumed.intent.courseIds)) || originalIds,
-  );
-  const buyIds = isPublic ? publicPathSelection(originalIds, chosen) ?? [] : courseIds;
+  const [chosen, setChosen] = useState<string[]>(() => resumedPublic?.chosen ?? originalIds);
+  const addedIds = courseIds.filter((id) => !originalIds.includes(id));
+  const buyIds = isPublic ? publicPathBuyIds(originalIds, chosen, addedIds) ?? [] : courseIds;
   const toggle = (id: string) => setChosen((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
 
   /* ═══ والسعرُ بعد كلّ تغيير — من الخادم بالكود نفسِه ═══ */
@@ -266,17 +273,21 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
 
   /* ═══ و«أضف دورة» ما دام على الكود دورات (٢١ نوفمبر ٢٠٢٦، «Allow adding») ═══
      العددُ من الخادم (`coursesLeft`)، والمرشّحون بقاعدة البدائل: مسارُ دوراته أوّلا، وما لا يتعارض أوّلا، ومن قائمة منحته */
-  const addsLeft = pathEditable(isPublic) ? pathAddsLeft({ coursesLeft: v.coursesLeft, baseCount: originalIds.length, current: courseIds.length }) : 0;
+  const addsLeft = isPublic
+    ? publicPathAddsLeft({ coursesLeft: v.coursesLeft, baseCount: originalIds.length, selected: buyIds.length })
+    : pathAddsLeft({ coursesLeft: v.coursesLeft, baseCount: originalIds.length, current: courseIds.length });
+  const canAdd = addsLeft > 0;
   const [addOpen, setAddOpen] = useState(false);
   const addChoices = useMemo(() => {
     void catalogVersion;
-    if (!addOpen || addsLeft <= 0) return [];
+    if (!addOpen || !canAdd) return [];
     const ways = new Set(courseIds.map((id) => courseById(id)?.pathwayId).filter(Boolean));
     const near = courses.filter((c) => ways.has(c.pathwayId));
-    const ranked = pathCandidatesWithin(
-      [...near, ...courses].map((c) => ({ courseId: c.id, reason_ar: `من مسار «${c.pathwayName}»` })),
-      v.grantCourseIds,
-    );
+    const all = [...near, ...courses].map((c) => ({ courseId: c.id, reason_ar: `من مسار «${c.pathwayName}»` }));
+    /* والعامُّ من قائمة بلاك فرايدي وحدَها خارجَ دوراته — وبلا قائمةٍ لا شيء */
+    const ranked = isPublic
+      ? publicPathCandidates(all, v.grantCourseIds, courseIds)
+      : pathCandidatesWithin(all, v.grantCourseIds);
     return addCandidates({
       courseIds, ranked, season,
       cohortsOf: (id) => cohorts.get(id) ?? [],
@@ -284,7 +295,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
       titleOf: (id) => courseById(id)?.name ?? id,
       limit: 6,
     }).filter((s) => s.courseId !== v.gift?.courseId);
-  }, [addOpen, addsLeft, courseIds, season, cohorts, picked, catalogVersion, v.grantCourseIds, v.gift?.courseId]);
+  }, [addOpen, canAdd, courseIds, season, cohorts, picked, catalogVersion, v.grantCourseIds, v.gift?.courseId, isPublic]);
   const addCourse = (courseId: string, cohortId: string) => {
     setCourseIds((ids) => (ids.includes(courseId) ? ids : [...ids, courseId]));
     setPicked((prev) => ({ ...prev, [courseId]: cohortId }));
@@ -292,6 +303,16 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
   };
   /* والمضافُ وحدَه يُحذف — وهو ما بعد دورات المسار (الاستبدالُ في مكانه لا يحرّكه) */
   const removableIds = courseIds.filter((_, i) => pathCourseRemovable(i, originalIds.length));
+  /* وفي العامّ يُحذف من صندوق الاختيار — فلا رحلةَ تعديلٍ فيه */
+  const removeAdded = (id: string) => {
+    if (!removableIds.includes(id)) return;
+    setCourseIds((ids) => ids.filter((x) => x !== id));
+    setPicked((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
 
   /* ═══ والدورةُ المجانيّة (٨ نوفمبر ٢٠٢٦) ═══
      طلبُ صاحب المنصّة: بطاقةٌ مستقلّةٌ بعد دورات المسار — «مجانية»، وسعرُها الأصليّ مشطوبٌ والحاليّ صفر، وسطرٌ بشرطها. وتُضاف
@@ -392,7 +413,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
         showSchedule
         picked={picked}
         onPick={(courseId, cohortId) => setPicked((prev) => ({ ...prev, [courseId]: cohortId }))}
-        edit={!pathEditable(isPublic) ? undefined : {
+        edit={!pathSwappable(isPublic) ? undefined : {
           swapOnly: true,
           swapForId,
           /* والدورةُ المجانيّةُ لا تُستبدل بها دورةٌ مدفوعة — هي في بطاقتها */
@@ -538,7 +559,19 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
               </label>
             ))}
           </div>
-          {buyIds.length === 0 && <p className="mt-2 text-read text-gold-ink">اختر دورة واحدة على الأقل.</p>}
+          {addedIds.length > 0 && (
+            <div className="mt-2 grid gap-1.5" data-testid="public-path-added">
+              {addedIds.map((id) => (
+                <div key={id} className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-read">
+                  <span className="font-bold text-foreground">{titleOf(id)}</span>
+                  <button type="button" onClick={() => removeAdded(id)} className="font-bold text-teal-light-ink underline-offset-4 hover:underline">
+                    احذفها
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {buyIds.length === 0 && <p className="mt-2 text-read text-gold-ink">اختر دورة واحدة على الأقل من دورات المسار.</p>}
         </Card>
       )}
       {isPublic && v.publicPath?.noteAr && (

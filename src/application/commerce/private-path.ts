@@ -286,7 +286,8 @@ export function pathCandidatesWithin<T extends { courseId: string }>(ranked: rea
    طلبُ صاحب المنصّة: «ضع هذه الدورات الثلاث في الرابط … ولكن اجعل الرابط عامّا: يسجّل دخوله أو ينشئ حسابا إن لم يكن له،
    فيظهر المسارُ باسمه». ومن دخل ولا كودَ له في بلاك فرايدي اختار له **«Give code instantly»**: يُعطى كودَها على حسابه فورا،
    بلا هاتف (`publicPathCode` في `private-path.service.ts`).
-   ثمّ قرارُه في اليوم نفسِه: **لا «استبدالها» ولا «أضف دورة»** في المسار العامّ — يختار ما يشتريه من دوراته الثلاث وحدَها:
+   ثمّ قرارُه في اليوم نفسِه: **لا «استبدالها» ولا «أضف دورة»** في المسار العامّ (ثمّ عاد فأذن بالإضافة من دورات المنحة —
+   «أضف دورة في المسار العامّ» أدناه) — يختار ما يشتريه من دوراته الثلاث وحدَها:
    واحدةً أو اثنتين أو كلَّها، ولا يتابع بلا واحدة. والسعرُ للمختار من الخادم بكوده، والدفعُ بالمختار وحدَه. والمسارُ الخاصّ
    (`/go/<رمز عشوائي>`) باقٍ باستبداله وإضافته.
 
@@ -315,8 +316,52 @@ export function publicPathOf(raw: string | null | undefined): PublicPathDef | nu
 /** أيُفتح هذا الرمزُ في `/go/` — مسارٌ خاصّ بشكله، أو مسارٌ عامّ باسمه */
 export const isGoCode = (raw: string): boolean => GO_CODE_RE.test(raw.trim().toUpperCase()) || publicPathOf(raw) !== null
 
-/** لا استبدالَ ولا إضافةَ في المسار العامّ — قرارُ صاحب المنصّة (٢٢ نوفمبر ٢٠٢٦) */
-export const pathEditable = (isPublic: boolean): boolean => !isPublic
+/** لا استبدالَ في المسار العامّ — قرارُ صاحب المنصّة (٢٢ نوفمبر ٢٠٢٦). والإضافةُ فيه بحدّ كوده (`publicPathAddsLeft`) */
+export const pathSwappable = (isPublic: boolean): boolean => !isPublic
+
+/* ═══ «أضف دورة» في المسار العامّ — من دورات بلاك فرايدي وحدَها (٢٢ نوفمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة في اليوم نفسِه: «اسمح لهم بإضافة دورات، لكن من الدورات الباقية في منحة بلاك فرايدي فقط، لا غيرها» —
+   نسخا لـ«لا أضف دورة» في المسار العامّ. والاستبدالُ باقٍ ممنوعا، والثلاثُ تُختار كما كانت (واحدةٌ منها على الأقلّ).
+   · **العددُ من الخادم** (`coursesLeft`): ما بقي على كوده ناقصا دوراتِ المسار كلَّها — وقد يكون سالبا هنا، فمن بقي على كوده
+     دورتان وأزال واحدةً من الثلاث يضيف واحدة. فما يضيفه الآن: ذلك العددُ ناقصا ما اختاره فوق دورات المسار.
+   · **والمرشّحون من قائمة حملته وحدَها** (`grantCourseIds` ← صفحةُ بلاك فرايدي) خارجَ دورات المسار — وبلا قائمةٍ لا شيء،
+     لا «كلُّ ما يُشترى» كما في المسار الخاصّ.
+   · وما أضافه يُحذف، والسعرُ لكلّ سلّةٍ من الخادم بكوده، وهو الحَكَم عند الدفع. */
+
+/** كم دورةً يضيف الآن في المسار العامّ — `coursesLeft` من الخادم وعددُ دورات المسار وكم اختار (من الثلاث وما أضافه) */
+export function publicPathAddsLeft(input: { coursesLeft: number | null | undefined; baseCount: number; selected: number }): number {
+  if (input.coursesLeft === null || input.coursesLeft === undefined) return 0
+  return Math.max(0, Math.floor(input.coursesLeft) + input.baseCount - input.selected)
+}
+
+/** مرشّحو الإضافة في المسار العامّ: من قائمة المنحة وحدَها، وليسوا من دوراته ولا ممّا أضافه. وبلا قائمةٍ لا أحد */
+export function publicPathCandidates<T extends { courseId: string }>(
+  ranked: readonly T[], grantCourseIds: readonly string[] | null | undefined, inPath: readonly string[],
+): T[] {
+  if (!grantCourseIds) return []
+  const taken = new Set(inPath)
+  return pathCandidatesWithin(ranked, grantCourseIds).filter((r) => !taken.has(r.courseId))
+}
+
+/** ما يشتريه من المسار العامّ: ما اختاره من الثلاث بترتيبها ثمّ ما أضافه — و`null` إن لم يختر من الثلاث شيئا */
+export function publicPathBuyIds(courseIds: readonly string[], chosen: readonly string[], added: readonly string[]): string[] | null {
+  const own = publicPathSelection(courseIds, chosen.filter((id) => courseIds.includes(id)))
+  if (!own) return null
+  return [...own, ...added.filter((id, i) => !courseIds.includes(id) && added.indexOf(id) === i)]
+}
+
+/** ومن خرج قبل الدفع وعاد: ما اختاره من الثلاث وما أضافه — أو `null` فيعود المسارُ كما هو */
+export function restoredPublicPath(
+  saved: readonly string[] | undefined, courseIds: readonly string[], coursesLeft: number | null | undefined,
+): { chosen: string[]; added: string[] } | null {
+  if (!saved || new Set(saved).size !== saved.length) return null
+  const chosen = courseIds.filter((id) => saved.includes(id))
+  const added = saved.filter((id) => !courseIds.includes(id))
+  if (chosen.length === 0) return null
+  if (added.length > 0 && publicPathAddsLeft({ coursesLeft, baseCount: courseIds.length, selected: chosen.length }) < added.length) return null
+  return { chosen, added }
+}
 
 /** ما اختاره من دورات المسار العامّ — بترتيب المسار ومن دوراته وحدَها. و`null` لاختيارٍ لا يُتابع به: لا شيء، أو ما ليس منه */
 export function publicPathSelection(courseIds: readonly string[], selected: readonly string[]): string[] | null {
