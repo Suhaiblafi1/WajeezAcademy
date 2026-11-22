@@ -256,12 +256,13 @@ describe('بلاك فرايدي وجيز ومؤثروها', () => {
     expect(INF_ROUTES).toMatch(/percentOff: z\.number\(\)\.int\(\)\.min\(0\)\.max\(100\)\.nullable\(\)\.optional\(\),[\s\S]{0,200}?code: z\.string\(\)/)
     const texts = [
       INFLUENCER.INFLUENCER_CODE_KEEPS_AR, INFLUENCER.INFLUENCER_DISCOUNT_BAD_AR, 'خصم متابعيه %', 'احفظ الخصم', 'غير الكود',
-      'فارغ يعني نسبة المنحة. والخصم الجديد على من يأخذ كودا بعد الحفظ فقط.', 'نسبة المنحة',
+      /* والخصمُ الأعلى يرفع أكوادَ متابعيه القائمة (٢٢ نوفمبر ٢٠٢٦، «Raise to 65%») */
+      'فارغ يعني نسبة المنحة. الخصم الأعلى يرفع أكواد متابعيه القائمة أيضا، والأقل على الأكواد الجديدة فقط.', 'نسبة المنحة',
       'آخر يوم لمتابعيه', 'احفظ آخر يوم', 'نهاية المنحة',
     ]
     for (const t of texts.slice(2)) expect(PANEL).toContain(t)
     for (const t of texts) expect(t).toBe(plainAr(t))
-    for (const k of ['influencer.discount.set', 'influencer.code.change', 'influencer.closes.set']) expect(auditActionAr(k), `«${k}» بلا عنوان`).not.toBe(k)
+    for (const k of ['influencer.discount.set', 'influencer.codes.raise', 'influencer.code.change', 'influencer.closes.set']) expect(auditActionAr(k), `«${k}» بلا عنوان`).not.toBe(k)
   })
 })
 

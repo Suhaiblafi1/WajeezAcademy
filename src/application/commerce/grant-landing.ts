@@ -302,6 +302,13 @@ export function withGrantRef(url: string, ref: string | null | undefined): strin
   return ref ? `${url}${url.includes('?') ? '&' : '?'}ref=${encodeURIComponent(ref)}` : url
 }
 
+/* ═══ ونسبةُ كوده من الخادم قبل ما حُفظ في جهازه (٢٢ نوفمبر ٢٠٢٦) ═══
+   رفع صاحبُ المنصّة خصمَ كاسيت فارتفعت أكوادُ متابعيه القائمة («Raise to 65%»)، والصفحةُ تقرأ النسبةَ ممّا حُفظ يومَ أخذ كودَه —
+   فتسعّر بالقديمة ويُدفع بالجديدة. فنسبةُ كوده الآن (`myPercentOff` من الخادم بمرجعه) تغلب المحفوظة، ثمّ نسبةُ الحملة. */
+export function grantPercentShown(server: number | null | undefined, stored: number | null | undefined, campaign: number | null | undefined): number {
+  return server ?? stored ?? campaign ?? 0
+}
+
 export function grantPicksLink(base: string, courseIds: readonly string[]): string {
   const ids = courseIds.filter((id) => PICK_ID_RE.test(id)).slice(0, PICKS_LINK_MAX)
   if (ids.length === 0) return base

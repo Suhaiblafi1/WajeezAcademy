@@ -70,6 +70,7 @@ import {
   type GrantPathOption, type GrantOutcomeLine, GRANT_OUTCOMES_TITLE_AR, grantOutcomeLinesAr, grantOutcomeTotalsAr, grantPerSession, grantSessionsAr, grantShortTitleAr, parseGrantCodeParam, parsePicksParam,
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_HUMAN_DIAG_AR,
 } from "@/application/commerce/grant-landing";
+import { grantPercentShown } from "@/application/commerce/grant-landing";
 import { BLACK_FRIDAY_GRANT_STORE_KEY, GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
 import { BARE_HOST } from "@/application/site/origin";
@@ -96,6 +97,8 @@ interface GrantCourse {
 interface View {
   /** `soldOut`: نفدت أكوادُها والمنحةُ مفتوحة — فمن لا كودَ له يبقى عند سببه ولا يعود إلى النموذج كلَّ زيارة */
   campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null; soldOut?: boolean };
+  /** نسبةُ كوده الآن بمرجعه — تغلب ما حُفظ في جهازه (٢٢ نوفمبر ٢٠٢٦، `grantPercentShown`) */
+  myPercentOff?: number | null;
   /** فصلُ الدورات المعروضة — الفصلُ القادمُ القريب (`grant-courses.service.ts#pool`) */
   termAr: string | null;
   openCourses: GrantCourse[];
@@ -347,7 +350,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
      ولا بريد، ومن انتهت منحتُه بعد يومها الأخير يُردّ كودُه عند الدفع — وكانت الصفحةُ تعرض لهم «$88» مشطوبا عنه «$160»
      ويدفعون كاملا. فالخصمُ ما دام له كودٌ أو بريدٌ به والمنحةُ مفتوحة */
   const grantOn = !!view?.campaign.open && !!(stored?.code || stored?.sentTo);
-  const pct = grantOn ? stored?.percentOff ?? view?.campaign.percentOff ?? 0 : 0;
+  const pct = grantOn ? grantPercentShown(view?.myPercentOff, stored?.percentOff, view?.campaign.percentOff) : 0;
   /* ═══ وصفحةُ المؤثّر قائمةٌ واحدةٌ بترتيبها (٢٢ نوفمبر ٢٠٢٦، `influencerCourseOrder`) ═══
      قرارُ صاحب المنصّة: «ابدأ الدوراتِ بالأرخص — وابدأ بالثلاث التي استعملناها قبل». فالثلاثُ أوّلا ثمّ الأرخصُ بما يراه هو
      (`grantPrice` بنسبته)، و«ابدأ بها» أوّلُ صفٍّ فيها — لا أولى ما يقترحه مجالُه. وصفحاتُ المنح الأخرى على حالها */
