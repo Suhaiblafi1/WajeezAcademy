@@ -364,3 +364,13 @@
 .aij-card-btn { margin-top: 10px; width: 100%; }
 .aij-card-note { margin-top: 14px; font-size: 15px; color: #e6ecf7; line-height: 1.7; }
 .aij-card-note b { color: var(--y); font-weight: 600; }
+
+/* ── سجّل مع صديق — ٢٠ دينارا للاثنين (٢١ نوفمبر ٢٠٢٦) ── */
+.aij-pair { margin-top: 18px; display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 2px solid var(--ink); border-radius: 14px; background: #fff; cursor: pointer; box-shadow: 4px 4px 0 var(--y); }
+.aij-pair.on { background: var(--butter); }
+.aij-pair input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--ink); flex: none; }
+.aij-pair b { display: block; font-size: 16px; font-weight: 700; color: var(--ink); }
+.aij-pair small { display: block; font-size: 14px; color: var(--ink2); line-height: 1.6; }
+.aij-pair:focus-within { outline: 3px solid var(--b); outline-offset: 3px; }
+.aij-friend { margin-top: 6px; padding: 4px 16px 16px; border: 2px dashed rgba(20, 34, 64, .25); border-radius: 14px; }
+.aij-pair-note { margin-top: 10px; font-size: 15px; color: var(--ink); }

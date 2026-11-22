@@ -5286,6 +5286,8 @@ model PrivateCourse {
   /// رابطُ الدفع بالبطاقة لمن هو خارج الأردن — صفحةُ دفعٍ جاهزةٌ عند مزوّد صاحب الدورة (Stripe أو PayPal أو غيرهما)،
   /// وفارغُه يُخفي الخيار. والإيصالُ يُرفع بعدها كالحوالة (٢١ نوفمبر ٢٠٢٦)
   cardUrl   String?
+  /// تسجيلُ كلّ شعبةٍ بعدها: `{ morning: "https://…", evening: … }` — يُرسل رابطُه للمؤكَّدين (٢١ نوفمبر ٢٠٢٦)
+  recordings Json    @default("{}")
   updatedAt DateTime @updatedAt
 
   registrations PrivateRegistration[]
@@ -5335,6 +5337,17 @@ model PrivateRegistration {
   /// بأصغر وحدةٍ في العملة: 2000 = 20.00
   cardAmount      Int?
   cardCurrency    String?
+  /// سجّلا معا بسعر الاثنين (٢١ نوفمبر ٢٠٢٦): `pairId` معرّفُ من دفع عنهما في الصفّين، و`lead` له و`friend` لصديقه
+  pairId       String?   @db.Uuid
+  pairRole     String?   // lead | friend
+  /// ما يُرسَل إلى Meta مع الشراء ليُطابَق بزائر الإعلان: كعكتا البكسل (`_fbp` و`_fbc`) ومتصفّحُه وعنوانُه وقتَ التسجيل
+  metaClick    Json?
+  /// أُبلغ Meta بالشراء حين تأكّد (`meta-capi.ts`) — مرّةً واحدة
+  metaSentAt   DateTime?
+  metaError    String?
+  /// تسجيلُ الدورة — أُرسل رابطُه بعدها (`recording-mail.ts`)
+  recordingSentAt DateTime?
+  recordingUrl    String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -5342,4 +5355,5 @@ model PrivateRegistration {
 
   @@unique([courseSlug, email])
   @@index([courseSlug, status])
+  @@index([pairId])
 }

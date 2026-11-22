@@ -67,6 +67,9 @@ function step(n: number, title: string, body: string, extra = ''): string {
     `</tr></table></td></tr>`
 }
 
+/** تسجيلٌ لمن لا يستطيع الحضور — اقتراحُ «٨» بقرار صاحب المنصّة (٢١ نوفمبر ٢٠٢٦) */
+export const RECORDING_LINE = 'لا تستطيع الحضور مباشرة؟ يصلك تسجيل الدورة على بريدك بعدها.'
+
 export function confirmationSubject(): string {
   return `تم تأكيد تسجيلك — ${AI_JOBS.title}`
 }
@@ -115,6 +118,7 @@ export function confirmationHtml(i: ConfirmationInput): string {
   </td></tr></table>
 
   <div style="margin-top:22px">${zoomBlock}</div>
+  <div style="font-family:${FONT};font-size:14px;line-height:1.8;color:${C.ink2};margin-top:12px">${esc(RECORDING_LINE)}</div>
 </td></tr>
 
 <tr><td style="background:#ffffff;border-left:2px solid ${C.ink};border-right:2px solid ${C.ink};padding:18px 28px 6px;text-align:right">
@@ -163,6 +167,7 @@ export function confirmationText(i: ConfirmationInput): string {
     ...(i.zoom
       ? [`رابط Zoom: ${i.zoom.url}`, ...(i.zoom.passcode ? [`رمز الدخول: ${i.zoom.passcode}`] : []), 'ادخل قبل الموعد بعشر دقائق.']
       : ['رابط Zoom يصلك في رسالة قبل الدورة.']),
+    RECORDING_LINE,
     '',
     'قبل الدورة ثلاث خطوات:',
     `1. نزّل Claude Code: ${CLAUDE_LINKS.download}`,

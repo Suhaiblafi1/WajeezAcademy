@@ -33,6 +33,8 @@ export const AI_JOBS = {
   priceUsd: 20,
   listPriceUsd: 100,
   priceJod: 14,
+  /** شخصان معا (٢١ نوفمبر ٢٠٢٦): «شخصين يكون السعر ٢٠ لأن السعر الأصلي ١٤» — بالدينار، والدولارُ لقياس الإعلان وحدَه */
+  pair: { priceJod: 20, priceUsd: 28 },
   /** الاسمُ المستعار في CliQ — يحوّل إليه المتعلّم */
   cliqAlias: 'suhaiblafi',
   /** واتساب صاحب الدورة كما في المنشور */
@@ -106,6 +108,14 @@ export const SHARE_SOURCE = 'share'
 
 export function shareInviteText(origin: string): string {
   return `سجلت في دورة «${AI_JOBS.headline}» — ${AI_JOBS.hours} ساعات مباشرة على Zoom يوم ${AI_JOBS.dateLabel}، بـ${AI_JOBS.priceUsd}$ بدل ${AI_JOBS.listPriceUsd}$. إذا تبحث عن عمل سجّل معي: ${origin}/ai-jobs?src=${SHARE_SOURCE}`
+}
+
+/** بكسلُ Meta لصفحة الدورة — تقرؤه الصفحةُ (`meta-pixel.ts`) والخادمُ حين يُبلغ بالشراء (`meta-capi.ts`) */
+export const META_PIXEL_ID = '1150707094391273'
+
+/** ما يُحوَّل عن الحجز — للاثنين سعرُهما، وللواحد سعرُه */
+export function priceJodFor(pair: boolean): number {
+  return pair ? AI_JOBS.pair.priceJod : AI_JOBS.priceJod
 }
 
 /* ═══ روابطُ ما قبل الدورة — في بريد التأكيد ═══

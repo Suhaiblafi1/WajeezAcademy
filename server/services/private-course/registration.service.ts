@@ -12,7 +12,7 @@
    يحدّث الأوّلَ ما دام لم يُؤكَّد: من أخطأ في الشعبة أو رفع صورةً غيرَ واضحةٍ يعيد التعبئةَ ولا يُترك صفّان لإنسانٍ
    واحد. والمؤكَّدُ لا يُمسّ من الصفحة — يُقال له إنّ مقعده مؤكَّد. */
 
-import type { PrismaClient, PrivateCourse, PrivateRegistration } from '@prisma/client'
+import type { Prisma, PrismaClient, PrivateCourse, PrivateRegistration } from '@prisma/client'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import ExcelJS from 'exceljs'
@@ -27,6 +27,8 @@ import { fmtDateTime } from '../../../src/application/text/format-ar'
 import { gmailView, getGmailConfig, sendPrivateMail } from './mailer'
 import { confirmationHtml, confirmationIcs, confirmationSubject, confirmationText } from './confirmation-mail'
 import { stripeAutoReady, stripeView } from './stripe-config'
+import { recordingHtml, recordingSubject, recordingText } from './recording-mail'
+import { metaView, reportPurchase } from './meta-capi'
 
 export type RegistrationStatus = 'pending' | 'confirmed' | 'rejected'
 
@@ -71,6 +73,26 @@ export function zoomOf(course: PrivateCourse, sectionKey: string): ZoomLink | nu
 }
 
 /** رابطُ Zoom يُقبل من `zoom.us` وما تحته وحدَه — رابطٌ ملصوقٌ خطأً يصل كلَّ متعلّمٍ في الشعبة */
+/* ═══ تسجيلُ الدورة (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة (اقتراحُ «٨»): تسجيلٌ لمن لا يستطيع الحضور. فبعد الدورة يلصق رابطَ تسجيل كلّ شعبة، ويُرسل لمؤكَّديها
+   (`sendRecording`). والرابطُ https من أيّ مكانٍ يرفعه إليه (Zoom أو YouTube أو Drive…) — لا نحصره بمزوّد. */
+function recordingMap(course: PrivateCourse): Record<string, string> {
+  const raw = course.recordings
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (typeof v === 'string' && v) out[k] = v
+  return out
+}
+
+export function cleanRecordingUrl(raw: string): string {
+  const v = raw.trim()
+  if (!v) return ''
+  let u: URL
+  try { u = new URL(v) } catch { throw new AuthError('bad_recording', 'رابط التسجيل غير صحيح — انسخه كاملا', 400) }
+  if (u.protocol !== 'https:') throw new AuthError('bad_recording', 'رابط التسجيل يبدأ بـ https://', 400)
+  return u.toString()
+}
+
 export function cleanZoomUrl(raw: string): string {
   const v = raw.trim()
   if (!v) return ''
@@ -147,6 +169,78 @@ export interface PublicRegistrationInput {
   proof?: ProofInput
   /** من أين جاء — تكتبه الصفحةُ من `?src=` و`utm_*` أو الموقعِ الذي أحاله (`source.ts`) */
   source?: string
+  /** صديقٌ يسجّل معه بسعر الاثنين (٢١ نوفمبر ٢٠٢٦) — في الشعبة نفسِها، والحاجزُ يدفع عنهما */
+  friend?: FriendInput
+  /** كعكتا بكسل Meta من المتصفّح — ليُطابَق الشراءُ بزائر الإعلان (`meta-capi.ts`) */
+  meta?: { fbp?: string; fbc?: string }
+  /** من الطلب لا من الجسم: المتصفّحُ والعنوان — يُرسلان إلى Meta مع الشراء وحدَه */
+  client?: { ua?: string; ip?: string }
+}
+
+export interface FriendInput {
+  fullName: string
+  email: string
+  phoneCountry: string
+  phone: string
+}
+
+/* ═══ شخصان بسعر (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة (اقتراحُ «٧»): «شخصين يكون السعر ٢٠ لأن السعر الأصلي ١٤». فالحاجزُ يكتب صديقَه في النموذج نفسِه،
+   فيُحجز لهما في الشعبة نفسِها، و`pairId` معرّفُ الحاجز في الصفّين: `lead` له يدفع ٢٠ دينارا عنهما، و`friend` لصديقه لا
+   يدفع. وما يفعله صاحبُ الدورة بأحدهما يقع على الآخر: التأكيدُ وبريدُه لكلٍّ منهما، والرفضُ، والإعادةُ، ونقلُ الشعبة. */
+
+/** ما يُحوَّل عن هذا الحجز — ومن دُفع عنه لا شيءَ عليه */
+export function amountJodOf(r: Pick<PrivateRegistration, 'pairRole'>): number {
+  return r.pairRole === 'lead' ? AI_JOBS.pair.priceJod : r.pairRole === 'friend' ? 0 : AI_JOBS.priceJod
+}
+
+/** شريكُه في السعر — من دفع عنه، أو من دفع هو عنه */
+export async function partnerOf(prisma: PrismaClient, r: Pick<PrivateRegistration, 'id' | 'pairId'>): Promise<PrivateRegistration | null> {
+  if (!r.pairId) return null
+  return prisma.privateRegistration.findFirst({ where: { pairId: r.pairId, id: { not: r.id } } })
+}
+
+/** الصفُّ وشريكُه معا — ما يُفعل بأحدهما يُفعل بالآخر */
+async function pairIds(prisma: PrismaClient, r: Pick<PrivateRegistration, 'id' | 'pairId'>): Promise<string[]> {
+  if (!r.pairId) return [r.id]
+  const rows = await prisma.privateRegistration.findMany({ where: { pairId: r.pairId }, select: { id: true } })
+  return rows.length ? rows.map((x) => x.id) : [r.id]
+}
+
+function firstName(full: string): string {
+  return full.trim().split(/\s+/)[0] ?? full
+}
+
+/** الصديقُ يُفحص كلُّه قبل أن يُكتب شيء — فلا يبقى حجزٌ بنصف شريك */
+async function checkFriend(
+  prisma: PrismaClient, slug: string, input: FriendInput, leadEmail: string, leadId: string | null,
+) {
+  const fullName = input.fullName.trim().replace(/\s+/g, ' ')
+  if (fullName.length < 3) throw new AuthError('friend_name', 'اكتب اسم صديقك الكامل', 400)
+  const email = input.email.trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new AuthError('friend_email', 'بريد صديقك غير صحيح', 400)
+  if (email === leadEmail) throw new AuthError('friend_same', 'بريد صديقك مثل بريدك — اكتب بريده هو', 400)
+  const phone = normalizePhone(input.phoneCountry, input.phone)
+  if (!phone.ok) throw new AuthError('friend_phone', `رقم صديقك: ${phone.error}`, 400)
+  const existing = await prisma.privateRegistration.findUnique({ where: { courseSlug_email: { courseSlug: slug, email } } })
+  if (existing?.status === 'confirmed') throw new AuthError('friend_confirmed', 'صديقك مسجل ومؤكد من قبل بهذا البريد', 409)
+  if (existing?.pairId && existing.pairId !== leadId) {
+    throw new AuthError('friend_paired', 'صديقك مسجل مع شخص آخر — راسلنا على واتساب', 409)
+  }
+  return { fullName, email, phone, existing }
+}
+
+const FBP = /^fb\.\d\.\d{10,13}\.[A-Za-z0-9_-]{1,64}$/
+const FBC = /^fb\.\d\.\d{10,13}\.[\x21-\x7e]{1,400}$/
+
+/** ما يُحفظ للمطابقة عند Meta — كعكتان بصيغتهما، ومتصفّحٌ وعنوانٌ مقصوصان. وغيرُ ذلك يُترك */
+function metaClickOf(input: PublicRegistrationInput): Prisma.InputJsonValue | undefined {
+  const fbp = input.meta?.fbp && FBP.test(input.meta.fbp) ? input.meta.fbp : undefined
+  const fbc = input.meta?.fbc && FBC.test(input.meta.fbc) ? input.meta.fbc : undefined
+  const ua = input.client?.ua?.slice(0, 400) || undefined
+  const ip = input.client?.ip?.slice(0, 64) || undefined
+  if (!fbp && !fbc && !ua && !ip) return undefined
+  return { ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}), ...(ua ? { ua } : {}), ...(ip ? { ip } : {}) }
 }
 
 function decodeProof(base64: string): Buffer {
@@ -195,6 +289,11 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
   if (existing?.status === 'confirmed') {
     throw new AuthError('already_confirmed', 'تسجيلك مؤكد من قبل — تفقد بريدك، وإن لم تجد الرسالة راسلنا على واتساب', 409)
   }
+  if (input.friend && existing?.pairRole === 'friend') {
+    throw new AuthError('already_friend', 'سجلك صديق من قبل ويدفع عنكما — راسلنا على واتساب', 409)
+  }
+  const friend = input.friend ? await checkFriend(prisma, slug, input.friend, email, existing?.id ?? null) : null
+  const metaClick = metaClickOf(input)
 
   const proof = input.proof ? await storeProof(input.proof) : null
   const data = {
@@ -205,11 +304,12 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
     ...(input.note?.trim() ? { note: input.note.trim() } : {}),
     /* الإيصالُ لا يُرفع إلّا لـCliQ: من دفع بالبطاقة يصله إيصالُها ويصل صاحبَ الدورة الدفعُ (٢١ نوفمبر ٢٠٢٦) */
     ...(proof ? { ...proof, payMethod: 'cliq' } : {}),
+    ...(metaClick ? { metaClick } : {}),
   }
   try {
     /* وتسجيلٌ ثانٍ بالبريد نفسِه يحدّث الأوّل: رابطُ دفعه كما هو، وحوالتُه كما هي ما لم تُرفع أخرى،
        ومصدرُه الأوّلُ لا يُمحى بدخولٍ مباشرٍ بعده */
-    const row = existing
+    let row = existing
       ? await prisma.privateRegistration.update({
           where: { id: existing.id },
           data: { ...data, status: 'pending', rejectedAt: null, ...(cleanSource(input.source) ? { source: cleanSource(input.source) } : {}) },
@@ -218,6 +318,27 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
           data: { ...data, courseSlug: slug, email, payToken: newStorageKey(), source: cleanSource(input.source) },
         })
     if (existing?.proofKey && proof) await deleteObject(existing.proofKey)
+    if (friend) {
+      const pairId = row.id
+      /* صديقٌ سابقٌ غيرُ هذا يُفكّ — يبقى حجزُه بسعره هو */
+      await prisma.privateRegistration.updateMany({
+        where: { pairId, id: { notIn: [row.id, ...(friend.existing ? [friend.existing.id] : [])] } },
+        data: { pairId: null, pairRole: null },
+      })
+      row = await prisma.privateRegistration.update({ where: { id: row.id }, data: { pairId, pairRole: 'lead' } })
+      const friendData = {
+        sectionKey: section.key, fullName: friend.fullName, phone: friend.phone.e164, phoneCountry: friend.phone.country.iso2,
+        pairId, pairRole: 'friend',
+      }
+      if (friend.existing) {
+        await prisma.privateRegistration.update({ where: { id: friend.existing.id }, data: { ...friendData, status: 'pending', rejectedAt: null } })
+      } else {
+        await prisma.privateRegistration.create({
+          data: { ...friendData, courseSlug: slug, email: friend.email, payToken: newStorageKey(), source: cleanSource(input.source) },
+        })
+      }
+    }
+    const partner = await partnerOf(prisma, row)
     return {
       reference: reference(row.id),
       updated: Boolean(existing),
@@ -228,6 +349,8 @@ export async function registerPublic(prisma: PrismaClient, slug: string, input: 
       abroad: row.phoneCountry !== 'JO',
       cardChosen: cardOn(course) && row.payMethod === 'card' && !row.proofKey,
       cardAuto: cardOn(course) && await stripeAutoReady(prisma),
+      amountJod: amountJodOf(row),
+      pair: partner ? { role: row.pairRole as 'lead' | 'friend', firstName: firstName(partner.fullName) } : null,
     }
   } catch (e) {
     /* لا يبقى على القرص ملفٌّ لا يملكه صفّ */
@@ -249,7 +372,7 @@ async function byToken(prisma: PrismaClient, slug: string, token: string) {
 }
 
 /** ما تعرضه صفحةُ الدفع — الاسمُ الأوّلُ والشعبةُ والحال، لا البريدُ ولا الرقم: الرابطُ قد يُرسَل في محادثة */
-function payView(r: PrivateRegistration, course: Pick<PrivateCourse, 'cardUrl'>, auto: boolean) {
+function payView(r: PrivateRegistration, course: Pick<PrivateCourse, 'cardUrl'>, auto: boolean, partner: PrivateRegistration | null) {
   return {
     firstName: r.fullName.split(' ')[0],
     reference: reference(r.id),
@@ -263,12 +386,15 @@ function payView(r: PrivateRegistration, course: Pick<PrivateCourse, 'cardUrl'>,
     cardChosen: cardOn(course) && r.payMethod === 'card' && !r.proofKey,
     /** Stripe مربوط: دفعُ البطاقة يؤكّد مقعده وحدَه (`stripe-webhook.ts`) */
     cardAuto: cardOn(course) && auto,
+    /** سجّلا معا: ما يُحوَّل عنهما، واسمُ الآخر الأوّل — ومن دُفع عنه لا يدفع (٢١ نوفمبر ٢٠٢٦) */
+    amountJod: amountJodOf(r),
+    pair: partner ? { role: r.pairRole as 'lead' | 'friend', firstName: firstName(partner.fullName) } : null,
   }
 }
 
 export async function payInfo(prisma: PrismaClient, slug: string, token: string) {
   const r = await byToken(prisma, slug, token)
-  return payView(r, r.course, await stripeAutoReady(prisma))
+  return payView(r, r.course, await stripeAutoReady(prisma), await partnerOf(prisma, r))
 }
 
 export type PayMethod = 'cliq' | 'card'
@@ -292,7 +418,7 @@ export async function submitProof(
       },
     })
     if (r.proofKey) await deleteObject(r.proofKey)
-    return payView(row, r.course, await stripeAutoReady(prisma))
+    return payView(row, r.course, await stripeAutoReady(prisma), await partnerOf(prisma, row))
   } catch (e) {
     await deleteObject(proof.proofKey)
     throw e
@@ -304,14 +430,16 @@ export async function submitProof(
 export async function chooseCard(prisma: PrismaClient, slug: string, token: string) {
   const r = await byToken(prisma, slug, token)
   const auto = await stripeAutoReady(prisma)
-  if (!cardOn(r.course) || r.status === 'confirmed' || r.proofKey || r.payMethod === 'card') return payView(r, r.course, auto)
+  if (!cardOn(r.course) || r.status === 'confirmed' || r.proofKey || r.payMethod === 'card') return payView(r, r.course, auto, await partnerOf(prisma, r))
   const row = await prisma.privateRegistration.update({ where: { id: r.id }, data: { payMethod: 'card' } })
-  return payView(row, r.course, auto)
+  return payView(row, r.course, auto, await partnerOf(prisma, row))
 }
 
 /* ── اللوحة ── */
 
-function view(r: PrivateRegistration, course: PrivateCourse) {
+type Partner = Pick<PrivateRegistration, 'fullName' | 'proofKey' | 'cardPaidAt'> | null
+
+function view(r: PrivateRegistration, course: PrivateCourse, partner: Partner = null) {
   const zoom = zoomOf(course, r.sectionKey)
   return {
     id: r.id,
@@ -345,7 +473,31 @@ function view(r: PrivateRegistration, course: PrivateCourse) {
     mailError: r.mailError,
     /** مؤكَّدٌ لم يصله رابطُ Zoom الحاليّ لشعبته — بريدٌ قبل ضبط الرابط، أو قبل تغييره */
     zoomMissing: r.status === 'confirmed' && Boolean(zoom) && r.mailZoomUrl !== zoom?.url,
+    /** سجّلا معا (٢١ نوفمبر ٢٠٢٦): دورُه، واسمُ شريكه، وهل دفع شريكُه عنهما، وما عليه هو */
+    pairRole: (r.pairRole as 'lead' | 'friend' | null) ?? null,
+    partnerName: partner?.fullName ?? null,
+    partnerPaid: Boolean(partner && (partner.proofKey || partner.cardPaidAt)),
+    amountJod: amountJodOf(r),
+    /** وصله رابطُ التسجيل — ورابطُه الذي وصله، فيُعرف من لم يصله الرابطُ الحاليّ */
+    recordingSentAt: r.recordingSentAt?.toISOString() ?? null,
+    /** أُبلغ Meta بشرائه حين تأكّد — أو سببُ إخفاقه (`meta-capi.ts`) */
+    metaSentAt: r.metaSentAt?.toISOString() ?? null,
+    metaError: r.metaError,
+    recordingMissing: r.status === 'confirmed' && Boolean(recordingMap(course)[r.sectionKey]) && r.recordingUrl !== recordingMap(course)[r.sectionKey],
   }
+}
+
+/** صفوفٌ بعينها بشركائها — بعد فعلٍ وقع على الاثنين معا */
+async function viewsOf(prisma: PrismaClient, ids: string[], course: PrivateCourse) {
+  const rows = await prisma.privateRegistration.findMany({ where: { id: { in: ids } } })
+  const partners = await Promise.all(rows.map((r) => partnerOf(prisma, r)))
+  return rows.map((r, i) => view(r, course, partners[i]))
+}
+
+/** نتيجةُ فعلٍ على حجز: صفُّه، وشريكُه معه إن كان — فتتبدّل البطاقتان في اللوحة معا */
+async function actionResult(prisma: PrismaClient, id: string, ids: string[], course: PrivateCourse) {
+  const views = await viewsOf(prisma, ids, course)
+  return { registration: views.find((v) => v.id === id)!, partners: views.filter((v) => v.id !== id) }
 }
 
 export type RegistrationView = ReturnType<typeof view>
@@ -375,20 +527,34 @@ export async function ownerOverview(prisma: PrismaClient, slug: string) {
         title: s.title,
         timeLabel: s.timeLabel,
         zoom: zoom[s.key] ?? null,
+        recording: recordingMap(course)[s.key] ?? null,
       })),
     },
     gmail: await gmailView(prisma),
     stripe: await stripeView(prisma),
-    registrations: rows.map((r) => view(r, course)),
+    meta: await metaView(prisma),
+    registrations: rows.map((r) => view(r, course, rows.find((x) => x.id !== r.id && r.pairId !== null && x.pairId === r.pairId) ?? null)),
   }
 }
 
 export async function updateCourse(
   prisma: PrismaClient, slug: string,
-  input: { open?: boolean; zoom?: Record<string, { url: string; passcode?: string } | null>; cardUrl?: string },
+  input: {
+    open?: boolean; zoom?: Record<string, { url: string; passcode?: string } | null>; cardUrl?: string
+    recordings?: Record<string, string | null>
+  },
 ) {
   const course = await ensureCourse(prisma, slug)
   const zoom = zoomMap(course)
+  const recordings = recordingMap(course)
+  if (input.recordings) {
+    for (const [key, link] of Object.entries(input.recordings)) {
+      if (!aiJobsSection(key)) throw new AuthError('bad_section', 'شعبة غير معروفة', 400)
+      const url = link ? cleanRecordingUrl(link) : ''
+      if (!url) delete recordings[key]
+      else recordings[key] = url
+    }
+  }
   if (input.zoom) {
     for (const [key, link] of Object.entries(input.zoom)) {
       if (!aiJobsSection(key)) throw new AuthError('bad_section', 'شعبة غير معروفة', 400)
@@ -403,6 +569,7 @@ export async function updateCourse(
       ...(input.open !== undefined ? { open: input.open } : {}),
       ...(input.cardUrl !== undefined ? { cardUrl: cleanCardUrl(input.cardUrl) || null } : {}),
       zoom: zoom as object,
+      recordings: recordings as object,
     },
   })
   return ownerOverview(prisma, slug)
@@ -495,39 +662,89 @@ export async function sendConfirmation(prisma: PrismaClient, id: string) {
 
 export async function confirmRegistration(prisma: PrismaClient, id: string, opts: { sendMail: boolean }) {
   const r = await load(prisma, id)
-  const row = r.status === 'confirmed'
-    ? r
-    : await prisma.privateRegistration.update({ where: { id }, data: { status: 'confirmed', confirmedAt: new Date(), rejectedAt: null } })
-  if (!opts.sendMail) return { mail: null, registration: view(row, r.course) }
-  return sendConfirmation(prisma, id)
+  /* وشريكُه معه: سجّلا معا ودُفع عنهما مرّةً — فيتأكّدان معا، ويصل كلًّا بريدُه (٢١ نوفمبر ٢٠٢٦) */
+  const ids = await pairIds(prisma, r)
+  await prisma.privateRegistration.updateMany({
+    where: { id: { in: ids }, status: { not: 'confirmed' } },
+    data: { status: 'confirmed', confirmedAt: new Date(), rejectedAt: null },
+  })
+  let mail: Awaited<ReturnType<typeof sendConfirmation>>['mail'] | null = null
+  if (opts.sendMail) {
+    const sent = []
+    for (const x of ids) sent.push((await sendConfirmation(prisma, x)).mail)
+    mail = sent.find((m) => !m.ok) ?? sent[0]
+  }
+  /* ويُبلَّغ Meta بالشراء — لا يرمي، وما سقط يُكتب على الصفّ ويُعاد من اللوحة (`meta-capi.ts`) */
+  for (const x of ids) await reportPurchase(prisma, x)
+  return { mail, ...(await actionResult(prisma, id, ids, r.course)) }
+}
+
+/** يعيد إبلاغ Meta بشراء حجزٍ مؤكَّدٍ سقط إبلاغُه — أو قبل ضبط الرمز */
+export async function retryMetaPurchase(prisma: PrismaClient, id: string) {
+  const r = await load(prisma, id)
+  const report = await reportPurchase(prisma, id)
+  return { report, ...(await actionResult(prisma, id, [id], r.course)) }
 }
 
 export async function rejectRegistration(prisma: PrismaClient, id: string) {
   const r = await load(prisma, id)
-  const row = await prisma.privateRegistration.update({
-    where: { id }, data: { status: 'rejected', rejectedAt: new Date(), confirmedAt: null },
-  })
-  return { registration: view(row, r.course) }
+  const ids = await pairIds(prisma, r)
+  await prisma.privateRegistration.updateMany({ where: { id: { in: ids } }, data: { status: 'rejected', rejectedAt: new Date(), confirmedAt: null } })
+  return actionResult(prisma, id, ids, r.course)
 }
 
 /** يعيده «قيد المراجعة» — تراجعٌ عن تأكيدٍ أو رفضٍ بالخطأ */
 export async function reopenRegistration(prisma: PrismaClient, id: string) {
   const r = await load(prisma, id)
-  const row = await prisma.privateRegistration.update({
-    where: { id }, data: { status: 'pending', rejectedAt: null, confirmedAt: null },
-  })
-  return { registration: view(row, r.course) }
+  const ids = await pairIds(prisma, r)
+  await prisma.privateRegistration.updateMany({ where: { id: { in: ids } }, data: { status: 'pending', rejectedAt: null, confirmedAt: null } })
+  return actionResult(prisma, id, ids, r.course)
 }
 
+/** ونقلُ الشعبة لهما معا — سجّلا ليحضرا معا */
 export async function moveSection(prisma: PrismaClient, id: string, sectionKey: string) {
   const r = await load(prisma, id)
   if (!aiJobsSection(sectionKey)) throw new AuthError('bad_section', 'شعبة غير معروفة', 400)
-  const row = await prisma.privateRegistration.update({ where: { id }, data: { sectionKey } })
-  return { registration: view(row, r.course) }
+  const ids = await pairIds(prisma, r)
+  await prisma.privateRegistration.updateMany({ where: { id: { in: ids } }, data: { sectionKey } })
+  return actionResult(prisma, id, ids, r.course)
 }
 
+/** يرسل رابطَ تسجيل الشعبة لمؤكَّديها الذين لم يصلهم الرابطُ الحاليّ — ويوقف عند أوّل رفضٍ لـGmail غير رفض المستلم */
+export async function sendRecording(prisma: PrismaClient, slug: string, sectionKey: string) {
+  const course = await ensureCourse(prisma, slug)
+  const section = aiJobsSection(sectionKey)
+  if (!section) throw new AuthError('bad_section', 'شعبة غير معروفة', 400)
+  const url = recordingMap(course)[sectionKey]
+  if (!url) throw new AuthError('no_recording', 'اكتب رابط التسجيل أولا', 400)
+  const rows = await prisma.privateRegistration.findMany({
+    where: { courseSlug: slug, sectionKey, status: 'confirmed', OR: [{ recordingUrl: null }, { recordingUrl: { not: url } }] },
+    orderBy: { createdAt: 'asc' },
+  })
+  let sent = 0
+  const errors: string[] = []
+  for (const r of rows) {
+    const input = { fullName: r.fullName, section, url }
+    const res = await sendPrivateMail(prisma, {
+      to: r.email, toName: r.fullName, subject: recordingSubject(), html: recordingHtml(input), text: recordingText(input),
+    })
+    if (res.ok) {
+      await prisma.privateRegistration.update({ where: { id: r.id }, data: { recordingSentAt: new Date(), recordingUrl: url } })
+      sent += 1
+      continue
+    }
+    errors.push(`${r.fullName}: ${res.error}`)
+    if (!res.recipient) break
+  }
+  return { sent, failed: errors.length, left: rows.length - sent, errors: errors.slice(0, 5), overview: await ownerOverview(prisma, slug) }
+}
+
+/** والحذفُ لصفٍّ وحدَه — وشريكُه يبقى حجزا بسعره هو */
 export async function deleteRegistration(prisma: PrismaClient, id: string) {
   const r = await load(prisma, id)
+  if (r.pairId) {
+    await prisma.privateRegistration.updateMany({ where: { pairId: r.pairId, id: { not: id } }, data: { pairId: null, pairRole: null } })
+  }
   await prisma.privateRegistration.delete({ where: { id } })
   if (r.proofKey) await deleteObject(r.proofKey)
   return { ok: true }
@@ -558,6 +775,7 @@ export async function exportXlsx(
     { header: 'الحوالة', key: 'proof', width: 18 },
     { header: 'طريقة الدفع', key: 'method', width: 14 },
     { header: 'المصدر', key: 'source', width: 26 },
+    { header: 'مع صديق', key: 'pair', width: 24 },
     { header: 'ملاحظة', key: 'note', width: 30 },
   ]
   const sheets = filter.section
@@ -577,6 +795,7 @@ export async function exportXlsx(
         proof: r.proofUploadedAt ? fmtDateTime(r.proofUploadedAt) : r.cardPaidAt ? `دفع بالبطاقة ${fmtDateTime(r.cardPaidAt)}` : 'لم يرفعها بعد',
         method: r.payMethod === 'card' ? 'بطاقة' : r.payMethod === 'cliq' ? 'CliQ' : '',
         source: r.source ?? 'مباشر',
+        pair: r.pairId ? (rows.find((x) => x.id !== r.id && x.pairId === r.pairId)?.fullName ?? '') + (r.pairRole === 'lead' ? ' (دفع عنهما)' : '') : '',
         note: r.note ?? '',
       })
     }

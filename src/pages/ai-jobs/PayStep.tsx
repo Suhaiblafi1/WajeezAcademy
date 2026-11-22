@@ -29,6 +29,10 @@ export interface PayInfo {
   cardChosen: boolean
   /** Stripe مربوط: دفعُ البطاقة يؤكّد مقعده وحدَه، والبريدُ يصله خلال دقائق (٢١ نوفمبر ٢٠٢٦) */
   cardAuto: boolean
+  /** ما يُحوَّل — ٢٠ دينارا عن الاثنين إن سجّلا معا، وصفرٌ لمن دفع عنه صديقُه (٢١ نوفمبر ٢٠٢٦) */
+  amountJod: number
+  /** سجّلا معا: دورُه، واسمُ الآخر الأوّل */
+  pair: { role: 'lead' | 'friend'; firstName: string } | null
 }
 
 type Method = 'cliq' | 'card'
@@ -112,7 +116,7 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
         proof: { name: proof.name, base64: proof.base64 },
         note: note.trim() || undefined,
       })
-      trackPixel('AddPaymentInfo', { payment_method: 'cliq', value: AI_JOBS.priceJod, currency: 'JOD' })
+      trackPixel('AddPaymentInfo', { payment_method: 'cliq', value: info.amountJod, currency: 'JOD' })
       setProof(null)
       setAgain(false)
       onChange(next)
@@ -135,6 +139,20 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
           <a className="aij-cta aij-cta-y" href={ask} target="_blank" rel="noopener noreferrer">راسلنا على واتساب</a>
         </div>
         <ShareInvite />
+      </div>
+    )
+  }
+
+  /* من حجز له صديقُه ويدفع عنهما — لا يُطلب منه دفع (٢١ نوفمبر ٢٠٢٦) */
+  if (info.pair?.role === 'friend' && info.status === 'pending' && !info.hasProof) {
+    return (
+      <div className="aij-box aij-done" role="status">
+        <Tick />
+        <h2>مقعدك محجوز</h2>
+        <p>حجز لك {info.pair.firstName} مقعدا في {info.sectionTitle}، ويدفع عنكما. يصلك التأكيد ورابط Zoom على بريدك بعد الدفع.</p>
+        <div className="aij-row" style={{ justifyContent: 'center' }}>
+          <a className="aij-cta aij-cta-y" href={ask} target="_blank" rel="noopener noreferrer">راسلنا على واتساب</a>
+        </div>
       </div>
     )
   }
@@ -201,7 +219,7 @@ export default function PayStep({ token, info, fresh = false, onChange }: {
         : (
           <>
             <div className="aij-cliq">
-              <small>حوّل {AI_JOBS.priceJod} دينار عبر CliQ إلى الاسم المستعار</small>
+              <small>حوّل {info.amountJod} دينار{info.pair?.role === 'lead' ? ` عنك وعن ${info.pair.firstName}` : ''} عبر CliQ إلى الاسم المستعار</small>
               <div className="aij-alias">
                 <b>{AI_JOBS.cliqAlias}</b>
                 <Copy text={AI_JOBS.cliqAlias} label="انسخ" />
