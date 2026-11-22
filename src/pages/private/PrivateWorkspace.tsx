@@ -50,6 +50,17 @@ interface Registration {
   cardAmount: number | null
   cardCurrency: string | null
   stripePaymentId: string | null
+  /** سجّلا معا بسعر الاثنين (٢١ نوفمبر ٢٠٢٦) */
+  pairRole: 'lead' | 'friend' | null
+  partnerName: string | null
+  partnerPaid: boolean
+  amountJod: number
+  /** تسجيلُ الدورة: متى وصله، وهل فاته الرابطُ الحاليّ (٢١ نوفمبر ٢٠٢٦) */
+  recordingSentAt: string | null
+  recordingMissing: boolean
+  /** أُبلغ Meta بشرائه — أو سببُ إخفاقه (٢١ نوفمبر ٢٠٢٦) */
+  metaSentAt: string | null
+  metaError: string | null
   status: Status
   createdAt: string
   confirmedAt: string | null
@@ -70,11 +81,23 @@ interface Overview {
     /** البطاقةُ مخفيّةٌ كلّيّا بقرار صاحب المنصّة — فلا تُعرض إعداداتُها (٢١ نوفمبر ٢٠٢٦) */
     cardPayments: boolean
     file: { name: string; custom: boolean }
-    sections: { key: string; title: string; timeLabel: string; zoom: { url: string; passcode?: string } | null }[]
+    sections: { key: string; title: string; timeLabel: string; zoom: { url: string; passcode?: string } | null; recording: string | null }[]
   }
   gmail: { user: string; ready: boolean; source: 'env' | 'db' | 'none'; passwordTail: string; live: boolean }
   stripe: StripeState
+  meta: MetaState
   registrations: Registration[]
+}
+
+interface MetaState {
+  ready: boolean
+  source: 'env' | 'db' | 'none'
+  tokenTail: string
+  testCode: string
+  lastSentAt: string | null
+  lastError: string | null
+  pixelId: string
+  live: boolean
 }
 
 interface StripeState {
@@ -163,6 +186,63 @@ function ZoomEditor({ section, onSaved, missing, onSendMissing, sending }: {
           وصلهم بريد التأكيد قبل هذا الرابط أو قبل تغييره. الإرسال يعيد لهم بريد التأكيد كاملا بالرابط الجديد.
         </p>
       )}
+    </Card>
+  )
+}
+
+/* ═══ تسجيلُ الشعبة بعد الدورة — يُرسل رابطُه لمؤكَّديها (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة (اقتراحُ «٨»): تسجيلٌ لمن لا يستطيع الحضور. فبعد الدورة يُلصق الرابط، ويخرج بريدٌ لكلّ مؤكَّدٍ لم يصله */
+function RecordingEditor({ section, missing, onSaved }: {
+  section: Overview['course']['sections'][number]
+  missing: number
+  onSaved: (o: Overview) => void
+}) {
+  const [url, setUrl] = useState(section.recording ?? '')
+  const [saving, setSaving] = useState(false)
+  const [sending, setSending] = useState(false)
+  const dirty = url.trim() !== (section.recording ?? '')
+
+  async function save() {
+    setSaving(true)
+    try {
+      onSaved(await apiPatch<Overview>(BASE, { recordings: { [section.key]: url.trim() || null } }))
+      toast(url.trim() ? 'حفظنا رابط التسجيل' : 'حذفنا رابط التسجيل')
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'تعذر الحفظ')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function send() {
+    setSending(true)
+    try {
+      const r = await apiPost<{ sent: number; failed: number; left: number; errors: string[]; overview: Overview }>(`${BASE}/sections/${section.key}/recording/send`)
+      onSaved(r.overview)
+      if (r.failed) toastError(`وصل ${fmtNum(r.sent)} ولم يصل ${fmtNum(r.failed)}: ${r.errors.join('، ')}`)
+      else toast(`أرسلنا التسجيل إلى ${fmtNum(r.sent)}`)
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'تعذر الإرسال')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <Card className="p-4">
+      <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" aria-hidden="true" />تسجيل {section.title}</p>
+      <p className="mt-1 text-read leading-6 text-muted-foreground">بعد الدورة الصق رابط التسجيل (Zoom أو YouTube غير مدرج أو Drive)، وأرسله للمؤكدين في الشعبة.</p>
+      <label className="mt-3 block">
+        <span className={labelCls}>رابط التسجيل</span>
+        <input dir="ltr" className={`${inputCls} mt-1`} placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} />
+      </label>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button tone="confirm" size="sm" loading={saving} disabled={!dirty} onClick={() => void save()}>احفظ الرابط</Button>
+        {section.recording && !dirty && missing > 0 && (
+          <Button size="sm" icon={Send} loading={sending} onClick={() => void send()}>أرسله إلى {fmtNum(missing)} مؤكدين لم يصلهم</Button>
+        )}
+        {section.recording && !dirty && missing === 0 && <span className="text-read text-muted-foreground">وصل كل المؤكدين</span>}
+      </div>
     </Card>
   )
 }
@@ -306,6 +386,95 @@ function StripeAuto({ stripe, onSaved }: { stripe: StripeState; onSaved: (s: Str
   )
 }
 
+/* ═══ إبلاغُ Meta بالشراء (٢١ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة (اقتراحُ «٤»): حين تؤكّد حجزا يُبلَّغ Meta أنّه اشترى، فيبحث الإعلانُ عن أشباه من دفع. ورمزُ الوصول
+   يُلصق هنا — لا في محادثة. */
+function MetaSettings({ meta, pending, onSaved, onReported }: {
+  meta: MetaState
+  pending: number
+  onSaved: (m: MetaState) => void
+  onReported: () => void
+}) {
+  const [token, setToken] = useState('')
+  const [testCode, setTestCode] = useState(meta.testCode)
+  const [saving, setSaving] = useState(false)
+  const [reporting, setReporting] = useState(false)
+
+  async function save(body: { token?: string; testCode?: string }, done: string) {
+    setSaving(true)
+    try {
+      onSaved(await apiPut<MetaState>('/api/v1/private/meta', body))
+      setToken('')
+      toast(done)
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'تعذر الحفظ')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function reportPending() {
+    setReporting(true)
+    try {
+      const r = await apiPost<{ sent: number; left: number; error: string | null; meta: MetaState }>(`${BASE}/meta/report-pending`)
+      onSaved(r.meta)
+      onReported()
+      if (r.error) toastError(`أبلغنا عن ${fmtNum(r.sent)} ثم توقفنا: ${r.error}`)
+      else toast(`أبلغنا Meta عن ${fmtNum(r.sent)}`)
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'تعذر الإبلاغ')
+    } finally {
+      setReporting(false)
+    }
+  }
+
+  return (
+    <Card className="p-4 lg:col-span-2">
+      <p className="flex items-center gap-2 text-sm font-black"><Zap className="h-4 w-4 text-teal-ink" aria-hidden="true" />إبلاغ Meta بمن دفع</p>
+      <p className="mt-1 text-read leading-6 text-muted-foreground">
+        حين تؤكد حجزا نخبر Meta أنه اشترى، فيبحث إعلانك عن أشخاص مثل من دفع، لا مثل من عبأ النموذج فقط.
+      </p>
+      <div className={`mt-2 rounded-lg px-3 py-2 text-read font-bold ${meta.ready ? 'text-emerald-300' : 'text-gold-ink'}`}>
+        {meta.ready
+          ? `جاهز — الرمز ${meta.tokenTail}${meta.source === 'env' ? ' (من إعداد الخادم)' : ''}${meta.lastSentAt ? ` · آخر إبلاغ ${fmtDateTime(meta.lastSentAt)}` : ''}`
+          : 'غير جاهز — لا يصل Meta شيء حتى تلصق رمز الوصول'}
+      </div>
+      {meta.lastError && <p className="mt-1 text-read leading-6 text-red-300">آخر خطأ: {meta.lastError}</p>}
+      {!meta.live && <p className="mt-1 text-read leading-6 text-muted-foreground">هذه بيئة تجربة: لا يخرج منها شيء إلى Meta.</p>}
+      <ol className="mt-3 grid list-decimal gap-1.5 ps-5 text-read leading-6 text-muted-foreground">
+        <li>
+          افتح{' '}
+          <a className="text-teal-ink underline" href={`https://business.facebook.com/events_manager2/list/pixel/${meta.pixelId}/settings`} target="_blank" rel="noopener noreferrer">Events Manager ← البكسل ← Settings</a>.
+        </li>
+        <li>تحت Conversions API اضغط «Generate access token»، وانسخ الرمز والصقه هنا.</li>
+        <li>للتجربة: من «Test events» انسخ رمز الاختبار (يبدأ بـ TEST) والصقه، ثم أكد حجزا وانظر وصوله. وامسحه بعدها.</li>
+      </ol>
+      <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_12rem]">
+        <label className="block">
+          <span className={labelCls}>رمز الوصول (Access token) {meta.ready && '— اتركه فارغا ليبقى كما هو'}</span>
+          <input dir="ltr" type="password" autoComplete="new-password" className={`${inputCls} mt-1`} placeholder="EAA…"
+            value={token} onChange={(e) => setToken(e.target.value)} disabled={meta.source === 'env'} />
+        </label>
+        <label className="block">
+          <span className={labelCls}>رمز الاختبار (اختياري)</span>
+          <input dir="ltr" className={`${inputCls} mt-1`} placeholder="TEST12345" value={testCode} onChange={(e) => setTestCode(e.target.value)} />
+        </label>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button tone="confirm" size="sm" loading={saving} disabled={!token.trim() && testCode.trim() === meta.testCode}
+          onClick={() => void save({ ...(token.trim() ? { token } : {}), testCode: testCode.trim() }, 'حفظنا إعداد Meta')}>احفظ</Button>
+        {meta.ready && meta.source === 'db' && (
+          <Button size="sm" tone="ghost" disabled={saving}
+            onClick={() => { if (window.confirm('فصل Meta؟ لا يصله خبر الشراء بعدها.')) void save({ token: '' }, 'فصلنا Meta') }}>افصل</Button>
+        )}
+        {meta.ready && pending > 0 && (
+          <Button size="sm" icon={Send} loading={reporting} onClick={() => void reportPending()}>أبلغ عن {fmtNum(pending)} مؤكدين لم يبلغ عنهم</Button>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 function CourseFile({ file, onSaved }: { file: Overview['course']['file']; onSaved: (o: Overview) => void }) {
   const [busy, setBusy] = useState(false)
   async function upload(f: File | undefined) {
@@ -424,10 +593,12 @@ function GmailSettings({ gmail, onSaved }: { gmail: Overview['gmail']; onSaved: 
 
 /* ═══ التسجيلُ الواحد ═══ */
 
-function RegistrationCard({ r, onChange, onRemove }: {
+function RegistrationCard({ r, onChange, onRemove, onReload }: {
   r: Registration
   onChange: (r: Registration) => void
   onRemove: (id: string) => void
+  /** حذفُ أحد اثنين سجّلا معا يفكّ الآخرَ في الخادم — فتُقرأ القائمةُ من جديد */
+  onReload: () => void
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const isImage = r.proof?.mime.startsWith('image/') ?? false
@@ -436,13 +607,15 @@ function RegistrationCard({ r, onChange, onRemove }: {
   /* رابطُ الدفع باسمه — يذكّره به على واتساب من حجز ولم يرفع الحوالة */
   const payLink = `${window.location.origin}/ai-jobs/pay/${r.payToken}`
   const reminder = whatsappLink(r.phone,
-    `مرحبا ${r.fullName.split(' ')[0]}، حجزنا لك مقعدا في ${section?.title ?? 'الدورة'} يوم ${AI_JOBS.dateLabel}. لتأكيده حوّل ${AI_JOBS.priceJod} دينار عبر CliQ إلى ${AI_JOBS.cliqAlias} وارفع صورة الحوالة من هنا: ${payLink}`)
+    `مرحبا ${r.fullName.split(' ')[0]}، حجزنا لك مقعدا في ${section?.title ?? 'الدورة'} يوم ${AI_JOBS.dateLabel}. لتأكيده حوّل ${r.amountJod} دينار${r.pairRole === 'lead' && r.partnerName ? ` عنك وعن ${r.partnerName.split(' ')[0]}` : ''} عبر CliQ إلى ${AI_JOBS.cliqAlias} وارفع صورة الحوالة من هنا: ${payLink}`)
 
-  async function act(key: string, run: () => Promise<{ registration: Registration; mail?: MailResult }>, okText?: string) {
+  async function act(key: string, run: () => Promise<{ registration: Registration; partners?: Registration[]; mail?: MailResult }>, okText?: string) {
     setBusy(key)
     try {
       const out = await run()
       onChange(out.registration)
+      /* وشريكُه معه — سجّلا معا فيتأكّدان ويُرفضان ويُنقلان معا (٢١ نوفمبر ٢٠٢٦) */
+      for (const p of out.partners ?? []) onChange(p)
       if (out.mail !== undefined) mailToast(out.mail, okText ?? 'تم')
       else if (okText) toast(okText)
     } catch (e) {
@@ -458,6 +631,7 @@ function RegistrationCard({ r, onChange, onRemove }: {
     try {
       await apiDelete(`/api/v1/private/registrations/${r.id}`)
       onRemove(r.id)
+      if (r.pairRole) onReload()
       toast('حذفنا التسجيل')
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'تعذر الحذف')
@@ -471,7 +645,12 @@ function RegistrationCard({ r, onChange, onRemove }: {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-black">{r.fullName}</h3>
-            <Inset tone={STATUS_TONE[r.status]} className="px-2 py-0.5 text-fine font-bold">{r.status === 'pending' && !r.proof && !r.cardPaidAt ? 'بانتظار الدفع' : STATUS_AR[r.status]}</Inset>
+            <Inset tone={STATUS_TONE[r.status]} className="px-2 py-0.5 text-fine font-bold">{r.status === 'pending' && !r.proof && !r.cardPaidAt && !r.partnerPaid ? 'بانتظار الدفع' : STATUS_AR[r.status]}</Inset>
+            {r.pairRole && (
+              <Inset tone="accent" className="px-2 py-0.5 text-fine font-bold">
+                {r.pairRole === 'lead' ? `مع صديقه ${r.partnerName ?? ''} · يدفع ${r.amountJod} دينار عنهما` : `مع ${r.partnerName ?? 'صديقه'} · يدفع عنه`}
+              </Inset>
+            )}
             <span dir="ltr" className="font-mono text-fine text-muted-foreground">#{r.reference}</span>
           </div>
           <div className="mt-2 grid gap-1 text-read leading-6">
@@ -501,6 +680,16 @@ function RegistrationCard({ r, onChange, onRemove }: {
                     : `وصله البريد ورابط Zoom ${fmtDateTime(r.mailSentAt)}`}
             </p>
           )}
+          {r.status === 'confirmed' && r.pairRole !== 'friend' && (r.metaSentAt || r.metaError) && (
+            <p className={`mt-1 flex flex-wrap items-center gap-2 text-read ${r.metaError && !r.metaSentAt ? 'text-red-300' : 'text-muted-foreground'}`}>
+              {r.metaSentAt ? `أبلغنا Meta بشرائه ${fmtDateTime(r.metaSentAt)}` : `لم يصل Meta: ${r.metaError}`}
+              {!r.metaSentAt && (
+                <Button size="sm" tone="ghost" loading={busy === 'meta'} disabled={busy !== null}
+                  onClick={() => void act('meta', () => apiPost(`/api/v1/private/registrations/${r.id}/meta`), 'أعدنا إبلاغ Meta')}>أعد الإبلاغ</Button>
+              )}
+            </p>
+          )}
+          {r.recordingSentAt && <p className="mt-1 text-read text-muted-foreground">وصله التسجيل {fmtDateTime(r.recordingSentAt)}{r.recordingMissing ? ' — قبل الرابط الحالي' : ''}</p>}
         </div>
 
         {r.proof
@@ -516,6 +705,16 @@ function RegistrationCard({ r, onChange, onRemove }: {
                 )}
             </a>
           )
+          : r.pairRole === 'friend'
+            ? (
+              /* من حجز له صديقُه ويدفع عنهما — حوالتُهما على بطاقة صديقه (٢١ نوفمبر ٢٠٢٦) */
+              <Inset tone={r.partnerPaid ? 'positive' : 'warn'} className="flex w-full flex-col items-start gap-2 p-3 text-read md:w-56">
+                <b>يدفع عنه {r.partnerName ?? 'صديقه'}</b>
+                <span className="text-fine leading-5 text-muted-foreground">
+                  {r.partnerPaid ? 'رفع الحوالة عنهما — تجدها على بطاقته. تأكيد أحدهما يؤكد الاثنين.' : 'لم يدفع بعد. تأكيد أحدهما يؤكد الاثنين.'}
+                </span>
+              </Inset>
+            )
           : r.cardPaidAt
             ? (
               /* دفعُ البطاقة كما أخبر به Stripe — يتأكّد وحدَه، إلّا مبلغا دون السعر يبقى للمراجعة (٢١ نوفمبر ٢٠٢٦) */
@@ -624,7 +823,8 @@ type Filter = 'unpaid' | 'review' | 'confirmed' | 'rejected' | 'all'
 
 function filterOf(r: Registration): Exclude<Filter, 'all'> {
   /* ودفعُ بطاقةٍ أخبر به Stripe وبقي للمراجعة (مبلغٌ دون السعر) — دفع، فهو للمراجعة لا للتذكير */
-  if (r.status === 'pending') return r.proof || r.cardPaidAt ? 'review' : 'unpaid'
+  /* ومن دفع عنه صديقُه فحالُه حالُ صديقه (٢١ نوفمبر ٢٠٢٦) */
+  if (r.status === 'pending') return r.proof || r.cardPaidAt || r.partnerPaid ? 'review' : 'unpaid'
   return r.status
 }
 
@@ -822,12 +1022,18 @@ export default function PrivateWorkspace() {
                 missing={regs.filter((r) => r.sectionKey === s.key && r.zoomMissing).length}
                 sending={bulk === s.key} onSendMissing={() => void sendMissing(s.key)} />
             ))}
+            {data.course.sections.map((s) => (
+              <RecordingEditor key={`rec:${s.key}:${s.recording ?? ''}`} section={s} onSaved={setData}
+                missing={regs.filter((r) => r.sectionKey === s.key && r.recordingMissing).length} />
+            ))}
             {data.course.cardPayments && (
               <>
                 <CardLink key={data.course.cardUrl ?? ''} cardUrl={data.course.cardUrl} onSaved={setData} />
                 <StripeAuto stripe={data.stripe} onSaved={(st) => setData((d) => d && ({ ...d, stripe: st }))} />
               </>
             )}
+            <MetaSettings meta={data.meta} onSaved={(m) => setData((d) => d && ({ ...d, meta: m }))} onReported={() => void load()}
+              pending={regs.filter((r) => r.status === 'confirmed' && r.pairRole !== 'friend' && !r.metaSentAt).length} />
             <CourseFile file={data.course.file} onSaved={setData} />
             <GmailSettings gmail={data.gmail} onSaved={(g) => setData((d) => d && ({ ...d, gmail: g }))} />
           </div>
@@ -870,7 +1076,7 @@ export default function PrivateWorkspace() {
           <div className="mt-4 space-y-3">
             {shown.length === 0
               ? <Inset className="p-6 text-center text-read text-muted-foreground">لا أحد هنا {filter === 'review' ? '— لا حوالات تنتظر المراجعة' : filter === 'unpaid' ? '— كل من حجز رفع حوالته' : ''}</Inset>
-              : shown.map((r) => <RegistrationCard key={r.id} r={r} onChange={patchReg} onRemove={dropReg} />)}
+              : shown.map((r) => <RegistrationCard key={r.id} r={r} onChange={patchReg} onRemove={dropReg} onReload={() => void load()} />)}
           </div>
         </Panel>
       </main>

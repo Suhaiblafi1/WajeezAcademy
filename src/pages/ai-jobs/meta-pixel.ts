@@ -13,7 +13,8 @@
    والسياسةُ في `deploy/Caddyfile` تسمح لـ`connect.facebook.net` (السكربت) و`www.facebook.com` (الإرسال) — وبدونهما
    يُردّ البكسلُ صامتا. ويحرسهما `src/tests/private-course/ai-jobs-page.test.ts`. */
 
-export const META_PIXEL_ID = '1150707094391273'
+export { META_PIXEL_ID } from '@/application/private-course/ai-jobs'
+import { META_PIXEL_ID } from '@/application/private-course/ai-jobs'
 
 type Fbq = ((...args: unknown[]) => void) & {
   callMethod?: (...args: unknown[]) => void
@@ -67,5 +68,21 @@ export function trackPixel(event: PixelEvent, params?: Record<string, unknown>):
     else window.fbq('track', event)
   } catch {
     /* البكسلُ قياسٌ لا شرط — لا يمنع حجزا ولا دفعا */
+  }
+}
+
+/** كعكتا البكسل — تُرسلان مع التسجيل ليُطابَق الشراءُ بزائر الإعلان حين يتأكّد (`meta-capi.ts`، ٢١ نوفمبر ٢٠٢٦).
+    و`_fbc` إن لم يكتبها البكسلُ بعدُ تُبنى من `fbclid` في الرابط كما يبنيها هو */
+export function metaCookies(): { fbp?: string; fbc?: string } {
+  try {
+    const jar = Object.fromEntries(document.cookie.split(';').map((c) => {
+      const i = c.indexOf('=')
+      return [c.slice(0, i).trim(), decodeURIComponent(c.slice(i + 1).trim())]
+    }))
+    const fbclid = new URLSearchParams(window.location.search).get('fbclid')
+    const fbc = jar._fbc || (fbclid ? `fb.1.${Date.now()}.${fbclid}` : undefined)
+    return { ...(jar._fbp ? { fbp: jar._fbp } : {}), ...(fbc ? { fbc } : {}) }
+  } catch {
+    return {}
   }
 }
