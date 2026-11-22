@@ -32,6 +32,14 @@ export interface ReminderInput {
   abroad: boolean
   /** رقمُ مرجعه — في رسالة واتساب الجاهزة */
   reference: string
+  /** ما يُحوَّل — ٢٠ دينارا عنه وعن صديقه إن سجّلا معا (٢١ نوفمبر ٢٠٢٦) */
+  amountJod: number
+  /** اسمُ صديقه الأوّل إن سجّلا معا */
+  friendName: string | null
+}
+
+function amountHtml(i: ReminderInput): string {
+  return `<b style="color:${C.ink}">${i.amountJod} دينار</b>${i.friendName ? ` عنك وعن ${esc(i.friendName)}` : ''}`
 }
 
 /** من خارج الأردن والبطاقةُ غيرُ معروضة — فلا طريقَ له إلّا واتساب */
@@ -80,7 +88,7 @@ export function reminderHtml(i: ReminderInput): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;background:${C.ice};border:2px solid ${C.ink};border-radius:16px">
   <tr><td style="padding:16px 18px">
     <div style="font-family:${FONT};font-size:17px;font-weight:800;color:${C.ink}">أكّد مقعدك بخطوة واحدة</div>
-    ${p(`حوّل <b style="color:${C.ink}">${AI_JOBS.priceJod} دينار</b> عبر CliQ إلى الاسم المستعار <b dir="ltr" style="color:${C.ink}">${esc(AI_JOBS.cliqAlias)}</b>، ثم ارفع صورة الحوالة من رابطك.`, ';margin-top:4px')}
+    ${p(`حوّل ${amountHtml(i)} عبر CliQ إلى الاسم المستعار <b dir="ltr" style="color:${C.ink}">${esc(AI_JOBS.cliqAlias)}</b>، ثم ارفع صورة الحوالة من رابطك.`, ';margin-top:4px')}
     ${i.card ? p(`من خارج الأردن؟ ادفع <b dir="ltr" style="color:${C.ink}">${AI_JOBS.priceUsd}$</b> بالبطاقة من الرابط نفسه.`) : ''}
     ${abroadLink(i) ? p(`<a href="${esc(abroadLink(i)!)}" style="color:${C.green};font-weight:700;text-decoration:none">${esc(ABROAD_PAY_LINE)}</a>`) : ''}
     ${button(i.payUrl, last ? 'أكّد مقعدي الآن' : 'أكمل حجزي', C.yellow, C.ink)}
@@ -110,7 +118,7 @@ export function reminderText(i: ReminderInput): string {
     intro(i),
     ...(i.kind === 'last_chance' ? [`${seatsLabel(i.seats)} في ${i.section.title}.`] : []),
     '',
-    `أكّد مقعدك: حوّل ${AI_JOBS.priceJod} دينار عبر CliQ إلى ${AI_JOBS.cliqAlias}، ثم ارفع صورة الحوالة من رابطك:`,
+    `أكّد مقعدك: حوّل ${i.amountJod} دينار${i.friendName ? ` عنك وعن ${i.friendName}` : ''} عبر CliQ إلى ${AI_JOBS.cliqAlias}، ثم ارفع صورة الحوالة من رابطك:`,
     i.payUrl,
     ...(i.card ? [`من خارج الأردن؟ ادفع ${AI_JOBS.priceUsd}$ بالبطاقة من الرابط نفسه.`] : []),
     ...(abroadLink(i) ? [`${ABROAD_PAY_LINE}: ${abroadLink(i)}`] : []),

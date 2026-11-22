@@ -17,7 +17,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AI_JOBS_SLUG, aiJobsSection, seatsLeft, type AiJobsSectionKey } from '../../../src/application/private-course/ai-jobs'
 import { publicSiteUrl } from '../site-url'
-import { cardOn } from './registration.service'
+import { amountJodOf, cardOn, partnerOf } from './registration.service'
 import { privateMailReady, sendPrivateMail } from './mailer'
 import { reminderHtml, reminderSubject, reminderText, type ReminderKind } from './reminder-mail'
 
@@ -35,6 +35,8 @@ export interface ReminderCandidate {
   proofKey: string | null
   /** دفع بالبطاقة وأخبر به Stripe — ولو بقي للمراجعة فقد دفع */
   cardPaidAt: Date | null
+  /** سجّلا معا: `friend` يدفع عنه صديقُه — فلا يُذكَّر هو، ويُذكَّر من يدفع (٢١ نوفمبر ٢٠٢٦) */
+  pairRole: string | null
   sectionKey: string
   createdAt: Date
   remindedAt: Date | null
@@ -53,7 +55,7 @@ export function inSendHours(now: Date): boolean {
 
 /** أيُّ رسالةٍ حان موعدُها لهذا الحجز — أو لا شيء */
 export function dueReminder(r: ReminderCandidate, now: Date): ReminderKind | null {
-  if (r.status !== 'pending' || r.proofKey || r.cardPaidAt) return null
+  if (r.status !== 'pending' || r.proofKey || r.cardPaidAt || r.pairRole === 'friend') return null
   const section = aiJobsSection(r.sectionKey)
   if (!section || now.getTime() >= Date.parse(section.startsAt)) return null
   const age = now.getTime() - r.createdAt.getTime()
@@ -83,6 +85,7 @@ export async function runPrivateCourseReminders(prisma: PrismaClient, now = new 
   const rows = await prisma.privateRegistration.findMany({
     where: {
       courseSlug: AI_JOBS_SLUG, status: 'pending', proofKey: null, cardPaidAt: null, lastChanceAt: null,
+      AND: [{ OR: [{ pairRole: null }, { pairRole: 'lead' }] }],
       OR: [
         { remindedAt: null, createdAt: { lte: ago(REMIND_AFTER_MS), gt: ago(LAST_CHANCE_AFTER_MS) } },
         { createdAt: { lte: ago(LAST_CHANCE_AFTER_MS) }, OR: [{ remindedAt: null }, { remindedAt: { lte: ago(DAY) } }] },
@@ -101,6 +104,9 @@ export async function runPrivateCourseReminders(prisma: PrismaClient, now = new 
   let lastChances = 0
   let failed = 0
   for (const { r, kind } of due) {
+    /* وإن رفع صديقُه الحوالةَ عنهما فقد دُفع — لا يُقال له «لم تدفع» */
+    const partner = await partnerOf(prisma, r)
+    if (partner?.proofKey || partner?.cardPaidAt) continue
     const section = aiJobsSection(r.sectionKey)!
     const input = {
       kind,
@@ -112,6 +118,8 @@ export async function runPrivateCourseReminders(prisma: PrismaClient, now = new 
       seats: seatsLeft(r.sectionKey as AiJobsSectionKey, now.getTime()),
       abroad: r.phoneCountry !== 'JO',
       reference: r.id.slice(0, 8).toUpperCase(),
+      amountJod: amountJodOf(r),
+      friendName: partner ? partner.fullName.split(' ')[0] : null,
     }
     const sent = await sendPrivateMail(prisma, {
       to: r.email, toName: r.fullName, subject: reminderSubject(kind), html: reminderHtml(input), text: reminderText(input),

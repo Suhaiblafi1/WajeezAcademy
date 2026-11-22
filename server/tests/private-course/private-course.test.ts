@@ -22,8 +22,9 @@ import {
 } from '../../services/private-course/mailer'
 import { ABROAD_PAY_LINE, AI_JOBS, AI_JOBS_SLUG, CLAUDE_LINKS, seatsLabel, seatsLeft } from '../../../src/application/private-course/ai-jobs'
 import { dueReminder, runPrivateCourseReminders } from '../../services/private-course/reminders'
+import { setMetaSenderForTests } from '../../services/private-course/meta-capi'
 import { setCardPaymentsForTests } from '../../services/private-course/registration.service'
-import { createHmac } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 import { runJob } from '../../worker/jobs'
 
 let prisma: PrismaClient
@@ -860,5 +861,263 @@ describe('⑪ من خارج الأردن في التذكير', () => {
     expect(h, 'لم يصله التذكير').toBeTruthy()
     expect(h.html, 'سطر الخارج لرقم أردني').not.toContain(ABROAD_PAY_LINE)
     void home
+  })
+})
+
+/* ═══ ⑫ شخصان بسعر (٢١ نوفمبر ٢٠٢٦) ═══
+   «نفّذ ٧ ولكن شخصين يكون السعر ٢٠ لأن السعر الأصلي ١٤». الحاجزُ يكتب صديقَه، فيُحجز لهما في الشعبة نفسِها، ويدفع ٢٠
+   دينارا عنهما — وما يقع على أحدهما يقع على الآخر. */
+describe('⑫ شخصان بسعر', () => {
+  const REG = `/api/v1/public/private-courses/${AI_JOBS_SLUG}/registrations`
+  const pairReg = (lead: string, friend: Record<string, unknown>, over: Record<string, unknown> = {}) => {
+    ip += 1
+    return app.inject({
+      method: 'POST', url: REG, remoteAddress: `10.81.0.${ip}`,
+      payload: {
+        fullName: 'سامي عيسى', email: lead, phoneCountry: 'JO', phone: '0795555555', sectionKey: 'morning',
+        friend: { fullName: 'ليث عيسى', phoneCountry: 'JO', phone: '0796666666', ...friend }, ...over,
+      },
+    })
+  }
+  const row = (email: string) => prisma.privateRegistration.findFirstOrThrow({ where: { email } })
+
+  it('⚠️ يحجز للاثنين في الشعبة نفسها بسعر 20 دينارا — والحاجز يدفع عنهما', async () => {
+    const res = await pairReg('pair-lead@test.local', { email: 'pair-friend@test.local' })
+    expect(res.statusCode, res.body).toBe(201)
+    expect(res.json()).toMatchObject({ amountJod: AI_JOBS.pair.priceJod, pair: { role: 'lead', firstName: 'ليث' } })
+    const lead = await row('pair-lead@test.local')
+    const friend = await row('pair-friend@test.local')
+    expect(lead).toMatchObject({ pairId: lead.id, pairRole: 'lead', sectionKey: 'morning', status: 'pending' })
+    expect(friend).toMatchObject({ pairId: lead.id, pairRole: 'friend', sectionKey: 'morning', status: 'pending', phone: '+962796666666' })
+    expect(friend.payToken).not.toBe(lead.payToken)
+    const pay = (t: string) => app.inject({ method: 'GET', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}/pay/${t}` })
+    expect((await pay(lead.payToken)).json()).toMatchObject({ amountJod: 20, pair: { role: 'lead', firstName: 'ليث' } })
+    expect((await pay(friend.payToken)).json()).toMatchObject({ amountJod: 0, pair: { role: 'friend', firstName: 'سامي' } })
+    expect(AI_JOBS.pair.priceJod).toBe(20)
+  })
+
+  it('⚠️ صديق خاطئ يرد ولا يحجز للحاجز شيئا — نفس بريده، ورقم خاطئ، ومؤكد من قبل', async () => {
+    const before = await prisma.privateRegistration.count()
+    expect((await pairReg('pair-x@test.local', { email: 'pair-x@test.local' })).statusCode).toBe(400)
+    expect((await pairReg('pair-x@test.local', { email: 'pair-y@test.local', phone: '12345' })).statusCode).toBe(400)
+    const sara = await prisma.privateRegistration.findFirstOrThrow({ where: { status: 'confirmed' } })
+    expect((await pairReg('pair-x@test.local', { email: sara.email })).statusCode).toBe(409)
+    expect(await prisma.privateRegistration.count(), 'حجز للحاجز بلا صديقه').toBe(before)
+  })
+
+  it('⚠️ تأكيد أحدهما يؤكد الاثنين ويصل كلا بريده — والرفض والإعادة ونقل الشعبة لهما معا', async () => {
+    const lead = await row('pair-lead@test.local')
+    const friend = await row('pair-friend@test.local')
+    const moved = await asOwner('PATCH', `/api/v1/private/registrations/${friend.id}`, { sectionKey: 'evening' })
+    expect(moved.statusCode, moved.body).toBe(200)
+    expect((await row('pair-lead@test.local')).sectionKey).toBe('evening')
+    expect((await asOwner('POST', `/api/v1/private/registrations/${friend.id}/reject`)).json().partners[0].status).toBe('rejected')
+    expect((await row('pair-lead@test.local')).status).toBe('rejected')
+    await asOwner('POST', `/api/v1/private/registrations/${lead.id}/reopen`)
+    expect((await row('pair-friend@test.local')).status).toBe('pending')
+
+    const res = await asOwner('POST', `/api/v1/private/registrations/${lead.id}/confirm`, { sendMail: true })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json().partners).toHaveLength(1)
+    expect((await row('pair-lead@test.local')).status).toBe('confirmed')
+    expect((await row('pair-friend@test.local')).status).toBe('confirmed')
+    expect(sent.filter((x) => x.mail.to === 'pair-lead@test.local')).toHaveLength(1)
+    expect(sent.filter((x) => x.mail.to === 'pair-friend@test.local'), 'لم يصل الصديق بريده').toHaveLength(1)
+  })
+
+  it('⚠️ التذكير للحاجز وحده بسعر الاثنين — ولا تذكير إن رفع صديقه الحوالة', async () => {
+    await pairReg('pair-r1@test.local', { email: 'pair-r2@test.local' })
+    await pairReg('pair-p1@test.local', { email: 'pair-p2@test.local' })
+    const AT = new Date('2026-11-28T09:00:00.000Z')
+    for (const e of ['pair-r1@test.local', 'pair-r2@test.local', 'pair-p1@test.local', 'pair-p2@test.local']) {
+      await prisma.privateRegistration.update({ where: { courseSlug_email: { courseSlug: AI_JOBS_SLUG, email: e } }, data: { createdAt: new Date('2026-11-27T05:00:00.000Z') } })
+    }
+    await prisma.privateRegistration.update({ where: { courseSlug_email: { courseSlug: AI_JOBS_SLUG, email: 'pair-p2@test.local' } }, data: { proofKey: 'private/paired.png' } })
+    await runPrivateCourseReminders(prisma, AT)
+    const to = (e: string) => sent.filter((x) => x.mail.to === e).map((x) => x.mail)
+    expect(to('pair-r1@test.local')).toHaveLength(1)
+    expect(to('pair-r1@test.local')[0].text).toContain('حوّل 20 دينار عنك وعن ليث')
+    expect(to('pair-r2@test.local'), 'ذكر الصديق').toHaveLength(0)
+    /* والحارسان كلاهما: الاستعلامُ يستثني الصديق، والدالّةُ تستثنيه لو وصلها */
+    const friendRow = await row('pair-r2@test.local')
+    expect(dueReminder({ ...friendRow, remindedAt: null, lastChanceAt: null }, AT), 'الدالة تذكر الصديق').toBeNull()
+    expect(to('pair-p1@test.local'), 'ذكر من دفع عنه صديقه').toHaveLength(0)
+  })
+
+  it('وحذف أحدهما يفك الآخر بسعره هو — وExcel يقول من مع من', async () => {
+    const x = await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}/export.xlsx`)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(x.rawPayload as never)
+    const all = wb.getWorksheet('الكل')!
+    const col = (all.getRow(1).values as unknown[]).indexOf('مع صديق')
+    const cell = all.getRows(2, all.rowCount - 1)!.find((r) => r.getCell(2).value === 'pair-r1@test.local')!.getCell(col).value
+    expect(cell).toBe('ليث عيسى (دفع عنهما)')
+
+    const lead = await row('pair-r1@test.local')
+    expect((await asOwner('DELETE', `/api/v1/private/registrations/${lead.id}`)).statusCode).toBe(200)
+    const friend = await row('pair-r2@test.local')
+    expect(friend).toMatchObject({ pairId: null, pairRole: null })
+    const o = (await asOwner('GET', `/api/v1/private/courses/${AI_JOBS_SLUG}`)).json()
+    expect(o.registrations.find((r: { email: string }) => r.email === 'pair-r2@test.local')).toMatchObject({ amountJod: 14, pairRole: null })
+  })
+})
+
+/* ═══ ⑬ تسجيل الدورة لمن لا يستطيع الحضور (٢١ نوفمبر ٢٠٢٦) ═══
+   «نفّذ ٨»: بعد الدورة يلصق رابطَ تسجيل الشعبة، ويصل مؤكَّديها بريدٌ به — مرّةً لكلّ رابط. */
+describe('⑬ تسجيل الدورة', () => {
+  const COURSE = `/api/v1/private/courses/${AI_JOBS_SLUG}`
+  const REC = 'https://drive.google.com/file/d/rec-evening/view'
+
+  it('⚠️ رابط التسجيل https وحده — ويحفظ لشعبته', async () => {
+    expect((await asOwner('PATCH', COURSE, { recordings: { evening: 'http://insecure.example/rec' } })).statusCode).toBe(400)
+    expect((await asOwner('PATCH', COURSE, { recordings: { nope: REC } })).statusCode).toBe(400)
+    const res = await asOwner('PATCH', COURSE, { recordings: { evening: REC } })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json().course.sections.find((x: { key: string }) => x.key === 'evening').recording).toBe(REC)
+    expect((await asOwner('POST', `${COURSE}/sections/morning/recording/send`)).statusCode, 'إرسال بلا رابط').toBe(400)
+  })
+
+  it('⚠️ يصل المؤكدين في الشعبة وحدهم مرة لكل رابط — وتغيير الرابط يعيده', async () => {
+    const confirmed = await prisma.privateRegistration.findMany({ where: { courseSlug: AI_JOBS_SLUG, sectionKey: 'evening', status: 'confirmed' } })
+    expect(confirmed.length).toBeGreaterThan(0)
+    const before = sent.length
+    const res = await asOwner('POST', `${COURSE}/sections/evening/recording/send`)
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toMatchObject({ sent: confirmed.length, failed: 0 })
+    const mails = sent.slice(before).map((x) => x.mail)
+    expect(mails.map((m) => m.to).sort()).toEqual(confirmed.map((r) => r.email).sort())
+    expect(mails[0].subject).toContain('تسجيل الدورة')
+    expect(mails[0].html).toContain(REC)
+    expect(mails[0].html, 'اسم الأكاديمية في بريد خاص').not.toMatch(/وجيز|wajeez/i)
+
+    const again = await asOwner('POST', `${COURSE}/sections/evening/recording/send`)
+    expect(again.json().sent, 'وصلهم مرتين').toBe(0)
+
+    await asOwner('PATCH', COURSE, { recordings: { evening: `${REC}?v=2` } })
+    const o = (await asOwner('GET', COURSE)).json()
+    expect(o.registrations.filter((r: { recordingMissing: boolean }) => r.recordingMissing)).toHaveLength(confirmed.length)
+    expect((await asOwner('POST', `${COURSE}/sections/evening/recording/send`)).json().sent).toBe(confirmed.length)
+  })
+
+  it('وبريد التأكيد يقول إن التسجيل يصل بعد الدورة', async () => {
+    const mail = sent.find((x) => x.mail.subject.includes('تم تأكيد تسجيلك'))!.mail
+    expect(mail.html).toContain('يصلك تسجيل الدورة على بريدك بعدها')
+    expect(mail.text).toContain('يصلك تسجيل الدورة على بريدك بعدها')
+  })
+})
+
+/* ═══ ⑭ إبلاغ Meta بالشراء حين يتأكد الحجز (٢١ نوفمبر ٢٠٢٦) ═══
+   «نفّذ ٤»: حين يؤكَّد حجزٌ يُرسل الخادمُ إلى Meta حدثَ Purchase — مجزّأَ البريد والرقم، مرّةً واحدة، ولا يُسقط التأكيد. */
+describe('⑭ إبلاغ Meta بالشراء', () => {
+  const TOKEN = 'EAAtestTokenForPrivateCourseConversionsApi1234567890'
+  type SentEvent = { event_name: string; action_source: string; event_id: string; user_data: Record<string, string[] | string>; custom_data: Record<string, unknown> }
+  const calls: { url: string; body: { data: SentEvent[]; access_token: string; test_event_code?: string } }[] = []
+  let fail = false
+  const sha = (v: string) => createHash('sha256').update(v).digest('hex')
+  beforeAll(() => setMetaSenderForTests(async (url, body) => {
+    calls.push({ url, body: body as never })
+    return fail ? { ok: false, status: 400, text: JSON.stringify({ error: { message: 'Invalid OAuth access token' } }) } : { ok: true, status: 200, text: '{"events_received":1}' }
+  }))
+  afterAll(() => setMetaSenderForTests(null))
+  const confirm = (id: string) => asOwner('POST', `/api/v1/private/registrations/${id}/confirm`, { sendMail: false })
+  const reg = (email: string, extra: Record<string, unknown> = {}) => {
+    ip += 1
+    return app.inject({
+      method: 'POST', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}/registrations`, remoteAddress: `10.83.0.${ip}`,
+      headers: { 'user-agent': 'Mozilla/5.0 (iPhone) MetaTest' },
+      payload: { fullName: 'كريم يوسف حداد', email, phoneCountry: 'JO', phone: '0791112223', sectionKey: 'morning', ...extra },
+    })
+  }
+
+  it('⚠️ بلا رمز لا يخرج شيء — والتأكيد يتم', async () => {
+    await reg('meta-none@test.local')
+    const r = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'meta-none@test.local' } })
+    expect((await confirm(r.id)).statusCode).toBe(200)
+    expect(calls).toHaveLength(0)
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: r.id } })).metaSentAt).toBeNull()
+  })
+
+  it('⚠️ الرمز له وحده، ويحفظ مختوما ولا يعاد إلا مقنعا', async () => {
+    const other = await app.inject({ method: 'PUT', url: '/api/v1/private/meta', payload: { token: TOKEN }, cookies: { wajeez_session: otherAdminToken } })
+    expect(other.statusCode).toBe(404)
+    expect((await asOwner('PUT', '/api/v1/private/meta', { token: 'short' })).statusCode).toBe(400)
+    expect((await asOwner('PUT', '/api/v1/private/meta', { testCode: 'nope' })).statusCode).toBe(400)
+    const res = await asOwner('PUT', '/api/v1/private/meta', { token: TOKEN, testCode: 'TEST4242' })
+    expect(res.statusCode, res.body).toBe(200)
+    expect(res.json()).toMatchObject({ ready: true, source: 'db', tokenTail: '••••7890', testCode: 'TEST4242' })
+    expect(res.body).not.toContain(TOKEN)
+    const row = await prisma.integrationSetting.findUniqueOrThrow({ where: { provider: 'private_meta' } })
+    expect(JSON.stringify(row.config), 'الرمز بنصه في القاعدة').not.toContain('ConversionsApi')
+  })
+
+  it('⚠️ التأكيد يرسل Purchase مجزأ البريد والرقم بكعكة البكسل ومتصفحه — مرة واحدة', async () => {
+    const r1 = await reg('Meta-Buyer@test.local', { meta: { fbp: 'fb.1.1700000000000.1234567890', fbc: 'not-a-cookie' } })
+    expect(r1.statusCode, r1.body).toBe(201)
+    const r = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'meta-buyer@test.local' } })
+    expect(r.metaClick).toMatchObject({ fbp: 'fb.1.1700000000000.1234567890', ua: 'Mozilla/5.0 (iPhone) MetaTest' })
+    expect((r.metaClick as Record<string, unknown>).fbc, 'كعكة بصيغة خاطئة حفظت').toBeUndefined()
+
+    const before = calls.length
+    expect((await confirm(r.id)).statusCode).toBe(200)
+    expect(calls.length - before).toBe(1)
+    const call = calls[calls.length - 1]
+    expect(call.url).toBe('https://graph.facebook.com/v23.0/1150707094391273/events')
+    expect(call.body).toMatchObject({ access_token: TOKEN, test_event_code: 'TEST4242' })
+    const ev = call.body.data[0]
+    expect(ev).toMatchObject({ event_name: 'Purchase', action_source: 'website', event_id: `ai-jobs-purchase-${r.id}` })
+    expect(ev.user_data.em).toEqual([sha('meta-buyer@test.local')])
+    expect(ev.user_data.ph).toEqual([sha('962791112223')])
+    expect(ev.user_data.fn).toEqual([sha('كريم')])
+    expect(ev.user_data.ln).toEqual([sha('حداد')])
+    expect(ev.user_data).toMatchObject({ fbp: 'fb.1.1700000000000.1234567890', client_user_agent: 'Mozilla/5.0 (iPhone) MetaTest' })
+    expect(JSON.stringify(ev), 'البريد بنصه إلى Meta').not.toContain('meta-buyer@test.local')
+    expect(ev.custom_data).toMatchObject({ currency: 'USD', value: AI_JOBS.priceUsd, num_items: 1 })
+    expect((await prisma.privateRegistration.findUniqueOrThrow({ where: { id: r.id } })).metaSentAt).not.toBeNull()
+
+    await asOwner('POST', `/api/v1/private/registrations/${r.id}/send`)
+    await asOwner('POST', `/api/v1/private/registrations/${r.id}/meta`)
+    expect(calls.length - before, 'أبلغ مرتين').toBe(1)
+  })
+
+  it('⚠️ الاثنان حدث واحد باسم من دفع بقيمة الاثنين', async () => {
+    ip += 1
+    await app.inject({
+      method: 'POST', url: `/api/v1/public/private-courses/${AI_JOBS_SLUG}/registrations`, remoteAddress: `10.83.1.${ip}`,
+      payload: {
+        fullName: 'منى سالم', email: 'meta-pair@test.local', phoneCountry: 'JO', phone: '0793334445', sectionKey: 'morning',
+        friend: { fullName: 'هبة سالم', email: 'meta-pair-friend@test.local', phoneCountry: 'JO', phone: '0793334446' },
+      },
+    })
+    const friend = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'meta-pair-friend@test.local' } })
+    const before = calls.length
+    await confirm(friend.id)
+    expect(calls.length - before, 'حدث لكل منهما').toBe(1)
+    const ev = calls[calls.length - 1].body.data[0]
+    expect(ev.user_data.em).toEqual([sha('meta-pair@test.local')])
+    expect(ev.custom_data).toMatchObject({ value: AI_JOBS.pair.priceUsd, num_items: 2 })
+  })
+
+  it('⚠️ إخفاق Meta لا يسقط التأكيد — يكتب ويعاد من اللوحة، والسابقون يبلغ عنهم مرة', async () => {
+    await reg('meta-fail@test.local')
+    const r = await prisma.privateRegistration.findFirstOrThrow({ where: { email: 'meta-fail@test.local' } })
+    fail = true
+    const res = await confirm(r.id)
+    expect(res.statusCode).toBe(200)
+    const row = await prisma.privateRegistration.findUniqueOrThrow({ where: { id: r.id } })
+    expect(row.status).toBe('confirmed')
+    expect(row.metaError).toContain('Invalid OAuth access token')
+    expect(row.metaSentAt).toBeNull()
+    fail = false
+    const retry = await asOwner('POST', `/api/v1/private/registrations/${r.id}/meta`)
+    expect(retry.json()).toMatchObject({ report: { sent: true }, registration: { metaError: null } })
+
+    /* ومن تأكّد قبل الرمز — يُبلَّغ عنه بزرٍّ واحد، ثمّ لا يبقى أحد */
+    const pending = await asOwner('POST', `/api/v1/private/courses/${AI_JOBS_SLUG}/meta/report-pending`)
+    expect(pending.statusCode, pending.body).toBe(200)
+    expect(pending.json().sent).toBeGreaterThan(0)
+    expect(pending.json().error).toBeNull()
+    expect((await asOwner('POST', `/api/v1/private/courses/${AI_JOBS_SLUG}/meta/report-pending`)).json().sent).toBe(0)
+    const friends = calls.flatMap((c) => c.body.data).filter((e) => e.user_data.em[0] === sha('meta-pair-friend@test.local'))
+    expect(friends, 'أبلغ عن الصديق').toHaveLength(0)
   })
 })

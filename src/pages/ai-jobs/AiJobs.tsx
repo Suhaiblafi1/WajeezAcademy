@@ -428,6 +428,8 @@ export default function AiJobs() {
                 <li>نراجع الحوالة ويصلك التأكيد ورابط Zoom على بريدك</li>
               </ol>
             </div>
+            {/* شخصان بسعر — قرارُ صاحب المنصّة (اقتراحُ «٧»، ٢١ نوفمبر ٢٠٢٦) */}
+            <p className="aij-pair-note">سجّل مع صديق: <b>{AI_JOBS.pair.priceJod} دينار للاثنين</b> بدل {AI_JOBS.priceJod * 2} — تختاره في النموذج.</p>
             {card && (
               <p className="aij-card-note">من خارج الأردن؟ <b>ادفع <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> بالبطاقة</b> بعد الحجز — تختارها في خطوة الدفع.</p>
             )}

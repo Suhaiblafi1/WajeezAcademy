@@ -10,7 +10,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { normalizePhone } from '@/application/private-course/phone'
 import { renderAiJobsPage } from '@/application/private-course/landing-seo'
-import { ABROAD_PAY_LINE, AI_JOBS, AI_JOBS_SEO, abroadPayMessage, seatsLabel, seatsLeft, shareInviteText } from '@/application/private-course/ai-jobs'
+import { ABROAD_PAY_LINE, AI_JOBS, AI_JOBS_SEO, abroadPayMessage, priceJodFor, seatsLabel, seatsLeft, shareInviteText } from '@/application/private-course/ai-jobs'
 import { ABROAD_FAQ, CARD_FAQ, FAQS, faqsFor } from '@/pages/ai-jobs/content'
 import { readSource } from '@/application/private-course/source'
 import { allSections } from '@/pages/admin/nav-map'
@@ -261,7 +261,10 @@ describe('⑨ من خارج الأردن، وسجل معي، والاشتراك'
     expect(readSource('?src=share', '', 'www.wajeezacademy.com')).toBe('share')
     expect((step.match(/<ShareInvite \/>/g) ?? []).length, 'المؤكد ومن رفع الحوالة ومن حجز الآن').toBe(3)
     expect(step).toMatch(/\{fresh && <ShareInvite \/>\}/)
-    expect(step).toMatch(/<ShareInvite \/>\s*<\/div>\s*\)\s*\}\s*\n\s*if \(info\.hasProof/)
+    /* في شاشة «مقعدك مؤكد» وشاشة «وصلت صورة الحوالة» بعينهما */
+    const block = (start: string) => { const i = step.indexOf(start); return step.slice(i, step.indexOf('\n  if (', i + 1)) }
+    expect(block("if (info.status === 'confirmed')")).toMatch(/<ShareInvite \/>/)
+    expect(block("if (info.hasProof && info.status === 'pending' && !again)")).toMatch(/<ShareInvite \/>/)
   })
 
   it('⚠️ «٣» كلفة الاشتراك تقال صراحة — وسؤال من هو خارج الأردن بعد «كيف أدفع؟»', () => {
@@ -319,6 +322,52 @@ describe('⑧ بكسل Meta', () => {
       const fbq = (g.window as { fbq: { queue: unknown[][] } }).fbq
       expect(appended.map((e) => e.src)).toEqual(['https://connect.facebook.net/en_US/fbevents.js'])
       expect(fbq.queue).toEqual([['init', META_PIXEL_ID], ['track', 'Lead', { value: 20 }]])
+    } finally {
+      g.window = prev.window
+      g.document = prev.document
+    }
+  })
+})
+
+/* ═══ ⑩ شخصان بسعر، وتسجيل الدورة، وكعكتا البكسل (٢١ نوفمبر ٢٠٢٦) ═══
+   «نفّذ ٤ و٧ ولكن شخصين يكون السعر ٢٠ لأن السعر الأصلي ١٤ … ونفّذ ٨». */
+describe('⑩ شخصان بسعر، والتسجيل، وكعكتا البكسل', () => {
+  const form = read('src/pages/ai-jobs/RegisterForm.tsx')
+  const page = read('src/pages/ai-jobs/AiJobs.tsx')
+
+  it('⚠️ «٧» 20 دينارا للاثنين بدل 28 — وحقول الصديق لا تظهر ولا ترسل إلا باختياره', () => {
+    expect(AI_JOBS.pair.priceJod).toBe(20)
+    expect(AI_JOBS.priceJod * 2).toBe(28)
+    expect(priceJodFor(true)).toBe(20)
+    expect(priceJodFor(false)).toBe(14)
+    expect(form).toMatch(/<label className=\{`aij-pair\$\{withFriend/)
+    expect(form).toMatch(/\{withFriend && \(\s*<div className="aij-friend">/)
+    expect(form).toMatch(/\.\.\.\(withFriend \? \{ friend: \{/)
+    expect(form).toMatch(/الدفع: \{amountJod\} دينار/)
+    const pairFaq = FAQS.find((f) => f.q.includes('لشخصين'))
+    expect(pairFaq?.a).toContain(`${AI_JOBS.pair.priceJod} دينار للاثنين بدل ${AI_JOBS.priceJod * 2}`)
+    expect(page).toMatch(/<p className="aij-pair-note">[\s\S]*?AI_JOBS\.pair\.priceJod/)
+  })
+
+  it('⚠️ «٨» التسجيل لمن لا يستطيع الحضور — في الأسئلة وتحت الشعب', () => {
+    const rec = FAQS.find((f) => f.q.includes('تسجيل'))
+    expect(rec?.a).toMatch(/يصلك تسجيل الدورة/)
+    expect(form).toMatch(/لا تستطيع الحضور؟ اختر أي شعبة، ويصلك تسجيل الدورة/)
+  })
+
+  it('⚠️ «٤» كعكتا البكسل مع التسجيل — و_fbc تبنى من fbclid إن غابت', async () => {
+    expect(form).toMatch(/meta: metaCookies\(\)/)
+    const g = globalThis as unknown as { window?: unknown; document?: unknown }
+    const prev = { window: g.window, document: g.document }
+    g.document = { cookie: '_ga=x; _fbp=fb.1.1700000000000.99887766' }
+    g.window = { location: { search: '?src=ig&fbclid=AbC123' } }
+    try {
+      const { metaCookies } = await import('@/pages/ai-jobs/meta-pixel')
+      const c = metaCookies()
+      expect(c.fbp).toBe('fb.1.1700000000000.99887766')
+      expect(c.fbc).toMatch(/^fb\.1\.\d{13}\.AbC123$/)
+      g.document = { cookie: '_fbc=fb.1.1700000000001.FromPixel' }
+      expect(metaCookies()).toEqual({ fbc: 'fb.1.1700000000001.FromPixel' })
     } finally {
       g.window = prev.window
       g.document = prev.document

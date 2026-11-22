@@ -14,10 +14,11 @@ import { requirePrivateOwner } from '../../services/private-course/owner'
 import { saveGmailConfig } from '../../services/private-course/mailer'
 import { dismissUnmatched, saveStripeSecret } from '../../services/private-course/stripe-config'
 import { handleStripeWebhook } from '../../services/private-course/stripe-webhook'
+import { reportPendingPurchases, saveMetaConfig } from '../../services/private-course/meta-capi'
 import {
   clearCourseFile, confirmRegistration, courseFile, deleteRegistration, exportXlsx, moveSection, ownerOverview,
   chooseCard, payInfo, proofOf, publicCourseState, submitProof, registerPublic, rejectRegistration, reopenRegistration, sendConfirmation, sendTestMail,
-  setCourseFile, updateCourse,
+  retryMetaPurchase, sendRecording, setCourseFile, updateCourse,
 } from '../../services/private-course/registration.service'
 import { COURSE_FILE_MAX_BYTES, PROOF_MAX_BYTES } from '../../../src/application/private-course/ai-jobs'
 
@@ -63,8 +64,18 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
       /* اختياريّةٌ منذ «احجز أوّلا وادفع بعد» — تُرفع من رابط الدفع */
       proof: proofSchema.optional(),
       source: z.string().max(300).optional(),
+      /* صديقٌ يسجّل معه بسعر الاثنين (٢١ نوفمبر ٢٠٢٦) — يُفحص في الخدمة كاملا قبل أن يُكتب شيء */
+      friend: z.object({
+        fullName: z.string().trim().min(3, 'اكتب اسم صديقك الكامل').max(120, 'اسم صديقك أطول من المعتاد'),
+        email: z.string().trim().email('بريد صديقك غير صحيح').max(200),
+        phoneCountry: z.string().length(2, 'اختر دولة صديقك'),
+        phone: z.string().min(4, 'اكتب رقم صديقك').max(30, 'رقم صديقك غير صحيح'),
+      }).optional(),
+      /* كعكتا بكسل Meta — ليُطابَق الشراءُ بزائر الإعلان حين يتأكّد (`meta-capi.ts`) */
+      meta: z.object({ fbp: z.string().max(200).optional(), fbc: z.string().max(500).optional() }).optional(),
     }).parse(req.body)
-    const r = await registerPublic(prisma, slug, body)
+    const ua = req.headers['user-agent']
+    const r = await registerPublic(prisma, slug, { ...body, client: { ua: typeof ua === 'string' ? ua : undefined, ip: req.ip } })
     return reply.status(201).send(r)
   })
 
@@ -134,6 +145,8 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
       zoom: z.record(z.string(), z.object({ url: z.string().max(600), passcode: z.string().max(40).optional() }).nullable()).optional(),
       /* رابطُ الدفع بالبطاقة لمن هو خارج الأردن — وفارغُه يُخفي الخيار */
       cardUrl: z.string().max(600).optional(),
+      /* رابطُ تسجيل كلّ شعبةٍ بعدها — وفارغُه يمحوه (٢١ نوفمبر ٢٠٢٦) */
+      recordings: z.record(z.string(), z.string().max(600).nullable()).optional(),
     }).parse(req.body)
     return updateCourse(prisma, slug, body)
   })
@@ -241,6 +254,34 @@ export function registerPrivateCourseRoutes(app: FastifyInstance, prisma: Prisma
     }).parse(req.body)
     return saveGmailConfig(prisma, body)
   })
+
+  /* ═══ تسجيلُ الدورة — يُرسل رابطُه لمؤكَّدي الشعبة (٢١ نوفمبر ٢٠٢٦) ═══ */
+  app.post('/api/v1/private/courses/:slug/sections/:key/recording/send', {
+    preHandler: requirePrivateOwner,
+    schema: { tags: ['private-course'], summary: 'إرسال رابط تسجيل الشعبة لمؤكديها الذين لم يصلهم' },
+  }, async (req) => {
+    const { slug, key } = z.object({ slug: z.string().min(1).max(60), key: z.string().min(1).max(20) }).parse(req.params)
+    return sendRecording(prisma, slug, key)
+  })
+
+  /* ═══ إبلاغُ Meta بالشراء — رمزُ الوصول لا يعاد إلّا مقنّعا، وفارغُه يفصل الإبلاغ (٢١ نوفمبر ٢٠٢٦) ═══ */
+  app.put('/api/v1/private/meta', {
+    preHandler: requirePrivateOwner,
+    schema: { tags: ['private-course'], summary: 'رمز وصول Conversions API ورمز الاختبار — لإبلاغ Meta بالشراء' },
+  }, async (req) => {
+    const body = z.object({ token: z.string().max(700).optional(), testCode: z.string().max(40).optional() }).parse(req.body)
+    return saveMetaConfig(prisma, body)
+  })
+
+  app.post('/api/v1/private/courses/:slug/meta/report-pending', {
+    preHandler: requirePrivateOwner,
+    schema: { tags: ['private-course'], summary: 'إبلاغ Meta بالمؤكدين الذين لم يبلغ عنهم' },
+  }, async (req) => reportPendingPurchases(prisma, slugParam.parse(req.params).slug))
+
+  app.post('/api/v1/private/registrations/:id/meta', {
+    preHandler: requirePrivateOwner,
+    schema: { tags: ['private-course'], summary: 'إعادة إبلاغ Meta بشراء حجز مؤكد' },
+  }, async (req) => retryMetaPurchase(prisma, z.object({ id: z.string().uuid() }).parse(req.params).id))
 
   /* ═══ ربطُ Stripe — مفتاحُ التوقيع لا يعاد إلّا مقنّعا، وفارغُه يفصل الربط ═══ */
 
