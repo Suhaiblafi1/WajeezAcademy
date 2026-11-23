@@ -307,6 +307,10 @@ export const PUBLIC_PATHS: Readonly<Record<string, PublicPathDef>> = {
   BF80: { code: 'BF80', campaign: 'wajeez-black-friday', courseIds: ['C-JOB-104', 'C-MGR-107', 'C-BIZ-107'] },
 }
 
+/** قناةُ نموذج من أخذ كودَ حملةِ مسارٍ عامّ منه (`publicPathCode`). وبها وحدَها يُعرف كودُ «٨٠٪ على كلّ حال» الذي لا يردّه
+    «منحةٌ واحدةٌ لكلّ متعلّم» (٢٣ نوفمبر ٢٠٢٦، `grantOnceExempt` في `grant.service.ts`) */
+export const PUBLIC_PATH_LEAD_CHANNEL = 'go'
+
 /** المسارُ العامّ برمزه — بأيّ حالةٍ للحروف — أو `null` */
 export function publicPathOf(raw: string | null | undefined): PublicPathDef | null {
   const code = (raw ?? '').trim().toUpperCase()
@@ -373,5 +377,10 @@ export function publicPathSelection(courseIds: readonly string[], selected: read
 
 /** فوق مربّعات الاختيار */
 export const PUBLIC_PATH_PICK_AR = 'اختر الدورات التي تريدها: واحدة أو أكثر'
-/** ومن لم يدخل: ما يُقال فوق زرّ الدخول */
-export const PUBLIC_PATH_SIGN_IN_AR = 'سجل دخولك أو أنشئ حسابا، فيظهر المسار باسمك وسعرك بالمنحة.'
+/* ═══ وبلا حسابٍ يرى كلَّ شيءٍ، والحسابُ عند الدفع (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «They should see everything, and once they click to pay, then create account or sign in if they are
+   not» — نسخا لصندوق «سجل دخولك» أسفلَ الصفحة. فالزائرُ يرى الأسعارَ بنسبة الحملة الآن والمجموعَ و«أضف دورات» والاختيار،
+   وبلا اسمه وحدَه. فإن ضغط «أكمل التسجيل» دخل أو أنشأ حسابا، ثمّ يُعطى كودَه ويُفتح لوحُ الدفع بما اختاره نفسِه. */
+
+/** ما يُقال فوق الدخول حين يضغط الزائرُ «أكمل التسجيل» */
+export const PUBLIC_PATH_SIGN_IN_AR = 'خطوة واحدة قبل الدفع: سجل دخولك أو أنشئ حسابا، وتكمل بما اخترته.'

@@ -3,11 +3,16 @@
    طلبُ صاحب المنصّة: «اجعل الرابط عامّا: يسجّل دخوله أو ينشئ حسابا إن لم يكن له، فيظهر المسارُ باسمه»، ومن لا كودَ له في
    بلاك فرايدي **«Give code instantly»**: يُعطى كودَها على حسابه بلا هاتف.
 
-   ① **بلا حساب**: دوراتُه الثلاث بلا اسمٍ ولا سعرٍ ولا كود، و«سجل دخولك» — ونداءُ المتعلّم بلا جلسةٍ ٤٠١.
+   ① **بلا حساب يرى كلَّ شيءٍ إلّا اسمَه** — قرارُ صاحب المنصّة (٢٣ نوفمبر ٢٠٢٦): «They should see everything, and once they
+      click to pay, then create account or sign in»، نسخا لـ«بلا سعرٍ و"سجل دخولك"». فدوراتُه الثلاث بسعرها بنسبة الحملة الآن
+      ومجموعِها، و«أضف دورة» بحدّها، وكلُّ اختيارٍ يُسعَّر كذلك (`/api/public/go/:code/preview`) — بلا كودٍ ولا اسم. ونداءُ
+      المتعلّم بلا جلسةٍ ٤٠١.
    ② **وبحسابٍ لا كودَ له**: يُعطى كودَ بلاك فرايدي بنسبتها (80%) فورا، بأثره، وباسمه — والثلاثُ مسعّرةٌ به.
    ③ **ومن له كودُها يأخذه نفسَه** — ولا يُعطى ثانيا.
    ④ **والحملةُ المغلقة**: لا كود، ويُقال «المنحة مغلقة الآن».
-   ⑤ **ومن اشترى بمنحةٍ غيرِها** لا يُعطى كودَها — منحةٌ واحدةٌ لكلّ متعلّم.
+   ⑤ **ومن اشترى بمنحةٍ غيرِها يأخذ كودَها على كلّ حال** — قرارُ صاحب المنصّة (٢٣ نوفمبر ٢٠٢٦): «They get 80% anyway, even if
+      their code is linked to another grant»، نسخا لـ«لا يُعطى كودَها». فيُعطى كودا بـ80% من نموذجٍ بقناة المسار، وتسعّره المعاينةُ
+      ويقبله الطلب (`grantOnceExempt`). و«منحةٌ واحدةٌ لكلّ متعلّم» باقيةٌ فيما سواه: كودُ منحةٍ ثانيةٍ غيرِه يُردّ.
    ⑥ **و«أضف دورة» من دورات بلاك فرايدي وحدَها** — قرارُ صاحب المنصّة (٢٢ نوفمبر ٢٠٢٦): «اسمح لهم بإضافة دورات، لكن من
       الدورات الباقية في منحة بلاك فرايدي فقط». فجوابُ المتعلّم يحمل قائمةَ صفحة الحملة (`grantCourseIds`) وما بقي على كوده
       ناقصا الثلاث (`coursesLeft`) بلا حدٍّ عند الصفر — ومن اشترى بكوده قبلُ نقص ما بقي له. */
@@ -23,7 +28,7 @@ import { GrantService } from '../../services/grant.service'
 import { pageCourses } from '../../services/grant-scope.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
-import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, OPEN_GRANT_SLUG, grantClosesAt } from '../../../src/application/commerce/grant'
+import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, INFLUENCER_GRANT_SLUG, OPEN_GRANT_SLUG, grantClosesAt } from '../../../src/application/commerce/grant'
 
 const THREE = ['C-JOB-104', 'C-MGR-107', 'C-BIZ-107']
 const STAMP = Date.now()
@@ -72,13 +77,37 @@ beforeAll(async () => {
 afterAll(async () => { await app?.close() })
 
 describe('① بلا حساب', () => {
-  it('⚠️ دوراته الثلاث بلا اسم ولا سعر ولا كود — ورمزه بحروف صغيرة يفتح', async () => {
+  it('⚠️ دوراته الثلاث بسعرها بنسبة الحملة ومجموعها — بلا اسم ولا كود، ورمزه بحروف صغيرة يفتح', async () => {
     const res = await get('/api/public/go/bf80')
     expect(res.statusCode).toBe(200)
     const v = res.json()
     expect(v.courses.map((c: { courseId: string }) => c.courseId)).toEqual(THREE)
-    expect(v.publicPath).toMatchObject({ code: 'BF80', signIn: true })
-    expect([v.firstName, v.nameAr, v.price, v.couponCode]).toEqual(['', '', null, null])
+    expect(v.publicPath).toEqual({ code: 'BF80', signIn: true, noteAr: null })
+    expect([v.firstName, v.nameAr, v.couponCode]).toEqual(['', '', null])
+    expect(v.price).toEqual({ currency: 'USD', before: 300, grant: 240, grantNameAr: 'بلاك فرايدي وجيز', grantPct: 80, total: 60 })
+    expect(v.priceProblemAr).toBeNull()
+    expect(v.lastDay).toBe('2098-12-31')
+    /* و«أضف دورة» بحدّ الحملة (أربع) ناقصا الثلاث، ومن قائمة صفحتها */
+    expect(v.coursesLeft).toBe(1)
+    expect(v.grantCourseIds).toEqual(expect.arrayContaining(THREE))
+    expect(await prisma.coupon.count({ where: { grantCode: { campaign: { slug: BLACK_FRIDAY_GRANT_SLUG } } } })).toBe(0)
+  })
+
+  it('⚠️ وكل اختيار يسعر بنسبتها — وما فوق حدها يقال سببه', async () => {
+    const ids = (await prisma.cohort.findMany({ where: { courseId: { in: THREE }, status: 'open' }, select: { id: true } })).map((c) => c.id)
+    const one = (await app.inject({ method: 'POST', url: '/api/public/go/BF80/preview', payload: { cohortIds: ids.slice(0, 1) } })).json()
+    expect([one.subtotal, one.total, one.grantPct, one.couponError]).toEqual([100, 20, 80, null])
+    expect(one.items).toHaveLength(1)
+    /* وحدُّ الحملة دورتان: الثلاثُ فوقه — يقال سببه ويعرض بلا منحة */
+    await bf.update({ maxCourses: 2 }, ownerId)
+    try {
+      const over = (await app.inject({ method: 'POST', url: '/api/public/go/BF80/preview', payload: { cohortIds: ids } })).json()
+      expect(over.couponError?.code).toBe('grant_max_courses')
+      expect(over.total).toBe(over.subtotal - over.bundleDiscount - over.capDiscount)
+    } finally {
+      await bfOpen()
+    }
+    expect((await app.inject({ method: 'POST', url: '/api/public/go/XX99/preview', payload: { cohortIds: ids } })).statusCode).toBe(404)
   })
 
   it('⚠️ ونداء المتعلم بلا جلسة 401', async () => {
@@ -127,20 +156,73 @@ describe('③ من له كودها يأخذه نفسه', () => {
   })
 })
 
-describe('⑤ من اشترى بمنحة غيرها', () => {
-  it('⚠️ لا يعطى كودها — يبقى كوده', async () => {
-    const open = new GrantService(prisma, OPEN_GRANT_SLUG)
-    await open.update({ active: true, percentOff: 50, maxCourses: 4, maxCodes: null, closesAt: new Date(grantClosesAt('2098-12-31')) }, ownerId)
+describe('⑤ من اشترى بمنحة غيرها يأخذ كودها على كل حال', () => {
+  /* متعلّمٌ اشترى بكود «منحة مؤثرين وجيز» — ومعه نموذجٌ في بلاك فرايدي من صفحتها (لا من المسار) */
+  async function usedInfluencer() {
+    const inf = new GrantService(prisma, INFLUENCER_GRANT_SLUG)
+    await inf.update({ active: true, percentOff: 45, maxCourses: 4, maxCodes: null, closesAt: new Date(grantClosesAt('2098-12-31')) }, ownerId)
     const l = await learner()
-    const lead = await prisma.lead.create({ data: { fullName: 'ليلى', email: l.email, phone: '+962790000002', campaign: OPEN_GRANT_SLUG, source: 'campaign' } })
-    const { code } = await open.issue({ leadId: lead.id })
-    const cohort = await prisma.cohort.findFirstOrThrow({ where: { courseId: THREE[0], status: 'open' }, select: { id: true } })
+    const lead = await prisma.lead.create({ data: { fullName: 'ليلى', email: l.email, phone: '+962790000002', campaign: INFLUENCER_GRANT_SLUG, source: 'campaign' } })
+    const { code } = await inf.issue({ leadId: lead.id })
+    const cohorts = await prisma.cohort.findMany({ where: { courseId: { in: THREE }, status: 'open' }, select: { id: true, courseId: true } })
+    const byCourse = (id: string) => cohorts.find((c) => c.courseId === id)!.id
     const commerce = new CommerceService(prisma)
-    const out = await commerce.checkout(l.userId, [cohort.id], code)
+    const out = await commerce.checkout(l.userId, [byCourse(THREE[0])], code)
     await commerce.payOrder(out.orderId, l.userId, `pub-${out.orderId}`)
+    return { l, code, byCourse, commerce }
+  }
+
+  it('⚠️ يعطى كود بلاك فرايدي 80% من المسار — وتسعره المعاينة ويقبله الطلب', async () => {
+    const { l, code, byCourse, commerce } = await usedInfluencer()
     const v = (await get('/api/learner/go/BF80', l.cookie)).json()
-    expect(v.couponCode).toBe(code)
-    expect(await prisma.lead.count({ where: { email: l.email, campaign: BLACK_FRIDAY_GRANT_SLUG } })).toBe(0)
+    expect(v.couponCode).toMatch(/^WG-/)
+    expect(v.couponCode).not.toBe(code)
+    expect(v.publicPath.noteAr).toBeNull()
+    const coupon = await prisma.coupon.findUniqueOrThrow({
+      where: { code: v.couponCode }, select: { percentOff: true, grantCode: { select: { campaign: { select: { slug: true } }, lead: { select: { channel: true } } } } },
+    })
+    expect(coupon).toEqual({ percentOff: 80, grantCode: { campaign: { slug: BLACK_FRIDAY_GRANT_SLUG }, lead: { channel: 'go' } } })
+    /* والمعاينةُ بحسابه — لا ترده «منحة واحدة لكل متعلم» */
+    const rest = [byCourse(THREE[1]), byCourse(THREE[2])]
+    const p = await commerce.preview(l.userId, rest, v.couponCode)
+    expect(p.couponError).toBeNull()
+    expect([p.subtotal, p.total, p.grantPct]).toEqual([200, 40, 80])
+    /* والطلبُ يقبله بالسعر نفسِه */
+    const out = await commerce.checkout(l.userId, rest, v.couponCode)
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: out.orderId }, select: { total: true, coupon: { select: { code: true } } } })
+    expect([Number(order.total), order.coupon?.code]).toEqual([40, v.couponCode])
+    /* ونقرةٌ ثانيةٌ بعد الطلب: كودُه نفسُه بما بقي عليه */
+    expect((await get('/api/learner/go/BF80', l.cookie)).json().couponCode).toBe(v.couponCode)
+  })
+
+  it('⚠️ ونموذجه في بلاك فرايدي من صفحتها لا يعطى — كوده يرده الدفع', async () => {
+    const { l } = await usedInfluencer()
+    const form = await prisma.lead.create({ data: { fullName: 'ليلى', email: l.email, phone: '+962790000003', campaign: BLACK_FRIDAY_GRANT_SLUG, source: 'campaign' } })
+    const { code: formCode } = await bf.issue({ leadId: form.id })
+    const v = (await get('/api/learner/go/BF80', l.cookie)).json()
+    expect(v.couponCode).toMatch(/^WG-/)
+    expect(v.couponCode).not.toBe(formCode)
+    expect(v.priceProblemAr).toBeNull()
+    expect(v.price.grantPct).toBe(80)
+  })
+
+  it('⚠️ و«منحة واحدة لكل متعلم» باقية فيما سواه: كود منحة أخرى بعد شرائه يرد', async () => {
+    const { l, byCourse, commerce } = await usedInfluencer()
+    const member = new GrantService(prisma, OPEN_GRANT_SLUG)
+    await member.update({ active: true, percentOff: 50, maxCourses: 4, maxCodes: null, closesAt: new Date(grantClosesAt('2098-12-31')) }, ownerId)
+    const lead = await prisma.lead.create({ data: { fullName: 'ليلى', email: l.email, phone: '+962790000004', campaign: OPEN_GRANT_SLUG, source: 'campaign' } })
+    const { code } = await member.issue({ leadId: lead.id })
+    const p = await commerce.preview(l.userId, [byCourse(THREE[1])], code)
+    expect(p.couponError?.code).toBe('grant_once')
+    await expect(commerce.checkout(l.userId, [byCourse(THREE[1])], code)).rejects.toMatchObject({ code: 'grant_once' })
+    /* ومن اشترى بكود المسار وحدَه: كودُ منحةٍ أخرى بعده يُردّ — الاستثناءُ لكود المسار لا عليه */
+    const solo = await learner()
+    const go = (await get('/api/learner/go/BF80', solo.cookie)).json().couponCode as string
+    const bought = await commerce.checkout(solo.userId, [byCourse(THREE[0])], go)
+    await commerce.payOrder(bought.orderId, solo.userId, `pub-solo-${bought.orderId}`)
+    const soloLead = await prisma.lead.create({ data: { fullName: 'ليلى', email: solo.email, phone: '+962790000005', campaign: OPEN_GRANT_SLUG, source: 'campaign' } })
+    const other = (await member.issue({ leadId: soloLead.id })).code
+    expect((await commerce.preview(solo.userId, [byCourse(THREE[1])], other)).couponError?.code).toBe('grant_once')
   })
 })
 
