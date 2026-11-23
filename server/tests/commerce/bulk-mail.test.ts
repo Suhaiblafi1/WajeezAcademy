@@ -506,3 +506,27 @@ describe('⑪ غير المهتم لا تصله حملة', () => {
     expect((await queuedOf((res.json() as { batchId: string }).batchId)).map((r) => r.to)).toEqual([mail('ni3')])
   })
 })
+
+/* ═══ ⑫ لا يتكرّر الشخص: من في المنصّة ومن في قائمةٍ أخرى يُتخطّى بخياره (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «تخطَّ من هو موجودٌ بالمنصّة أو موجودٌ بقائمةٍ أخرى لكي لا يتكرّر الشخصُ نفسُه». فالمنصّةُ حسابٌ أو
+   نموذجٌ عُبّئ (عميلٌ محتمل غيرُ ممحوّ)، والقائمةُ الأخرى أيُّ قائمةٍ مرفوعةٍ غيرُ هذه. والخياران في التأكيد، وبغيرهما يصلون. */
+describe('⑫ تخطي من في المنصة ومن في قائمة أخرى', () => {
+  it('⚠️ الخياران يسقطان صاحب الحساب والعميل المحتمل ومن في قائمة سابقة — ويعدانهم، وبدونهما يصلون', async () => {
+    await prisma.user.create({ data: { email: mail('pl1').toUpperCase(), displayName: 'له حساب', passwordHash: 'x' } })
+    await prisma.lead.create({ data: { fullName: 'عبأ نموذجا', email: mail('pl2') } })
+    await prisma.lead.create({ data: { fullName: 'ممحو', email: mail('pl5'), erasedAt: new Date() } })
+    await upload(csv(`email\n${mail('pl3')}\n`), 'سابقة')
+
+    const listId = await upload(csv(`email\n${mail('pl1')}\n${mail('pl2')}\n${mail('pl3')}\n${mail('pl4')}\n${mail('pl5')}\n`), 'لا تكرار')
+    const id = await campaign(`list:${listId}`)
+    type C = { recipients: number; onPlatform?: number; inOtherLists?: number; uploadedList?: boolean }
+    const on = (await http('GET', `/api/admin/bulk-mail/campaigns/${id}/check?skipPlatform=1&skipOtherLists=1`)).json() as C
+    expect(on, 'وصل من في المنصة أو في قائمة أخرى').toMatchObject({ recipients: 2, onPlatform: 2, inOtherLists: 1, uploadedList: true })
+    const off = (await http('GET', `/api/admin/bulk-mail/campaigns/${id}/check?skipPlatform=0&skipOtherLists=0`)).json() as C
+    expect(off.recipients, 'أسقطوا بلا خيار').toBe(5)
+
+    const res = await http('POST', `/api/admin/bulk-mail/campaigns/${id}/send`, { body: { confirmCount: 2, skipPlatform: true, skipOtherLists: true } })
+    expect(res.statusCode, res.body).toBe(200)
+    expect((await queuedOf((res.json() as { batchId: string }).batchId)).map((r) => r.to)).toEqual([mail('pl4'), mail('pl5')])
+  })
+})

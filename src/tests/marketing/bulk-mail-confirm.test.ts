@@ -129,3 +129,17 @@ describe('تخطي من وصلته حملة قريبا', () => {
     expect(page, 'يرسل والعدد يعاد حسابه').toMatch(/disabled=\{recounting \|\| !typedOk/)
   })
 })
+
+/* لا يتكرّر الشخص (٢٣ نوفمبر ٢٠٢٦): «تخطَّ من هو موجودٌ بالمنصّة أو موجودٌ بقائمةٍ أخرى». للقائمة المرفوعة وحدَها، مفتوحان
+   افتراضا، ويُعاد العدُّ بتغييرهما، ويُرسَلان مع العدد — فلا يُرسَل إلى غير من عُدّ. */
+describe('تخطي من في المنصة ومن في قائمة أخرى', () => {
+  it('⚠️ يقالان في أسطر التأكيد، وهما خياران مفتوحان افتراضا للقائمة المرفوعة، والصفحة ترسلهما مع العدد', () => {
+    const lines = confirmLinesAr({ recipients: 10, audienceAr: 'قائمة', optedOut: 0, invalid: 0, duplicate: 0, onPlatform: 4, inOtherLists: 3 })
+    expect(lines[1]).toBe('ولا تصل 7: 4 موجودون في المنصة · 3 في قائمة أخرى')
+    expect(page).toMatch(/useState\(true\);\s*const \[skipOtherLists, setSkipOtherLists\] = useState\(true\)/)
+    expect(page).toMatch(/\{check\.uploadedList && \(/)
+    expect(page).toMatch(/skipPlatform: check\.uploadedList \? skipPlatform : false, skipOtherLists: check\.uploadedList \? skipOtherLists : false/)
+    expect(page).toMatch(/checkUrl\(id, \{ d: SKIP_RECENT_DEFAULT, p: true, l: true \}\)/)
+    expect(page).toMatch(/&skipPlatform=\$\{o\.p \? 1 : 0\}&skipOtherLists=\$\{o\.l \? 1 : 0\}/)
+  })
+})
