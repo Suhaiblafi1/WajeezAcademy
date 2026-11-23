@@ -118,8 +118,8 @@ describe('⑤ المرشحون من قائمة بلاك فرايدي وحدها 
 describe('⑥ الصفحة', () => {
   it('⚠️ «أضف دورة» للعام بعده بعد ما اختار — ومرشحوه من قائمة المنحة', () => {
     expect(PAGE).toMatch(/const addsLeft = isPublic\s*\? publicPathAddsLeft\(\{ coursesLeft: v\.coursesLeft, baseCount: originalIds\.length, selected: buyIds\.length \}\)/)
-    expect(PAGE).toMatch(/const ranked = isPublic\s*\? publicPathCandidates\(all, v\.grantCourseIds, courseIds\)/)
-    expect(PAGE).toMatch(/\{addsLeft > 0 && \([\s\S]*?data-testid="private-path-add"/)
+    expect(PAGE).toMatch(/const ranked = isPublic\s*\? publicPathCandidates\(all, publicPathAddIds\(publicPathOf\(v\.code\), v\.grantCourseIds\), courseIds\)/)
+    expect(PAGE).toMatch(/addsLeft > 0 && \([\s\S]*?data-testid="private-path-add"/)
   })
   it('⚠️ والدفع بما اختاره وما أضافه — والمضاف يحذف من صندوق الاختيار', () => {
     expect(PAGE).toMatch(/const buyIds = isPublic \? publicPathBuyIds\(originalIds, chosen, addedIds\) \?\? \[\] : courseIds;/)
@@ -140,7 +140,7 @@ describe('⑦ الزائر يرى كل شيء، والدخول عند الدفع
     expect(PAGE).not.toMatch(/public-path-sign-in/)
     expect(PAGE).not.toMatch(/سجل دخولك أو أنشئ حسابا<\/Button>/)
     /* و«أضف دورة» لا يشترط الدخول: عدُّه من الخادم وحدَه */
-    expect(PAGE).toMatch(/\{addsLeft > 0 && \(/)
+    expect(PAGE).toMatch(/addsLeft > 0 && \(/)
   })
 
   it('⚠️ وكل اختيار للزائر يسعر من الخادم بنسبة الحملة — ومن دخل بكوده', () => {

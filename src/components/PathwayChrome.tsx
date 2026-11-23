@@ -43,16 +43,36 @@ export function PathwayTopBar({ user }: { user: string | null }) {
 }
 
 const ECOSYSTEM = [
-  { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
-  { icon: ClipboardCheck, t: "واجبات تراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك ملاحظات عملية — لا تصحيحا آليا" },
-  { icon: FolderKanban, t: "مشروع تخرج حقيقي", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
-  { icon: BadgeCheck, t: "شهادة موثقة بشروط إنجاز", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
-  { icon: RouteIcon, t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
-  { icon: Briefcase, t: "منظومة ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
+  { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", s: "جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
+  { icon: ClipboardCheck, t: "واجبات تراجع بشريا", s: "واجبات يراجعها مدربك", d: "مدربك يقرأ واجبك ويعطيك ملاحظات عملية — لا تصحيحا آليا" },
+  { icon: FolderKanban, t: "مشروع تخرج حقيقي", s: "مشروع تخرج", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
+  { icon: BadgeCheck, t: "شهادة موثقة بشروط إنجاز", s: "شهادة موثقة", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
+  { icon: RouteIcon, t: "خطة تقدم شخصية", s: "خطة تقدم", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
+  { icon: Briefcase, t: "منظومة ما بعد الإتمام", s: "ما بعد الإتمام", d: "لوحة وظائف وتوصيات مهنية وبرنامج سفراء وجيز" },
 ] as const;
 
 /** ما يأخذه مع المسار — من عروض أكاديمية وجيز (نسخةٌ مضغوطة: خاناتٌ أصغر ومتقاربة) */
-export function PathwayEcosystemPanel() {
+/* ═══ ونسختُه المضغوطة للمسار الشخصيّ `/go` (٢٣ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة: «يُختصر بشكل 6 مربّعات بجانب بعضها، اختصر
+   ما تشاء منها لأنّ الهاتف سيكون مكتظّا») — ستُّ خاناتٍ ثلاثٌ في الصفّ، أيقونةٌ وكلمتان، بلا شرح ═══ */
+export function PathwayEcosystemPanel({ compact = false }: { compact?: boolean } = {}) {
+  if (compact) {
+    return (
+      <Panel className="story-fade mt-6 p-3 md:p-4" data-testid="ecosystem-compact">
+        <h2 className="flex items-center gap-2 text-read font-black">
+          <Sparkles className="h-4 w-4 text-[#FABC05]" />
+          ومع دوراتك
+        </h2>
+        <div className="mt-2 grid grid-cols-3 gap-1.5">
+          {ECOSYSTEM.map((b) => (
+            <Inset key={b.t} className="flex flex-col items-center gap-1 p-2 text-center">
+              <b.icon className="h-4 w-4 text-[#6EC7D1]" aria-hidden="true" />
+              <p className="text-read font-bold leading-tight">{b.s}</p>
+            </Inset>
+          ))}
+        </div>
+      </Panel>
+    );
+  }
   return (
     <Panel className="story-fade mt-8 md:p-6">
       <h2 className="flex items-center gap-2 text-lg font-black">

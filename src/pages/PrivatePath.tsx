@@ -69,7 +69,7 @@ import { addCandidates, chosenCohorts, swapCandidates } from "@/application/cata
 import CohortPicker from "@/components/CohortPicker";
 import {
   giftMissingAr, giftRuleAr, goPath, isGoCode, pathAddsLeft, pathSwappable, publicPathAddsLeft, publicPathBuyIds,
-  publicPathCandidates, publicPathOf, restoredPublicPath, PUBLIC_PATH_PICK_AR, PUBLIC_PATH_SIGN_IN_AR, pathAddsLeftAr, pathCandidatesWithin, pathCourseRemovable,
+  publicPathCandidates, publicPathAddIds, pathCoursePrice, publicPathOf, restoredPublicPath, PUBLIC_PATH_PICK_AR, PUBLIC_PATH_SIGN_IN_AR, pathAddsLeftAr, pathCandidatesWithin, pathCourseRemovable,
   privatePathGrantLabelAr, privatePathHeadline, privatePathPrice, REASON_LABEL_AR, restoredPathCourses,
   type GiftRule, type PathPreviewNumbers, type PrivatePathPrice,
 } from "@/application/commerce/private-path";
@@ -299,7 +299,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
     const all = [...near, ...courses].map((c) => ({ courseId: c.id, reason_ar: `من مسار «${c.pathwayName}»` }));
     /* والعامُّ من قائمة بلاك فرايدي وحدَها خارجَ دوراته — وبلا قائمةٍ لا شيء */
     const ranked = isPublic
-      ? publicPathCandidates(all, v.grantCourseIds, courseIds)
+      ? publicPathCandidates(all, publicPathAddIds(publicPathOf(v.code), v.grantCourseIds), courseIds)
       : pathCandidatesWithin(all, v.grantCourseIds);
     return addCandidates({
       courseIds, ranked, season,
@@ -308,7 +308,50 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
       titleOf: (id) => courseById(id)?.name ?? id,
       limit: 6,
     }).filter((s) => s.courseId !== v.gift?.courseId);
-  }, [addOpen, canAdd, courseIds, season, cohorts, picked, catalogVersion, v.grantCourseIds, v.gift?.courseId, isPublic]);
+  }, [addOpen, canAdd, courseIds, season, cohorts, picked, catalogVersion, v.grantCourseIds, v.gift?.courseId, isPublic, v.code]);
+  /* ═══ وسعرُ كلّ دورةٍ بجانبها — قبل الخصم مشطوبا وبعده (٢٣ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة: «يجب أن تكون أسعار الدورات
+     بجانب كلّ دورة ليعلم الشخص على ماذا سيدفع») ═══ سعرُ شعبتها المختارة أو أولاها، وبنسبة منحته. والدفعُ يسعّر على الخادم */
+  const coursePct = v.price?.grantPct ?? 0;
+  const priceTag = (id: string) => {
+    const list = cohorts.get(id) ?? [];
+    const o = list.find((x) => x.id === picked[id]) ?? list[0];
+    if (!o) return null;
+    const shown = pathCoursePrice(o.amount, coursePct);
+    return (
+      <span className="shrink-0 text-read" data-testid="course-price">
+        {shown.after < shown.before && <bdi dir="ltr" className="text-muted-foreground line-through">{fmtMoney(shown.before, o.currency)}</bdi>}{" "}
+        <bdi dir="ltr" className="font-black text-foreground">{fmtMoney(shown.after, o.currency)}</bdi>
+      </span>
+    );
+  };
+  /* ═══ وصندوقُ الإضافة — في المسار العامّ تحت اختيار الثلاث: يختار منها ثمّ يضيف (٢٣ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة) ═══ */
+  const addBox = addsLeft > 0 && (
+    <Card className="mt-4 border-2 border-gold/60 p-4 sm:p-5" data-testid="private-path-add">
+      <h2 className="flex items-center gap-2 text-lg font-black">
+        <Plus className="h-5 w-5 text-gold-ink" aria-hidden="true" />
+        {v.price?.grantPct ? `أضف دورات أخرى بخصم ${v.price.grantPct}%` : "أضف دورات أخرى"}
+      </h2>
+      <p className="mt-1 text-read text-muted-foreground">{pathAddsLeftAr(addsLeft)}</p>
+      <div className="mt-3 grid gap-2">
+        {addChoices.map((s) => (
+          <div
+            key={s.courseId}
+            className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5"
+          >
+            <span className="min-w-0">
+              <span className="block text-read font-bold text-foreground">{courseById(s.courseId)?.name ?? s.courseId}</span>
+              <span className="mt-0.5 block text-read text-muted-foreground">{s.noteAr}</span>
+            </span>
+            {priceTag(s.courseId)}
+            <Button tone="secondary" size="sm" onClick={() => addCourse(s.courseId, s.cohortId)} aria-label={`أضف ${courseById(s.courseId)?.name ?? s.courseId}`}>
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> أضف
+            </Button>
+          </div>
+        ))}
+        {addChoices.length === 0 && <p className="text-read text-muted-foreground">لا دورة لها شعبة الآن.</p>}
+      </div>
+    </Card>
+  );
   const addCourse = (courseId: string, cohortId: string) => {
     setCourseIds((ids) => (ids.includes(courseId) ? ids : [...ids, courseId]));
     setPicked((prev) => ({ ...prev, [courseId]: cohortId }));
@@ -467,33 +510,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
         }}
       />
 
-      {/* «أضف دورة» — ما دام على الكود دورات، ويختفي عند الحدّ (٢١ نوفمبر ٢٠٢٦) */}
-      {addsLeft > 0 && (
-        <Card className="mt-4 border-2 border-gold/60 p-4 sm:p-5" data-testid="private-path-add">
-          <h2 className="flex items-center gap-2 text-lg font-black">
-            <Plus className="h-5 w-5 text-gold-ink" aria-hidden="true" />
-            {v.price?.grantPct ? `أضف دورات أخرى بخصم ${v.price.grantPct}%` : "أضف دورات أخرى"}
-          </h2>
-          <p className="mt-1 text-read text-muted-foreground">{pathAddsLeftAr(addsLeft)}</p>
-          <div className="mt-3 grid gap-2">
-            {addChoices.map((s) => (
-              <div
-                key={s.courseId}
-                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5"
-              >
-                <span className="min-w-0">
-                  <span className="block text-read font-bold text-foreground">{courseById(s.courseId)?.name ?? s.courseId}</span>
-                  <span className="mt-0.5 block text-read text-muted-foreground">{s.noteAr}</span>
-                </span>
-                <Button tone="secondary" size="sm" onClick={() => addCourse(s.courseId, s.cohortId)} aria-label={`أضف ${courseById(s.courseId)?.name ?? s.courseId}`}>
-                  <Plus className="h-3.5 w-3.5" aria-hidden="true" /> أضف
-                </Button>
-              </div>
-            ))}
-            {addChoices.length === 0 && <p className="text-read text-muted-foreground">لا دورة لها شعبة الآن.</p>}
-          </div>
-        </Card>
-      )}
+      {!isPublic && addBox}
 
       {outsideCatalog.length > 0 && (
         <ol className="mt-3 space-y-3">
@@ -571,7 +588,8 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
             {originalIds.map((id) => (
               <label key={id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-read">
                 <input type="checkbox" checked={chosen.includes(id)} onChange={() => toggle(id)} className="h-4 w-4 accent-teal-light" />
-                <span className="font-bold text-foreground">{titleOf(id)}</span>
+                <span className="flex-1 font-bold text-foreground">{titleOf(id)}</span>
+                {priceTag(id)}
               </label>
             ))}
           </div>
@@ -579,7 +597,8 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
             <div className="mt-2 grid gap-1.5" data-testid="public-path-added">
               {addedIds.map((id) => (
                 <div key={id} className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-read">
-                  <span className="font-bold text-foreground">{titleOf(id)}</span>
+                  <span className="flex-1 font-bold text-foreground">{titleOf(id)}</span>
+                  {priceTag(id)}
                   <button type="button" onClick={() => removeAdded(id)} className="font-bold text-teal-light-ink underline-offset-4 hover:underline">
                     احذفها
                   </button>
@@ -590,11 +609,12 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
           {buyIds.length === 0 && <p className="mt-2 text-read text-gold-ink">اختر دورة واحدة على الأقل من دورات المسار.</p>}
         </Card>
       )}
+      {isPublic && journeyReady && addBox}
       {isPublic && v.publicPath?.noteAr && (
         <Inset tone="warn" className="mt-3 text-read" data-testid="public-path-note"><p>{v.publicPath.noteAr}</p></Inset>
       )}
 
-      <PathwayEcosystemPanel />
+      <PathwayEcosystemPanel compact />
 
       <p className="mt-8 flex items-center justify-center gap-2 text-center text-read leading-5 text-muted-foreground">
         <Sparkles className="h-3.5 w-3.5" />

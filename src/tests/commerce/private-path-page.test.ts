@@ -78,7 +78,7 @@ describe('صفحة المسار الخاص بقالب صفحة المسار', ()
   it('⚠️ القالب نفسه: الشريط وصندوق «منظومة كاملة» من موضع واحد تقرؤه الصفحتان، والرحلة نفسها بالشعب', () => {
     for (const [name, src] of [['/go', PAGE], ['/pathways', PATHWAY]] as const) {
       expect(src, `${name} بلا شريط القالب`).toMatch(/<PathwayTopBar user=\{/)
-      expect(src, `${name} بلا «منظومة كاملة»`).toMatch(/<PathwayEcosystemPanel \/>/)
+      expect(src, `${name} بلا «منظومة كاملة»`).toMatch(/<PathwayEcosystemPanel( compact)? \/>/)
     }
     expect(PATHWAY, 'نسخة ثانية من «منظومة كاملة» في صفحة المسار').not.toMatch(/تأخذ منظومة كاملة/)
     /* والشعبُ ظاهرةٌ (صورةُ المدرّب ونبذتُه و«مباشر» وأوّلُ لقاء) — `showSchedule` يفتحها في `CohortPicker` */
@@ -183,7 +183,7 @@ describe('الدفع زر صغير ثابت، والبطاقة بعد «تفتح
   it('⚠️ البطاقة أسفل الصفحة بعد جملة فتح المنصة، والزر الثابت يختفي حين تظهر', () => {
     const at = (re: RegExp) => PAGE.search(re)
     expect(at(/data-testid="private-path-price"/)).toBeGreaterThan(at(/تفتح تلقائيا بعد أول دفع ناجح/))
-    expect(at(/data-testid="private-path-price"/)).toBeGreaterThan(at(/<PathwayEcosystemPanel \/>/))
+    expect(at(/data-testid="private-path-price"/)).toBeGreaterThan(at(/<PathwayEcosystemPanel( compact)? \/>/))
     expect(PAGE).toMatch(/\{showPrice && !buyInView && !buyShown && !authOpen && \([\s\S]*?fixed inset-x-0 bottom-0[\s\S]*?data-testid="private-path-sticky-buy"/)
     expect(PAGE).toMatch(/new IntersectionObserver\(\(\[e\]\) => setBuyInView\(e\.isIntersecting\)/)
   })
