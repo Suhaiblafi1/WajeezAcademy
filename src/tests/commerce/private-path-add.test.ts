@@ -89,7 +89,7 @@ describe('الصفحة', () => {
   it('⚠️ «أضف دورة» يظهر ما دام على الكود دورات — بعدد الخادم — ويختفي عند الحد', () => {
     /* والمسارُ العامّ بعدّه هو (٢٢ نوفمبر ٢٠٢٦، `publicPathAddsLeft` — `public-path.test.ts`) */
     expect(PAGE).toMatch(/: pathAddsLeft\(\{ coursesLeft: v\.coursesLeft, baseCount: originalIds\.length, current: courseIds\.length \}\);/)
-    expect(PAGE).toMatch(/\{addsLeft > 0 && \([\s\S]*?data-testid="private-path-add"[\s\S]*?أضف دورات أخرى/)
+    expect(PAGE).toMatch(/addsLeft > 0 && \([\s\S]*?data-testid="private-path-add"[\s\S]*?أضف دورات أخرى/)
     /* ومفتوحةٌ بنفسها — لا زرَّ يُضغط ليراها (٢٢ نوفمبر ٢٠٢٦، «الإضافة غير واضحة.. يجب أن تكون واضحة لهم»):
        عنوانٌ بالخصم، وكلُّ دورةٍ بزرّ «أضف» أمامها */
     expect(PAGE, 'الدورات خلف زر يفتحها').toMatch(/const addOpen = true;/)

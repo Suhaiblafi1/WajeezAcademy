@@ -15,6 +15,8 @@
    وهنا ما تقرؤه الشاشةُ والخادمُ معا: البادئةُ وطولُ الرمز وحدُّ السبب، وشكلُ ما يُحفظ، والاسمُ الأوّل. */
 
 /** بادئةُ صفحة المسار الخاصّ */
+import { grantPrice } from './grant'
+
 export const GO_PREFIX = '/go/'
 /** ثمانيةُ أحرفٍ من اثنين وثلاثين — نحوُ ألفِ مليار، فلا يُخمَّن رمزُ مسارٍ فيه اسمُ صاحبه */
 export const GO_CODE_LENGTH = 8
@@ -300,11 +302,18 @@ export interface PublicPathDef {
   /** معرّفُ الحملة التي يُعطى كودُها — `wajeez-black-friday` (`BLACK_FRIDAY_GRANT_SLUG`) */
   campaign: string
   courseIds: readonly string[]
+  /** ما يُضاف إليه وحدَه — إن ذُكر غلب قائمةَ الحملة (٢٣ نوفمبر ٢٠٢٦، `publicPathAddIds`) */
+  addCourseIds?: readonly string[]
 }
 
 /** المساراتُ العامّة برموزها — والرمزُ بحروفٍ كبيرة */
 export const PUBLIC_PATHS: Readonly<Record<string, PublicPathDef>> = {
-  BF80: { code: 'BF80', campaign: 'wajeez-black-friday', courseIds: ['C-JOB-104', 'C-MGR-107', 'C-BIZ-107'] },
+  /* والإضافةُ فيه دورتا صهيب لافي وحدَهما (٢٣ نوفمبر ٢٠٢٦، قرارُ صاحب المنصّة: «اجعل خيارات الإضافات فقط 2 وتكون دورات خاصّة
+     بصهيب لافي فقط، لا دورات أخرى تتاح له هنا») — الذكاء الاصطناعي مساعدك الشخصيّ، وإعداد المعلّمين وأولياء الأمور للخطابة */
+  BF80: {
+    code: 'BF80', campaign: 'wajeez-black-friday', courseIds: ['C-JOB-104', 'C-MGR-107', 'C-BIZ-107'],
+    addCourseIds: ['C-AI-101', 'C-COMX-107'],
+  },
 }
 
 /** قناةُ نموذج من أخذ كودَ حملةِ مسارٍ عامّ منه (`publicPathCode`). وبها وحدَها يُعرف كودُ «٨٠٪ على كلّ حال» الذي لا يردّه
@@ -347,6 +356,15 @@ export function publicPathCandidates<T extends { courseId: string }>(
   const taken = new Set(inPath)
   return pathCandidatesWithin(ranked, grantCourseIds).filter((r) => !taken.has(r.courseId))
 }
+
+/** قائمةُ ما يُضاف منه في المسار العامّ: قائمتُه هو إن كُتبت (`addCourseIds`)، وإلّا دوراتُ صفحة حملته */
+/** سعرُ الدورة كما يُعرض بجانبها: قبل الخصم وبعده بنسبة منحته (٢٣ نوفمبر ٢٠٢٦). عرضٌ لا حكم — الدفعُ يسعّر على الخادم */
+export const pathCoursePrice = (amount: number, percentOff: number): { before: number; after: number } =>
+  ({ before: amount, after: percentOff > 0 ? grantPrice(amount, percentOff) : amount })
+
+export const publicPathAddIds = (
+  def: PublicPathDef | null, grantCourseIds: readonly string[] | null | undefined,
+): readonly string[] | null => def?.addCourseIds ?? grantCourseIds ?? null
 
 /** ما يشتريه من المسار العامّ: ما اختاره من الثلاث بترتيبها ثمّ ما أضافه — و`null` إن لم يختر من الثلاث شيئا */
 export function publicPathBuyIds(courseIds: readonly string[], chosen: readonly string[], added: readonly string[]): string[] | null {
