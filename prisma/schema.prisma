@@ -5347,6 +5347,86 @@ model WhatsAppOptOut {
 }
 
 /**
+ * ═══════════ الإرسالُ على واتساب (٢٤ نوفمبر ٢٠٢٦) ═══════════
+ * طلبُ صاحب المنصّة: «ابنه لي في الادمن لارسل واتس اب براحتي»، ولكلّ جهات الأكاديميّة («All academy contacts»).
+ * عبر WhatsApp Cloud API من Meta مباشرة. والعلّةُ في `server/services/whatsapp/`.
+ */
+
+/// موافقةُ صاحب الرقم على رسائلنا — بذيل رقمه كالإيقاف (`WhatsAppOptOut`)، ومعها نصُّ ما وافق عليه ومن أين جاءت
+model WhatsAppConsent {
+  id        String   @id @default(uuid()) @db.Uuid
+  tail      String
+  /// دوليٌّ بمفتاحه: `+962797708080`
+  phone     String
+  name      String?
+  kind      String // utility | marketing
+  /// `inbound` كتبها هو في واتساب، و`import` سجّلها مديرٌ بنصّ موافقتهم
+  source    String
+  textAr    String
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now())
+
+  @@unique([tail, kind])
+}
+
+/// إرسالٌ إلى جمهور: قالبٌ معتمدٌ عند Meta وقائمة — بعدده وما سقط منه ولماذا
+model WhatsAppCampaign {
+  id               String    @id @default(uuid()) @db.Uuid
+  status           String    @default("sending") // sending | sent | stopped
+  template         String
+  language         String
+  /// `UTILITY` أو `MARKETING` كما اعتمدتها Meta ساعةَ الإرسال
+  category         String
+  /// قيمُ خانات القالب بترتيبها: `name` أو نصٌّ ثابت
+  params           Json      @default("[]")
+  audience         String
+  audienceAr       String
+  queuedCount      Int       @default(0)
+  skippedConsent   Int       @default(0)
+  skippedOptOut    Int       @default(0)
+  skippedInvalid   Int       @default(0)
+  skippedDuplicate Int       @default(0)
+  cancelledCount   Int       @default(0)
+  sentBy           String?   @db.Uuid
+  createdAt        DateTime  @default(now())
+  stoppedBy        String?   @db.Uuid
+  finishedAt       DateTime?
+  messages         WhatsAppMessage[]
+
+  @@index([status, createdAt])
+}
+
+/// رسالةٌ خرجت أو وصلت. والواردُ يُحفظ ليُقرأ ويُردّ عليه، وكلُّها تُمحى بعد ستة أشهر
+model WhatsAppMessage {
+  id         String    @id @default(uuid()) @db.Uuid
+  direction  String
+  status     String    @default("queued") // queued | sending | sent | delivered | read | failed | cancelled | received
+  tail       String
+  phone      String
+  name       String?
+  body       String
+  campaignId String?   @db.Uuid
+  template   String?
+  language   String?
+  category   String?
+  params     Json?
+  /// معرّفُها عند Meta — فريدٌ، فالخبرُ المعادُ لا يُكتب مرّتين
+  metaId     String?   @unique
+  error      String?
+  createdBy  String?   @db.Uuid
+  createdAt  DateTime  @default(now())
+  /// لا يُحاوَل قبله — حدُّ اليوم أو مهلةُ Meta
+  notBefore  DateTime?
+  startedAt  DateTime?
+  readAt     DateTime?
+  campaign   WhatsAppCampaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([tail, createdAt])
+  @@index([campaignId, status])
+}
+
+/**
  * ═══════════ دورةُ صاحب المنصّة الخاصّة (١٩ نوفمبر ٢٠٢٦) ═══════════
  * قرارُه: «خانةٌ داخل موقع الأكاديميّة كشيءٍ منفصل فقط لأستفيد من السيرفر لشيءٍ شخصيٍّ لي».
  * فلا علاقةَ لها بشيءٍ من جداول الأكاديميّة: لا مستخدمَ ولا شعبةَ ولا طلبَ ولا أثر. ولا يقرؤها إلّا هو

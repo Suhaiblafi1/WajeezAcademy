@@ -88,6 +88,7 @@ const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompens
 const AdminAdvisorPayouts = lazy(() => import('./pages/admin/AdvisorPayouts'))
 const AdminMemberGrant = lazy(() => import('./pages/admin/MemberGrant'))
 const AdminBulkMail = lazy(() => import('./pages/admin/BulkMail'))
+const AdminWhatsApp = lazy(() => import('./pages/admin/WhatsApp'))
 const AdminPartnerGrants = lazy(() => import('./pages/admin/PartnerGrants'))
 const AdminTrainerRun = lazy(() => import('./pages/admin/TrainerRun'))
 const AdminTrainerContracts = lazy(() => import('./pages/admin/TrainerContracts'))
@@ -464,6 +465,8 @@ export default function App() {
             <Route path="/admin/partner-grants" element={<AdminPartnerGrants />} />
             {/* «البريد الجماعي» — حملاتٌ وقوائم (٢٢ نوفمبر ٢٠٢٦) */}
             <Route path="/admin/bulk-mail" element={<AdminBulkMail />} />
+            {/* «واتساب» — إرسالٌ بقوالب Meta ومحادثات (٢٤ نوفمبر ٢٠٢٦) */}
+            <Route path="/admin/whatsapp" element={<AdminWhatsApp />} />
             <Route path="/admin/audit" element={<AdminAuditLog />} />
             <Route path="/admin/system-health" element={<AdminSystemHealth />} />
             <Route path="/admin/reports" element={<AdminReports />} />
