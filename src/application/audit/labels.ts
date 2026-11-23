@@ -196,6 +196,8 @@ const PHRASES: Record<string, string> = {
   'influencer.discount.set': 'تغيير خصم متابعي مؤثر',
   /* ورفعُ خصمه يرفع أكوادَ متابعيه القائمة (٢٢ نوفمبر ٢٠٢٦، `raiseInfluencerCodes`) */
   'influencer.codes.raise': 'رفع خصم أكواد متابعي مؤثر إلى خصمه',
+  /* ومن عبّأ صفحةَ مؤثّرٍ آخر ولم يستعمل كودَه ينتقل كودُه إليه (٢٣ نوفمبر ٢٠٢٦، `moveInfluencerCode`) */
+  'influencer.follower.move': 'نقل كود متابع لم يستعمله إلى مؤثر جاء من صفحته',
   /* وآخرُ يومٍ لمنحة متابعيه — يغلب نهايةَ الحملة (١٧ نوفمبر ٢٠٢٦) */
   'influencer.closes.set': 'تغيير آخر يوم لمنحة متابعي مؤثر',
   'influencer.code.change': 'تغيير كود مؤثر — والرابط القديم يعمل',

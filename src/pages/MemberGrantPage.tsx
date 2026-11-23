@@ -61,7 +61,7 @@ import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import type { TimedSession } from "@/application/learning/cohort-overlap";
-import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, influencerGrantNameAr, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
+import { BLACK_FRIDAY_GRANT_NAME_AR, BLACK_FRIDAY_GRANT_PATH, BLACK_FRIDAY_GRANT_SLUG, GRANT_CLOSED_AR, GRANT_SOLD_OUT_AR, grantPrice, INFLUENCER_GRANT_NAME_AR, INFLUENCER_GRANT_SLUG, MEMBER_GRANT_NAME_AR, OPEN_GRANT_NAME_AR, OPEN_GRANT_PATH, type GrantKind } from "@/application/commerce/grant";
 import { influencerCodeLabelAr, influencerGrantPath, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import { influencerCourseOrder, trainerShortNameAr } from "@/application/commerce/influencer-cards";
 import {
@@ -71,6 +71,7 @@ import {
   GRANT_WHY_AR, GRANT_WHY_LOSSES_AR, GRANT_WHY_POINTS_AR, GRANT_HUMAN_DIAG_AR,
 } from "@/application/commerce/grant-landing";
 import { grantPercentShown } from "@/application/commerce/grant-landing";
+import { heldByOtherAr, influencerGrantFace, storedForInfluencerPage, type InfluencerCobrand as InfluencerCobrandView, type InfluencerFace } from "@/application/commerce/influencer-grant-face";
 import { BLACK_FRIDAY_GRANT_STORE_KEY, GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, OPEN_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
 import { BARE_HOST } from "@/application/site/origin";
@@ -109,8 +110,6 @@ interface View {
 }
 /** رأسُ صفحة المؤثّر المشترك — شعارُه مع الموقع أو اسمُه مكانَه (`BUILT_IN_INFLUENCER_LOGOS`) */
 type InfluencerBrand = { logoUrl: string | null };
-/** المؤثّرُ ذو الرأس المشترك في هذه الصفحة — يبقى بعد النموذج، فما يردّه النموذجُ لا يحمل رأسَه */
-type Cobrand = { nameAr: string; brand: InfluencerBrand; whatsAppText: string };
 
 interface ApplyResult extends View {
   ref: string;
@@ -251,7 +250,18 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [failed, setFailed] = useState<string | null>(null);
   /* ومن أخذ كودَه في «منحة وجيز» أو «العامة» قبل أن تصيرا بلاك فرايدي يجد كودَه هنا من جهازه — بنسبة بلاك فرايدي اليوم لا
      بما حُفظ معه (١٦ نوفمبر ٢٠٢٦) */
-  const [stored, setStored] = useState<StoredGrant | null>(() => readStoredGrant(storeKey) ?? (forBlackFriday ? movedGrant() : null));
+  /* وفي صفحة مؤثّر: ما حُفظ لمؤثّرٍ آخر لا يُعرض هنا قبل النموذج (٢٣ نوفمبر ٢٠٢٦، `storedForInfluencerPage`) — فإن عبّأه قال
+     الخادمُ لمن صار كودُه */
+  const [stored, setStored] = useState<StoredGrant | null>(() => {
+    const kept = readStoredGrant(storeKey);
+    return forInfluencer ? storedForInfluencerPage(kept, urlCode) : kept ?? (forBlackFriday ? movedGrant() : null);
+  });
+  /* ═══ ووجهُ المؤثّر واحد: مؤثّرُ الصفحة حين تُحمَّل، ثمّ مؤثّرُ الكود كما ردّه النموذج (٢٣ نوفمبر ٢٠٢٦) ═══
+     كان الشعارُ من الصفحة والاسمُ من النموذج، فرأى صاحبُ المنصّة شعارَ كاسيت و«منحة ChatTree». فالاسمُ والشعارُ وزرُّ واتساب
+     من `face` وحدَه (`influencerGrantFace`) */
+  const [face, setFace] = useState<InfluencerFace | null>(null);
+  /* وكودُ مؤثّر الصفحة كما يعرفه الخادم — فرابطٌ بكوده القديم لا يُقرأ «مؤثّرا آخر» */
+  const [pageCode, setPageCode] = useState<string | null>(urlCode);
   const [reasonAr, setReasonAr] = useState<string | null>(null);
   /* ومن عاد إلى النموذج (لا كودَ له بعد) يجده بما كتب أوّلَ مرّة — إلّا رقمَه، فهو لا يُحفظ على جهازه */
   const [form, setForm] = useState(() => {
@@ -267,7 +277,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const creditedCode = stored?.influencer ?? urlCode;
   /* ═══ واسمُها كما يراه المتابع: «منحة <مؤثّره>» لا «منحة مؤثرين وجيز» (٢٢ نوفمبر ٢٠٢٦، `influencerGrantNameAr`) ═══
      و`nameAr` اسمُ الحملة الداخليّ — به يُقرأ ما بقي على كوده (`coursesLeftOn`) */
-  const shownNameAr = forInfluencer ? influencerGrantNameAr(view?.influencer?.nameAr) : nameAr;
+  const shown = influencerGrantFace(face);
+  const shownNameAr = forInfluencer ? shown.nameAr : nameAr;
+  /* ورأسُ المؤثّر المشترك — في صفحته، وفي بلاك فرايدي برابطه `?ch=<كوده>` (١٧ نوفمبر ٢٠٢٦، `channelView` في الخادم) */
+  const cobrand = shown.cobrand;
   const pickPath = forInfluencer ? (creditedCode ? influencerPickPath(influencerBase, creditedCode) : null) : forBlackFriday ? BF_PICK_PATH : forOpen ? OPEN_PICK_PATH : PICK_PATH;
   const shell = forInfluencer
     ? { title: shownNameAr, path: `${influencerBase}${urlCode ? `/${urlCode}` : ""}`, description: forBlackFriday
@@ -302,8 +315,6 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [authOpen, setAuthOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
 
-  /* ورأسُ المؤثّر المشترك — في صفحته، وفي بلاك فرايدي برابطه `?ch=<كوده>` (١٧ نوفمبر ٢٠٢٦، `channelView` في الخادم) */
-  const [cobrand, setCobrand] = useState<Cobrand | null>(null);
   /* ومرجعُ نموذجه — فتُعرض له دوراتٌ اختارها ثمّ خرجت من القائمة (١٧ نوفمبر ٢٠٢٦، «Keep their picks»، `withGrantRef`) */
   const [firstRef] = useState(() => stored?.ref ?? null);
   const load = useCallback(async () => {
@@ -314,8 +325,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     try {
       const v = await apiGet<View>(withGrantRef(url, firstRef));
       setView(v);
-      const i = v.influencer;
-      setCobrand(i?.brand && i.whatsAppText ? { nameAr: i.nameAr, brand: i.brand, whatsAppText: i.whatsAppText } : null);
+      setFace(v.influencer ?? null);
+      if (forInfluencer && v.influencer) setPageCode(v.influencer.code);
     }
     catch (e) { setFailed(e instanceof ApiError ? e.message : "تعذر تحميل الصفحة"); }
   }, [forInfluencer, forBlackFriday, forOpen, influencerApi, urlCode, firstRef]);
@@ -429,8 +440,11 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
         source: { page: opened, first: firstTouch() }, visitorId: visitor,
         ...(forInfluencer ? { influencerCode: influencerCode.trim() } : {}),
       });
+      /* ومن عبّأ ثانيةً في جهازٍ حفظ كودَه يبقى كودُه ظاهرا — الكودُ نفسُه بحروفه ولو انتقل إلى مؤثّرٍ آخر (`moveInfluencerCode`) */
+      const was = readStoredGrant(storeKey);
+      const known = out.grant && !out.grant.code && was?.ref === out.ref ? was.code : null;
       const g = {
-        ref: out.ref, code: out.grant?.code ?? null, sentTo: out.grant?.sentTo ?? null,
+        ref: out.ref, code: out.grant?.code ?? known, sentTo: known ? null : out.grant?.sentTo ?? null,
         name: form.fullName.trim(), email: form.email.trim(), interests, workField: form.workField,
         influencer: out.influencer?.code ?? null, percentOff: out.grant?.percentOff ?? null,
         /* ومن عاد إلى النموذج (لا كودَ له بعد) لا يفقد ما اختاره قبله — ملفُّه نفسُه */
@@ -442,6 +456,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       setSeeded(false);
       setReasonAr(out.reasonAr);
       setView(out);
+      /* ووجهُ الصفحة بعده جوابُ الخادم: مؤثّرُ الكود الآن بشعاره واسمه — جديدا أو من بقي له كودُه */
+      if (forInfluencer) setFace(out.influencer ?? null);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) { toastError(err instanceof ApiError ? err.message : "تعذر الإرسال، أعد المحاولة"); }
     finally { setBusy(false); }
@@ -522,6 +538,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     }));
     /* سطرُ الصندوق حين لا كود ولا بريد — سببُ الخادم، أو أنّها مغلقة. ولا فقرةٌ فارغةٌ حين لا شيء يقال */
     const topNote = reasonAr ?? (!c.open ? GRANT_CLOSED_AR : c.soldOut ? GRANT_SOLD_OUT_AR : null);
+    /* ومن استعمل كودَه مع مؤثّرٍ آخر يبقى كودُه له — يُقال باسمه ونسبته، والرأسُ رأسُه (٢٣ نوفمبر ٢٠٢٦، `heldByOtherAr`) */
+    const heldAr = forInfluencer ? heldByOtherAr(face, pageCode, pct) : null;
     /* آخرُ يومٍ قصيرا («7 نوفمبر») — لسطر ما يخسره إن تأخّر */
     const lastDayShort = c.closesAt ? cohortDayAr(new Date(new Date(c.closesAt).getTime() - 1), { day: "numeric", month: "long" }) : null;
     /* وفي رأس «ما ستخرج به» مجاميعُ ما يأخذه حقّا من دوراته: مشاريعُها ومهامُّها ولقاءاتُها وشهاداتُها (١٦ نوفمبر ٢٠٢٦) —
@@ -694,6 +712,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           {grantOn && (
             <>
               <h1 className="text-2xl font-black leading-9">{grantWelcomeAr(stored.name)}</h1>
+              {heldAr && <p className="mt-1 text-read font-bold">{heldAr}</p>}
               <p className="mx-auto mt-1 max-w-md text-read leading-6 text-muted-foreground">
                 {grantWhyHereAr({ grantNameAr: shownNameAr, percentOff: pct, max, lastDay: lastDayShort })}
               </p>
@@ -936,8 +955,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
                   ? blackFridayLineAr(c.percentOff, null)
                   : !forInfluencer
                   ? grantThanksAr(c.percentOff)
-                  : view.influencer
-                    ? `بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`
+                  : face
+                    ? `بدعوة من ${face.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`
                     : `منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`}
               </p>
               {/* وما كان جملةً صار أيقوناتٍ بكلمتين (١٧ نوفمبر ٢٠٢٦: «الدورات الزوم يجب أن تكون أيقونة») */}
@@ -960,7 +979,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           <p className="text-center text-read text-muted-foreground">{c.open ? "دقيقة واحدة، وتأخذ كود منحتك فورا." : "نبلغك على بريدك أول ما تفتح."}</p>
           {/* كودُ المؤثّر أوّلَ النموذج في منحة المؤثّرين — مكتوبٌ من رابطه، ولازمٌ لمن جاء بلا رابط */}
           {forInfluencer && (
-            <label className="grid gap-1 text-read">{influencerCodeLabelAr(view.influencer?.nameAr)}
+            <label className="grid gap-1 text-read">{influencerCodeLabelAr(face?.nameAr)}
               <input value={influencerCode} onChange={(e) => setInfluencerCode(e.target.value.toUpperCase())} autoComplete="off" dir="ltr" placeholder="مثلا SARA" className={controlCls} />
             </label>
           )}
@@ -1097,7 +1116,7 @@ function Shell({
 /* ═══ رأسُ صفحة المؤثّر المشترك (١٧ نوفمبر ٢٠٢٦) ═══
    قرارُ صاحب المنصّة: «Influencer page + logo». كرأس صفحة الشريك (`CoBrand` في `PartnerGrantPage.tsx`): شعارُه على أرضيّةٍ بيضاء
    فيُقرأ في الليليّ، و«×» وعلامةُ الأكاديمية. وحتى يصل شعارُه يُكتب اسمُه في مكانه */
-function InfluencerCobrand({ cobrand, className = "" }: { cobrand: Cobrand; className?: string }) {
+function InfluencerCobrand({ cobrand, className = "" }: { cobrand: InfluencerCobrandView; className?: string }) {
   return (
     <div className={`flex items-center justify-center gap-4 sm:gap-6 ${className}`} data-testid="influencer-cobrand">
       <span className="grid h-20 min-w-20 max-w-[11rem] place-items-center rounded-2xl bg-white px-3 shadow-sm ring-1 ring-black/10 sm:h-24">

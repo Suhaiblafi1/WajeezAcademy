@@ -22,8 +22,9 @@
 
    النموذجُ واحدٌ وفرقُه خانةٌ: **كودُ المؤثّر**، لازمٌ فيها — يكتبه المتابعُ أو يأتي مكتوبا في رابط المؤثّر. وكودٌ لا
    يطابق مؤثّرا نشطا يُردّ بسببه ولا يُحفظ صاحبُه: منحتُها لمن جاء بكود. والعميلُ يحمل مؤثّرَه، وكودُ منحته يحمل مؤثّرَه
-   وعمولتَه يومَ أُعطي (`grant.service.ts#issue`). **والأوّلُ يبقى**: من عبّأها بكود مؤثّرٍ ثمّ بكود غيره يُحسب للأوّل —
-   كما يأخذ كودَه الأوّل نفسَه. والقناةُ كودُ المؤثّر بحروفٍ صغيرة، فتُقرأ نتائجُها بالقناة كما تُقرأ نتائجُ الأولى.
+   وعمولتَه يومَ أُعطي (`grant.service.ts#issue`). **والجديدُ يأخذه ما لم يُستعمل** (٢٣ نوفمبر ٢٠٢٦، «Move to the new one»،
+   نسخا لـ«الأوّلُ يبقى»): من عبّأها بكود مؤثّرٍ ثمّ بكود غيره ينتقل إليه كودُه نفسُه بخصمه وعمولته (`moveInfluencerCode`)،
+   وما استُعمل يبقى للأوّل وتقول الصفحةُ اسمَه. والقناةُ كودُ المؤثّر بحروفٍ صغيرة، فتُقرأ نتائجُها بالقناة كما تُقرأ نتائجُ الأولى.
 
    ═══ و«بلاك فرايدي وجيز» حملةُ مؤثّرين ثانية (١٥ نوفمبر ٢٠٢٦) ═══
 
@@ -56,7 +57,7 @@ import { resolveCompletionRules } from '../../src/application/learning/completio
 import { BLACK_FRIDAY_GRANT_SLUG, GRANT_CAMPAIGNS, GRANT_ONCE_AR, GRANT_SLUGS, MEMBER_GRANT_SLUG, OPEN_GRANT_SLUG, grantPagePath, grantTitleAr, isInfluencerGrant, type CampaignSlug, type GrantSlug } from '../../src/application/commerce/grant'
 import { PARTNER_SLUG_PREFIX } from '../../src/application/commerce/partner-grant'
 import { INFLUENCER_CODE_BAD_AR, blackFridayCommission, influencerBrand, influencerClosesAt, influencerGrantPath, influencerLink, influencerPercentOff, influencerWhatsAppTextAr, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
-import { influencerCodeWhere } from './influencer.service'
+import { influencerCodeWhere, moveInfluencerCode } from './influencer.service'
 import { shortLinkPath } from '../../src/application/links/short-link'
 import { fmtDate } from '../../src/application/text/format-ar'
 
@@ -343,20 +344,27 @@ export class GrantLandingService {
         meta: { leadId: lead.id, channel: lead.channel, wave: lead.wave, campaign: this.slug, influencerId: lead.influencerId },
       })
     }
-    /* المؤثّرُ الذي يُحسب له: من جاء بكوده أوّلَ مرّة — وعمولتُه كما هي اليوم، تُكتب في كوده إن أُعطي الآن */
+    /* المؤثّرُ الذي يُحسب له — وعمولتُه كما هي اليوم، تُكتب في كوده إن أُعطي الآن */
     /* ═══ ومن أُعطي كودا يُحسب لمؤثّر كوده — ولو أُوقف (٥ نوفمبر ٢٠٢٦) ═══
        الكودُ يحمل مؤثّرَه وعمولتَه يومَ أُعطي (`issue`)، ومن عبّأ ثانيةً يأخذ كودَه نفسَه — فعمولتُه لصاحب كوده، كما يُقال للمؤثّر
        حين يُوقف: «عمولة من أخذ كودا قبل ذلك محسوبة لك». وكانت الصفحةُ تقول للمتابع «جئت عن طريق» المؤثّرِ الذي كتب كودَه الآن
-       — وعمولتُه لغيره. فيُقال له مؤثّرُ كوده. */
-    const coded = forInfluencer
-      ? (await this.prisma.grantCode.findUnique({
-          where: { leadId: lead.id }, select: { influencer: { select: INFLUENCER_SELECT } },
-        }))?.influencer ?? null
+       — وعمولتُه لغيره. فيُقال له مؤثّرُ كوده. (وصار الكودُ الذي لم يُستعمل ينتقل إلى من جاء بكوده الآن — أدناه.) */
+    const held = forInfluencer
+      ? await this.prisma.grantCode.findUnique({
+          where: { leadId: lead.id }, select: { id: true, influencer: { select: INFLUENCER_SELECT } },
+        })
       : null
-    const credited = !forInfluencer ? null
-      : coded ?? (!lead.influencerId || lead.influencerId === named!.id ? named
-        /* والأوّلُ إن كان ما زال نشطا — من أُوقف لا يُكتب له كودٌ جديد ولا عمولتُه، فيُحسب لمن جاء بكوده الآن (٣١ أكتوبر ٢٠٢٦) */
-        : await this.prisma.influencer.findFirst({ where: { id: lead.influencerId, active: true }, select: INFLUENCER_SELECT }) ?? named)
+    /* ═══ والجديدُ يأخذه ما لم يُستعمل (٢٣ نوفمبر ٢٠٢٦، «Move to the new one») ═══
+       نسخا لـ«الأوّلُ يبقى»: من عبّأ صفحةَ مؤثّرٍ آخر ينتقل إليه كودُه بخصمه وعمولته (`moveInfluencerCode`)، وما استُعمل يبقى
+       لمؤثّره ويُقال له اسمُه. ومن لا كودَ له بعدُ يُحسب لمن جاء بكوده الآن */
+    const moved = held && named && held.influencer?.id !== named.id
+      ? await moveInfluencerCode(this.prisma, { grantCodeId: held.id, to: named, ip }, now)
+      : null
+    const coded = moved ? named : held?.influencer ?? null
+    if (forInfluencer && !held && lead.influencerId !== named!.id) {
+      await this.prisma.lead.update({ where: { id: lead.id }, data: { influencerId: named!.id, channel: campaignTag(named!.code) } })
+    }
+    const credited = !forInfluencer ? null : coded ?? named
 
     let grant: { code: string | null; sentTo: string | null; percentOff: number; closesAt: Date | null } | null = null
     let reasonAr: string | null = null
@@ -395,7 +403,8 @@ export class GrantLandingService {
     const v = await this.view(now, credited?.id ?? null)
     return {
       ref: lead.id, grant, reasonAr,
-      ...(forInfluencer ? { influencer: credited ? { nameAr: credited.nameAr, code: credited.code } : null } : {}),
+      /* ومؤثّرُ كوده بوجهه كلِّه — اسمُه وشعارُه — فلا تجمع الصفحةُ شعارَ الرابط واسمَ غيره (٢٣ نوفمبر ٢٠٢٦) */
+      ...(forInfluencer ? { influencer: credited ? influencerFace(credited) : null } : {}),
       ...v,
       /* ونسبةُ الصفحة ما يأخذه متابعُ مؤثّره — فهديّتُه برابط مؤثّره تقول ما يأخذه صديقُه (١٥ نوفمبر ٢٠٢٦) */
       ...(forInfluencer ? { campaign: { ...v.campaign, percentOff: influencerPercentOff(v.campaign.percentOff, credited?.percentOff) } } : {}),

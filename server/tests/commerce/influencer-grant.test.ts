@@ -2,7 +2,7 @@
 
    ① **حملةٌ ثانيةٌ بصفّها** — تبدأ موقوفةً بخمسةٍ وأربعين، ولا تمسّ الأولى.
    ② **كودُ المؤثّر لازم** — بلا كودٍ أو بكود موقوفٍ يُردّ ولا يُحفظ أحد.
-   ③ **والكودُ يحمل مؤثّرَه وعمولتَه يومَ أُعطي** — والأوّلُ يبقى لمن عبّأ بكودين.
+   ③ **والكودُ يحمل مؤثّرَه وعمولتَه يومَ أُعطي** — ومن عبّأ بكودين ولم يستعمل كودَه ينتقل إلى الثاني (٢٣ نوفمبر ٢٠٢٦).
    ④ **والعمولةُ ١٥٪ من سعر الدورات قبل المنحة** — ولو أهدى صاحبُ الكود كودَه لغيره.
    ⑤ **وما رُدّ ينقصها بنسبته**، والمردودُ كلُّه لا عمولةَ له.
    ⑥ **وتغييرُ العمولة على ما بعده.**
@@ -134,9 +134,11 @@ describe('③ والكود يحمل مؤثره وعمولته — والأول �
     expect((await prisma.shortLink.findUniqueOrThrow({ where: { code: view.sharePath!.slice('/s/'.length) } })).target).toBe('/grant/i/SARA')
     expect((await landing.influencerView('NOBODY-X')).sharePath).toBeNull()
 
+    /* ومن عبّأ بكود غيره ولم يستعمل كودَه ينتقل كودُه نفسُه إليه — نسخا لـ«الأوّلُ يبقى» (٢٣ نوفمبر ٢٠٢٦، «Move to the new one»،
+       والحارس: `influencer-code-move.test.ts`) */
     const again = await landing.apply({ ...p, influencerCode: 'OMAR' })
     expect(again.ref).toBe(out.ref)
-    expect(again.influencer?.code, 'حسب لمؤثر ثان من جاء به الأول').toBe('SARA')
+    expect(again.influencer?.code, 'بقي لمؤثره الأول كود لم يستعمل').toBe('OMAR')
     expect(await prisma.grantCode.count({ where: { leadId: lead.id } })).toBe(1)
   })
 })
@@ -243,11 +245,15 @@ describe('⑦ج مؤثر أوقف لا يحسب له كود جديد', () => {
 /* بلاغُ المراجعة (٥ نوفمبر ٢٠٢٦): من أخذ كودا بمؤثّرٍ أُوقف بعدُ، ثمّ عبّأ بكود غيره، قيل له «جئت عن طريق» الثاني —
    وكودُه نفسُه يعود إليه وعمولتُه للأوّل */
 describe('⑦د من أخذ كودا ثم أوقف مؤثره', () => {
-  it('⚠️ يعبئ بكود آخر: يقال له مؤثر كوده — وعمولته له', async () => {
+  /* وصار (٢٣ نوفمبر ٢٠٢٦، «Move to the new one»): كودٌ لم يُستعمل ينتقل إلى من جاء بكوده الآن، وما استُعمل يبقى لمؤثّره
+     ويُقال له اسمُه — ولو أُوقف */
+  it('⚠️ يعبئ بكود آخر بعد أن اشترى بكوده: يقال له مؤثر كوده — وعمولته له', async () => {
     const first = await addInfluencer('HADCODE')
     await addInfluencer('LATERCODE')
     const p = person({ influencerCode: 'HADCODE' })
     const got = await landing.apply(p)
+    const buyer = await learner()
+    await pay(buyer, [await openCohort(100)], got.grant!.code!)
     await influencers.update(first, { active: false }, ownerId)
     const again = await landing.apply({ ...p, influencerCode: 'LATERCODE' })
     expect(again.influencer?.code, 'قيل له مؤثر غير مؤثر كوده').toBe('HADCODE')
