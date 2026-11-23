@@ -22,6 +22,8 @@ export interface ParsedList {
   entries: ParsedEntry[]
   invalid: number
   duplicates: number
+  /** ما صُحّح نطاقُه المخطوء (`TYPO_DOMAINS`) — ويُحفظ مصحَّحا */
+  corrected: number
   /** أمثلةٌ ممّا سقط: رقمُ صفّه في الملفّ وما كان فيه */
   invalidSamples: { row: number; value: string }[]
   emailColumn: string
@@ -30,18 +32,29 @@ export interface ParsedList {
 
 const EMAIL_RE = /^[^\s@<>()[\],;:"'\\]+@[^\s@<>()[\],;:"'\\]+\.[a-z]{2,}$/i
 
-/* ═══ ونطاقٌ مكتوبٌ خطأً يسقط كغير الصالح (٢٣ نوفمبر ٢٠٢٦) ═══
-   قرارُ صاحب المنصّة: «make an option to the admin that checks wrong emails or duplicated». ووُجد في قائمة تطبيق وجيز
-   ستّةَ عشرَ عنوانا بنطاقٍ مخطوء (`gmial.com`، `gmail.con`): صحيحٌ شكلُه ولا يصل — فيرتدّ ويضرّ سمعةَ المرسل. فهذه
-   الأخطاءُ الشائعةُ لأشهر النطاقات تسقط هنا، في القائمة المرفوعة وفي ليدات الموقع معا. */
-export const TYPO_DOMAINS: ReadonlySet<string> = new Set([
-  'gmial.com', 'gmai.com', 'gmal.com', 'gmil.com', 'gmail.co', 'gmail.con', 'gmail.cm', 'gmail.om', 'gmaill.com', 'gamil.com', 'gnail.com', 'gmail.comm',
-  'hotmial.com', 'hotmai.com', 'hotmal.com', 'hotmail.co', 'hotmail.con', 'homail.com', 'hotmil.com', 'hotmaill.com',
-  'yaho.com', 'yahoo.co', 'yahoo.con', 'yhoo.com', 'yahooo.com',
-  'outlok.com', 'outlook.co', 'outlook.con', 'outllok.com', 'iclod.com', 'icloud.co', 'icould.com', 'icloud.con',
-])
+/* ═══ ونطاقٌ مكتوبٌ خطأً يُصحَّح إلى صوابه (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «make an option to the admin that checks wrong emails or duplicated»، ثمّ لمّا أسقطناها: «why not to
+   fix these instead taking them off». فالعنوانُ بنطاقٍ مخطوءٍ شائعٍ لأشهر النطاقات (`gmial.com` ← `gmail.com`) يُصحَّح ولا
+   يسقط — صاحبُه أراد الصحيحَ ولم يصل إليه شيءٌ بالمخطوء. ويُعدّ ما صُحّح ويُقال في المعاينة. وفي القائمة المرفوعة وليدات
+   الموقع معا، فالتصحيحُ في `cleanEmail` نفسِها. */
+export const TYPO_DOMAINS: Readonly<Record<string, string>> = {
+  'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmal.com': 'gmail.com', 'gmil.com': 'gmail.com', 'gmail.co': 'gmail.com',
+  'gmail.con': 'gmail.com', 'gmail.cm': 'gmail.com', 'gmail.om': 'gmail.com', 'gmaill.com': 'gmail.com', 'gamil.com': 'gmail.com',
+  'gnail.com': 'gmail.com', 'gmail.comm': 'gmail.com', 'gmail.cim': 'gmail.com', 'gmail.vom': 'gmail.com', 'gmailcom': 'gmail.com',
+  'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com', 'hotmal.com': 'hotmail.com', 'hotmail.co': 'hotmail.com',
+  'hotmail.con': 'hotmail.com', 'homail.com': 'hotmail.com', 'hotmil.com': 'hotmail.com', 'hotmaill.com': 'hotmail.com',
+  'yaho.com': 'yahoo.com', 'yahoo.co': 'yahoo.com', 'yahoo.con': 'yahoo.com', 'yhoo.com': 'yahoo.com', 'yahooo.com': 'yahoo.com',
+  'outlok.com': 'outlook.com', 'outlook.co': 'outlook.com', 'outlook.con': 'outlook.com', 'outllok.com': 'outlook.com',
+  'iclod.com': 'icloud.com', 'icloud.co': 'icloud.com', 'icould.com': 'icloud.com', 'icloud.con': 'icloud.com',
+}
 
-/** البريدُ نظيفا بحروفٍ صغيرة — أو لا شيء إن لم يكن بريدا، أو كان نطاقُه خطأً شائعا (`TYPO_DOMAINS`) */
+/** أصُحّح نطاقُ هذا العنوان؟ — يُعدّ في المعاينة */
+export function typoFixed(raw: string): boolean {
+  const v = raw.trim().toLowerCase()
+  return Object.prototype.hasOwnProperty.call(TYPO_DOMAINS, v.slice(v.lastIndexOf('@') + 1))
+}
+
+/** البريدُ نظيفا بحروفٍ صغيرة، ونطاقُه المخطوءُ الشائعُ مصحَّحا (`TYPO_DOMAINS`) — أو لا شيء إن لم يكن بريدا */
 export function cleanEmail(raw: string): string | null {
   const v = raw
     .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
@@ -51,8 +64,9 @@ export function cleanEmail(raw: string): string | null {
     .trim()
     .toLowerCase()
   if (!v || v.length > 254 || v.includes('..') || !EMAIL_RE.test(v)) return null
-  if (TYPO_DOMAINS.has(v.slice(v.lastIndexOf('@') + 1))) return null
-  return v
+  const at = v.lastIndexOf('@')
+  const fix = TYPO_DOMAINS[v.slice(at + 1)]
+  return fix ? `${v.slice(0, at)}@${fix}` : v
 }
 
 /* ─────────── الصفوف من الملفّ ─────────── */
@@ -209,6 +223,7 @@ export async function parseMailFile(buffer: Buffer): Promise<ParsedList> {
   let total = 0
   let invalid = 0
   let duplicates = 0
+  let corrected = 0
   data.forEach((r, n) => {
     if (!r.some((c) => c && c.trim())) return
     total += 1
@@ -222,12 +237,13 @@ export async function parseMailFile(buffer: Buffer): Promise<ParsedList> {
     }
     if (seen.has(email)) { duplicates += 1; return }
     seen.add(email)
+    if (typoFixed(raw.replace(/[<>\s\u200B-\u200F\uFEFF]/g, ''))) corrected += 1
     const rawName = cols.name === null ? '' : (r[cols.name] ?? '').replace(/\s+/g, ' ').trim()
     entries.push({ email, name: rawName && !rawName.includes('@') ? rawName.slice(0, 120) : null })
   })
 
   return {
-    totalRows: total, entries, invalid, duplicates, invalidSamples,
+    totalRows: total, entries, invalid, duplicates, corrected, invalidSamples,
     emailColumn: columnLabel(rows, cols, cols.email),
     nameColumn: cols.name === null ? null : columnLabel(rows, cols, cols.name),
   }
