@@ -67,10 +67,11 @@ import { BLACK_FRIDAY_GRANT_SLUG, INFLUENCER_GRANT_SLUG, INFLUENCER_GRANT_SLUGS 
 import {
   INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, INFLUENCER_COMMISSION_DEFAULT, INFLUENCER_DISCOUNT_BAD_AR, OWN_PURCHASE_AR, buyerNameAr,
   commissionStateAr, influencerCommission, influencerLink, influencerPercentOff, normalizeInfluencerCode,
-  INFLUENCER_PHONE_BAD_AR, KASEET_INFLUENCER, SUHAIB_INFLUENCER, blackFridayCommission, cleanInfluencerPhone, influencerClosesAt,
+  INFLUENCER_PHONE_BAD_AR, KASEET_INFLUENCER, SUHAIB_INFLUENCER, blackFridayCommission, cleanInfluencerPhone, influencerClosesAt, withInfluencerEnd,
 } from '../../src/application/commerce/influencer'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
+import { campaignTag } from '../../src/application/commerce/grant-landing'
 
 export const INFLUENCER_ROLE = 'influencer'
 
@@ -824,3 +825,66 @@ export async function applyInfluencerCodesCatchUp(prisma: PrismaClient): Promise
     return { influencers, raised }
   })
 }
+
+/* ═══ ومن أخذ كودا من مؤثّرٍ ثمّ عبّأ صفحةَ غيره ينتقل كودُه إلى الجديد — ما لم يستعمله (٢٣ نوفمبر ٢٠٢٦) ═══
+
+   رأى صاحبُ المنصّة: سجّل في صفحة ChatTree فأخذ كودا بـ60%، ثمّ عبّأ صفحةَ كاسيت (70%) فرأى شعارَ كاسيت و«منحة ChatTree
+   تغطي 60%» — لأنّ «منحةٌ واحدةٌ لكلّ متعلّم» تعيد إليه كودَه الأوّل. فخُيّر، واختار **«Move to the new one»**:
+   · **ما لم يُستعمل** (لا دورةَ بثمنٍ في طلبٍ محجوزٍ أو مدفوعٍ به — عدُّ `coursesLeft` نفسُه) ينتقل كلُّه إلى الجديد: مؤثّرُه
+     وعمولتُه اليومَ في كوده، وخصمُه في كوبونه (`influencerPercentOff`)، وعميلُه وقناتُه — فعمولةُ ما يشتريه بعدُ للجديد.
+     والكودُ نفسُه بحروفه: ليس فيه اسمُ مؤثّر، فبريدُه ورابطُه يبقيان.
+   · **وما استُعمل يبقى لصاحبه**، والصفحةُ تقول اسمَه وشعارَه هو لا شعارَ الرابط.
+   · **وفي منحة المؤثّرين وحدَها** (`INFLUENCER_GRANT_SLUGS`) — بلاك فرايدي ومنحُ الأعضاء والشركاء كما هي.
+   · **ولا ينتقل إلى مؤثّرٍ أُغلقت منحةُ متابعيه** (`withInfluencerEnd`): يبقى بكوده المفتوح.
+   ويُخبَر من يدير التجارة في جرسه: خصمُ متعلّمٍ وعمولةُ مؤثّرين تغيّرا.
+   والحارس: `server/tests/commerce/influencer-code-move.test.ts`. */
+
+/** المؤثّرُ الذي ينتقل إليه الكود — بعمولته وخصمه وآخر يومه اليومَ */
+export interface MoveTarget { id: string; nameAr: string; code: string; commissionPercent: number; percentOff: number | null; closesAt: Date | null }
+
+/** ينقل كودَ منحة مؤثّرٍ لم يُستعمل إلى مؤثّرٍ آخر — ويعيد الخصمَ الجديد، أو `null` إن بقي حيث هو */
+export async function moveInfluencerCode(
+  prisma: PrismaClient, input: { grantCodeId: string; to: MoveTarget; ip?: string }, now = new Date(),
+): Promise<{ percentOff: number } | null> {
+  const { to } = input
+  return prisma.$transaction(async (tx) => {
+    const g = await tx.grantCode.findUnique({
+      where: { id: input.grantCodeId },
+      select: {
+        id: true, couponId: true, leadId: true, influencerId: true, commissionPercent: true,
+        coupon: { select: { percentOff: true } },
+        influencer: { select: { nameAr: true } },
+        campaign: { select: { slug: true, percentOff: true, active: true, closesAt: true } },
+      },
+    })
+    if (!g || g.influencerId === to.id || !(INFLUENCER_GRANT_SLUGS as readonly string[]).includes(g.campaign.slug)) return null
+    const target = withInfluencerEnd(g.campaign, to)
+    if (!target.active || (target.closesAt !== null && target.closesAt <= now)) return null
+    /* ما استُعمل: دورةٌ بثمنٍ في طلبٍ ينتظر الدفعَ به أو دُفع — كـ`coursesLeft` */
+    const used = await tx.orderItem.count({ where: { unitPrice: { gt: 0 }, order: { couponId: g.couponId, status: { in: GRANT_HOLDS } } } })
+    if (used > 0) return null
+    const percentOff = influencerPercentOff(g.campaign.percentOff, to.percentOff)
+    await tx.grantCode.update({ where: { id: g.id }, data: { influencerId: to.id, commissionPercent: to.commissionPercent } })
+    await tx.coupon.update({ where: { id: g.couponId }, data: { percentOff } })
+    if (g.leadId) await tx.lead.update({ where: { id: g.leadId }, data: { influencerId: to.id, channel: campaignTag(to.code) } })
+    await recordAudit(tx, {
+      actorId: null, action: 'influencer.follower.move', entityType: 'influencer', entityId: to.id, ip: input.ip,
+      reason: INFLUENCER_FOLLOWER_MOVE_REASON,
+      before: { influencerId: g.influencerId, commissionPercent: g.commissionPercent, percentOff: g.coupon.percentOff },
+      after: { influencerId: to.id, commissionPercent: to.commissionPercent, percentOff },
+      meta: { grantCodeId: g.id, leadId: g.leadId, campaign: g.campaign.slug },
+    })
+    /* ═══ وما غيّر ما يدفعه متعلّمٌ وعمولةَ مؤثّرَين يُخبَر به إنسان (`audit-high-reaches-person.test.ts`) ═══
+       يُخبَر من يدير التجارة في جرسه. ويُرسَل بالعميل لا بالمعاملة: إشعارٌ يسقط لا يُفسد النقل (كـ`raiseInfluencerCodes`) */
+    const was = g.coupon.percentOff ?? 0
+    await notifyRole(prisma, COMMERCE_MANAGERS, {
+      channel: 'in_app', skipEmail: true,
+      title: `انتقل كود متابع إلى ${to.nameAr}`,
+      body: `${g.influencer ? `كان من ${g.influencer.nameAr}` : 'كان بلا مؤثر'} بخصم ${was}%، وصار ${percentOff}%. لم يستعمله بعد.`,
+      data: { influencerId: to.id, grantCodeId: g.id, from: was, to: percentOff },
+    })
+    return { percentOff }
+  })
+}
+
+export const INFLUENCER_FOLLOWER_MOVE_REASON = 'قرار صاحب المنصة (23 نوفمبر 2026): كود لم يستعمل ينتقل إلى المؤثر الجديد'

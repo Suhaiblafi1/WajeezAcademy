@@ -61,7 +61,8 @@ describe('② قيمة الخصم لا ما تدفعه الأكاديمية', ()
 
 describe('③ الصفحة تبنيهما منهما', () => {
   it('⚠️ رأسها وعنوانها وما بعد النموذج ورسالة المستشار باسم المؤثر — واسم الحملة لا يعرض', () => {
-    expect(PAGE).toMatch(/const shownNameAr = forInfluencer \? influencerGrantNameAr\(view\?\.influencer\?\.nameAr\) : nameAr;/)
+    /* والاسمُ من وجه المؤثّر الواحد (٢٣ نوفمبر ٢٠٢٦، `influencerGrantFace` — يبني اسمَه بـ`influencerGrantNameAr`) */
+    expect(PAGE).toMatch(/const shown = influencerGrantFace\(face\);\s+const shownNameAr = forInfluencer \? shown\.nameAr : nameAr;/)
     expect(PAGE).toContain('<h1 className="mt-2 text-3xl font-black">{shownNameAr}</h1>')
     expect(PAGE).toMatch(/\? \{ title: shownNameAr, path: `\$\{influencerBase\}/)
     expect(PAGE).toContain('grantWhyHereAr({ grantNameAr: shownNameAr,')

@@ -225,9 +225,9 @@ describe('بعد النموذج', () => {
     expect(blackFridayLineAr(70), 'عاد تكرار الاسم').not.toMatch(/بلاك فرايدي|أكاديمية وجيز/)
     expect(grantThanksAr(60)).toBe('تطبيق وجيز يشكرك لأنك من قرّائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى 60% لتستفيد من منتجنا الجديد: أكاديمية وجيز.')
     /* وفي منحة المؤثّرين باسم المؤثّر إن جاء برابطه (٢٦ أكتوبر ٢٠٢٦) */
-    expect(PAGE).toContain('`بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
+    expect(PAGE).toContain('`بدعوة من ${face.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
     /* وخانةُ الكود باسم المؤثّر لا «كود المؤثّر» — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/<label className="grid gap-1 text-read">\{influencerCodeLabelAr\(view\.influencer\?\.nameAr\)\}/)
+    expect(PAGE).toMatch(/<label className="grid gap-1 text-read">\{influencerCodeLabelAr\(face\?\.nameAr\)\}/)
     expect(PAGE, 'عاد «كود المؤثر» اسما للخانة').not.toMatch(/text-read">كود المؤثر\s*</)
     expect(influencerCodeLabelAr('سارة')).toBe('الكود الخاص بـسارة')
     expect(influencerCodeLabelAr(' ')).toBe('الكود الخاص بالمؤثر')
