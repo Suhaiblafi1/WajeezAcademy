@@ -30,7 +30,18 @@ export interface ParsedList {
 
 const EMAIL_RE = /^[^\s@<>()[\],;:"'\\]+@[^\s@<>()[\],;:"'\\]+\.[a-z]{2,}$/i
 
-/** البريدُ نظيفا بحروفٍ صغيرة — أو لا شيء إن لم يكن بريدا */
+/* ═══ ونطاقٌ مكتوبٌ خطأً يسقط كغير الصالح (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «make an option to the admin that checks wrong emails or duplicated». ووُجد في قائمة تطبيق وجيز
+   ستّةَ عشرَ عنوانا بنطاقٍ مخطوء (`gmial.com`، `gmail.con`): صحيحٌ شكلُه ولا يصل — فيرتدّ ويضرّ سمعةَ المرسل. فهذه
+   الأخطاءُ الشائعةُ لأشهر النطاقات تسقط هنا، في القائمة المرفوعة وفي ليدات الموقع معا. */
+export const TYPO_DOMAINS: ReadonlySet<string> = new Set([
+  'gmial.com', 'gmai.com', 'gmal.com', 'gmil.com', 'gmail.co', 'gmail.con', 'gmail.cm', 'gmail.om', 'gmaill.com', 'gamil.com', 'gnail.com', 'gmail.comm',
+  'hotmial.com', 'hotmai.com', 'hotmal.com', 'hotmail.co', 'hotmail.con', 'homail.com', 'hotmil.com', 'hotmaill.com',
+  'yaho.com', 'yahoo.co', 'yahoo.con', 'yhoo.com', 'yahooo.com',
+  'outlok.com', 'outlook.co', 'outlook.con', 'outllok.com', 'iclod.com', 'icloud.co', 'icould.com', 'icloud.con',
+])
+
+/** البريدُ نظيفا بحروفٍ صغيرة — أو لا شيء إن لم يكن بريدا، أو كان نطاقُه خطأً شائعا (`TYPO_DOMAINS`) */
 export function cleanEmail(raw: string): string | null {
   const v = raw
     .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
@@ -40,6 +51,7 @@ export function cleanEmail(raw: string): string | null {
     .trim()
     .toLowerCase()
   if (!v || v.length > 254 || v.includes('..') || !EMAIL_RE.test(v)) return null
+  if (TYPO_DOMAINS.has(v.slice(v.lastIndexOf('@') + 1))) return null
   return v
 }
 

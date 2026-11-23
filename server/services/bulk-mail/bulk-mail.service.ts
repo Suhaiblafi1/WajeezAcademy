@@ -29,12 +29,13 @@ import { renderMail, type MailBlock, type MailRich } from '../mail-template'
 import { optedOut, unsubscribeLinks } from '../mail-optout.service'
 import { liveChannels, sendDirectEmail, type DirectMailResult } from '../notification.service'
 import { cleanEmail, parseMailFile } from './parse'
+import { phoneTail } from '../../../src/application/advisor/phone-tail'
 import { bulkSender, type BulkSender } from './sender'
 import { messageParagraphs } from '../../../src/application/commerce/grant-registrants'
 import { linkSegments } from '../../../src/application/text/linkify'
 import {
   BULK_MAIL_PURPOSE, LEAD_SOURCE_AR, MAX_STAGES, etaMinutes, greetingAr, parseAudience, stagePlan,
-  type CampaignStatus, type SendCheck,
+  type CampaignStatus, type SendCheck, type SkipRecentDays,
 } from '../../../src/application/marketing/bulk-mail'
 
 type Db = PrismaClient | Prisma.TransactionClient
@@ -253,12 +254,57 @@ export async function resolveAudience(prisma: PrismaClient, key: string | null):
   return { nameAr, people, invalid, duplicate }
 }
 
-/** من تصله الحملةُ لو أُرسلت الآن، ومن لا تصله ولماذا */
-async function recipientsOf(prisma: PrismaClient, key: string | null) {
+/** من خرجت إليه رسالةُ حملةٍ أو تنتظر مرحلتَها منذ `since` — بالطابور نفسِه، دفعاتٍ دفعات (`SKIP_RECENT_DAYS`) */
+async function recentlyMailed(prisma: PrismaClient, emails: string[], since: Date): Promise<Set<string>> {
+  const out = new Set<string>()
+  for (let i = 0; i < emails.length; i += 5_000) {
+    const rows = await prisma.outboxMail.findMany({
+      where: { purpose: BULK_MAIL_PURPOSE, status: { in: ['queued', 'sent'] }, createdAt: { gte: since }, to: { in: emails.slice(i, i + 5_000) } },
+      select: { to: true }, distinct: ['to'],
+    })
+    for (const r of rows) out.add(r.to.toLowerCase())
+  }
+  return out
+}
+
+/* ═══ ومن قال إنّه غيرُ مهتمّ لا تصله حملة — دائما (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «أريد أن نستثني أيَّ شخصٍ قال على الواتساب إنّه غيرُ مهتمّ أو شيءٌ يدلّ أنّه غيرُ مهتمّ، مثلا اعترض
+   على السعر أو ردّ بأيّ ردٍّ يوحي أنّه يريد أن نتوقّف». وردودُ واتساب تصل هاتفَ المستشار لا المنصّة، فالمنصّةُ تعرف ما سُجّل:
+   · حالةُ مستشارٍ أُغلقت «غير مهتم» (`AdvisorCase.status = not_interested`) — بريدُ نموذجها وبريدُ حسابها.
+   · و«توقّف» على واتساب (`WhatsAppOptOut`، بذيل الرقم) — بريدُ كلّ نموذجٍ برقمٍ ذيلُه منها.
+   ويُطابَق ببريد القائمة المرفوعة أيضا: من في قائمة Excel وقال «غير مهتم» في نموذجه لا تصله. */
+export async function notInterestedEmails(prisma: PrismaClient): Promise<Set<string>> {
+  const out = new Set<string>()
+  const add = (e: string | null | undefined) => { const c = e ? cleanEmail(e) : null; if (c) out.add(c) }
+  const cases = await prisma.advisorCase.findMany({
+    where: { status: 'not_interested' },
+    select: { lead: { select: { email: true } }, client: { select: { email: true } } },
+  })
+  for (const c of cases) { add(c.lead?.email); add(c.client?.email) }
+  const tails = new Set((await prisma.whatsAppOptOut.findMany({ select: { tail: true } })).map((r) => r.tail))
+  if (tails.size > 0) {
+    const leads = await prisma.lead.findMany({ where: { phone: { not: null }, email: { not: null } }, select: { phone: true, email: true } })
+    for (const l of leads) { const t = phoneTail(l.phone); if (t && tails.has(t)) add(l.email) }
+  }
+  return out
+}
+
+/** من تصله الحملةُ لو أُرسلت الآن، ومن لا تصله ولماذا — ومن وصلته حملةٌ في آخر `skipRecentDays` يوما يُتخطّى إن اختير */
+async function recipientsOf(prisma: PrismaClient, key: string | null, skipRecentDays: SkipRecentDays = 0, now = new Date()) {
   const r = await resolveAudience(prisma, key)
   const off = await optedOutChunked(prisma, r.people.map((p) => p.email))
-  const to = r.people.filter((p) => !off.has(p.email))
-  const check: SendCheck = { recipients: to.length, audienceAr: r.nameAr, optedOut: r.people.length - to.length, invalid: r.invalid, duplicate: r.duplicate }
+  const notInterested = await notInterestedEmails(prisma)
+  const subscribed = r.people.filter((p) => !off.has(p.email) && !notInterested.has(p.email))
+  const recent = skipRecentDays > 0
+    ? await recentlyMailed(prisma, subscribed.map((p) => p.email), new Date(now.getTime() - skipRecentDays * DAY_MS))
+    : new Set<string>()
+  const to = subscribed.filter((p) => !recent.has(p.email))
+  const check: SendCheck = {
+    recipients: to.length, audienceAr: r.nameAr, invalid: r.invalid, duplicate: r.duplicate,
+    optedOut: r.people.filter((p) => off.has(p.email)).length,
+    notInterested: r.people.filter((p) => !off.has(p.email) && notInterested.has(p.email)).length,
+    recent: subscribed.length - to.length,
+  }
   return { to, check }
 }
 
@@ -330,9 +376,9 @@ export async function deleteCampaign(prisma: PrismaClient, id: string) {
 }
 
 /** ما يُقال قبل الإرسال: من تصله ومن لا تصله ولماذا، وكم دقيقة */
-export async function campaignCheck(prisma: PrismaClient, id: string) {
+export async function campaignCheck(prisma: PrismaClient, id: string, skipRecentDays: SkipRecentDays = 0) {
   const c = await campaignOr404(prisma, id)
-  const { check } = await recipientsOf(prisma, c.audience)
+  const { check } = await recipientsOf(prisma, c.audience, skipRecentDays)
   const mailOn = (await liveChannels(prisma)).includes('email')
   const { name, email } = await bulkSender(prisma)
   return { ...check, etaMinutes: etaMinutes(check.recipients), mailOn, from: { name, email } }
@@ -424,6 +470,8 @@ export async function sendCampaign(
     enqueue?: (entries: OutboxEntry[]) => Promise<number>
     /** حدودُ الأيّام الأولى إن أُرسلت على مراحل — والباقي في اليوم الذي بعدها (`stagePlan`). وبلاها دفعةً واحدة */
     stages?: readonly number[] | null
+    /** تخطّي من وصلته حملةٌ في آخر كذا يوما — والعددُ الذي رآه في التأكيد محسوبٌ به (`campaignCheck`) */
+    skipRecentDays?: SkipRecentDays
     now?: Date
   } = {},
 ) {
@@ -434,7 +482,7 @@ export async function sendCampaign(
   if (c.status !== 'draft') throw new AuthError('not_draft', 'أرسلت هذه الحملة من قبل', 409)
   const content: CampaignContent = { subject: c.subject, body: c.body, buttonLabel: c.buttonLabel, buttonUrl: c.buttonUrl }
   checkContent(content)
-  const { to, check } = await recipientsOf(prisma, c.audience)
+  const { to, check } = await recipientsOf(prisma, c.audience, opts.skipRecentDays ?? 0, opts.now ?? new Date())
   if (check.recipients === 0) throw new AuthError('no_recipients', 'لا أحد في القائمة تصله الرسالة', 400)
   /* العددُ الذي رآه هو ما يُرسَل — قائمةٌ تغيّرت بين العرض والضغط تُقال، ولا تُرسَل صامتة */
   if (confirmCount !== check.recipients) {
@@ -480,7 +528,9 @@ export async function sendCampaign(
       action: 'bulk_mail.send', entityType: 'mail_campaign', entityId: id, actorId, ip,
       meta: {
         batchId, subject: content.subject.trim(), audience: c.audience, audienceAr: check.audienceAr, queued, asked: check.recipients,
-        optedOut: check.optedOut, invalid: check.invalid, duplicate: check.duplicate, from: from.email, stages: plan,
+        optedOut: check.optedOut, invalid: check.invalid, duplicate: check.duplicate, recent: check.recent ?? 0,
+        notInterested: check.notInterested ?? 0,
+        skipRecentDays: opts.skipRecentDays ?? 0, from: from.email, stages: plan,
       },
     })
   }

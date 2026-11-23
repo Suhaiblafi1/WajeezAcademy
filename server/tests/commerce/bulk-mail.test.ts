@@ -30,6 +30,7 @@ import { BULK_MAIL_PURPOSE, DEFAULT_BULK_SENDER } from '../../../src/application
 import { listCampaigns } from '../../services/bulk-mail/bulk-mail.service'
 import { BULK_SENDER_KEY } from '../../services/bulk-mail/sender'
 import { UNVERIFIED_DOMAIN_AR } from '../../services/mail'
+import { phoneTail as phoneTailOf } from '../../../src/application/advisor/phone-tail'
 
 let prisma: PrismaClient
 let app: FastifyInstance
@@ -436,5 +437,67 @@ describe('⑨ الإرسال على مراحل', () => {
     const id = await campaign(`list:${listId}`)
     expect((await http('POST', `/api/admin/bulk-mail/campaigns/${id}/send`, { body: { confirmCount: 1, stages: [0] } })).statusCode).toBe(422)
     expect((await prisma.mailCampaign.findUniqueOrThrow({ where: { id } })).status).toBe('draft')
+  })
+})
+
+/* ═══ ⑩ النطاقُ المكتوبُ خطأً يسقط، ومن وصلته حملةٌ قريبا يُتخطّى إن اختير (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «make an option to the admin that checks wrong emails or duplicated» ثمّ «yes» للاثنين. */
+describe('⑩ النطاق الخطأ والمرسل إليهم قريبا', () => {
+  it('⚠️ gmial.com وgmail.con يعدان غير صالحين في الرفع — ولا يحفظان', async () => {
+    const parsed = await parseMailFile(csv(`email\nok-${S}@gmail.com\nbad-${S}@gmial.com\nbad2-${S}@gmail.con\nbad3-${S}@hotmial.com\n`))
+    expect(parsed.entries.map((e) => e.email)).toEqual([`ok-${S}@gmail.com`])
+    expect(parsed.invalid, 'نطاق مخطوء مر').toBe(3)
+  })
+
+  it('⚠️ من وصلته حملة في آخر 7 أيام لا يصل إن اختير — ويعد في التأكيد، ويصل إن لم يختر', async () => {
+    const listId = await upload(csv(`email\n${mail('r1')}\n${mail('r2')}\n${mail('r3')}\n`), 'قريبا')
+    const first = await campaign(`list:${listId}`)
+    /* حملةٌ أولى إلى r1 وحده — بطابورها نفسِه */
+    const one = await upload(csv(`email\n${mail('r1')}\n`), 'واحد')
+    const pre = await campaign(`list:${one}`)
+    expect((await http('POST', `/api/admin/bulk-mail/campaigns/${pre}/send`, { body: { confirmCount: 1 } })).statusCode).toBe(200)
+
+    const plain = (await http('GET', `/api/admin/bulk-mail/campaigns/${first}/check`)).json() as { recipients: number; recent: number }
+    expect(plain, 'تخطى بلا اختيار').toMatchObject({ recipients: 3, recent: 0 })
+    const skip = (await http('GET', `/api/admin/bulk-mail/campaigns/${first}/check?skipRecentDays=7`)).json() as { recipients: number; recent: number }
+    expect(skip, 'لم يتخط من وصلته').toMatchObject({ recipients: 2, recent: 1 })
+    expect((await http('GET', `/api/admin/bulk-mail/campaigns/${first}/check?skipRecentDays=5`)).statusCode, 'قبل عدد أيام غير معروض').toBe(422)
+
+    const res = await http('POST', `/api/admin/bulk-mail/campaigns/${first}/send`, { body: { confirmCount: 2, skipRecentDays: 7 } })
+    expect(res.statusCode, res.body).toBe(200)
+    const rows = await queuedOf((res.json() as { batchId: string }).batchId)
+    expect(rows.map((r) => r.to).sort(), 'وصله مرتين').toEqual([mail('r2'), mail('r3')])
+  })
+
+  it('⚠️ وما خرج قبل المدة لا يحسب — حملة قبل 10 أيام لا تمنع مع 7', async () => {
+    const listId = await upload(csv(`email\n${mail('old1')}\n`), 'قديمة')
+    const id = await campaign(`list:${listId}`)
+    await prisma.outboxMail.create({
+      data: { to: mail('old1'), subject: 'قديم', purpose: BULK_MAIL_PURPOSE, status: 'sent', createdAt: new Date(Date.now() - 10 * 86_400_000), sentAt: new Date(Date.now() - 10 * 86_400_000) },
+    })
+    const c7 = (await http('GET', `/api/admin/bulk-mail/campaigns/${id}/check?skipRecentDays=7`)).json() as { recipients: number }
+    expect(c7.recipients, 'منع بحملة أقدم من المدة').toBe(1)
+    const c14 = (await http('GET', `/api/admin/bulk-mail/campaigns/${id}/check?skipRecentDays=14`)).json() as { recipients: number }
+    expect(c14.recipients, 'لم يمنع بحملة داخل المدة').toBe(0)
+  })
+})
+
+/* ═══ ⑪ من قال «غير مهتم» لا تصله حملة — حالةُ مستشارٍ أو «توقف» على واتساب (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «أريد أن نستثني أيَّ شخصٍ قال على الواتساب إنّه غيرُ مهتمّ أو شيءٌ يدلّ أنّه غيرُ مهتمّ». */
+describe('⑪ غير المهتم لا تصله حملة', () => {
+  it('⚠️ حالة مستشار «غير مهتم» وتوقف واتساب يسقطان من القائمة المرفوعة — ويعدان في التأكيد، والباقي يصل', async () => {
+    const tail = String(S).slice(-9)
+    const nope = await prisma.lead.create({ data: { fullName: 'غير مهتم', email: mail('ni1'), phone: `+9627${tail.slice(-8)}` } })
+    await prisma.advisorCase.create({ data: { leadId: nope.id, status: 'not_interested' } })
+    const stop = await prisma.lead.create({ data: { fullName: 'أوقف واتساب', email: mail('ni2'), phone: `07${tail.slice(-8)}` } })
+    await prisma.whatsAppOptOut.create({ data: { tail: phoneTailOf(stop.phone!)!, phone: stop.phone! } })
+
+    const listId = await upload(csv(`email\n${mail('ni1')}\n${mail('ni2')}\n${mail('ni3')}\n`), 'مهتم')
+    const id = await campaign(`list:${listId}`)
+    const check = (await http('GET', `/api/admin/bulk-mail/campaigns/${id}/check`)).json() as { recipients: number; notInterested: number }
+    expect(check, 'وصل من قال غير مهتم').toMatchObject({ recipients: 1, notInterested: 2 })
+    const res = await http('POST', `/api/admin/bulk-mail/campaigns/${id}/send`, { body: { confirmCount: 1 } })
+    expect(res.statusCode, res.body).toBe(200)
+    expect((await queuedOf((res.json() as { batchId: string }).batchId)).map((r) => r.to)).toEqual([mail('ni3')])
   })
 })

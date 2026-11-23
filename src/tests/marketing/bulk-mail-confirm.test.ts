@@ -78,7 +78,7 @@ describe('الشاشة تقرأ التأكيد ولا تكتب غيره', () => 
 
   it('⚠️ والإرسال بالعدد المعروض نفسه، وزره مغلق حتى يطابق ما كتب', () => {
     expect(page).toMatch(/confirmCount: check\.recipients/)
-    expect(page).toMatch(/disabled=\{!typedOk \|\| \(staged && !capsOk\)\} onClick=\{\(\) => void send\(\)\}>\s*أرسل إلى \{check\.recipients\}/)
+    expect(page).toMatch(/disabled=\{recounting \|\| !typedOk \|\| \(staged && !capsOk\)\} onClick=\{\(\) => void send\(\)\}>\s*أرسل إلى \{check\.recipients\}/)
   })
 
   it('⚠️ ومع الإرسال خياران آخران بأثر كل: تجربة لي، وليس الآن', () => {
@@ -113,5 +113,19 @@ describe('الإرسال على مراحل', () => {
     expect(page).toMatch(/stages: staged \? caps : null/)
     expect(page).toMatch(/const plan = stagePlan\(check\.recipients, staged \? caps : null\)/)
     expect(page).toMatch(/stageLinesAr\(plan\)\.map/)
+  })
+})
+
+/* ═══ تخطّي من وصلته حملةٌ قريبا — في التأكيد ويُرسَل مع العدد (٢٣ نوفمبر ٢٠٢٦) ═══ */
+describe('تخطي من وصلته حملة قريبا', () => {
+  it('⚠️ يقال في أسطر التأكيد، والخيارات 0 و3 و7 و14 والافتراض 7، والصفحة ترسل الأيام مع العدد', async () => {
+    const { confirmLinesAr: lines, SKIP_RECENT_DAYS, SKIP_RECENT_DEFAULT, skipRecentAr } = await import('@/application/marketing/bulk-mail')
+    expect(lines({ recipients: 90, audienceAr: 'كاسيت', optedOut: 0, invalid: 0, duplicate: 0, recent: 80 }).join(' | ')).toContain('80 وصلتهم حملة قريبا')
+    expect([...SKIP_RECENT_DAYS]).toEqual([0, 3, 7, 14])
+    expect(SKIP_RECENT_DEFAULT).toBe(7)
+    expect(SKIP_RECENT_DAYS.map(skipRecentAr)).toEqual(['لا تتخط أحدا', 'آخر 3 أيام', 'آخر 7 أيام', 'آخر 14 يوما'])
+    expect(page).toMatch(/confirmCount: check\.recipients, stages: staged \? caps : null, skipRecentDays: days,/)
+    expect(page).toMatch(/data-testid="skip-recent"/)
+    expect(page, 'يرسل والعدد يعاد حسابه').toMatch(/disabled=\{recounting \|\| !typedOk/)
   })
 })

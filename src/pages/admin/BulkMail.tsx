@@ -22,6 +22,7 @@ import { fmtDateTime } from "@/application/text/format-ar";
 import {
   BULK_BODY_MAX, BULK_BUTTON_LABEL_MAX, BULK_LIST_NAME_MAX, BULK_SUBJECT_MAX, CAMPAIGN_STATUS_AR, DEFAULT_STAGE_CAPS, TYPE_COUNT_WHY_AR,
   confirmLinesAr, etaAr, needsTypedCount, peopleAr, senderAr, stageLinesAr, stagePlan, stagedByDefault, typedCountMatches,
+  SKIP_RECENT_DAYS, SKIP_RECENT_DEFAULT, skipRecentAr, type SkipRecentDays,
   type CampaignStatus, type SendCheck,
 } from "@/application/marketing/bulk-mail";
 
@@ -342,7 +343,7 @@ function CampaignEditor({ id, audiences, reloadAudiences, onClose }: {
   const review = async () => {
     if (dirty && !(await save(true))) return;
     setBusy("check");
-    try { setCheck(await apiGet<Check>(`/api/admin/bulk-mail/campaigns/${id}/check`)); }
+    try { setCheck(await apiGet<Check>(`/api/admin/bulk-mail/campaigns/${id}/check?skipRecentDays=${SKIP_RECENT_DEFAULT}`)); }
     catch (e) { toastError(err(e, "تعذر حساب العدد")); }
     finally { setBusy(""); }
   };
@@ -424,7 +425,17 @@ function CampaignEditor({ id, audiences, reloadAudiences, onClose }: {
 
 /* ─────────── التأكيد: العددُ بعينه، ومن لا تصله، وكم يأخذ ─────────── */
 
-function SendConfirm({ id, check, onClose, onTest, onSent }: { id: string; check: Check; onClose: () => void; onTest: () => void; onSent: () => void }) {
+function SendConfirm({ id, check: first, onClose, onTest, onSent }: { id: string; check: Check; onClose: () => void; onTest: () => void; onSent: () => void }) {
+  /* وتخطّي من وصلته حملةٌ قريبا — يُعاد العدُّ عند تغييره، فالعددُ المُرسَل هو ما يراه (٢٣ نوفمبر ٢٠٢٦، `SKIP_RECENT_DAYS`) */
+  const [days, setDays] = useState<SkipRecentDays>(SKIP_RECENT_DEFAULT);
+  const [check, setCheck] = useState<Check>(first);
+  const [recounting, setRecounting] = useState(false);
+  const changeDays = async (d: SkipRecentDays) => {
+    setDays(d); setRecounting(true);
+    try { setCheck(await apiGet<Check>(`/api/admin/bulk-mail/campaigns/${id}/check?skipRecentDays=${d}`)); }
+    catch (e) { toastError(err(e, "تعذر حساب العدد")); }
+    finally { setRecounting(false); }
+  };
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const mustType = needsTypedCount(check.recipients);
@@ -438,7 +449,7 @@ function SendConfirm({ id, check, onClose, onTest, onSent }: { id: string; check
     setBusy(true);
     try {
       const out = await apiPost<{ queued: number }>(`/api/admin/bulk-mail/campaigns/${id}/send`, {
-        confirmCount: check.recipients, stages: staged ? caps : null,
+        confirmCount: check.recipients, stages: staged ? caps : null, skipRecentDays: days,
       });
       toast(`بدأ الإرسال إلى ${peopleAr(out.queued)}`);
       onSent();
@@ -452,6 +463,18 @@ function SendConfirm({ id, check, onClose, onTest, onSent }: { id: string; check
           {confirmLinesAr(check).map((l) => <li key={l}>{l}</li>)}
         </ul>
         <p className="mt-1 text-read text-muted-foreground">من <span dir="ltr">{senderAr(check.from)}</span></p>
+
+        <label className="mt-4 block text-read">
+          <span className="block font-bold">تخط من وصلته حملة خلال</span>
+          <select
+            value={days} disabled={recounting} data-testid="skip-recent"
+            onChange={(e) => void changeDays(Number(e.target.value) as SkipRecentDays)}
+            className="mt-1 rounded-lg border border-border bg-card px-2 py-1"
+          >
+            {SKIP_RECENT_DAYS.map((d) => <option key={d} value={d}>{skipRecentAr(d)}</option>)}
+          </select>
+          <span className="mt-1 block text-muted-foreground">لا تصل الرسالة مرتين لنفس الشخص في أيام قليلة.</span>
+        </label>
         {!check.mailOn && <p className="mt-2 text-read font-bold text-gold-ink">البريد غير موصول الآن: تنتظر الرسائل حتى يوصل.</p>}
 
         <label className="mt-4 flex items-start gap-2">
@@ -492,7 +515,7 @@ function SendConfirm({ id, check, onClose, onTest, onSent }: { id: string; check
         )}
         <div className="mt-4 grid gap-3">
           <div>
-            <Button tone="confirm" icon={Send} loading={busy} disabled={!typedOk || (staged && !capsOk)} onClick={() => void send()}>
+            <Button tone="confirm" icon={Send} loading={busy} disabled={recounting || !typedOk || (staged && !capsOk)} onClick={() => void send()}>
               أرسل إلى {check.recipients}
             </Button>
             <p className="mt-1 text-read text-muted-foreground">
