@@ -7,10 +7,11 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requireAuth, requirePermission } from '../auth-plugin'
 import { BuyLinkService, type BuyLinkTarget } from '../../services/buy-link.service'
-import { PrivatePathService } from '../../services/private-path.service'
+import { PrivatePathService, campaignPreview } from '../../services/private-path.service'
 import { AuthError } from '../../services/auth.service'
 import { CodeAttemptGuard } from '../../services/commerce/code-attempts'
 import { publicPathOf } from '../../../src/application/commerce/private-path'
+import type { CampaignSlug } from '../../../src/application/commerce/grant'
 
 const COURSE = z.string().trim().regex(/^[A-Za-z0-9_-]{1,80}$/)
 const INPUT = z.object({
@@ -41,7 +42,7 @@ export function registerBuyLinkRoutes(app: FastifyInstance, prisma: PrismaClient
     const { code } = z.object({ code: z.string().trim().max(40) }).parse(req.params)
     const key = req.ip
     const upper = code.toUpperCase()
-    /* والمسارُ العامّ (`/go/BF80`، ٢٢ نوفمبر ٢٠٢٦) ليس سرّا: لا يمرّ بحارس الرموز، وبلا حسابٍ بلا اسمٍ ولا سعرٍ ولا كود */
+    /* والمسارُ العامّ (`/go/BF80`، ٢٢ نوفمبر ٢٠٢٦) ليس سرّا: لا يمرّ بحارس الرموز، وبلا حسابٍ بلا اسمٍ ولا كود — وبالسعر (٢٣ نوفمبر ٢٠٢٦) */
     const pub = publicPathOf(upper)
     if (pub) return paths.publicView(pub, null)
     if (!guesses.allows(key, upper)) {
@@ -53,6 +54,19 @@ export function registerBuyLinkRoutes(app: FastifyInstance, prisma: PrismaClient
       if (e instanceof AuthError && e.code === 'not_found') guesses.reject(key, upper)
       throw e
     }
+  })
+  /* ═══ وسعرُ الزائر لما اختاره في المسار العامّ — بنسبة حملته بلا كود (٢٣ نوفمبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «They should see everything». فكلُّ اختيارٍ أو إضافةٍ قبل الدخول يُسعَّر هنا كما سيُسعَّر بكوده
+     (`campaignPreview`)، والدفعُ بعد الدخول يسعّر من جديد بالكود نفسِه. ولا يكتب شيئا */
+  app.post('/api/public/go/:code/preview', {
+    config: { rateLimit: { max: 60, timeWindow: '10 minutes' } },
+    schema: { tags: ['public'], summary: 'سعر ما اختاره الزائر في المسار العام بنسبة حملته — بلا كود ولا كتابة' },
+  }, async (req) => {
+    const { code } = z.object({ code: z.string().trim().max(40) }).parse(req.params)
+    const { cohortIds } = z.object({ cohortIds: z.array(z.string().uuid()).min(1).max(10) }).parse(req.body)
+    const pub = publicPathOf(code)
+    if (!pub) throw new AuthError('not_found', 'هذا الرابط غير صحيح.', 404)
+    return campaignPreview(prisma, pub.campaign as CampaignSlug, cohortIds)
   })
   /* وبحسابه: المسارُ العامّ باسمه وكودِ منحته — يُعطاه فورا إن لم يكن له (`publicPathCode`، «Give code instantly») */
   app.get('/api/learner/go/:code', {

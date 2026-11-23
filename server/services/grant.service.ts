@@ -46,6 +46,7 @@ import {
 } from '../../src/application/commerce/grant'
 import { emailMatchesDomains, isPartnerCampaign, PARTNER_NOT_FOUND_AR, partnerCodeEmailAr, partnerShare, partnerTypeOf } from '../../src/application/commerce/partner-grant'
 import { influencerCommission, influencerPercentOff, withInfluencerEnd } from '../../src/application/commerce/influencer'
+import { PUBLIC_PATHS, PUBLIC_PATH_LEAD_CHANNEL } from '../../src/application/commerce/private-path'
 
 /** ما يحسب منحةً مستعملة: طلبٌ ينتظر الدفعَ بها أو دُفع — والمردودُ كلُّه يُعيدها */
 export const GRANT_HOLDS = ['pending_payment', 'paid', 'partially_refunded']
@@ -71,6 +72,20 @@ export interface GrantCoupon {
     /** مؤثّرُه بآخر يومه إن كُتب له — يغلب نهايةَ الحملة (١٧ نوفمبر ٢٠٢٦، `withInfluencerEnd`) */
     influencer?: { closesAt: Date | null } | null
   } | null
+}
+
+/* ═══ «٨٠٪ على كلّ حال» — كودُ المسار العامّ خارجَ «منحةٌ واحدةٌ لكلّ متعلّم» (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «They get 80% anyway, even if their code is linked to another grant». فكودُ حملة مسارٍ عامّ
+   (`PUBLIC_PATHS` — بلاك فرايدي في `/go/BF80`) أُعطي من المسار نفسِه (نموذجُه بقناة `go`، `publicPathCode`) يُستعمل
+   ولو اشترى صاحبُه بمنحةٍ أخرى قبله. وحدودُه باقية: حملتُه مفتوحة، وعددُ دوراته (`coursesLeft`).
+   والاستثناءُ هنا وحدَه، يسأله التسعيرُ (`assertUsable`) ومعاملةُ الطلب (`assertHeld`). وما سواه على القاعدة كما كان:
+   كودُ منحةٍ أخرى بعد شراءٍ بهذا الكود يُردّ. */
+export async function grantOnceExempt(db: PrismaClient | Prisma.TransactionClient, couponId: string): Promise<boolean> {
+  const g = await db.grantCode.findUnique({
+    where: { couponId }, select: { campaign: { select: { slug: true } }, lead: { select: { channel: true } } },
+  })
+  if (!g || g.lead?.channel !== PUBLIC_PATH_LEAD_CHANNEL) return false
+  return Object.values(PUBLIC_PATHS).some((p) => p.campaign === g.campaign.slug)
 }
 
 const isOpen = (c: { active: boolean; closesAt: Date | null }, now: Date) => c.active && (c.closesAt === null || c.closesAt > now)
@@ -241,6 +256,7 @@ export class GrantService {
        وزائرٌ بلا حساب (معاينةُ رابط الشراء) لا مشترياتِ له تُعدّ — فيُسأل عنه بعد دخوله */
     if (userId === null) return
     if (isPartnerCampaign(campaign.slug)) await this.assertPartnerEmail(campaign.id, userId)
+    if (await grantOnceExempt(this.prisma, coupon.id)) return
     const once = await this.prisma.order.findFirst({
       where: { userId, status: { in: GRANT_HOLDS }, couponId: { not: coupon.id }, coupon: { grantCode: { isNot: null } } },
       select: { id: true },
@@ -277,6 +293,7 @@ export class GrantService {
     if (input.paidCount > left) {
       throw new AuthError('grant_max_courses', left < input.maxCourses ? grantCoursesLeftAr(left) : grantMaxCoursesAr(input.maxCourses), 409)
     }
+    if (await grantOnceExempt(tx, input.couponId)) return
     const once = await tx.order.findFirst({
       where: {
         userId: input.userId, id: { not: input.orderId }, status: { in: GRANT_HOLDS },

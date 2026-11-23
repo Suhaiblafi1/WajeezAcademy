@@ -129,3 +129,34 @@ describe('⑥ الصفحة', () => {
     expect(PAGE).toMatch(/edit=\{!pathSwappable\(isPublic\) \? undefined : \{/)
   })
 })
+
+/* ═══ ⑦ وبلا حسابٍ يرى كلَّ شيء، والحسابُ عند الدفع (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «They should see everything, and once they click to pay, then create account or sign in if they are
+   not» — نسخا لصندوق «سجل دخولك» أسفلَ الصفحة وللسعر المخفيّ عن الزائر. */
+describe('⑦ الزائر يرى كل شيء، والدخول عند الدفع', () => {
+  it('⚠️ السعر والاختيار و«أضف دورة» للزائر — ولا صندوق دخول في آخر الصفحة', () => {
+    expect(PAGE).toMatch(/const showPrice = Boolean\(v\.price \|\| changed\) && buyIds\.length > 0;/)
+    expect(PAGE).toMatch(/\{isPublic && journeyReady && \(\s*<Card[^>]*data-testid="public-path-pick"/)
+    expect(PAGE).not.toMatch(/public-path-sign-in/)
+    expect(PAGE).not.toMatch(/سجل دخولك أو أنشئ حسابا<\/Button>/)
+    /* و«أضف دورة» لا يشترط الدخول: عدُّه من الخادم وحدَه */
+    expect(PAGE).toMatch(/\{addsLeft > 0 && \(/)
+  })
+
+  it('⚠️ وكل اختيار للزائر يسعر من الخادم بنسبة الحملة — ومن دخل بكوده', () => {
+    expect(PAGE).toMatch(/if \(key === originalKey \|\| !key\) return;/)
+    expect(PAGE).toMatch(/\(signIn\s*\? apiPost<PreviewReply>\(`\/api\/public\/go\/\$\{v\.code\}\/preview`, \{ cohortIds: key\.split\(","\) \}\)\s*: apiPost<PreviewReply>\("\/api\/public\/checkout\/preview"/)
+  })
+
+  it('⚠️ و«أكمل التسجيل» للزائر: يحفظ اختياره ثم الدخول — ثم لوح الدفع بالاختيار نفسه حين يصل كوده', () => {
+    /* يُحفظ ما يشتريه قبل الدخول، بما اختاره وما أضافه */
+    expect(PAGE).toMatch(/const buy = \(\) => \{[\s\S]*?savePendingCheckout\(\{[\s\S]*?courseIds: buyIds[\s\S]*?if \(session\) setBuyOpen\(true\);\s*else setAuthOpen\(true\);/)
+    /* والدخولُ من AuthGate، ثمّ يُعاد المسارُ بحسابه ويُنتظر كودُه */
+    expect(PAGE).toMatch(/<AuthGate[\s\S]*?onDone=\{\(\) => \{\s*setAuthOpen\(false\);\s*if \(signIn\) \{ setPayAfterAuth\(true\); onSignedIn\(\); \} else setBuyOpen\(true\);/)
+    expect(PAGE).toMatch(/const buyShown = buyOpen \|\| \(payAfterAuth && !signIn && session !== null\);/)
+    expect(PAGE).toMatch(/\{buyShown && \(\s*<BuyPanel[\s\S]*?onClose=\{closeBuy\}/)
+    /* والاختيارُ لا يُعاد من الصفر حين يصل المسارُ بكوده: الصفحةُ نفسُها بحالها، لا «يحمّل» بينهما ولا مفتاحٌ يعيد بناءها */
+    expect(PAGE).not.toMatch(/<PathPage\s+key=/)
+    expect(PAGE).not.toMatch(/setLoaded\(\{ state: "loading" \}\)/)
+  })
+})

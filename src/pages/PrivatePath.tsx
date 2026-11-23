@@ -26,6 +26,11 @@
      ٢٠٢٦): «اسمح لهم بإضافة دورات، لكن من الدورات الباقية في منحة بلاك فرايدي فقط». يختار من الثلاث ما شاء (واحدةً على الأقلّ)،
      ويضيف ما يسعه كودُه بعد ما اختار (`publicPathAddsLeft`)، والمرشّحون من قائمة الحملة خارجَ الثلاث (`publicPathCandidates`)،
      وما أضافه يُحذف من صندوق الاختيار. والدفعُ بما اختاره وما أضافه (`publicPathBuyIds`).
+   · **وبلا حسابٍ يرى المسارَ العامَّ كلَّه إلّا اسمَه، والحسابُ عند الدفع** — قرارُ صاحب المنصّة (٢٣ نوفمبر ٢٠٢٦): «They should
+     see everything, and once they click to pay, then create account or sign in if they are not»، نسخا لصندوق «سجل دخولك» أسفلَ
+     الصفحة. فالسعرُ بنسبة الحملة من الخادم (`/api/public/go/:code` ثمّ `…/preview` لكلّ اختيار)، و«أضف دورة» والاختيارُ كما لمن
+     دخل. و«أكمل التسجيل» يحفظ ما اختاره ثمّ يفتح الدخولَ (`AuthGate`)، فإذا دخل أُعيد المسارُ بكوده من نداء المتعلّم وفُتح لوحُ
+     الدفع بالاختيار نفسِه (`payAfterAuth`) — لا يضيع منه شيء.
    · ولا «مسار جاهز يناسبك» ولا «مجّانا لك الآن». والبدائلُ لا تظهر إلّا لمن ضغط «استبدالها» أو «أضف دورة».
 
    ومن فتح نسخةً قديمةً يُحوَّل إلى الأحدث. والاسمُ الأوّلُ وحدَه يُعرض: لا بريدَ ولا هاتف. ومعاينةُ واتساب معاينةُ الموقع
@@ -117,7 +122,7 @@ export default function PrivatePath() {
   const [loaded, setLoaded] = useState<Loaded>(() => (isGoCode(code) ? { state: "loading" } : { state: "failed", messageAr: NOT_FOUND_AR }));
   const [resumed] = useState(() => resumedCheckoutFor(goPath(code)));
   /* ═══ والمسارُ العامّ (`/go/BF80`، ٢٢ نوفمبر ٢٠٢٦) يُقرأ بحسابه ═══
-     بلا حساب: دوراتُه و«سجل دخولك». ومن دخل من الصفحة نفسِها تُقرأ جلستُه ثانيةً فيُعاد المسارُ باسمه وكودِه */
+     بلا حساب: كلُّ شيءٍ إلّا اسمَه، والدخولُ عند الدفع (٢٣ نوفمبر ٢٠٢٦). ومن دخل من الصفحة نفسِها تُقرأ جلستُه ثانيةً فيُعاد المسارُ باسمه وكودِه */
   const isPublic = publicPathOf(code) !== null;
   const real = useRealSession();
   const [signedIn, setSignedIn] = useState<SessionUser | null>(null);
@@ -183,9 +188,12 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
 }) {
   const real = useRealSession();
   const session = given !== undefined ? given : real.user;
-  /* المسارُ العامّ: لا استبدال، والمتعلّمُ يختار ما يشتريه من دوراته ويضيف من دورات المنحة (قرارا صاحب المنصّة، ٢٢ نوفمبر ٢٠٢٦) */
+  /* المسارُ العامّ: لا استبدال، والمتعلّمُ يختار ما يشتريه من دوراته ويضيف من دورات المنحة (قرارا صاحب المنصّة، ٢٢ نوفمبر ٢٠٢٦).
+     و`signIn` زائرٌ بلا حساب: يرى كلَّ شيء، والحسابُ عند الدفع (٢٣ نوفمبر ٢٠٢٦) */
   const isPublic = Boolean(v.publicPath);
   const signIn = Boolean(v.publicPath?.signIn);
+  /* ضغط «أكمل التسجيل» قبل أن يدخل — فإذا عاد المسارُ بكوده فُتح لوحُ الدفع بما اختاره */
+  const [payAfterAuth, setPayAfterAuth] = useState(false);
   /* والخفيفةُ لا الكاملة (٨ نوفمبر ٢٠٢٦): الرحلةُ تقرأ عنوانَ الوحدة ومخرجَها وساعاتِها لا متونَها — كـ«ابنِ مسارك».
      والكاملةُ ٢ ميغا مضغوطا كانت أكثرَ ما تنتظره الصفحة (`?lite=1` في `public.routes.ts`) */
   const catalogVersion = usePublishedContent({ lite: true });
@@ -229,13 +237,16 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
   /* وما سأله الخادمُ آخرَ مرّة بمفتاحه — فسلّةُ الرابط كما هي سعرُها من فتحه، وسلّةٌ لم يصل جوابُها «نحدث السعر» */
   const [answered, setAnswered] = useState<Extract<Priced, { state: "ready" }> | null>(null);
   useEffect(() => {
-    if (key === originalKey || !key || signIn) return;
+    if (key === originalKey || !key) return;
     let on = true;
-    apiPost<PreviewReply>("/api/public/checkout/preview", {
-      cohortIds: key.split(","),
-      ...(v.couponCode ? { couponCode: v.couponCode } : {}),
-      asVisitor: true,
-    })
+    /* والزائرُ بلا حساب يُسعَّر بنسبة الحملة بلا كود (`campaignPreview`) — ومن دخل بكوده */
+    (signIn
+      ? apiPost<PreviewReply>(`/api/public/go/${v.code}/preview`, { cohortIds: key.split(",") })
+      : apiPost<PreviewReply>("/api/public/checkout/preview", {
+        cohortIds: key.split(","),
+        ...(v.couponCode ? { couponCode: v.couponCode } : {}),
+        asVisitor: true,
+      }))
       .then((r) => {
         if (!on) return;
         const gone = r.items.length < key.split(",").length;
@@ -246,7 +257,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
         if (on) setAnswered({ key, state: "ready", price: null, problemAr: e instanceof ApiError && e.status < 500 ? e.message : REPRICE_FAILED_AR });
       });
     return () => { on = false; };
-  }, [key, originalKey, v.couponCode, signIn]);
+  }, [key, originalKey, v.couponCode, v.code, signIn]);
   const current: Priced = key === originalKey
     ? { key, state: "ready", price: v.price, problemAr: v.priceProblemAr ?? null }
     : answered?.key === key ? answered : { key, state: "loading" };
@@ -344,7 +355,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
   });
 
   const ready = current.state === "ready" && current.price !== null && !current.problemAr && buyIds.length > 0;
-  const showPrice = Boolean(v.price || changed) && buyIds.length > 0 && !signIn;
+  const showPrice = Boolean(v.price || changed) && buyIds.length > 0;
   /* بكم غيّر الاستبدالُ ما يدفعه — عن سعر الرابط كما وصل. وصفرٌ حين لم يتغيّر شيء أو لم يصل السعرُ بعد */
   const priceShift = current.state === "ready" && current.price && v.price && current.price.currency === v.price.currency
     ? Math.round((current.price.total - v.price.total) * 100) / 100
@@ -371,6 +382,9 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
     if (session) setBuyOpen(true);
     else setAuthOpen(true);
   };
+  /* ومن دخل من «أكمل التسجيل» في المسار العامّ: يُفتح لوحُ الدفع حين يصل المسارُ بكوده — بما اختاره نفسِه */
+  const buyShown = buyOpen || (payAfterAuth && !signIn && session !== null);
+  const closeBuy = () => { setBuyOpen(false); setPayAfterAuth(false); };
 
   return (
     <Frame title={headline.titleAr} user={session?.displayName ?? null}>
@@ -549,8 +563,8 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
         </Inset>
       )}
 
-      {/* ═══ المسارُ العامّ: يختار ما يشتريه من دوراته، أو يدخل أوّلا (٢٢ نوفمبر ٢٠٢٦) ═══ */}
-      {isPublic && !signIn && journeyReady && (
+      {/* ═══ المسارُ العامّ: يختار ما يشتريه من دوراته — ولو لم يدخل بعد (٢٢ و٢٣ نوفمبر ٢٠٢٦) ═══ */}
+      {isPublic && journeyReady && (
         <Card className="mt-4 p-4" data-testid="public-path-pick">
           <p className="text-read font-bold text-foreground">{PUBLIC_PATH_PICK_AR}</p>
           <div className="mt-3 grid gap-1.5">
@@ -578,12 +592,6 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
       )}
       {isPublic && v.publicPath?.noteAr && (
         <Inset tone="warn" className="mt-3 text-read" data-testid="public-path-note"><p>{v.publicPath.noteAr}</p></Inset>
-      )}
-      {signIn && (
-        <Card className="mt-6 p-5 text-center" data-testid="public-path-sign-in">
-          <p className="text-read text-foreground">{PUBLIC_PATH_SIGN_IN_AR}</p>
-          <Button tone="confirm" className="mt-4 w-full" onClick={() => setAuthOpen(true)}>سجل دخولك أو أنشئ حسابا</Button>
-        </Card>
       )}
 
       <PathwayEcosystemPanel />
@@ -636,7 +644,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
           قرارُ صاحب المنصّة: «اجعل خانةَ الدفع كزرٍّ صغيرٍ ثابتٍ على الشاشة، ويُعاد إيجادُه بعد جملة فتح المنصّة بالأسفل».
           فما يدفعه وزرُّ الشراء ثابتان أسفلَ الشاشة، ويختفيان حين تظهر بطاقةُ السعر نفسُها فلا يتكرّران. وما
           لم يجهز سعرُه (يُحدَّث، أو فيه مشكلة) ينقله الزرُّ إلى البطاقة حيث يُقال السبب */}
-      {showPrice && !buyInView && !buyOpen && !authOpen && (
+      {showPrice && !buyInView && !buyShown && !authOpen && (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]" data-testid="private-path-sticky-buy">
           <div className="pointer-events-auto mx-auto flex max-w-sm items-center justify-between gap-3 rounded-full border border-white/15 bg-paper/95 py-1.5 pe-1.5 ps-5 shadow-xl backdrop-blur">
             <span className="min-w-0 text-read leading-5">
@@ -682,7 +690,10 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
           <Inset tone="solid">
             <p className="mb-4 text-center text-sm">{signIn ? PUBLIC_PATH_SIGN_IN_AR : "خطوة واحدة قبل الدفع: حساب يحفظ مسارك وشهاداتك."}</p>
             <AuthGate
-              onDone={() => { setAuthOpen(false); if (signIn) onSignedIn(); else setBuyOpen(true); }}
+              onDone={() => {
+                setAuthOpen(false);
+                if (signIn) { setPayAfterAuth(true); onSignedIn(); } else setBuyOpen(true);
+              }}
               initialMode="signup"
               source={isPublic ? "public_path" : "private_path_checkout"}
               verifyLater
@@ -690,7 +701,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
           </Inset>
         </Modal>
       )}
-      {buyOpen && (
+      {buyShown && (
         <BuyPanel
           title={headline.titleAr}
           email={session?.email ?? ""}
@@ -701,7 +712,7 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
             /* والمجانيّةُ في الطلب إن تحقّق شرطُها — والخادمُ يسعّرها بصفرٍ برمز الرابط ويحكم ثانيةً (`private-path-gift.ts`) */
             ...(giftOn && gift && giftChosen ? [{ courseId: gift.courseId, name: courseFullById(gift.courseId)?.title ?? gift.titleAr, cohortId: giftChosen.id }] : []),
           ]}
-          onClose={() => setBuyOpen(false)}
+          onClose={closeBuy}
         />
       )}
     </Frame>

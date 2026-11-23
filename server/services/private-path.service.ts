@@ -20,10 +20,11 @@ import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-vis
 import { PUBLIC_SESSION_WHERE } from './public-catalog.service'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
-  GO_CODE_LENGTH, GO_CODE_RE, PRIVATE_PATH_PURPOSE, firstLastNameAr, firstNameAr, goPath, type GiftRule, privatePathPrice,
+  GO_CODE_LENGTH, GO_CODE_RE, PRIVATE_PATH_PURPOSE, PUBLIC_PATH_LEAD_CHANNEL, firstLastNameAr, firstNameAr, goPath, type GiftRule, privatePathPrice,
   type PrivatePathPayload, type PublicPathDef,
 } from '../../src/application/commerce/private-path'
-import { GRANT_CLOSED_AR, GRANT_ONCE_AR, grantLastDay, type CampaignSlug } from '../../src/application/commerce/grant'
+import { GRANT_CLOSED_AR, grantLastDay, grantMaxCoursesAr, grantTitleAr, grantUsedUpAr, type CampaignSlug } from '../../src/application/commerce/grant'
+import { priceCart } from '../../src/application/commerce/cart-pricing'
 
 type Db = PrismaClient | Prisma.TransactionClient
 
@@ -141,7 +142,10 @@ export class PrivatePathService {
 
   /* ═══ «مسارٌ عامّ» `/go/BF80` (٢٢ نوفمبر ٢٠٢٦) ═══
      القاعدةُ في `src/application/commerce/private-path.ts` (`PUBLIC_PATHS`). وهنا:
-     · **بلا حساب**: دوراتُه بشعبها من صفحة حملته (`pageCourses`) — بلا اسمٍ ولا سعرٍ ولا كود، و«سجل دخولك» (`signIn`).
+     · **بلا حساب يرى كلَّ شيءٍ إلّا اسمَه** — قرارُ صاحب المنصّة (٢٣ نوفمبر ٢٠٢٦): «They should see everything, and once
+       they click to pay, then create account or sign in». دوراتُه بشعبها من صفحة حملته (`pageCourses`)، والسعرُ بنسبة الحملة
+       الآن كأنّه بكودها (`campaignPreview`) — بلا كودٍ يُخترع — و«أضف دورة» بحدّ الحملة، وآخرُ يومها. و`signIn` يقول للصفحة
+       إنّ الحسابَ يُطلب عند «أكمل التسجيل»، ثمّ يُعطى كودَه من نداء المتعلّم.
      · **وبحسابه**: باسمه وكودِ منحته (`publicPathCode`)، والسعرُ من المعاينة نفسِها بكوده. ولا استبدال — يختار من الثلاث
        ما يشتريه، ويُعاد السعرُ من الخادم.
      · **و«أضف دورة» من دورات المنحة وحدَها** — قرارُ صاحب المنصّة (٢٢ نوفمبر ٢٠٢٦): «اسمح لهم بإضافة دورات، لكن من الدورات
@@ -169,8 +173,19 @@ export class PrivatePathService {
     const meta = (signIn: boolean, noteAr: string | null) => ({ code: def.code, signIn, noteAr })
 
     if (!userId) {
-      const out = await this.render(def.code, { courses, code: null, firstName: '', learnerKey: '', token: '' }, { priced: false })
-      return { ...out, unavailable: [...out.unavailable, ...unavailable], publicPath: meta(true, null) }
+      const camp = await new GrantService(this.prisma, def.campaign as CampaignSlug).campaign()
+      const open = campaignOpen(camp, now)
+      const out = await this.render(def.code, { courses, code: null, firstName: '', learnerKey: '', token: '' }, { campaign: def.campaign as CampaignSlug, now })
+      /* وما يضيفه: حدُّ دورات الكود الذي سيُعطاه ناقصا الثلاث — بلا حدٍّ عند الصفر، كالمتعلّم (`publicPathAddsLeft`) */
+      const grantCourseIds = open
+        ? [...new Set((await pageCourses(this.prisma, def.campaign as CampaignSlug, null, now)).courses.map((c) => c.courseId))]
+        : null
+      return {
+        ...out, unavailable: [...out.unavailable, ...unavailable],
+        coursesLeft: open ? camp.maxCourses - out.courses.length : null, grantCourseIds,
+        lastDay: open && camp.closesAt ? grantLastDay(camp.closesAt) : null,
+        publicPath: meta(true, open ? null : GRANT_CLOSED_AR),
+      }
     }
     const account = await this.prisma.user.findUnique({ where: { id: userId }, select: { displayName: true } })
     const got = await publicPathCode(this.prisma, def.campaign as CampaignSlug, userId, now)
@@ -191,7 +206,8 @@ export class PrivatePathService {
     code: string,
     p: Pick<PrivatePathPayload, 'courses' | 'code' | 'firstName' | 'learnerKey' | 'token' | 'gift'>,
     /** `belowZero`: ما بقي على الكود ناقصا دوراتِ المسار بلا حدٍّ عند الصفر — للمسار العامّ (`publicPathAddsLeft`) */
-    opts: { priced?: boolean; keepCode?: boolean; belowZero?: boolean } = {},
+    /* `campaign`: الزائرُ في المسار العامّ — يُسعَّر بنسبة حملته بلا كود (`campaignPreview`) */
+    opts: { priced?: boolean; keepCode?: boolean; belowZero?: boolean; campaign?: CampaignSlug; now?: Date } = {},
   ): Promise<PrivatePathView> {
     const cohortIds = p.courses.map((c) => c.cohortId)
     const cohorts = await this.prisma.cohort.findMany({
@@ -212,7 +228,9 @@ export class PrivatePathService {
     const { CommerceService } = await import('./commerce.service')
     let preview: Awaited<ReturnType<InstanceType<typeof CommerceService>['preview']>> | null = null
     try {
-      preview = await new CommerceService(this.prisma).preview(null, cohortIds, p.code ?? undefined)
+      preview = opts.campaign && !p.code
+        ? await campaignPreview(this.prisma, opts.campaign, cohortIds, opts.now)
+        : await new CommerceService(this.prisma).preview(null, cohortIds, p.code ?? undefined)
     } catch (e) {
       if (!(e instanceof AuthError)) throw e
     }
@@ -332,15 +350,50 @@ export class PrivatePathService {
       coursesLeft,
       grantCourseIds,
       buyLinkToken: p.token || null,
-      ...(opts.keepCode ? { priceProblemAr: preview?.couponError?.messageAr ?? null } : {}),
+      ...(opts.keepCode || opts.campaign ? { priceProblemAr: preview?.couponError?.messageAr ?? null } : {}),
     }
+  }
+}
+
+const campaignOpen = (c: { active: boolean; closesAt: Date | null }, now: Date) => c.active && (c.closesAt === null || c.closesAt > now)
+
+/* ═══ سعرُ الزائر في المسار العامّ — بنسبة حملته الآن، بلا كود (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «They should see everything». فالزائرُ بلا حساب يرى السعرَ كما سيدفعه بكودها: المعاينةُ نفسُها بلا كود
+   (`CommerceService.preview` — ما يُشترى وما استُبعد وسعرُ القائمة)، ثمّ `priceCart` نفسُه الذي يكتب به الدفعُ الفاتورة بنسبة
+   الحملة بدلَ الباقة (كما يقع كودُ المنحة، `replacesBundle`). ولا كودَ يُخترع ولا يُكتب شيء: الكودُ يُعطى بعد الدخول
+   (`publicPathCode`)، والدفعُ يسعّر من جديد به. وما فوق حدّ دورات الحملة يُقال سببُه ويُعرض بلا منحة — كما يقول الكودُ نفسُه.
+   والحملةُ المغلقةُ سعرُها بلا منحة. وبه تُسعَّر الصفحةُ أوّلَ ما تُفتح، وكلُّ اختيارٍ بعده (`/api/public/go/:code/preview`). */
+export async function campaignPreview(prisma: PrismaClient, slug: CampaignSlug, cohortIds: string[], now = new Date()) {
+  const { CommerceService } = await import('./commerce.service')
+  const q = await new CommerceService(prisma).preview(null, cohortIds)
+  const camp = await new GrantService(prisma, slug).campaign()
+  if (!campaignOpen(camp, now)) return q
+  const pricing = priceCart(
+    q.items.map((i) => ({ cohortId: i.cohortId, courseId: i.courseId, titleAr: i.titleAr, listPrice: i.listPrice })),
+    null, { percentOff: camp.percentOff, amountOff: null, replacesBundle: true }, q.currency,
+  )
+  if (pricing.grantBeaten) return q
+  if (pricing.paidCount > camp.maxCourses) {
+    return { ...q, couponError: { code: 'grant_max_courses', messageAr: grantMaxCoursesAr(camp.maxCourses) } }
+  }
+  return {
+    ...q,
+    subtotal: pricing.subtotal, listTotal: pricing.listTotal, bundlePct: pricing.bundlePct, bundleDiscount: pricing.bundleDiscount,
+    capDiscount: pricing.capDiscount, planCredit: pricing.planCredit, couponDiscount: pricing.couponDiscount,
+    discount: pricing.discount, total: pricing.total,
+    grantPct: camp.percentOff as number | null, grantNameAr: grantTitleAr(camp, null) as string | null,
+    items: pricing.lines.map((l) => ({
+      cohortId: l.cohortId, courseId: l.courseId, titleAr: l.titleAr, listPrice: l.listPrice, unitPrice: l.unitPrice, isGift: l.isGift, couponApplies: l.couponApplies,
+    })),
   }
 }
 
 /* ═══ كودُ منحته في المسار العامّ — وإن لم يكن له أُعطي فورا (٢٢ نوفمبر ٢٠٢٦، «Give code instantly») ═══
    · **الحملةُ مغلقة**: لا كود، ويُقال «المنحة مغلقة الآن».
-   · **اشترى بكود منحةٍ قبلُ** (منحةٌ واحدةٌ لكلّ متعلّم، `assertUsable`): كودُه ذاك ما بقي عليه (`learnerGrant`) — ولا كودَ
-     جديد، فالدفعُ يردّه. وإن لم يبقَ عليه شيءٌ قيل السبب.
+   · **اشترى بكود هذه الحملة قبلُ**: هو كودُه ما بقي عليه — وحدُّه باقٍ، فإن لم يبقَ عليه شيءٌ قيل السبب.
+   · **واشترى بمنحةٍ غيرِها يأخذ كودَها على كلّ حال** — قرارُ صاحب المنصّة (٢٣ نوفمبر ٢٠٢٦): «They get 80% anyway, even if their
+     code is linked to another grant»، نسخا لـ«كودُه ذاك، ولا كودَ جديد». فيُعطى كودَها من نموذجٍ بقناة المسار (`go`) — وهو وحدَه
+     يتجاوز «منحةٌ واحدةٌ لكلّ متعلّم» (`grantOnceExempt`)، فلا يُعطى كودَ نموذجٍ آخرَ يردّه الدفع.
    · **له كودُ هذه الحملة** ببريد حسابه: هو نفسُه.
    · **وإلّا يُعطى كودَها على حسابه**: نموذجٌ في الحملة باسم حسابه وبريده وبلا هاتف (يُنشأ مرّةً تحت قفلٍ بالبريد، فلا
      تُنشئ نقرتان نموذجين)، ثمّ `GrantService.issue` نفسُه بعدِّه ونسبتِه وأثرِه (`coupon.grant_issue`). ويُكتب أثرُ النموذج
@@ -350,29 +403,43 @@ export async function publicPathCode(
 ): Promise<{ code: string | null; noteAr: string | null }> {
   const grants = new GrantService(prisma, slug)
   const camp = await grants.campaign()
-  if (!camp.active || (camp.closesAt !== null && camp.closesAt <= now)) return { code: null, noteAr: GRANT_CLOSED_AR }
-  const [used, mine] = await Promise.all([
-    prisma.order.findFirst({ where: { userId, status: { in: GRANT_HOLDS }, coupon: { grantCode: { isNot: null } } }, select: { id: true } }),
-    learnerGrant(prisma, userId, now),
-  ])
-  if (used) return mine.code ? { code: mine.code, noteAr: null } : { code: null, noteAr: GRANT_ONCE_AR }
+  if (!campaignOpen(camp, now)) return { code: null, noteAr: GRANT_CLOSED_AR }
+  const used = await prisma.order.findMany({
+    where: { userId, status: { in: GRANT_HOLDS }, coupon: { grantCode: { isNot: null } } },
+    orderBy: { createdAt: 'desc' },
+    select: { coupon: { select: { id: true, code: true, usedCount: true, maxUses: true, grantCode: { select: {
+      campaign: { select: { id: true, slug: true, active: true, closesAt: true, maxCourses: true } },
+    } } } } },
+  })
+  const own = used.map((o) => o.coupon).find((c) => c?.grantCode?.campaign.slug === slug)
+  if (own?.grantCode) {
+    return (await grants.coursesLeft(own)) > 0
+      ? { code: own.code, noteAr: null }
+      : { code: null, noteAr: grantUsedUpAr(own.grantCode.campaign.maxCourses) }
+  }
+  const usedOther = used.length > 0
+  const mine: { code: string | null } = usedOther ? { code: null } : await learnerGrant(prisma, userId, now)
   if (mine.code) {
     const of = await prisma.coupon.findUnique({ where: { code: mine.code }, select: { grantCode: { select: { campaign: { select: { slug: true } } } } } })
     if (of?.grantCode?.campaign.slug === slug) return { code: mine.code, noteAr: null }
   }
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, displayName: true } })
   const email = user?.email?.trim().toLowerCase()
-  if (!email) return { code: mine.code ?? null, noteAr: null }
+  if (!email) return { code: mine.code, noteAr: null }
   const leadId = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`public-path:${slug}:${email}`}))`
-    const had = await tx.lead.findFirst({ where: { campaign: slug, erasedAt: null, email }, orderBy: { createdAt: 'asc' }, select: { id: true } })
+    /* ومن اشترى بمنحةٍ غيرِها: نموذجُ المسار وحدَه — فكودُ نموذجٍ آخرَ في الحملة يردّه «منحةٌ واحدة» */
+    const had = await tx.lead.findFirst({
+      where: { campaign: slug, erasedAt: null, email, ...(usedOther ? { channel: PUBLIC_PATH_LEAD_CHANNEL } : {}) },
+      orderBy: { createdAt: 'asc' }, select: { id: true },
+    })
     if (had) return had.id
     const lead = await tx.lead.create({
-      data: { fullName: user?.displayName?.trim() || email, email, phone: null, source: 'campaign', campaign: slug, channel: 'go', userId },
+      data: { fullName: user?.displayName?.trim() || email, email, phone: null, source: 'campaign', campaign: slug, channel: PUBLIC_PATH_LEAD_CHANNEL, userId },
     })
     await recordAudit(tx, {
       action: 'coupon.grant_apply', entityType: 'lead', entityId: lead.id, actorId: userId,
-      meta: { leadId: lead.id, campaign: slug, via: 'public_path', channel: 'go' },
+      meta: { leadId: lead.id, campaign: slug, via: 'public_path', channel: PUBLIC_PATH_LEAD_CHANNEL },
     })
     return lead.id
   })
@@ -381,6 +448,6 @@ export async function publicPathCode(
     return { code: g.code, noteAr: null }
   } catch (e) {
     if (!(e instanceof AuthError) || !['grant_closed', 'grant_sold_out'].includes(e.code)) throw e
-    return { code: mine.code ?? null, noteAr: mine.code ? null : e.messageAr }
+    return { code: mine.code, noteAr: mine.code ? null : e.messageAr }
   }
 }

@@ -184,7 +184,7 @@ describe('الدفع زر صغير ثابت، والبطاقة بعد «تفتح
     const at = (re: RegExp) => PAGE.search(re)
     expect(at(/data-testid="private-path-price"/)).toBeGreaterThan(at(/تفتح تلقائيا بعد أول دفع ناجح/))
     expect(at(/data-testid="private-path-price"/)).toBeGreaterThan(at(/<PathwayEcosystemPanel \/>/))
-    expect(PAGE).toMatch(/\{showPrice && !buyInView && !buyOpen && !authOpen && \([\s\S]*?fixed inset-x-0 bottom-0[\s\S]*?data-testid="private-path-sticky-buy"/)
+    expect(PAGE).toMatch(/\{showPrice && !buyInView && !buyShown && !authOpen && \([\s\S]*?fixed inset-x-0 bottom-0[\s\S]*?data-testid="private-path-sticky-buy"/)
     expect(PAGE).toMatch(/new IntersectionObserver\(\(\[e\]\) => setBuyInView\(e\.isIntersecting\)/)
   })
 })
