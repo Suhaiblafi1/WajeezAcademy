@@ -95,7 +95,7 @@ export function reminderHtml(i: ReminderInput): string {
     <div dir="ltr" style="font-family:${FONT};font-size:12px;color:${C.ink2};word-break:break-all;text-align:right">${esc(i.payUrl)}</div>
   </td></tr></table>
 
-  ${p(`السعر <b dir="ltr" style="color:${C.ink}">${AI_JOBS.priceUsd}$</b> بدل <s dir="ltr">${AI_JOBS.listPriceUsd}$</s> — ${AI_JOBS.hours} ساعات تطبيق عملي، وأسبوع متابعة على واتساب بعدها.`, ';margin-top:16px')}
+  ${p(`${AI_JOBS.hours} ساعات تطبيق عملي، وأسبوع متابعة على واتساب بعدها.`, ';margin-top:16px')}
   ${i.cardChosen ? `<div style="font-family:${FONT};font-size:15px;line-height:1.8;color:${C.ink};background:${C.butter};border:2px dashed ${C.ink};border-radius:12px;padding:12px 14px;margin-top:14px">${esc(CARD_DONE)}</div>` : ''}
 </td></tr>
 

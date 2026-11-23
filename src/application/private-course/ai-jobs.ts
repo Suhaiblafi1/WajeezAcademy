@@ -31,7 +31,6 @@ export const AI_JOBS = {
   dateLabel: 'السبت 5 ديسمبر 2026',
   hours: 4,
   priceUsd: 20,
-  listPriceUsd: 100,
   priceJod: 14,
   /** شخصان معا (٢١ نوفمبر ٢٠٢٦): «شخصين يكون السعر ٢٠ لأن السعر الأصلي ١٤» — بالدينار، والدولارُ لقياس الإعلان وحدَه */
   pair: { priceJod: 20, priceUsd: 28 },
@@ -79,7 +78,7 @@ export function seatsLabel(n: number): string {
 export const AI_JOBS_SEO = {
   title: `${AI_JOBS.headline} — دورة عملية مباشرة`,
   description:
-    `دورة عملية مباشرة على Zoom لأربع ساعات مع ${AI_JOBS.trainer}: تبني فيها مساعدا بـClaude يبحث عن الوظائف ويفصّل سيرتك ويعبّي طلباتك. ${AI_JOBS.dateLabel} — ${AI_JOBS.priceUsd}$ بدل ${AI_JOBS.listPriceUsd}$.`,
+    `دورة عملية مباشرة على Zoom لأربع ساعات مع ${AI_JOBS.trainer}: تبني فيها مساعدا بـClaude يبحث عن الوظائف ويفصّل سيرتك ويعبّي طلباتك. ${AI_JOBS.dateLabel} — ${AI_JOBS.priceUsd}$ (${AI_JOBS.priceJod} دينار).`,
 } as const
 
 export type AiJobsSectionKey = (typeof AI_JOBS.sections)[number]['key']
@@ -107,7 +106,7 @@ export function abroadPayMessage(opts: { country?: string; reference?: string } 
 export const SHARE_SOURCE = 'share'
 
 export function shareInviteText(origin: string): string {
-  return `سجلت في دورة «${AI_JOBS.headline}» — ${AI_JOBS.hours} ساعات مباشرة على Zoom يوم ${AI_JOBS.dateLabel}، بـ${AI_JOBS.priceUsd}$ بدل ${AI_JOBS.listPriceUsd}$. إذا تبحث عن عمل سجّل معي: ${origin}/ai-jobs?src=${SHARE_SOURCE}`
+  return `سجلت في دورة «${AI_JOBS.headline}» — ${AI_JOBS.hours} ساعات مباشرة على Zoom يوم ${AI_JOBS.dateLabel}، بـ${AI_JOBS.priceUsd}$ (${AI_JOBS.priceJod} دينار). إذا تبحث عن عمل سجّل معي: ${origin}/ai-jobs?src=${SHARE_SOURCE}`
 }
 
 /** بكسلُ Meta لصفحة الدورة — تقرؤه الصفحةُ (`meta-pixel.ts`) والخادمُ حين يُبلغ بالشراء (`meta-capi.ts`) */
