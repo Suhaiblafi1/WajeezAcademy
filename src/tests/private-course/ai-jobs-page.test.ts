@@ -131,10 +131,11 @@ describe('⑤ المقاعد المتبقية بدل عداد الوقت', () =>
     expect(seatsLabel(2)).toBe('آخر مقعدين')
   })
 
-  it('ولا عداد وقت باق في الصفحة، والخصم «حتى نفاد المقاعد»', () => {
+  it('ولا عداد وقت باق في الصفحة، والتسجيل «حتى نفاد المقاعد»', () => {
+    /* كان «الخصم حتى نفاد المقاعد» — ونُزع الخصمُ بقرار ٢٣ نوفمبر ٢٠٢٦ (⑪)، وبقي حدُّ التسجيل */
     const page = read('src/pages/ai-jobs/AiJobs.tsx')
     expect(page).not.toMatch(/موعد الدورة/)
-    expect(page).toMatch(/<b>حتى نفاد المقاعد<\/b>/)
+    expect(page).toMatch(/<span>التسجيل حتى نفاد المقاعد<\/span>/)
   })
 })
 
@@ -378,14 +379,16 @@ describe('⑩ شخصان بسعر، والتسجيل، وكعكتا البكسل
 /* ═══ ⑪ بلا ١٠٠$ مشطوبة (٢٣ نوفمبر ٢٠٢٦) ═══
    قرارُ صاحب المنصّة: «take out from the landing page the 100 price» — وقبله: «الـ١٠٠ دولار واضحةٌ أنّها كذبة». فلا سعرَ
    مشطوبٌ ولا «وفّر» (فرقُه عن الـ١٠٠) في الصفحة، ولا «بدل ١٠٠$» في وصفها ولا رسالةِ المشاركة ولا بريدِ التذكير. وشارةُ
-   بلاك فرايدي باقيةٌ كما هي: لم يُطلب نزعُها. */
-describe('⑪ بلا 100$ مشطوبة', () => {
+   بلاك فرايدي باقيةٌ اسما، ونُزع منها «خصم ٨٠٪» و«الخصم حتى نفاد المقاعد»: «yes remove the discount». */
+describe('⑪ بلا 100$ مشطوبة ولا خصم', () => {
   const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
 
   it('⚠️ لا سعر مشطوب ولا «وفّر» في الصفحة — والسعر نفسه باق', () => {
     const page = code(read('src/pages/ai-jobs/AiJobs.tsx'))
     expect(page, 'سعر مشطوب').not.toMatch(/<s[\s>]/)
     expect(page, '«وفّر»').not.toMatch(/وفّر/)
+    expect(page, 'خصم أو نسبته').not.toMatch(/خصم|\d+%/)
+    expect(page).toMatch(/className="aij-bf-off"><bdi dir="ltr">\{AI_JOBS\.priceUsd\}\$<\/bdi> فقط/)
     expect(page).toMatch(/<b>\{AI_JOBS\.priceUsd\}\$<\/b>/)
     expect('listPriceUsd' in AI_JOBS, 'عاد «السعر قبل» إلى الثوابت').toBe(false)
   })

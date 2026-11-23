@@ -158,10 +158,11 @@ export default function AiJobs() {
         <div className="aij-wrap aij-bf-in">
           <div className="aij-bf-tag">
             <b>BLACK FRIDAY</b>
-            <span className="aij-bf-off">خصم <bdi dir="ltr">80%</bdi></span>
+            {/* السعرُ كما هو بلا «خصم» — قرارُ صاحب المنصّة (٢٣ نوفمبر ٢٠٢٦): «yes remove the discount» */}
+            <span className="aij-bf-off"><bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> فقط</span>
           </div>
           <div className="aij-bf-mid">
-            <span>الخصم حتى نفاد المقاعد</span>
+            <span>التسجيل حتى نفاد المقاعد</span>
             <Seats />
           </div>
           <a href="#register" className="aij-cta">سجّل الآن</a>
@@ -184,7 +185,7 @@ export default function AiJobs() {
               <div className="aij-facts">
                 <div className="aij-fact"><small>الموعد</small><b>{AI_JOBS.dateLabel}</b></div>
                 <div className="aij-fact"><small>الطريقة</small><b>مباشر على Zoom</b></div>
-                <div className="aij-fact"><small>الخصم</small><b>حتى نفاد المقاعد</b></div>
+                <div className="aij-fact"><small>السعر</small><b><bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi> ({AI_JOBS.priceJod} دينار)</b></div>
               </div>
               <div className="aij-row">
                 <Cta large label={<>احجز مقعدك بـ <bdi dir="ltr">{AI_JOBS.priceUsd}$</bdi></>} />
@@ -387,7 +388,7 @@ export default function AiJobs() {
             <div className="aij-box aij-detail"><small>الطريقة</small><b>مباشر على Zoom</b></div>
             <div className="aij-box aij-detail"><small>المستوى</small><b>من الصفر، دون خبرة</b></div>
             <div className="aij-box aij-detail wide">
-              <small>رسوم الدورة · الخصم حتى نفاد المقاعد · المقاعد محدودة</small>
+              <small>رسوم الدورة · المقاعد محدودة</small>
               <b><span dir="ltr">{AI_JOBS.priceUsd}$</span> <span style={{ fontSize: 16, fontWeight: 500 }}>({AI_JOBS.priceJod} دينار فقط)</span></b>
             </div>
             <div className="aij-box aij-detail green wide"><small>بعد الدورة</small><b>أسبوع متابعة مجانية على واتساب</b></div>
@@ -405,7 +406,7 @@ export default function AiJobs() {
               <span className="now">{AI_JOBS.priceUsd}$</span>
               <span className="per">فقط<br />= {AI_JOBS.priceJod} دينار</span>
             </div>
-            <p className="aij-hand">الخصم ساري حتى نفاد المقاعد</p>
+            <p className="aij-hand">التسجيل مفتوح حتى نفاد المقاعد</p>
             <div style={{ marginTop: 14 }}><Seats large /></div>
             <div className="aij-guarantee dark">
               <Shield />
