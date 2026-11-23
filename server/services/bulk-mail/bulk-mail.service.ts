@@ -290,21 +290,73 @@ export async function notInterestedEmails(prisma: PrismaClient): Promise<Set<str
   return out
 }
 
-/** من تصله الحملةُ لو أُرسلت الآن، ومن لا تصله ولماذا — ومن وصلته حملةٌ في آخر `skipRecentDays` يوما يُتخطّى إن اختير */
-async function recipientsOf(prisma: PrismaClient, key: string | null, skipRecentDays: SkipRecentDays = 0, now = new Date()) {
+/* ═══ ولا يتكرّر الشخصُ نفسُه: من هو في المنصّة، أو في قائمةٍ أخرى (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «تخطَّ من هو موجودٌ بالمنصّة أو موجودٌ بقائمةٍ أخرى لكي لا يتكرّر الشخصُ نفسُه». فلقائمةٍ مرفوعةٍ
+   خياران في التأكيد، مفتوحان افتراضا:
+   · **في المنصّة**: من له حسابٌ ببريده، أو عبّأ أيَّ نموذجٍ (ليدٌ من أيّ مصدرٍ لم تُمحَ بياناتُه) — فهو يصله بريدُ المنصّة وحملاتُ
+     ليداتها، ولا يُعامَل غريبا.
+   · **في قائمةٍ أخرى**: من هو في قائمةٍ مرفوعةٍ غيرِ هذه — فرسالةُ كلّ قائمةٍ تصل من فيها وحدَه، مرّةً.
+   ولليدات الموقع لا معنى للأوّل (كلُّهم في المنصّة) فلا يُعرض لها. والمطابقةُ بالبريد بحروفٍ صغيرة. */
+async function onPlatform(prisma: PrismaClient, emails: string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  for (let i = 0; i < emails.length; i += 5_000) {
+    const chunk = emails.slice(i, i + 5_000)
+    const rows = await prisma.$queryRaw<{ e: string }[]>`
+      SELECT lower(email) AS e FROM "User" WHERE lower(email) = ANY(${chunk})
+      UNION SELECT lower(email) AS e FROM "Lead" WHERE email IS NOT NULL AND "erasedAt" IS NULL AND lower(email) = ANY(${chunk})`
+    for (const r of rows) out.add(r.e)
+  }
+  return out
+}
+
+async function inOtherLists(prisma: PrismaClient, listId: string, emails: string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  for (let i = 0; i < emails.length; i += 5_000) {
+    const rows = await prisma.mailListEntry.findMany({
+      where: { listId: { not: listId }, email: { in: emails.slice(i, i + 5_000) } }, select: { email: true }, distinct: ['email'],
+    })
+    for (const r of rows) out.add(r.email)
+  }
+  return out
+}
+
+export interface RecipientOptions {
+  /** تخطّي من وصلته حملةٌ في آخر كذا يوما (`SKIP_RECENT_DAYS`) */
+  skipRecentDays?: SkipRecentDays
+  /** تخطّي من هو في المنصّة — لقائمةٍ مرفوعةٍ وحدَها */
+  skipPlatform?: boolean
+  /** تخطّي من هو في قائمةٍ مرفوعةٍ أخرى — لقائمةٍ مرفوعةٍ وحدَها */
+  skipOtherLists?: boolean
+  now?: Date
+}
+
+/** من تصله الحملةُ لو أُرسلت الآن، ومن لا تصله ولماذا */
+async function recipientsOf(prisma: PrismaClient, key: string | null, o: RecipientOptions = {}) {
   const r = await resolveAudience(prisma, key)
+  const now = o.now ?? new Date()
   const off = await optedOutChunked(prisma, r.people.map((p) => p.email))
   const notInterested = await notInterestedEmails(prisma)
   const subscribed = r.people.filter((p) => !off.has(p.email) && !notInterested.has(p.email))
-  const recent = skipRecentDays > 0
-    ? await recentlyMailed(prisma, subscribed.map((p) => p.email), new Date(now.getTime() - skipRecentDays * DAY_MS))
+  const list = parseAudience(key)
+  const listId = list?.kind === 'list' ? list.id : null
+  const emails = subscribed.map((p) => p.email)
+  const platform = listId && o.skipPlatform ? await onPlatform(prisma, emails) : new Set<string>()
+  const afterPlatform = subscribed.filter((p) => !platform.has(p.email))
+  const others = listId && o.skipOtherLists ? await inOtherLists(prisma, listId, afterPlatform.map((p) => p.email)) : new Set<string>()
+  const afterOthers = afterPlatform.filter((p) => !others.has(p.email))
+  const days = o.skipRecentDays ?? 0
+  const recent = days > 0
+    ? await recentlyMailed(prisma, afterOthers.map((p) => p.email), new Date(now.getTime() - days * DAY_MS))
     : new Set<string>()
-  const to = subscribed.filter((p) => !recent.has(p.email))
+  const to = afterOthers.filter((p) => !recent.has(p.email))
   const check: SendCheck = {
     recipients: to.length, audienceAr: r.nameAr, invalid: r.invalid, duplicate: r.duplicate,
     optedOut: r.people.filter((p) => off.has(p.email)).length,
     notInterested: r.people.filter((p) => !off.has(p.email) && notInterested.has(p.email)).length,
-    recent: subscribed.length - to.length,
+    onPlatform: subscribed.length - afterPlatform.length,
+    inOtherLists: afterPlatform.length - afterOthers.length,
+    recent: afterOthers.length - to.length,
+    uploadedList: !!listId,
   }
   return { to, check }
 }
@@ -377,9 +429,9 @@ export async function deleteCampaign(prisma: PrismaClient, id: string) {
 }
 
 /** ما يُقال قبل الإرسال: من تصله ومن لا تصله ولماذا، وكم دقيقة */
-export async function campaignCheck(prisma: PrismaClient, id: string, skipRecentDays: SkipRecentDays = 0) {
+export async function campaignCheck(prisma: PrismaClient, id: string, o: RecipientOptions = {}) {
   const c = await campaignOr404(prisma, id)
-  const { check } = await recipientsOf(prisma, c.audience, skipRecentDays)
+  const { check } = await recipientsOf(prisma, c.audience, o)
   const mailOn = (await liveChannels(prisma)).includes('email')
   const { name, email } = await bulkSender(prisma)
   return { ...check, etaMinutes: etaMinutes(check.recipients), mailOn, from: { name, email } }
@@ -473,6 +525,8 @@ export async function sendCampaign(
     stages?: readonly number[] | null
     /** تخطّي من وصلته حملةٌ في آخر كذا يوما — والعددُ الذي رآه في التأكيد محسوبٌ به (`campaignCheck`) */
     skipRecentDays?: SkipRecentDays
+    skipPlatform?: boolean
+    skipOtherLists?: boolean
     now?: Date
   } = {},
 ) {
@@ -483,7 +537,9 @@ export async function sendCampaign(
   if (c.status !== 'draft') throw new AuthError('not_draft', 'أرسلت هذه الحملة من قبل', 409)
   const content: CampaignContent = { subject: c.subject, body: c.body, buttonLabel: c.buttonLabel, buttonUrl: c.buttonUrl }
   checkContent(content)
-  const { to, check } = await recipientsOf(prisma, c.audience, opts.skipRecentDays ?? 0, opts.now ?? new Date())
+  const { to, check } = await recipientsOf(prisma, c.audience, {
+    skipRecentDays: opts.skipRecentDays, skipPlatform: opts.skipPlatform, skipOtherLists: opts.skipOtherLists, now: opts.now,
+  })
   if (check.recipients === 0) throw new AuthError('no_recipients', 'لا أحد في القائمة تصله الرسالة', 400)
   /* العددُ الذي رآه هو ما يُرسَل — قائمةٌ تغيّرت بين العرض والضغط تُقال، ولا تُرسَل صامتة */
   if (confirmCount !== check.recipients) {
@@ -530,7 +586,8 @@ export async function sendCampaign(
       meta: {
         batchId, subject: content.subject.trim(), audience: c.audience, audienceAr: check.audienceAr, queued, asked: check.recipients,
         optedOut: check.optedOut, invalid: check.invalid, duplicate: check.duplicate, recent: check.recent ?? 0,
-        notInterested: check.notInterested ?? 0,
+        notInterested: check.notInterested ?? 0, onPlatform: check.onPlatform ?? 0, inOtherLists: check.inOtherLists ?? 0,
+        skipPlatform: !!opts.skipPlatform, skipOtherLists: !!opts.skipOtherLists,
         skipRecentDays: opts.skipRecentDays ?? 0, from: from.email, stages: plan,
       },
     })

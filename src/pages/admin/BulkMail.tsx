@@ -343,7 +343,7 @@ function CampaignEditor({ id, audiences, reloadAudiences, onClose }: {
   const review = async () => {
     if (dirty && !(await save(true))) return;
     setBusy("check");
-    try { setCheck(await apiGet<Check>(`/api/admin/bulk-mail/campaigns/${id}/check?skipRecentDays=${SKIP_RECENT_DEFAULT}`)); }
+    try { setCheck(await apiGet<Check>(checkUrl(id, { d: SKIP_RECENT_DEFAULT, p: true, l: true }))); }
     catch (e) { toastError(err(e, "تعذر حساب العدد")); }
     finally { setBusy(""); }
   };
@@ -423,19 +423,27 @@ function CampaignEditor({ id, audiences, reloadAudiences, onClose }: {
   );
 }
 
+/** رابطُ حساب من تصله الحملة بخياراته — الأيّامُ وتخطّي من في المنصّة ومن في قائمةٍ أخرى */
+const checkUrl = (id: string, o: { d: SkipRecentDays; p: boolean; l: boolean }) =>
+  `/api/admin/bulk-mail/campaigns/${id}/check?skipRecentDays=${o.d}&skipPlatform=${o.p ? 1 : 0}&skipOtherLists=${o.l ? 1 : 0}`;
+
 /* ─────────── التأكيد: العددُ بعينه، ومن لا تصله، وكم يأخذ ─────────── */
 
 function SendConfirm({ id, check: first, onClose, onTest, onSent }: { id: string; check: Check; onClose: () => void; onTest: () => void; onSent: () => void }) {
   /* وتخطّي من وصلته حملةٌ قريبا — يُعاد العدُّ عند تغييره، فالعددُ المُرسَل هو ما يراه (٢٣ نوفمبر ٢٠٢٦، `SKIP_RECENT_DAYS`) */
   const [days, setDays] = useState<SkipRecentDays>(SKIP_RECENT_DEFAULT);
+  /* ولا يتكرّر الشخص: من في المنصّة ومن في قائمةٍ أخرى — مفتوحان افتراضا للقائمة المرفوعة (٢٣ نوفمبر ٢٠٢٦) */
+  const [skipPlatform, setSkipPlatform] = useState(true);
+  const [skipOtherLists, setSkipOtherLists] = useState(true);
   const [check, setCheck] = useState<Check>(first);
   const [recounting, setRecounting] = useState(false);
-  const changeDays = async (d: SkipRecentDays) => {
-    setDays(d); setRecounting(true);
-    try { setCheck(await apiGet<Check>(`/api/admin/bulk-mail/campaigns/${id}/check?skipRecentDays=${d}`)); }
+  const recount = async (o: { d: SkipRecentDays; p: boolean; l: boolean }) => {
+    setDays(o.d); setSkipPlatform(o.p); setSkipOtherLists(o.l); setRecounting(true);
+    try { setCheck(await apiGet<Check>(checkUrl(id, o))); }
     catch (e) { toastError(err(e, "تعذر حساب العدد")); }
     finally { setRecounting(false); }
   };
+  const changeDays = (d: SkipRecentDays) => recount({ d, p: skipPlatform, l: skipOtherLists });
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const mustType = needsTypedCount(check.recipients);
@@ -450,6 +458,7 @@ function SendConfirm({ id, check: first, onClose, onTest, onSent }: { id: string
     try {
       const out = await apiPost<{ queued: number }>(`/api/admin/bulk-mail/campaigns/${id}/send`, {
         confirmCount: check.recipients, stages: staged ? caps : null, skipRecentDays: days,
+        skipPlatform: check.uploadedList ? skipPlatform : false, skipOtherLists: check.uploadedList ? skipOtherLists : false,
       });
       toast(`بدأ الإرسال إلى ${peopleAr(out.queued)}`);
       onSent();
@@ -475,6 +484,20 @@ function SendConfirm({ id, check: first, onClose, onTest, onSent }: { id: string
           </select>
           <span className="mt-1 block text-muted-foreground">لا تصل الرسالة مرتين لنفس الشخص في أيام قليلة.</span>
         </label>
+        {check.uploadedList && (
+          <div className="mt-3 grid gap-2 text-read" data-testid="skip-known">
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={skipPlatform} disabled={recounting} className="mt-1"
+                onChange={(e) => void recount({ d: days, p: e.target.checked, l: skipOtherLists })} />
+              <span><b>تخط من هو موجود في المنصة</b><span className="block text-muted-foreground">له حساب أو عبأ أي نموذج عندنا.</span></span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input type="checkbox" checked={skipOtherLists} disabled={recounting} className="mt-1"
+                onChange={(e) => void recount({ d: days, p: skipPlatform, l: e.target.checked })} />
+              <span><b>تخط من هو في قائمة أخرى</b><span className="block text-muted-foreground">موجود في قائمة رفعتها قبل هذه.</span></span>
+            </label>
+          </div>
+        )}
         {!check.mailOn && <p className="mt-2 text-read font-bold text-gold-ink">البريد غير موصول الآن: تنتظر الرسائل حتى يوصل.</p>}
 
         <label className="mt-4 flex items-start gap-2">

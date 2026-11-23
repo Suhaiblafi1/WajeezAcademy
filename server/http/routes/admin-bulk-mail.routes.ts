@@ -26,6 +26,9 @@ const skipRecent = z.coerce.number().int()
   .refine((n): n is SkipRecentDays => (SKIP_RECENT_DAYS as readonly number[]).includes(n), 'اختر 0 أو 3 أو 7 أو 14 يوما')
   .optional().transform((n) => (n ?? 0) as SkipRecentDays)
 
+/** خيارٌ في رابط التأكيد: `1` أو `true` نعم، وغيرُه لا */
+const flag = z.string().optional().transform((v) => v === '1' || v === 'true')
+
 const content = z.object({
   subject: z.string().max(BULK_SUBJECT_MAX),
   body: z.string().max(BULK_BODY_MAX),
@@ -103,20 +106,23 @@ export function registerAdminBulkMailRoutes(app: FastifyInstance, prisma: Prisma
     preHandler: can, schema: { tags, summary: 'من تصله الحملة لو أرسلت الآن ومن لا تصله ولماذا' },
   }, async (req) => {
     /* وتخطّي من وصلته حملةٌ قريبا — ٠ أو ٣ أو ٧ أو ١٤ يوما (`SKIP_RECENT_DAYS`) */
-    const { skipRecentDays } = z.object({ skipRecentDays: skipRecent }).parse(req.query ?? {})
-    return campaignCheck(prisma, idParam.parse(req.params).id, skipRecentDays)
+    /* وتخطّي من هو في المنصّة أو في قائمةٍ أخرى — `1` نعم، وغيرُه لا (٢٣ نوفمبر ٢٠٢٦) */
+    const q = z.object({ skipRecentDays: skipRecent, skipPlatform: flag, skipOtherLists: flag }).parse(req.query ?? {})
+    return campaignCheck(prisma, idParam.parse(req.params).id, q)
   })
 
   app.post('/api/admin/bulk-mail/campaigns/:id/send', {
     preHandler: can, schema: { tags, summary: 'إرسال الحملة — بالعدد الذي رآه المرسل' },
   }, async (req) => {
-    const { confirmCount, stages, skipRecentDays } = z.object({
+    const { confirmCount, stages, skipRecentDays, skipPlatform, skipOtherLists } = z.object({
       confirmCount: z.number().int().min(1),
       skipRecentDays: skipRecent,
+      skipPlatform: z.boolean().optional(),
+      skipOtherLists: z.boolean().optional(),
       /* حدودُ الأيّام الأولى إن أُرسلت على مراحل — والباقي في اليوم الذي بعدها */
       stages: z.array(z.number().int().min(1).max(100_000)).max(MAX_STAGES - 1).nullable().optional(),
     }).parse(req.body ?? {})
-    return sendCampaign(prisma, idParam.parse(req.params).id, confirmCount, req.auth!.userId, req.ip, { stages: stages ?? null, skipRecentDays })
+    return sendCampaign(prisma, idParam.parse(req.params).id, confirmCount, req.auth!.userId, req.ip, { stages: stages ?? null, skipRecentDays, skipPlatform, skipOtherLists })
   })
 
   app.post('/api/admin/bulk-mail/campaigns/:id/stop', {

@@ -80,6 +80,12 @@ export interface Skipped {
   recent?: number
   /** من قال إنّه غيرُ مهتمّ: حالةُ مستشارٍ «غير مهتم»، أو «توقّف» على واتساب — يُتخطّى دائما (`notInterestedEmails`) */
   notInterested?: number
+  /** من هو في المنصّة (حسابٌ أو نموذج) — إن اختير تخطّيه، لقائمةٍ مرفوعة */
+  onPlatform?: number
+  /** من هو في قائمةٍ مرفوعةٍ أخرى — إن اختير تخطّيه */
+  inOtherLists?: number
+  /** أهي قائمةٌ مرفوعة — فيُعرض خيارا المنصّة والقوائم الأخرى */
+  uploadedList?: boolean
 }
 
 /* ═══ تخطّي من وصلته حملةٌ قريبا (٢٣ نوفمبر ٢٠٢٦) ═══
@@ -99,7 +105,7 @@ export interface SendCheck extends Skipped {
 /** أسطرُ التأكيد: من تصله، ومن لا تصله ولماذا، وكم يأخذ */
 export function confirmLinesAr(c: SendCheck): string[] {
   const lines = [`تصل ${peopleAr(c.recipients)} في «${c.audienceAr}»`]
-  const skipped = c.optedOut + c.invalid + c.duplicate + (c.recent ?? 0) + (c.notInterested ?? 0)
+  const skipped = c.optedOut + c.invalid + c.duplicate + (c.recent ?? 0) + (c.notInterested ?? 0) + (c.onPlatform ?? 0) + (c.inOtherLists ?? 0)
   if (skipped > 0) {
     const why = [
       c.optedOut > 0 ? `${c.optedOut} ألغوا الاشتراك` : null,
@@ -107,6 +113,8 @@ export function confirmLinesAr(c: SendCheck): string[] {
       c.duplicate > 0 ? `${c.duplicate} مكرر` : null,
       c.recent ? `${c.recent} وصلتهم حملة قريبا` : null,
       c.notInterested ? `${c.notInterested} قالوا غير مهتم` : null,
+      c.onPlatform ? `${c.onPlatform} موجودون في المنصة` : null,
+      c.inOtherLists ? `${c.inOtherLists} في قائمة أخرى` : null,
     ].filter(Boolean).join(' · ')
     lines.push(`ولا تصل ${skipped}: ${why}`)
   }
