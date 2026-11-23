@@ -109,6 +109,7 @@ export async function previewUpload(prisma: PrismaClient, buffer: Buffer) {
     valid: parsed.entries.length,
     invalid: parsed.invalid,
     duplicates: parsed.duplicates,
+    corrected: parsed.corrected,
     optedOut: off.size,
     emailColumn: parsed.emailColumn,
     nameColumn: parsed.nameColumn,

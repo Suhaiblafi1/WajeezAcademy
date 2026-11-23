@@ -47,7 +47,7 @@ interface Sender { name: string; email: string; isDefault?: boolean }
 interface Stage { at: string; count: number; sent: number | null; failed: number | null; waiting: number | null }
 
 interface Preview {
-  totalRows: number; valid: number; invalid: number; duplicates: number; optedOut: number
+  totalRows: number; valid: number; invalid: number; duplicates: number; optedOut: number; corrected: number
   emailColumn: string; nameColumn: string | null
   sample: { email: string; name: string | null }[]
   invalidSamples: { row: number; value: string }[]
@@ -631,6 +631,8 @@ function UploadList({ onClose, onSaved }: { onClose: () => void; onSaved: (listI
               <li>بريد صالح: <b>{preview.valid}</b></li>
               {preview.invalid > 0 && <li>بريد غير صالح لن يحفظ: <b>{preview.invalid}</b></li>}
               {preview.duplicates > 0 && <li>مكرر حذفناه: <b>{preview.duplicates}</b></li>}
+              {/* والنطاقُ المخطوءُ يُصحَّح ولا يسقط (٢٣ نوفمبر ٢٠٢٦: «why not to fix these instead taking them off») */}
+              {preview.corrected > 0 && <li>صححنا نطاقه المكتوب خطأ (مثل gmial.com): <b>{preview.corrected}</b></li>}
               {preview.optedOut > 0 && <li>ألغوا الاشتراك ولن تصلهم رسائل: <b>{preview.optedOut}</b></li>}
               <li className="text-muted-foreground">عمود البريد: {preview.emailColumn}{preview.nameColumn ? ` · عمود الاسم: ${preview.nameColumn}` : " · بلا عمود اسم"}</li>
             </ul>

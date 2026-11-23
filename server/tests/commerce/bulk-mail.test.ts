@@ -443,10 +443,15 @@ describe('⑨ الإرسال على مراحل', () => {
 /* ═══ ⑩ النطاقُ المكتوبُ خطأً يسقط، ومن وصلته حملةٌ قريبا يُتخطّى إن اختير (٢٣ نوفمبر ٢٠٢٦) ═══
    قرارُ صاحب المنصّة: «make an option to the admin that checks wrong emails or duplicated» ثمّ «yes» للاثنين. */
 describe('⑩ النطاق الخطأ والمرسل إليهم قريبا', () => {
-  it('⚠️ gmial.com وgmail.con يعدان غير صالحين في الرفع — ولا يحفظان', async () => {
-    const parsed = await parseMailFile(csv(`email\nok-${S}@gmail.com\nbad-${S}@gmial.com\nbad2-${S}@gmail.con\nbad3-${S}@hotmial.com\n`))
-    expect(parsed.entries.map((e) => e.email)).toEqual([`ok-${S}@gmail.com`])
-    expect(parsed.invalid, 'نطاق مخطوء مر').toBe(3)
+  it('⚠️ gmial.com وgmail.con وhotmial.com تصحح إلى صوابها — لا تسقط، وتعد في المعاينة', async () => {
+    const parsed = await parseMailFile(csv(`email\nok-${S}@gmail.com\nfix-${S}@gmial.com\nfix2-${S}@gmail.con\nfix3-${S}@hotmial.com\nok-${S}@gmial.com\n`))
+    expect(parsed.entries.map((e) => e.email), 'لم يصحح أو سقط').toEqual([`ok-${S}@gmail.com`, `fix-${S}@gmail.com`, `fix2-${S}@gmail.com`, `fix3-${S}@hotmail.com`])
+    expect(parsed.invalid, 'أسقط المخطوء بدل تصحيحه').toBe(0)
+    /* والمصحَّحُ إلى عنوانٍ موجودٍ في القائمة مكرّرٌ لا يُرسَل مرّتين */
+    expect(parsed.duplicates).toBe(1)
+    expect(parsed.corrected).toBe(3)
+    const preview = (await http('POST', '/api/admin/bulk-mail/lists/preview', { raw: csv(`email\nx-${S}@gmial.com\n`) })).json() as { corrected: number; valid: number }
+    expect(preview).toMatchObject({ corrected: 1, valid: 1 })
   })
 
   it('⚠️ من وصلته حملة في آخر 7 أيام لا يصل إن اختير — ويعد في التأكيد، ويصل إن لم يختر', async () => {
