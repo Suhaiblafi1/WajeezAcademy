@@ -76,7 +76,20 @@ export interface Skipped {
   optedOut: number
   invalid: number
   duplicate: number
+  /** من وصلته حملةٌ في الأيّام الأخيرة — إن اختير تخطّيه (`SKIP_RECENT_DAYS`) */
+  recent?: number
+  /** من قال إنّه غيرُ مهتمّ: حالةُ مستشارٍ «غير مهتم»، أو «توقّف» على واتساب — يُتخطّى دائما (`notInterestedEmails`) */
+  notInterested?: number
 }
+
+/* ═══ تخطّي من وصلته حملةٌ قريبا (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «take out … the 80 we sent today» ثمّ «yes» لبابٍ يفعله في الموقع. فقبل الإرسال خيار: لا يصل من
+   خرجت إليه رسالةُ حملةٍ (أو تنتظر مرحلتَها) في آخر ٣ أو ٧ أو ١٤ يوما. والحدُّ ١٤ لأنّ ما خرج من الطابور يُحذف بعدها
+   (`RETENTION_DAYS.outboxSent`) — فأبعدُ منه لا يُعرف. والافتراضُ ٧. */
+export const SKIP_RECENT_DAYS = [0, 3, 7, 14] as const
+export type SkipRecentDays = (typeof SKIP_RECENT_DAYS)[number]
+export const SKIP_RECENT_DEFAULT: SkipRecentDays = 7
+export const skipRecentAr = (d: SkipRecentDays) => (d === 0 ? 'لا تتخط أحدا' : d === 14 ? 'آخر 14 يوما' : `آخر ${d} أيام`)
 
 export interface SendCheck extends Skipped {
   recipients: number
@@ -86,12 +99,14 @@ export interface SendCheck extends Skipped {
 /** أسطرُ التأكيد: من تصله، ومن لا تصله ولماذا، وكم يأخذ */
 export function confirmLinesAr(c: SendCheck): string[] {
   const lines = [`تصل ${peopleAr(c.recipients)} في «${c.audienceAr}»`]
-  const skipped = c.optedOut + c.invalid + c.duplicate
+  const skipped = c.optedOut + c.invalid + c.duplicate + (c.recent ?? 0) + (c.notInterested ?? 0)
   if (skipped > 0) {
     const why = [
       c.optedOut > 0 ? `${c.optedOut} ألغوا الاشتراك` : null,
       c.invalid > 0 ? `${c.invalid} بريد غير صالح` : null,
       c.duplicate > 0 ? `${c.duplicate} مكرر` : null,
+      c.recent ? `${c.recent} وصلتهم حملة قريبا` : null,
+      c.notInterested ? `${c.notInterested} قالوا غير مهتم` : null,
     ].filter(Boolean).join(' · ')
     lines.push(`ولا تصل ${skipped}: ${why}`)
   }
