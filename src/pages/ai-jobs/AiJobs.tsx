@@ -207,8 +207,8 @@ export default function AiJobs() {
                   <span>مستشار للمنظمات الدولية · مؤسس أكاديمية وجيز · مؤسس موقع «بكلمة» لفن الخطابة والإلقاء</span>
                 </div>
               </div>
-              <div className="aij-price" aria-label={`السعر ${AI_JOBS.priceUsd} دولار بدل ${AI_JOBS.listPriceUsd}`}>
-                <s>{AI_JOBS.listPriceUsd}$</s>
+              {/* السعرُ وحدَه بلا ١٠٠$ مشطوبة — قرارُ صاحب المنصّة (٢٣ نوفمبر ٢٠٢٦): «take out from the landing page the 100 price» */}
+              <div className="aij-price" aria-label={`السعر ${AI_JOBS.priceUsd} دولار`}>
                 <b>{AI_JOBS.priceUsd}$</b>
                 <span>= {AI_JOBS.priceJod} دينار فقط</span>
               </div>
@@ -388,7 +388,7 @@ export default function AiJobs() {
             <div className="aij-box aij-detail"><small>المستوى</small><b>من الصفر، دون خبرة</b></div>
             <div className="aij-box aij-detail wide">
               <small>رسوم الدورة · الخصم حتى نفاد المقاعد · المقاعد محدودة</small>
-              <b><s style={{ color: '#3c4a66', textDecorationColor: '#ff4b4b' }} dir="ltr">{AI_JOBS.listPriceUsd}$</s> <span dir="ltr">{AI_JOBS.priceUsd}$</span> <span style={{ fontSize: 16, fontWeight: 500 }}>({AI_JOBS.priceJod} دينار فقط)</span></b>
+              <b><span dir="ltr">{AI_JOBS.priceUsd}$</span> <span style={{ fontSize: 16, fontWeight: 500 }}>({AI_JOBS.priceJod} دينار فقط)</span></b>
             </div>
             <div className="aij-box aij-detail green wide"><small>بعد الدورة</small><b>أسبوع متابعة مجانية على واتساب</b></div>
           </div>
@@ -401,10 +401,6 @@ export default function AiJobs() {
         <div className="aij-wrap aij-offer">
           <div className="aij-ticket">
             <h2>احجز مقعدك مبكرا</h2>
-            <div className="aij-prices">
-              <span className="old">{AI_JOBS.listPriceUsd}$</span>
-              <span className="aij-save">وفّر <bdi dir="ltr">{AI_JOBS.listPriceUsd - AI_JOBS.priceUsd}$</bdi></span>
-            </div>
             <div className="aij-now-row">
               <span className="now">{AI_JOBS.priceUsd}$</span>
               <span className="per">فقط<br />= {AI_JOBS.priceJod} دينار</span>
@@ -474,7 +470,7 @@ export default function AiJobs() {
       {/* ═══ شريطُ الهاتف ═══ */}
       <div className={`aij-mobile-bar${barHidden ? ' hide' : ''}`} aria-hidden={barHidden}>
         <div className="p">
-          <s>{AI_JOBS.listPriceUsd}$</s><b>{AI_JOBS.priceUsd}$</b>
+          <b>{AI_JOBS.priceUsd}$</b>
           <small>بلاك فرايدي · حتى نفاد المقاعد</small>
         </div>
         <a href="#register" className="aij-cta" tabIndex={barHidden ? -1 : 0}>سجّل الآن</a>

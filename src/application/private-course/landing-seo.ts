@@ -13,7 +13,8 @@ import { pageTitle } from '../site/public-pages'
 export const AI_JOBS_PATH = '/ai-jobs'
 const AI_JOBS_PAGE_TITLE = AI_JOBS_SEO.title
 const AI_JOBS_PAGE_DESC = AI_JOBS_SEO.description
-export const AI_JOBS_IMAGE_PATH = '/campaigns/ai-jobs/og.jpg'
+/* صورةُ المعاينة بلا ١٠٠$ مشطوبة (٢٣ نوفمبر ٢٠٢٦) — باسمٍ جديدٍ كي لا تبقى القديمةُ في ذاكرة واتساب وفيسبوك */
+export const AI_JOBS_IMAGE_PATH = '/campaigns/ai-jobs/og-v2.jpg'
 
 export function renderAiJobsPage(template: string, origin: string): string {
   const meta = { path: AI_JOBS_PATH, title: AI_JOBS_PAGE_TITLE, description: AI_JOBS_PAGE_DESC }

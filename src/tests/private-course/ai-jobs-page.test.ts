@@ -56,14 +56,14 @@ describe('② معاينة الرابط', () => {
   it('عنوان الدورة وصورة منشورها — بلا ذيل اسم الأكاديمية', () => {
     expect(html).toContain(`<title>${AI_JOBS_SEO.title}</title>`)
     expect(html).toContain(`<meta property="og:title" content="${AI_JOBS_SEO.title}" />`)
-    expect(html).toContain('<meta property="og:image" content="https://www.wajeezacademy.com/campaigns/ai-jobs/og.jpg" />')
+    expect(html).toContain('<meta property="og:image" content="https://www.wajeezacademy.com/campaigns/ai-jobs/og-v2.jpg" />')
     expect(html).not.toMatch(/<title>[^<]*أكاديمية وجيز/)
     expect(html).toContain('<link rel="canonical" href="https://www.wajeezacademy.com/ai-jobs" />')
   })
 
   it('والصورتان في المستودع', () => {
     const files = readdirSync(join(process.cwd(), 'public/campaigns/ai-jobs'))
-    expect(files.sort()).toEqual(['og.jpg', 'suhaib.jpg'])
+    expect(files.sort()).toEqual(['og-v2.jpg', 'suhaib.jpg'])
   })
 
   it('وليست في صفحات الأكاديمية العامة ولا خريطة موقعها', () => {
@@ -372,5 +372,28 @@ describe('⑩ شخصان بسعر، والتسجيل، وكعكتا البكسل
       g.window = prev.window
       g.document = prev.document
     }
+  })
+})
+
+/* ═══ ⑪ بلا ١٠٠$ مشطوبة (٢٣ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «take out from the landing page the 100 price» — وقبله: «الـ١٠٠ دولار واضحةٌ أنّها كذبة». فلا سعرَ
+   مشطوبٌ ولا «وفّر» (فرقُه عن الـ١٠٠) في الصفحة، ولا «بدل ١٠٠$» في وصفها ولا رسالةِ المشاركة ولا بريدِ التذكير. وشارةُ
+   بلاك فرايدي باقيةٌ كما هي: لم يُطلب نزعُها. */
+describe('⑪ بلا 100$ مشطوبة', () => {
+  const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+
+  it('⚠️ لا سعر مشطوب ولا «وفّر» في الصفحة — والسعر نفسه باق', () => {
+    const page = code(read('src/pages/ai-jobs/AiJobs.tsx'))
+    expect(page, 'سعر مشطوب').not.toMatch(/<s[\s>]/)
+    expect(page, '«وفّر»').not.toMatch(/وفّر/)
+    expect(page).toMatch(/<b>\{AI_JOBS\.priceUsd\}\$<\/b>/)
+    expect('listPriceUsd' in AI_JOBS, 'عاد «السعر قبل» إلى الثوابت').toBe(false)
+  })
+
+  it('⚠️ ولا «بدل 100$» في الوصف ولا رسالة المشاركة ولا بريد التذكير', () => {
+    expect(AI_JOBS_SEO.description).not.toMatch(/بدل|100\$/)
+    expect(AI_JOBS_SEO.description).toContain(`${AI_JOBS.priceUsd}$`)
+    expect(shareInviteText('https://x.test')).not.toMatch(/بدل|100\$/)
+    expect(code(read('server/services/private-course/reminder-mail.ts'))).not.toMatch(/<s[\s>]|listPrice/)
   })
 })
