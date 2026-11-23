@@ -225,6 +225,12 @@ const PHRASES: Record<string, string> = {
   'bulk_mail.finished': 'انتهاء إرسال حملة بريد',
   'bulk_mail.sender': 'تغيير مرسل حملات البريد',
   /* ومن ردّ «توقف» على واتساب (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */
+  'whatsapp.config': 'حفظ إعدادات الإرسال على واتساب',
+  'whatsapp.consent_import': 'تسجيل موافقات أرقام على رسائل واتساب',
+  'whatsapp.consent_inbound': 'موافقة صاحب الرقم من واتساب نفسه',
+  'whatsapp.send': 'إرسال واتساب إلى قائمة',
+  'whatsapp.stop': 'إيقاف إرسال واتساب',
+  'whatsapp.reply': 'رد على رسالة واتساب',
   'contact.whatsapp_stop': 'تسجيل أن صاحب الرقم طلب ألا نراسله على واتساب',
   'contact.whatsapp_resume': 'الرجوع عن طلب ألا نراسله على واتساب',
   /* طلبُ الانضمام مستشارا (٢٧ أكتوبر ٢٠٢٦) — القبولُ يفعّل حسابَه بنسبته في خطوةٍ واحدة */

@@ -5,7 +5,7 @@
  * `AdminLayout.tsx` يكسر التحديثَ الساخن.
  */
 
-import { Activity, Award, BadgePercent, Gift, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardCheck, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Inbox, Languages, Layers, LayoutDashboard, LifeBuoy, Mail, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
+import { Activity, Award, BadgePercent, Gift, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardCheck, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Inbox, Languages, Layers, LayoutDashboard, LifeBuoy, Mail, Megaphone, MessageCircle, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
 
 /* ═══ سبعةُ أقسامٍ في الشريط، وصفحاتُ كلِّ قسمٍ ألسنةٌ في أعلاه (٢٤ أكتوبر ٢٠٢٦) ═══
 
@@ -254,6 +254,9 @@ export const allSections: AdminNavSection[] = [
          لليدات الموقع أو لقائمةٍ تُرفع. بصلاحيّة الكوبونات كرسالة المنحة لمن عبّأ نموذجها، وفي «المال» بجوار المنح */
       { to: "/admin/bulk-mail", label: "البريد الجماعي", tab: "البريد", icon: Mail, need: "commerce.manage",
         descAr: "حملات بريد لليدات الموقع أو لقائمة ترفعها من Excel، وتقدم كل حملة" },
+      /* «واتساب» (٢٤ نوفمبر ٢٠٢٦): «ابنه لي في الادمن لارسل واتس اب براحتي» — بجوار البريد وبصلاحيّته */
+      { to: "/admin/whatsapp", label: "واتساب", tab: "واتساب", icon: MessageCircle, need: "commerce.manage",
+        descAr: "إرسال واتساب بقوالب معتمدة لمن وافق، والرد على من راسلنا، وربط الحساب" },
       { to: "/admin/reports", label: "التقارير والتصدير", tab: "التقارير", icon: BarChart3, need: "reports.view",
         descAr: "أرقامُ المنصّة مفصَّلةً، وتصديرُها إلى ملفّ" },
     ],
