@@ -222,6 +222,7 @@ const PHRASES: Record<string, string> = {
   'bulk_mail.test': 'تجربة حملة بريد على بريد المرسل',
   'bulk_mail.send': 'إرسال حملة بريد',
   'bulk_mail.stop': 'إيقاف حملة بريد',
+  'bulk_mail.delete': 'حذف حملة بريد لم تصل أحدا',
   'bulk_mail.finished': 'انتهاء إرسال حملة بريد',
   'bulk_mail.sender': 'تغيير مرسل حملات البريد',
   /* ومن ردّ «توقف» على واتساب (١١ نوفمبر ٢٠٢٦، `whatsapp-optout.service.ts`) */

@@ -34,7 +34,7 @@ import { bulkSender, type BulkSender } from './sender'
 import { messageParagraphs } from '../../../src/application/commerce/grant-registrants'
 import { linkSegments } from '../../../src/application/text/linkify'
 import {
-  BULK_MAIL_PURPOSE, LEAD_SOURCE_AR, MAX_STAGES, etaMinutes, greetingAr, parseAudience, stagePlan,
+  BULK_MAIL_PURPOSE, LEAD_SOURCE_AR, MAX_STAGES, campaignDeletable, etaMinutes, greetingAr, parseAudience, stagePlan,
   type CampaignStatus, type SendCheck, type SkipRecentDays,
 } from '../../../src/application/marketing/bulk-mail'
 
@@ -419,13 +419,39 @@ export async function duplicateCampaign(prisma: PrismaClient, id: string, actorI
   return { id: copy.id }
 }
 
-export async function deleteCampaign(prisma: PrismaClient, id: string) {
-  const { count } = await prisma.mailCampaign.deleteMany({ where: { id, status: 'draft' } })
-  if (count === 0) {
-    await campaignOr404(prisma, id)
-    throw new AuthError('not_draft', 'لا تحذف حملة أرسلت. أثرها يبقى', 409)
+/** حذفُ حملة: المسودّةُ، وما لم يصل منه أحد (`campaignDeletable`) — ويُحذف معه ما في الطابور من صفوفه، فلا تخرج مرحلةٌ باقية */
+export async function deleteCampaign(prisma: PrismaClient, id: string, actorId?: string, ip?: string) {
+  const c = await campaignOr404(prisma, id)
+  if (c.status === 'draft') {
+    const { count } = await prisma.mailCampaign.deleteMany({ where: { id, status: 'draft' } })
+    if (count === 0) throw new AuthError('not_draft', 'أرسلت هذه الحملة الآن. حدّث الصفحة', 409)
+    return { ok: true as const }
   }
-  return { ok: true as const }
+  const batchId = c.batchId
+  return prisma.$transaction(async (tx) => {
+    const [sent, failed] = batchId
+      ? await Promise.all([
+        tx.outboxMail.count({ where: { batchId, status: 'sent' } }),
+        tx.outboxMail.count({ where: { batchId, status: 'failed' } }),
+      ])
+      : [0, 0]
+    /* صفوفُ «أرسلت» تُقلَّم بعد أسبوعين — فالرقمُ المحفوظُ في الحملة يُقرأ معها */
+    const reached = Math.max(sent, c.sentCount ?? 0)
+    if (!campaignDeletable({ status: c.status, sent: reached, failed: Math.max(failed, c.failedCount ?? 0) })) {
+      throw new AuthError('reached', reached > 0 ? 'وصلت هذه الحملة لأشخاص. أثرها يبقى' : 'هذه الحملة ترسل الآن. أوقفها أولا', 409)
+    }
+    const removed = batchId ? (await tx.outboxMail.deleteMany({ where: { batchId, status: { not: 'sent' } } })).count : 0
+    /* وإن خرجت رسالةٌ بين العدّ والحذف فلا حذف */
+    if (batchId && (await tx.outboxMail.count({ where: { batchId, status: 'sent' } })) > 0) {
+      throw new AuthError('reached', 'وصلت هذه الحملة لأشخاص. أثرها يبقى', 409)
+    }
+    await tx.mailCampaign.delete({ where: { id } })
+    await recordAudit(tx, {
+      action: 'bulk_mail.delete', entityType: 'mail_campaign', entityId: id, actorId: actorId ?? null, ip,
+      meta: { batchId, subject: c.subject, status: c.status, failed, removed },
+    })
+    return { ok: true as const, removed }
+  })
 }
 
 /** ما يُقال قبل الإرسال: من تصله ومن لا تصله ولماذا، وكم دقيقة */
