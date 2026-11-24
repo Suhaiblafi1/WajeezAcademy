@@ -57,9 +57,9 @@ describe('المواسم — محسوبة من فصل الشعبة', () => {
     expect(seasonStartAt({ year: 2027, season: 'apr_may' }).toISOString()).toBe('2027-03-31T21:00:00.000Z')
   })
 
-  it('⚠️ المهلة الافتراضية سبعة أيام — إلى آخر يومها بتوقيت عمان', () => {
+  it('⚠️ المهلة الافتراضية يومان — «اجعل المهلة يومين فقط» — إلى آخر يومها بتوقيت عمان', () => {
     const d = defaultSeasonDeadline(new Date('2026-11-21T09:00:00Z'))
-    expect(zonedDay(d)).toBe('2026-11-28')
+    expect(zonedDay(d)).toBe('2026-11-23')
     expect(zonedClock(d)).toBe('23:59')
   })
 })
@@ -119,7 +119,7 @@ describe('شاشة الإدارة — تعاين ثم ترسل بعد تأكيد
     for (const t of ['<b>يختار الإلغاء:</b>', '<b>يختار الإعادة لاحقا:</b>', '<b>لا يرد حتى المهلة:</b>']) expect(box).toContain(t)
   })
 
-  it('⚠️ المهلة الافتراضية سبعة أيام', () => {
+  it('⚠️ المهلة الافتراضية يومان', () => {
     expect(box).toContain('useState(() => toLocal(defaultSeasonDeadline(new Date())))')
   })
 
