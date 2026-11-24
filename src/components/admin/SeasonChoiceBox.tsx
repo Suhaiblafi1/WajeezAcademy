@@ -140,7 +140,7 @@ export default function SeasonChoiceBox({ onChanged, onFlash }: {
       <div>
         <h2 className="font-black">اسأل المدربين عن موسم شعبهم{data?.source.titleAr ? ` — ${data.source.titleAr}` : ""}</h2>
         <p className="mt-0.5 text-read text-muted-foreground">
-          لكل شعبة لم تبدأ يختار مدربها: الإلغاء، أو إعادة إطلاقها في {data?.choices.map((c) => short(c.optionAr)).join("، أو ") || "موسم قادم"}.
+          لكل شعبة لم تبدأ يختار مدربها: الإلغاء، أو إعادة إطلاقها في المواسم القادمة ويختار موسمها لاحقا.
           تصله رسالة واحدة بكل شعبه.
         </p>
       </div>
@@ -199,7 +199,7 @@ export default function SeasonChoiceBox({ onChanged, onFlash }: {
 
           <Inset as="ul" className="space-y-1 text-read">
             <li><b>يختار الإلغاء:</b> {SEASON_OUTCOMES_AR.cancel}</li>
-            <li><b>يختار الربيع:</b> {SEASON_OUTCOMES_AR.season}</li>
+            <li><b>يختار الإعادة لاحقا:</b> {SEASON_OUTCOMES_AR.later}</li>
             <li><b>لا يرد حتى المهلة:</b> {SEASON_OUTCOMES_AR.silence}</li>
           </Inset>
 

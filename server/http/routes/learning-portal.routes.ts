@@ -1331,12 +1331,13 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/cohort-postpones/:id/choose', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'اختيار موسم لشعبتي — أو إلغاؤها بلا التزام' },
+    schema: { tags: ['trainer-ops'], summary: 'إلغاء شعبتي بلا التزام، أو إعادة إطلاقها في موسم قادم أختاره لاحقا' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.discriminatedUnion('kind', [
       z.object({ kind: z.literal('season'), year: z.number().int().min(2020).max(2100), season: z.enum(TRAINING_SEASON_VALUES) }),
       z.object({ kind: z.literal('cancel') }),
+      z.object({ kind: z.literal('later') }),
     ]).parse(req.body)
     return postpones.choose(req.auth!.userId, id, body)
   })

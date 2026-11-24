@@ -3,7 +3,8 @@
    كتب صاحبُ المنصّة «رسالة الاختيار (مكمّلة للرسالة الأولى)» بنفسه، وطلب: «رتّبها بما يناسب برمجةَ الرسالة وكيف سيرى كلُّ
    واحدٍ الرسالةَ مخصّصةً له ولدوراته». فهي نصُّه، وما بين قوسيه يُملأ لكلّ مدرّب:
    · **[اسم الدورة]** في العنوان والفقرة الأولى — وصاحبُ الشعب العدّة: «شعبك» وقائمتُها، و«اختر لكل شعبة».
-   · **الخياران** بنقاطهما (`SEASON_CANCEL_*` و`seasonRelaunch*`) — والربيعُ وتاريخُه من الموسم المحسوب.
+   · **الخياران** بنقاطهما (`SEASON_CANCEL_*` و`SEASON_RELAUNCH_*`) — والثاني «في المواسم القادمة» يختار موسمَه لاحقا،
+     وأوّلُها وتاريخُه من الموسم المحسوب.
    · **«بالنسبة لطلابك»** لا يُقال إلّا لمن في شعبه مسجَّلون، ويسمّي شعبَهم إن كانت له شعبٌ عدّة.
    · **[التاريخ]** المهلة، و**[الرابط]** صفحةُ شعبه، و**[وسيلة التواصل]** بريدُ الدعم أو الردُّ على هذه الرسالة.
    والتحيّةُ «السلام عليكم ورحمة الله،» كما كتبها، بلا الاسم: الاسمُ في سطرٍ قبلها. وبلا تشكيلٍ إعرابيّ (قرارُ ١١ أكتوبر).
@@ -13,15 +14,16 @@
 import type { MailBlock, MailDoc } from './mail-template'
 import type { SeasonRef } from '../../src/application/terms/season'
 import {
-  SEASON_CANCEL_POINTS_AR, SEASON_CANCEL_TITLE_AR, SEASON_LEARNERS_AR, SEASON_SILENCE_AR,
-  seasonOptionAr, seasonRelaunchPointsAr, seasonRelaunchTitleAr,
+  SEASON_CANCEL_POINTS_AR, SEASON_CANCEL_TITLE_AR, SEASON_LEARNERS_AR, SEASON_RELAUNCH_POINTS_AR, SEASON_SILENCE_AR,
+  seasonRelaunchTitleAr,
 } from '../../src/application/trainer/season-choice'
 
 export interface SeasonChoiceMailInput {
   name: string
   /** شعبُه التي يُسأل عنها — وأوّلُ لقاءٍ لكلٍّ منها إن كان، وكم مسجَّلا فيها */
   cohorts: readonly { title: string; firstAtAr: string | null; enrolled: number }[]
-  choices: readonly SeasonRef[]
+  /** أوّلُ المواسم القادمة — يُذكر في عنوان الخيار الثاني */
+  next: SeasonRef | null
   deadlineAr: string
   /** صفحةُ شعبه في البوّابة — [الرابط] */
   href: string
@@ -35,7 +37,6 @@ export function seasonChoiceMail(m: SeasonChoiceMailInput): { subject: string; d
   const many = m.cohorts.length > 1
   const titles = m.cohorts.map((c) => c.title)
   const subject = many ? `قرارك بشأن شعبك: ${titles.join('، ')}` : `قرارك بشأن شعبتك: ${titles[0] ?? ''}`
-  const spring = m.choices[0] ?? null
   const withLearners = m.cohorts.filter((c) => c.enrolled > 0)
   const blocks: MailBlock[] = [
     { kind: 'p', text: 'السلام عليكم ورحمة الله،' },
@@ -55,12 +56,10 @@ export function seasonChoiceMail(m: SeasonChoiceMailInput): { subject: string; d
     { kind: 'h', text: `1. ${SEASON_CANCEL_TITLE_AR}` },
     { kind: 'list', items: [...SEASON_CANCEL_POINTS_AR] },
   )
-  if (spring) {
-    blocks.push(
-      { kind: 'h', text: `2. ${seasonRelaunchTitleAr(spring)}` },
-      { kind: 'list', items: seasonRelaunchPointsAr(spring) },
-    )
-  }
+  blocks.push(
+    { kind: 'h', text: `2. ${seasonRelaunchTitleAr(m.next)}` },
+    { kind: 'list', items: [...SEASON_RELAUNCH_POINTS_AR] },
+  )
   if (withLearners.length) {
     blocks.push(
       { kind: 'h', text: 'بالنسبة لطلابك' },
@@ -69,11 +68,10 @@ export function seasonChoiceMail(m: SeasonChoiceMailInput): { subject: string; d
         : SEASON_LEARNERS_AR },
     )
   }
-  const word = spring ? '«إلغاء» أو «ربيع»' : '«إلغاء»'
   blocks.push(
     { kind: 'h', text: 'كيف ترد' },
     { kind: 'p', text: many ? `أرسل لنا لكل شعبة كلمة واحدة قبل ${m.deadlineAr}:` : `أرسل لنا كلمة واحدة قبل ${m.deadlineAr}:` },
-    { kind: 'list', items: [word] },
+    { kind: 'list', items: ['«إلغاء» أو «إعادة»'] },
     { kind: 'cta', label: 'أو اختر من صفحتك', href: m.href },
     { kind: 'callout', text: SEASON_SILENCE_AR.replace('قبل هذا التاريخ', `قبل ${m.deadlineAr}`) },
     { kind: 'p', text: `وإن كان عندك أي سؤال أو ملاحظة، فنحن في خدمتك على ${m.supportEmail}، أو بالرد على هذه الرسالة.` },
@@ -84,7 +82,7 @@ export function seasonChoiceMail(m: SeasonChoiceMailInput): { subject: string; d
     subject,
     doc: {
       greetingName: m.name,
-      preheader: `قبل ${m.deadlineAr}: ${spring ? `ألغها، أو أعد إطلاقها في ${seasonOptionAr(spring).split(' — ')[0]}` : 'ألغها'}.`,
+      preheader: `قبل ${m.deadlineAr}: ألغها، أو أعد إطلاقها في المواسم القادمة.`,
       heading: subject,
       blocks,
     },

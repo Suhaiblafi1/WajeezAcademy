@@ -42,11 +42,11 @@ import { renderMail } from './mail-template'
 import { publicSiteUrl } from './site-url'
 import { seasonChoiceMail } from './season-choice-mail'
 import { ACADEMY_EMAILS } from './integrations.service'
-import { latestStartedTerm, monthWithinTerm, plannedMonthOk, termTitleAr, type SeasonRef } from '../../src/application/terms/season'
+import { latestStartedTerm, monthWithinTerm, nextSeason, plannedMonthOk, termTitleAr, type SeasonRef } from '../../src/application/terms/season'
 import { MOVABLE_STATUSES, moveShiftFor } from '../../src/application/trainer/cohort-move'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
 import {
-  SEASON_CANCEL_REASON_AR, SEASON_CHOICE_REASON_AR, SEASON_SILENCE_AR,
+  SEASON_CANCEL_REASON_AR, SEASON_CHOICE_REASON_AR, SEASON_RELAUNCH_REASON_AR, SEASON_SILENCE_AR,
   firstAtIn, readChoices, sameSeason, seasonChoicesAfter, seasonOptionAr, weeksIntoSeason, type OfferKind, type SeasonPick,
 } from '../../src/application/trainer/season-choice'
 
@@ -97,6 +97,8 @@ export interface SeasonCandidate {
 export interface SeasonPreview {
   source: { year: number; season: string; titleAr: string }
   choices: { year: number; season: string; optionAr: string }[]
+  /** أوّلُ المواسم القادمة — يُذكر في الخيار الثاني */
+  next: { year: number; season: string; titleAr: string }
   rows: SeasonCandidate[]
 }
 
@@ -202,6 +204,7 @@ export class CohortPostponeService {
   async seasonPreview(now = new Date(), source?: SeasonRef): Promise<SeasonPreview> {
     const from = source ?? latestStartedTerm(now)
     const choices = seasonChoicesAfter(from)
+    const next = nextSeason(from)
     const rows = await this.notStartedCohorts()
     const moves = new CohortMoveService(this.prisma)
     const out: { row: SeasonCandidate; at: number }[] = []
@@ -225,6 +228,7 @@ export class CohortPostponeService {
     return {
       source: { year: from.year, season: from.season, titleAr: termTitleAr(from.year, from.season) },
       choices: choices.map((t) => ({ year: t.year, season: t.season, optionAr: seasonOptionAr(t) })),
+      next: { year: next.year, season: next.season, titleAr: termTitleAr(next.year, next.season) },
       rows: out.sort((a, b) => a.at - b.at || a.row.title.localeCompare(b.row.title)).map((x) => x.row),
     }
   }
@@ -234,7 +238,6 @@ export class CohortPostponeService {
      ولا يُكتب بها صفٌّ ولا بريد. */
   async seasonMailPreview(input: SeasonSendInput, now = new Date()) {
     const preview = await this.seasonPreview(now)
-    const choices = readChoices(preview.choices)
     const rows = await this.notStartedCohorts({ id: { in: input.cohortIds } })
     const firstTrainer = rows.flatMap((c) => c.trainers).find((t) => t.profile.userId)
     const userId = firstTrainer?.profile.userId ?? null
@@ -244,7 +247,7 @@ export class CohortPostponeService {
       : []
     const mail = seasonChoiceMail({
       name: firstTrainer?.profile.application.fullName ?? 'اسم المدرب',
-      choices, deadlineAr: deadlineAr(input.deadlineAt), href: `${publicSiteUrl()}/trainer/board`, supportEmail: ACADEMY_EMAILS.support,
+      next: readChoices([preview.next])[0] ?? null, deadlineAr: deadlineAr(input.deadlineAt), href: `${publicSiteUrl()}/trainer/board`, supportEmail: ACADEMY_EMAILS.support,
       cohorts: mine.length
         ? mine.map((r) => ({ title: r.title, firstAtAr: r.firstAt ? dayAr(new Date(r.firstAt)) : null, enrolled: r.enrolled }))
         : [{ title: 'اسم الشعبة', firstAtAr: null, enrolled: 0 }],
@@ -307,12 +310,12 @@ export class CohortPostponeService {
       await safeNotify(this.prisma, {
         userId: u.id, channel: 'in_app', audience: 'trainer', templateKey: 'cohort.season_choice.proposed',
         title: many ? `اختر ما يناسب شعبك (${mine.length})` : `اختر ما يناسب شعبة ${titles}`,
-        body: `لم يكتمل عدد المسجلين هذا الموسم في ${titles}. اختر من صفحتك قبل ${when}: ألغها (نوصي به) بلا أي التزام عليك، أو أعد إطلاقها في ${seasonOptionAr(choices[0]).split(' — ')[0]}. ${SEASON_SILENCE_AR}`,
+        body: `لم يكتمل عدد المسجلين هذا الموسم في ${titles}. اختر من صفحتك قبل ${when}: ألغها (نوصي به) بلا أي التزام عليك، أو أعد إطلاقها في المواسم القادمة وتختار موسمها لاحقا. ${SEASON_SILENCE_AR}`,
         data: { offerIds: mine.map((m) => m.offerId), cohortIds: mine.map((m) => m.cohortId) },
       })
       if (!u.email) continue
       const mail = seasonChoiceMail({
-        name, choices, deadlineAr: when, href, supportEmail: ACADEMY_EMAILS.support,
+        name, next: readChoices([preview.next])[0] ?? null, deadlineAr: when, href, supportEmail: ACADEMY_EMAILS.support,
         cohorts: mine.map((m) => ({ title: m.title, firstAtAr: m.firstAt ? dayAr(m.firstAt) : null, enrolled: m.enrolled })),
       })
       await enqueueMail(this.prisma, { to: u.email, subject: mail.subject, ...renderMail(mail.doc), purpose: SEASON_CHOICE_MAIL_PURPOSE, batchId })
@@ -400,6 +403,28 @@ export class CohortPostponeService {
       return { status: 'accepted' as const, season: target, toFirstAt }
     }
 
+    /* ═══ إعادةُ إطلاقها في المواسم القادمة — يختار موسمَها لاحقا (٢٤ نوفمبر ٢٠٢٦) ═══
+       تخرج الشعبةُ من هذا الموسم بالإلغاء نفسِه — فلا تبقى بمواعيدَ لن تُعقد، ويصل متعلّميها الخبر — بسببٍ يقول إنّه اختار
+       الإعادة. والسؤالُ «اختار إعادة إطلاقها» بلا موسم، والإدارةُ تُجرَس لتختار معه موسمَها. ولا يُكتب عليه شيء. */
+    if (pick.kind === 'later') {
+      const later = await this.prisma.cohortPostponeOffer.updateMany({
+        where: { id: offerId, status: 'pending' }, data: { status: 'accepted', decidedBy: userId, decidedAt: now, chosenYear: null, chosenSeason: null },
+      })
+      if (later.count === 0) throw new AuthError('not_pending', 'حسم هذا السؤال من قبل', 409)
+      await recordAudit(this.prisma, {
+        actorId: userId, action: 'cohort.season_choice.choose', entityType: 'cohort', entityId: offer.cohortId,
+        meta: { offerId, choice: 'later', obligationsWaived: true },
+      })
+      await this.stop(offer.cohortId, userId, SEASON_RELAUNCH_REASON_AR, 'اختار المدرب إعادة إطلاقها في موسم قادم')
+      await notifyRole(this.prisma, COHORT_MOVE_STAFF_ROLES, {
+        channel: 'in_app',
+        title: `اختار المدرب إعادة إطلاق «${offer.cohort.title}» في موسم قادم`,
+        body: 'خرجت من هذا الموسم ووصل متعلميها الخبر. تواصل معه لتختارا موسمها.',
+        data: { cohortId: offer.cohortId, offerId },
+      })
+      return { status: 'accepted' as const, season: null, toFirstAt: null }
+    }
+
     const claimed = await this.prisma.cohortPostponeOffer.updateMany({
       where: { id: offerId, status: 'pending' }, data: { status: 'declined', decidedBy: userId, decidedAt: now },
     })
@@ -432,7 +457,8 @@ export class CohortPostponeService {
     return rows.map(({ cohort, ...r }) => ({
       ...r, title: cohort.title,
       chosenAr: r.chosenYear !== null && r.chosenSeason
-        ? readChoices([{ year: r.chosenYear, season: r.chosenSeason }]).map(seasonOptionAr)[0] ?? null : null,
+        ? readChoices([{ year: r.chosenYear, season: r.chosenSeason }]).map(seasonOptionAr)[0] ?? null
+        : r.kind === 'season_choice' && r.status === 'accepted' ? 'إعادة إطلاقها في موسم قادم يختاره لاحقا' : null,
     }))
   }
 

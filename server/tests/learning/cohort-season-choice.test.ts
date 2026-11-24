@@ -1,7 +1,8 @@
 /* اختيارُ الموسم لشعب الموسم الأوّل — على قاعدةٍ حقيقيّة (٢١ نوفمبر ٢٠٢٦).
 
    قرارُ صاحب المنصّة: كلُّ مدرّبٍ له شعبةٌ لم تبدأ تصله رسالةٌ واحدة، ويختار من صفحته: الإلغاءَ بلا التزامٍ (نوصي به) أو
-   إعادةَ إطلاقها في الربيع (أبريل–مايو ٢٠٢٧) — خياران منذ ٢٤ نوفمبر، والرسالةُ نصُّه مرتّبا لكلّ مدرّبٍ بشعبه. ومن لم يرد
+   إعادةَ إطلاقها في المواسم القادمة ويختار موسمَها لاحقا («لا تعطهم الربيعَ فقط») — خياران منذ ٢٤ نوفمبر، والرسالةُ نصُّه
+   مرتّبا لكلّ مدرّبٍ بشعبه. ومن لم يرد
    حتّى المهلة لا يتغيّر شيءٌ في شعبته وتُجرَس الإدارةُ لتتواصل معه («ولن نغيّر شيئا دون موافقتك» — نسخا لـ«b»). وما سُئل
    بثلاثة قبلها (الصيفُ والخريفُ معها) يُختار منه بخياراته المحفوظة.
    ونصُّ الاتّفاقيّة «A»: نُعفيه من التزامات الشعبة ولا نقول إنّ اتّفاقيّته سقطت. فيُحرس:
@@ -28,7 +29,7 @@ import { CohortPostponeService, SEASON_CHOICE_MAIL_PURPOSE } from '../../service
 import { runCohortPostponeExpire } from '../../worker/jobs'
 import { termBounds } from '../../../src/application/terms/season'
 import {
-  SEASON_CANCEL_REASON_AR, SEASON_CANCEL_TITLE_AR, SEASON_LEARNERS_AR, seasonStartAt,
+  SEASON_CANCEL_REASON_AR, SEASON_CANCEL_TITLE_AR, SEASON_LEARNERS_AR, SEASON_RELAUNCH_REASON_AR, seasonStartAt,
 } from '../../../src/application/trainer/season-choice'
 import { ACADEMY_EMAILS } from '../../services/integrations.service'
 import { seasonChoiceMail } from '../../services/season-choice-mail'
@@ -107,16 +108,15 @@ beforeAll(async () => {
 }, 240_000)
 
 describe('① المعاينة', () => {
-  it('⚠️ شعب الموسم الجاري التي لم تبدأ — والربيع 2027 وحده موسما، والخيار الآخر الإلغاء — ولا ترسل شيئا', async () => {
+  it('⚠️ شعب الموسم الجاري التي لم تبدأ — ولا موسم بعينه يعرض الآن، وأول المواسم القادمة الربيع — ولا ترسل شيئا', async () => {
     const p = await svc().seasonPreview(NOW)
     expect(p.source).toMatchObject({ year: 2026, season: 'nov_jan' })
-    expect(p.choices.map((c) => `${c.season}-${c.year}`)).toEqual(['apr_may-2027'])
-    expect(p.choices[0].optionAr).toBe('موسم الربيع — أبريل ومايو 2027')
+    expect(p.choices, 'عرض موسم بعينه').toEqual([])
+    expect(p.next).toMatchObject({ year: 2027, season: 'apr_may' })
     const mine = p.rows.filter((r) => Object.values(ids).includes(r.cohortId)).map((r) => r.cohortId)
     expect(mine.sort()).toEqual(['A1', 'A2', 'B1', 'B2', 'B3'].map((k) => ids[k]).sort())
     const a1 = p.rows.find((r) => r.cohortId === ids.A1)!
     expect(a1.blockedAr).toBeNull()
-    expect(a1.targets[0].firstAt, 'أول لقاء في الربيع').toBe('2027-04-04T16:00:00.000Z')
     expect(await prisma.cohortPostponeOffer.count({ where: { cohortId: { in: Object.values(ids) } } }), 'المعاينة أرسلت').toBe(0)
     expect(await prisma.outboxMail.count({ where: { purpose: SEASON_CHOICE_MAIL_PURPOSE } })).toBe(0)
   })
@@ -145,16 +145,16 @@ describe('② الإرسال — رسالة واحدة لكل مدرب', () => {
         'تبقى حقوقك محفوظة كاملة.',
         'نتواصل معك لاحقا لنقرر معا متى وكيف تعود دورتك.',
         'ميزته أن ما تقدمه بعد ذلك يكون بالصيغة الجديدة: تقديمك أولا بفيديو قصير، وموعد ثابت تختاره، ووصف يوضح ما سيتقنه الطالب.',
-        '2. إعادة إطلاقها في موسم الربيع (من 1 أبريل 2027)',
-        'تبقى دورتك ضمن قائمة الربيع.',
-        'تختار موعدها من المواعيد الثابتة التي سنرسلها لك.',
+        '2. إعادة إطلاقها في المواسم القادمة (أولها الربيع من 1 أبريل 2027)',
+        'تبقى دورتك ضمن قائمة دوراتنا للمواسم القادمة.',
+        'تختار لاحقا الموسم الذي يناسبك، وموعدها من المواعيد الثابتة التي سنرسلها لك.',
+        'لكل مدرب دورة أو دورتان في كل موسم، ولا تتكرر الدورة نفسها مع مدرب آخر.',
         'نطلب منك تسجيل فيديو أو بودكاست قصير، ونراجع معك وصف الدورة.',
-        'قد يتغير موعدها عن الموعد الحالي لتتوافق مع الجدول الجديد.',
         'بالنسبة لطلابك',
         'سنعيد رسوم المسجلين فيها كاملة، ونعتذر لهم بالنيابة عنك.',
         'كيف ترد',
         'أرسل لنا لكل شعبة كلمة واحدة قبل ',
-        '«إلغاء» أو «ربيع»',
+        '«إلغاء» أو «إعادة»',
         'أو اختر من صفحتك',
         'فسنتواصل معك'.replace('فسنتواصل', 'نتواصل') + ' لنتأكد من رغبتك، ولن نغير شيئا دون موافقتك.',
         `فنحن في خدمتك على ${ACADEMY_EMAILS.support}، أو بالرد على هذه الرسالة.`,
@@ -168,7 +168,7 @@ describe('② الإرسال — رسالة واحدة لكل مدرب', () => {
         at = i
       }
       for (const k of mine) expect(m.text, `${t.name}: شعبته ${k}`).toContain(`شعبة ${k} ${STAMP}`)
-      expect(m.text, 'عاد خيار الموسم اللاحق').not.toContain('موسم لاحق')
+      expect(m.text, 'عاد الربيع خيارا وحيدا').not.toContain('قائمة الربيع')
       expect(m.text, 'قيل إن السكوت يلغي').not.toMatch(/تلغى الشعبة|تلغى\./)
       expect(m.text).toContain('/trainer/board')
       expect(m.text, 'لا يقال إن الاتفاقية سقطت').not.toMatch(/باطل|ملغاة|انتهت اتفاقيتك|فسخ/)
@@ -178,7 +178,7 @@ describe('② الإرسال — رسالة واحدة لكل مدرب', () => {
       expect(bells.map((b) => b.channel), `${t.name}: جرس واحد`).toEqual(['in_app'])
       expect(bells[0].body).toContain('ولن نغير شيئا دون موافقتك')
       expect(bells[0].body).toContain('ألغها (نوصي به)')
-      expect(bells[0].body, 'الجرس يذكر موسما لاحقا').not.toContain('موسم لاحق')
+      expect(bells[0].body).toContain('أعد إطلاقها في المواسم القادمة وتختار موسمها لاحقا')
     }
     /* والرسالةُ تعدّ شعبَه كلَّها */
     const a = await prisma.outboxMail.findFirstOrThrow({ where: { purpose: SEASON_CHOICE_MAIL_PURPOSE, to: A.email } })
@@ -218,8 +218,7 @@ describe('② الإرسال — رسالة واحدة لكل مدرب', () => {
     const mine = (await svc().mine(A.userId)).filter((o) => o.kind === 'season_choice')
     expect(mine.map((o) => o.cohortId).sort()).toEqual([ids.A1, ids.A2].sort())
     const a1 = mine.find((o) => o.cohortId === ids.A1)!
-    expect(a1.options.map((o) => `${o.season}-${o.year}`)).toEqual(['apr_may-2027'])
-    expect(a1.options[0].firstAt).toBe('2027-04-04T16:00:00.000Z')
+    expect(a1.options, 'عرض موسما بعينه').toEqual([])
   })
 })
 
@@ -246,14 +245,14 @@ async function landsIn(key: string, before: Date[], year: number, season: Traini
 }
 
 /** سؤالٌ أُرسل بثلاثة خياراتٍ قبل ٢٤ نوفمبر — يبقى بخياراته المحفوظة */
-const askedWithThree = async (key: string) => prisma.cohortPostponeOffer.update({
+const askedWithThree = async (key: string): Promise<unknown> => prisma.cohortPostponeOffer.update({
   where: { id: (await offerOf(key)).id },
   data: { choices: [{ year: 2027, season: 'apr_may' }, { year: 2027, season: 'jul_aug' }, { year: 2027, season: 'oct_nov' }] },
 })
 
 describe('② والرسالة مخصصة لشعبه', () => {
   it('⚠️ «بالنسبة لطلابك» لا تقال لمن لا مسجلين في شعبه — وتسمي شعب المسجلين لصاحب الشعب العدة', () => {
-    const base = { name: 'مدرب', choices: [{ year: 2027, season: 'apr_may' as const }], deadlineAr: 'السبت', href: 'https://x/trainer/board', supportEmail: 'help@x' }
+    const base = { name: 'مدرب', next: { year: 2027, season: 'apr_may' as const }, deadlineAr: 'السبت', href: 'https://x/trainer/board', supportEmail: 'help@x' }
     const none = renderMail(seasonChoiceMail({ ...base, cohorts: [{ title: 'بلا طلاب', firstAtAr: null, enrolled: 0 }] }).doc).text
     expect(none, 'قيل لطلاب لا وجود لهم').not.toContain('بالنسبة لطلابك')
     const mixed = renderMail(seasonChoiceMail({ ...base, cohorts: [
@@ -265,7 +264,8 @@ describe('② والرسالة مخصصة لشعبه', () => {
 })
 
 describe('③ كل موسم يزيحها إلى داخل حدوده ويربطها بفصله', () => {
-  it('⚠️ الربيع — أبريل ومايو 2027', async () => {
+  it('⚠️ الربيع — أبريل ومايو 2027 (سؤال أرسل بمواسم قبل الخيارين)', async () => {
+    await askedWithThree('A1')
     const before = (await sessionsOf('A1')).map((s) => s.startsAt)
     await svc().choose(A.userId, (await offerOf('A1')).id, { kind: 'season', year: 2027, season: 'apr_may' }, NOW)
     await landsIn('A1', before, 2027, 'apr_may')
@@ -273,7 +273,8 @@ describe('③ كل موسم يزيحها إلى داخل حدوده ويربطه
     expect(await prisma.auditEvent.count({ where: { action: 'cohort.season_choice.choose', entityId: ids.A1 } })).toBe(1)
   })
 
-  it('⚠️ وسؤال الخيارين يرد الصيف — ليس في قائمته', async () => {
+  it('⚠️ وسؤال الخيارين يرد أي موسم بعينه — يختار موسمه لاحقا', async () => {
+    await expect(svc().choose(A.userId, (await offerOf('A2')).id, { kind: 'season', year: 2027, season: 'apr_may' }, NOW)).rejects.toThrow(/من القائمة/)
     await expect(svc().choose(A.userId, (await offerOf('A2')).id, { kind: 'season', year: 2027, season: 'jul_aug' }, NOW)).rejects.toThrow(/من القائمة/)
     expect((await offerOf('A2')).status).toBe('pending')
   })
@@ -329,6 +330,32 @@ describe('④ الإلغاء باختياره — بلا التزام ولا ا�
     expect(await appStatus(), 'تغير حال ملفه').toBe(statusBefore)
     expect(await prisma.userRole.findMany({ where: { userId: B.userId }, select: { roleId: true } })).toEqual(rolesBefore)
     expect(await prisma.cohortTrainer.count({ where: { cohortId: ids.B2, profileId: B.profileId } })).toBe(1)
+  })
+})
+
+describe('④ب إعادة إطلاقها في المواسم القادمة — يختار موسمها لاحقا', () => {
+  it('⚠️ تخرج من هذا الموسم بسبب يقول إنه اختار الإعادة، ويصل متعلميها الخبر، والسؤال «اختار إعادة إطلاقها» بلا موسم، وتجرس الإدارة', async () => {
+    const L = await trainer('مدرب الإعادة')
+    await cohortAt('L1', L, new Date('2026-12-12T16:00:00Z'))
+    const manager = await auth.register(`sc-later-${STAMP}@test.local`, PASS, 'academic_manager')
+    await auth.setRoles(manager.userId, ['academic_manager'])
+    expect((await svc().seasonSend(ACTOR, { cohortIds: [ids.L1], deadlineAt: new Date(DEADLINE.getTime() + 5 * DAY) }, NOW)).sent).toBe(1)
+    const before = (await sessionsOf('L1'))[0].startsAt
+
+    const r = await svc().choose(L.userId, (await offerOf('L1')).id, { kind: 'later' }, NOW)
+    expect(r).toMatchObject({ status: 'accepted', season: null })
+    expect((await prisma.cohort.findUniqueOrThrow({ where: { id: ids.L1 } })).status).toBe('cancelled')
+    expect(await offerOf('L1')).toMatchObject({ status: 'accepted', chosenYear: null, chosenSeason: null })
+    const reason = await prisma.auditEvent.findFirstOrThrow({ where: { action: 'cohort.cancel.reason', entityId: ids.L1 } })
+    expect((reason.meta as { reasonAr?: string }).reasonAr).toBe(SEASON_RELAUNCH_REASON_AR)
+    const choice = await prisma.auditEvent.findFirstOrThrow({ where: { action: 'cohort.season_choice.choose', entityId: ids.L1 } })
+    expect(choice.meta).toMatchObject({ choice: 'later', obligationsWaived: true })
+    expect(await prisma.notification.count({ where: { userId: learners.L1, channel: 'in_app', templateKey: 'cohort.cancelled' } })).toBe(1)
+    expect((await sessionsOf('L1'))[0].startsAt.getTime(), 'أزيحت إلى موسم').toBe(before.getTime())
+    expect(await prisma.notification.count({ where: { userId: manager.userId, title: { contains: `إعادة إطلاق «شعبة L1 ${STAMP}»` } } })).toBe(1)
+    const listed = (await svc().list('season_choice')).find((o) => o.cohortId === ids.L1)!
+    expect(listed.chosenAr).toBe('إعادة إطلاقها في موسم قادم يختاره لاحقا')
+    await expect(svc().choose(L.userId, (await offerOf('L1')).id, { kind: 'cancel' }, NOW)).rejects.toThrow(/حسم/)
   })
 })
 
@@ -394,7 +421,7 @@ describe('⑥ من يختار ومن يرسل', () => {
     expect(pv.statusCode, pv.body).toBe(200)
     const out = pv.json() as { subject: string; html: string }
     expect(out.subject).toBe(`قرارك بشأن شعبتك: شعبة S1 ${STAMP}`)
-    for (const t of ['السلام عليكم ورحمة الله', `شعبة S1 ${STAMP}`, 'مدرب الشعبة الواحدة', SEASON_CANCEL_TITLE_AR, 'موسم الربيع']) expect(out.html).toContain(t)
+    for (const t of ['السلام عليكم ورحمة الله', `شعبة S1 ${STAMP}`, 'مدرب الشعبة الواحدة', SEASON_CANCEL_TITLE_AR, 'المواسم القادمة']) expect(out.html).toContain(t)
     expect(await prisma.outboxMail.count({ where: { purpose: SEASON_CHOICE_MAIL_PURPOSE } }), 'المعاينة أرسلت بريدا').toBe(mailsBefore)
     expect(await prisma.cohortPostponeOffer.count(), 'المعاينة كتبت صفا').toBe(offersBefore)
     expect((await app.inject({
