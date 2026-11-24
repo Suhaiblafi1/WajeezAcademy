@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  BULK_TYPE_COUNT_OVER, DEFAULT_STAGE_CAPS, STAGED_DEFAULT_OVER, confirmLinesAr, etaAr, etaMinutes, firstNameOf, greetingAr,
+  BULK_TYPE_COUNT_OVER, DEFAULT_STAGE_CAPS, campaignDeletable, STAGED_DEFAULT_OVER, confirmLinesAr, etaAr, etaMinutes, firstNameOf, greetingAr,
   needsTypedCount, parseAudience, stageLinesAr, stagePlan, stagedByDefault, typedCountMatches,
 } from '@/application/marketing/bulk-mail'
 import { allSections } from '@/pages/admin/nav-map'
@@ -141,5 +141,19 @@ describe('تخطي من في المنصة ومن في قائمة أخرى', () =
     expect(page).toMatch(/skipPlatform: check\.uploadedList \? skipPlatform : false, skipOtherLists: check\.uploadedList \? skipOtherLists : false/)
     expect(page).toMatch(/checkUrl\(id, \{ d: SKIP_RECENT_DEFAULT, p: true, l: true \}\)/)
     expect(page).toMatch(/&skipPlatform=\$\{o\.p \? 1 : 0\}&skipOtherLists=\$\{o\.l \? 1 : 0\}/)
+  })
+})
+
+/* حذفُ حملةٍ لم تصل أحدا (٢٤ نوفمبر ٢٠٢٦): «إن فشلت الحملةُ فأعطني خيارَ حذفها». */
+describe('حذف حملة لم تصل أحدا', () => {
+  it('⚠️ المسودة وما لم يصل منه شيء يحذف — وما وصل منه واحد لا، وما يرسل بلا تعذر لا', () => {
+    expect(campaignDeletable({ status: 'draft', sent: 0, failed: 0 })).toBe(true)
+    expect(campaignDeletable({ status: 'sent', sent: 0, failed: 80 })).toBe(true)
+    expect(campaignDeletable({ status: 'stopped', sent: 0, failed: 0 })).toBe(true)
+    expect(campaignDeletable({ status: 'sending', sent: 0, failed: 2000 })).toBe(true)
+    expect(campaignDeletable({ status: 'sent', sent: 1, failed: 79 })).toBe(false)
+    expect(campaignDeletable({ status: 'sending', sent: 0, failed: 0 })).toBe(false)
+    expect(page).toMatch(/\{campaignDeletable\(\{ status: c\.status, sent: p\.sent, failed: p\.failed \}\) && \(/)
+    expect(page).toMatch(/if \(c\.status !== "draft"\) \{ setDeleting\(c\); return; \}/)
   })
 })

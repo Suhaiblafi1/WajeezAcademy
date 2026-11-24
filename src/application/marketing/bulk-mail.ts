@@ -122,6 +122,15 @@ export function confirmLinesAr(c: SendCheck): string[] {
   return lines
 }
 
+/* ═══ حذفُ حملةٍ لم تصل أحدا (٢٤ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «إن فشلت الحملةُ فأعطني خيارَ حذفها». فالحذفُ لما لم يصل أحدا: المسودّة، وما انتهى أو أُوقف ولم يصل منه
+   شيء، وما يُرسَل ولم يصل منه شيءٌ وقد تعذّر منه — ويُلغى معه ما بقي في الطابور من مراحله. وما وصل منه واحدٌ يبقى أثرُه. */
+export function campaignDeletable(c: { status: string; sent: number; failed: number }): boolean {
+  if (c.status === 'draft') return true
+  if (c.sent > 0) return false
+  return c.status === 'sending' ? c.failed > 0 : true
+}
+
 /** لماذا يُكتب العدد — يُقال ولا يُفرض بلا سبب */
 export const TYPE_COUNT_WHY_AR = 'القائمة كبيرة. اكتب العدد لتتأكد أنها القائمة الصحيحة، فالرسالة لا ترجع بعد أن تصل.'
 

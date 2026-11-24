@@ -95,8 +95,8 @@ export function registerAdminBulkMailRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req) => updateCampaign(prisma, idParam.parse(req.params).id, draft.parse(req.body ?? {})))
 
   app.delete('/api/admin/bulk-mail/campaigns/:id', {
-    preHandler: can, schema: { tags, summary: 'حذف مسودة لم ترسل' },
-  }, async (req) => deleteCampaign(prisma, idParam.parse(req.params).id))
+    preHandler: can, schema: { tags, summary: 'حذف مسودة، أو حملة لم تصل أحدا' },
+  }, async (req) => deleteCampaign(prisma, idParam.parse(req.params).id, req.auth!.userId, req.ip))
 
   app.post('/api/admin/bulk-mail/campaigns/:id/duplicate', {
     preHandler: can, schema: { tags, summary: 'نسخ حملة مسودة جديدة لقائمة أخرى' },

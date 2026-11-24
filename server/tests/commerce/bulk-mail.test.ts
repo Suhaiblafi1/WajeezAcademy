@@ -530,3 +530,46 @@ describe('⑫ تخطي من في المنصة ومن في قائمة أخرى', 
     expect((await queuedOf((res.json() as { batchId: string }).batchId)).map((r) => r.to)).toEqual([mail('pl4'), mail('pl5')])
   })
 })
+
+/* ═══ ⑬ حذفُ حملةٍ لم تصل أحدا (٢٤ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «إن فشلت الحملةُ فأعطني خيارَ حذفها». فما تعذّر كلُّه يُحذف ويُلغى ما بقي من مراحله — فلا تخرج مرحلةٌ
+   باقيةٌ بمُرسِلٍ قديم بعد أن يُرسَل نسخُها. وما وصل منه واحدٌ يبقى، وما يُرسَل ولم يتعذّر منه شيءٌ يُوقَف أوّلا. */
+describe('⑬ حذف حملة لم تصل أحدا', () => {
+  it('⚠️ حملة تعذرت كلها تحذف بمراحلها الباقية ويكتب أثرها — وحملة وصل منها واحد لا تحذف', async () => {
+    const listId = await upload(csv(`email\n${mail('d1')}\n${mail('d2')}\n${mail('d3')}\n`), 'تعذرت')
+    const id = await campaign(`list:${listId}`)
+    const { batchId } = await sendCampaign(prisma, id, 3, bossId, undefined, { stages: [1] })
+    await prisma.outboxMail.updateMany({ where: { batchId, notBefore: null }, data: { status: 'failed', attempts: 3, lastError: 'نطاق المرسل غير موثق في Resend' } })
+    expect(await prisma.outboxMail.count({ where: { batchId, status: 'queued' } }), 'لا مرحلة باقية').toBe(2)
+
+    const res = await http('DELETE', `/api/admin/bulk-mail/campaigns/${id}`)
+    expect(res.statusCode, res.body).toBe(200)
+    expect(await prisma.mailCampaign.findUnique({ where: { id } }), 'بقيت الحملة').toBeNull()
+    expect(await prisma.outboxMail.count({ where: { batchId } }), 'بقيت مراحلها في الطابور').toBe(0)
+    const audit = await prisma.auditEvent.findFirstOrThrow({ where: { action: 'bulk_mail.delete', entityId: id } })
+    expect(audit.actorId).toBe(bossId)
+
+    const listB = await upload(csv(`email\n${mail('d4')}\n${mail('d5')}\n`), 'وصلت')
+    const reached = await campaign(`list:${listB}`)
+    const b = await sendCampaign(prisma, reached, 2, bossId)
+    await prisma.outboxMail.updateMany({ where: { batchId: b.batchId, to: mail('d4') }, data: { status: 'sent', sentAt: new Date() } })
+    await prisma.outboxMail.updateMany({ where: { batchId: b.batchId, to: mail('d5') }, data: { status: 'failed', attempts: 3 } })
+    expect((await http('DELETE', `/api/admin/bulk-mail/campaigns/${reached}`)).statusCode, 'حذفت حملة وصلت').toBe(409)
+    expect(await prisma.mailCampaign.findUnique({ where: { id: reached } })).not.toBeNull()
+
+    /* وحملةٌ قديمةٌ قُلّمت صفوفُ طابورها بعد أسبوعين — رقمُها المحفوظُ يقول إنّها وصلت */
+    await prisma.outboxMail.deleteMany({ where: { batchId: b.batchId } })
+    await prisma.mailCampaign.update({ where: { id: reached }, data: { status: 'sent', sentCount: 1, failedCount: 1 } })
+    expect((await http('DELETE', `/api/admin/bulk-mail/campaigns/${reached}`)).statusCode, 'حذفت حملة قلم طابورها').toBe(409)
+  })
+
+  it('⚠️ وحملة ترسل ولم يتعذر منها شيء لا تحذف — توقف أولا', async () => {
+    const listId = await upload(csv(`email\n${mail('d6')}\n`), 'ترسل')
+    const id = await campaign(`list:${listId}`)
+    await sendCampaign(prisma, id, 1, bossId)
+    const res = await http('DELETE', `/api/admin/bulk-mail/campaigns/${id}`)
+    expect(res.statusCode).toBe(409)
+    expect((res.json() as { error: { message_ar: string } }).error.message_ar).toContain('أوقفها أولا')
+    expect(await prisma.outboxMail.count({ where: { to: mail('d6'), status: 'queued' } }), 'ألغيت رسالة تنتظر').toBe(1)
+  })
+})

@@ -23,7 +23,7 @@ import {
   BULK_BODY_MAX, BULK_BUTTON_LABEL_MAX, BULK_LIST_NAME_MAX, BULK_SUBJECT_MAX, CAMPAIGN_STATUS_AR, DEFAULT_STAGE_CAPS, TYPE_COUNT_WHY_AR,
   confirmLinesAr, etaAr, needsTypedCount, peopleAr, senderAr, stageLinesAr, stagePlan, stagedByDefault, typedCountMatches,
   SKIP_RECENT_DAYS, SKIP_RECENT_DEFAULT, skipRecentAr, type SkipRecentDays,
-  type CampaignStatus, type SendCheck,
+  type CampaignStatus, type SendCheck, campaignDeletable,
 } from "@/application/marketing/bulk-mail";
 
 /* ─────────── ما يأتي من الخادم ─────────── */
@@ -93,6 +93,7 @@ function Campaigns({ onOpen }: { onOpen: (id: string) => void }) {
   const [data, setData] = useState<{ mailOn: boolean; campaigns: Campaign[] } | null>(null);
   const [busy, setBusy] = useState("");
   const [stopping, setStopping] = useState<Campaign | null>(null);
+  const [deleting, setDeleting] = useState<Campaign | null>(null);
   const load = useCallback(() => apiGet<{ mailOn: boolean; campaigns: Campaign[] }>("/api/admin/bulk-mail/campaigns").then(setData).catch(() => setData(null)), []);
   useEffect(() => { void load(); }, [load]);
   /* ما دامت حملةٌ تُرسل تُقرأ أرقامُها كلَّ خمس ثوانٍ */
@@ -114,6 +115,8 @@ function Campaigns({ onOpen }: { onOpen: (id: string) => void }) {
     catch (e) { toastError(err(e, "تعذر النسخ")); setBusy(""); }
   };
   const remove = async (c: Campaign) => {
+    /* ما أُرسل ولم يصل يُسأل قبل حذفه — والمسودّةُ تُحذف بلا سؤال كما كانت */
+    if (c.status !== "draft") { setDeleting(c); return; }
     setBusy(c.id);
     try { await apiDelete(`/api/admin/bulk-mail/campaigns/${c.id}`); await load(); }
     catch (e) { toastError(err(e, "تعذر الحذف")); }
@@ -136,6 +139,7 @@ function Campaigns({ onOpen }: { onOpen: (id: string) => void }) {
         </div>
       )}
       {stopping && <StopDialog c={stopping} onClose={() => setStopping(null)} onDone={() => { setStopping(null); void load(); }} />}
+      {deleting && <DeleteDialog c={deleting} onClose={() => setDeleting(null)} onDone={() => { setDeleting(null); void load(); }} />}
     </>
   );
 }
@@ -242,9 +246,44 @@ function CampaignCard({ c, busy, onOpen, onDuplicate, onDelete, onStop }: {
         {c.status === "draft" && <Button icon={Pencil} disabled={busy} onClick={onOpen}>افتح</Button>}
         {c.status === "sending" && <Button tone="danger" icon={Square} disabled={busy} onClick={onStop}>أوقف</Button>}
         <Button icon={Copy} loading={busy} onClick={onDuplicate}>انسخها</Button>
-        {c.status === "draft" && <Button tone="ghost" icon={Trash2} disabled={busy} onClick={onDelete}>احذف</Button>}
+        {campaignDeletable({ status: c.status, sent: p.sent, failed: p.failed }) && (
+          <Button tone="ghost" icon={Trash2} disabled={busy} onClick={onDelete}>احذف</Button>
+        )}
       </div>
     </Card>
+  );
+}
+
+/** حذفُ حملةٍ لم تصل أحدا (٢٤ نوفمبر ٢٠٢٦) — ويُلغى معها ما بقي من مراحلها. والعلّةُ عند `campaignDeletable` */
+function DeleteDialog({ c, onClose, onDone }: { c: Campaign; onClose: () => void; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await apiDelete(`/api/admin/bulk-mail/campaigns/${c.id}`);
+      toast("حذفت الحملة");
+      onDone();
+    } catch (e) { toastError(err(e, "تعذر الحذف")); setBusy(false); }
+  };
+  return (
+    <Modal onClose={onClose} label="أتحذف الحملة؟" panelClassName="w-full max-w-lg">
+      <Inset dir="rtl" tone="solid" className="text-foreground sm:p-6">
+        <h2 className="text-sm font-black">أتحذف «{c.subject}»؟</h2>
+        <p className="mt-2 text-read text-muted-foreground">لم تصل لأحد. تعذر {c.progress.failed}.</p>
+        <div className="mt-4 grid gap-3">
+          <div>
+            <Button tone="danger" loading={busy} onClick={() => void remove()}>احذفها</Button>
+            <p className="mt-1 text-read text-muted-foreground">
+              {c.status === "sending" && c.progress.waiting > 0 ? `ويلغى ما بقي منها (${c.progress.waiting}). ` : ""}تختفي من القائمة.
+            </p>
+          </div>
+          <div>
+            <Button tone="secondary" disabled={busy} onClick={onClose}>أبقها</Button>
+            <p className="mt-1 text-read text-muted-foreground">تبقى كما هي، وتقدر تنسخها لترسلها من جديد.</p>
+          </div>
+        </div>
+      </Inset>
+    </Modal>
   );
 }
 
