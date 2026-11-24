@@ -49,6 +49,9 @@ import {
   firstAtIn, readChoices, sameSeason, seasonChoicesAfter, seasonOptionAr, weeksIntoSeason, type OfferKind, type SeasonPick,
 } from '../../src/application/trainer/season-choice'
 
+/** ما يُرسل في سؤال الموسم — والعنوانُ والنصُّ ما كتبه صاحبُ المنصّة، وبلاهما الافتراضيّ */
+export interface SeasonSendInput { cohortIds: string[]; deadlineAt: Date; subject?: string | null; introAr?: string | null }
+
 const DAY_MS = 86_400_000
 
 const dayAr = (d: Date) => fmtDateWith(d, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: ACADEMY_ZONE })
@@ -225,10 +228,34 @@ export class CohortPostponeService {
     }
   }
 
+  /* ═══ معاينةُ الرسالة قبل إرسالها (٢٤ نوفمبر ٢٠٢٦) ═══
+     «اسمح لي أن أعدّلها قبل إرسالها»: يرى صاحبُ المنصّة ما يصل أوّلَ مدرّبٍ في اختياره بنصّه هو — باسمه وشعبه
+     والخيارين والمهلة — قبل أن يُرسل شيء. ولا يُكتب بها صفٌّ ولا بريد. */
+  async seasonMailPreview(input: SeasonSendInput, now = new Date()) {
+    const preview = await this.seasonPreview(now)
+    const choices = readChoices(preview.choices)
+    const rows = await this.notStartedCohorts({ id: { in: input.cohortIds } })
+    const firstTrainer = rows.flatMap((c) => c.trainers).find((t) => t.profile.userId)
+    const userId = firstTrainer?.profile.userId ?? null
+    const mine = userId
+      ? preview.rows.filter((r) => input.cohortIds.includes(r.cohortId)
+        && rows.find((c) => c.id === r.cohortId)?.trainers.some((t) => t.profile.userId === userId))
+      : []
+    const mail = seasonChoiceMail({
+      name: firstTrainer?.profile.application.fullName ?? 'اسم المدرب',
+      choices, deadlineAr: deadlineAr(input.deadlineAt), href: `${publicSiteUrl()}/trainer/board`,
+      subject: input.subject, introAr: input.introAr,
+      cohorts: mine.length
+        ? mine.map((r) => ({ title: r.title, firstAtAr: r.firstAt ? dayAr(new Date(r.firstAt)) : null }))
+        : [{ title: 'اسم الشعبة', firstAtAr: null }],
+    })
+    return { subject: mail.subject, html: renderMail(mail.doc).html }
+  }
+
   /* ═══ اختيارُ الموسم — الإرسال ═══
      صفٌّ لكلّ شعبةٍ اختيرت، ثمّ **رسالةٌ واحدةٌ لكلّ مدرّب** تعدّ ما أُرسل له في هذه الدفعة: بريدٌ في الطابور (`enqueueMail`)
      وجرس. وما لا يُرسل يُقال لماذا. والإعادةُ لا تكرّر: شعبةٌ لها سؤالٌ ينتظر تُتخطّى، ومن لم يُكتب له صفٌّ جديدٌ لا يصله شيء. */
-  async seasonSend(actorId: string, input: { cohortIds: string[]; deadlineAt: Date }, now = new Date()) {
+  async seasonSend(actorId: string, input: SeasonSendInput, now = new Date()) {
     if (input.deadlineAt.getTime() <= now.getTime()) throw new AuthError('bad_deadline', 'المهلة مضت — اختر موعدا قادما')
     const preview = await this.seasonPreview(now)
     const choices = readChoices(preview.choices)
@@ -280,12 +307,12 @@ export class CohortPostponeService {
       await safeNotify(this.prisma, {
         userId: u.id, channel: 'in_app', audience: 'trainer', templateKey: 'cohort.season_choice.proposed',
         title: many ? `اختر ما يناسب شعبك (${mine.length})` : `اختر ما يناسب شعبة ${titles}`,
-        body: `لم يكتمل عدد المسجلين هذا الموسم في ${titles}. اختر من صفحتك قبل ${when}: أجلها إلى ${seasonOptionAr(choices[0])}، أو إلى موسم لاحق، أو ألغها بلا أي التزام عليك. ${DEFAULT_CANCEL_AR}`,
+        body: `لم يكتمل عدد المسجلين هذا الموسم في ${titles}. اختر من صفحتك قبل ${when}: أجلها إلى ${seasonOptionAr(choices[0])}${choices.length > 1 ? '، أو إلى موسم لاحق' : ''}، أو ألغها بلا أي التزام عليك. ${DEFAULT_CANCEL_AR}`,
         data: { offerIds: mine.map((m) => m.offerId), cohortIds: mine.map((m) => m.cohortId) },
       })
       if (!u.email) continue
       const mail = seasonChoiceMail({
-        name, choices, deadlineAr: when, href,
+        name, choices, deadlineAr: when, href, subject: input.subject, introAr: input.introAr,
         cohorts: mine.map((m) => ({ title: m.title, firstAtAr: m.firstAt ? dayAr(m.firstAt) : null })),
       })
       await enqueueMail(this.prisma, { to: u.email, subject: mail.subject, ...renderMail(mail.doc), purpose: SEASON_CHOICE_MAIL_PURPOSE, batchId })
@@ -294,7 +321,10 @@ export class CohortPostponeService {
     if (sent.length) {
       await recordAudit(this.prisma, {
         actorId, action: 'cohort.season_choice.send', entityType: 'cohort', entityId: 'batch',
-        meta: { batchId, offers: sent.length, trainers: users.length, emailed, deadlineAt: input.deadlineAt.toISOString() },
+        meta: {
+          batchId, offers: sent.length, trainers: users.length, emailed, deadlineAt: input.deadlineAt.toISOString(),
+          subject: input.subject?.trim() || null, introEdited: Boolean(input.introAr?.trim()),
+        },
       })
     }
     return { sent: sent.length, trainers: users.length, emailed, skipped }

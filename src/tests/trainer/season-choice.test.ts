@@ -1,7 +1,7 @@
 /* اختيارُ الموسم لشعب الموسم الأوّل — الحسابُ والشاشتان (٢١ نوفمبر ٢٠٢٦).
 
-   قرارُ صاحب المنصّة: يختار المدرّبُ من صفحته الربيعَ أو موسما لاحقا أو الإلغاء، ومن لم يختر حتّى المهلة تُلغى
-   شعبتُه («b»). والحسابُ في `season-choice.ts`، والأثرُ يحرسه `server/tests/learning/cohort-season-choice.test.ts`.
+   قرارُ صاحب المنصّة: يختار المدرّبُ من صفحته الربيعَ أو الإلغاء — خياران منذ ٢٤ نوفمبر («خيارين بسيطين»، وكانت ثلاثة
+   بموسمٍ لاحق) — ومن لم يختر حتّى المهلة تُلغى شعبتُه («b»، ثمّ «B»). والرسالةُ يكتبها هو ويعاينها قبل الإرسال. والحسابُ في `season-choice.ts`، والأثرُ يحرسه `server/tests/learning/cohort-season-choice.test.ts`.
    وهنا: المواسمُ الثلاثةُ محسوبةً، وكلُّ يومٍ من الموسم الأوّل يقع في الأسبوع الأوّل من كلٍّ منها، وبطاقةُ المدرّب
    بخياراتها الثلاثة ومهلتها وعاقبة السكوت، وتأكيدُ الإدارة قبل الإرسال، ونصوصٌ بلا تشكيل. والفحصُ على الشيفرة
    بلا تعليقاتها. */
@@ -13,7 +13,8 @@ import ts from 'typescript'
 import { CASE_MARKS } from '@/application/text/plain-ar'
 import { termBounds } from '@/application/terms/season'
 import {
-  CANCEL_OPTION_AR, DEFAULT_CANCEL_AR, NO_OBLIGATION_AR, defaultSeasonDeadline, firstAtIn, seasonChoicesAfter,
+  CANCEL_OPTION_AR, DEFAULT_CANCEL_AR, NO_OBLIGATION_AR, SEASON_CHOICE_COUNT, SEASON_CHOICE_DEFAULT_INTRO_AR,
+  SEASON_CHOICE_DEFAULT_SUBJECT_AR, defaultSeasonDeadline, firstAtIn, seasonChoicesAfter,
   seasonMonthsAr, seasonOptionAr, seasonPickConsequenceAr, seasonSendConfirmAr, seasonStartAt, weeksIntoSeason,
 } from '@/application/trainer/season-choice'
 import { zonedClock, zonedDay } from '@/application/trainer/cohort-period'
@@ -23,9 +24,12 @@ const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const DAY = 86_400_000
 const WEEK = 7 * DAY
 
-describe('المواسم الثلاثة — محسوبة من فصل الشعبة', () => {
-  it('⚠️ بعد شتاء 2026/2027: الربيع ثم الصيف ثم الخريف 2027 — كما قرر صاحب المنصة', () => {
-    expect(seasonChoicesAfter({ year: 2026, season: 'nov_jan' })).toEqual([
+describe('المواسم — محسوبة من فصل الشعبة', () => {
+  it('⚠️ بعد شتاء 2026/2027: الربيع وحده يعرض — خياران: الربيع أو الإلغاء', () => {
+    expect(SEASON_CHOICE_COUNT).toBe(1)
+    expect(seasonChoicesAfter({ year: 2026, season: 'nov_jan' })).toEqual([{ year: 2027, season: 'apr_may' }])
+    /* والحسابُ نفسُه لما بعده — لأسئلةٍ أُرسلت بثلاثة قبل الخيارين */
+    expect(seasonChoicesAfter({ year: 2026, season: 'nov_jan' }, 3)).toEqual([
       { year: 2027, season: 'apr_may' }, { year: 2027, season: 'jul_aug' }, { year: 2027, season: 'oct_nov' },
     ])
     expect(seasonOptionAr({ year: 2027, season: 'apr_may' })).toBe('موسم الربيع — أبريل ومايو 2027')
@@ -33,7 +37,7 @@ describe('المواسم الثلاثة — محسوبة من فصل الشعب�
   })
 
   it('⚠️ كل يوم من الموسم الأول يقع في الأسبوع الأول من كل موسم يختاره — بيومه وساعته، وأسبوع أقل يبقيه قبله', () => {
-    const targets = seasonChoicesAfter({ year: 2026, season: 'nov_jan' })
+    const targets = seasonChoicesAfter({ year: 2026, season: 'nov_jan' }, 3)
     for (let t = Date.UTC(2026, 10, 1, 16); t <= Date.UTC(2027, 0, 31, 16); t += DAY) {
       const at = new Date(t)
       for (const s of targets) {
@@ -59,14 +63,15 @@ describe('المواسم الثلاثة — محسوبة من فصل الشعب�
   })
 })
 
-describe('بطاقة المدرب — ثلاثة خيارات، والمهلة، وما يقع إن لم يختر', () => {
+describe('بطاقة المدرب — الخياران، والمهلة، وما يقع إن لم يختر', () => {
   const card = code('src/components/trainer/SeasonChoiceCard.tsx')
   const cards = code('src/components/trainer/PostponeOfferCards.tsx')
 
-  it('⚠️ الخيارات الثلاثة بأرقامها: الربيع، وموسم لاحق، والإلغاء', () => {
+  it('⚠️ الخيارات بأرقامها: الربيع ثم الإلغاء ثانيا — وما سئل بثلاثة يبقى بموسمه اللاحق والإلغاء ثالثا', () => {
     expect(card).toMatch(/<p className="font-bold">1\. أجلها إلى \{first\.optionAr\}<\/p>/)
-    expect(card).toMatch(/<p className="font-bold">2\. أجلها إلى موسم لاحق<\/p>[\s\S]*?\{later\.map\(\(o\) =>/)
-    expect(card).toMatch(/<p className="font-bold">3\. \{CANCEL_OPTION_AR\}<\/p>/)
+    expect(card).toMatch(/\{later\.length > 0 && \([\s\S]*?<p className="font-bold">2\. أجلها إلى موسم لاحق<\/p>/)
+    expect(card).toContain('const cancelNo = (first ? 1 : 0) + (later.length > 0 ? 1 : 0) + 1;')
+    expect(card).toMatch(/<p className="font-bold">\{cancelNo\}\. \{CANCEL_OPTION_AR\}<\/p>/)
     expect(CANCEL_OPTION_AR).toBe('ألغها — وتبقى في فريق مدربي وجيز، وتفتح شعبة متى أردت.')
     expect(card).toContain('onClick={() => ask({ kind: "cancel" })}>ألغها</Button>')
   })
@@ -112,6 +117,20 @@ describe('شاشة الإدارة — تعاين ثم ترسل بعد تأكيد
 
   it('⚠️ المهلة الافتراضية سبعة أيام', () => {
     expect(box).toContain('useState(() => toLocal(defaultSeasonDeadline(new Date())))')
+  })
+
+  it('⚠️ والرسالة يكتبها هو: العنوان والنص يبدآن بالافتراضي، ويعاينها، ويرسلان كما كتبهما', () => {
+    expect(box).toContain('useState(SEASON_CHOICE_DEFAULT_SUBJECT_AR)')
+    expect(box).toContain('useState(SEASON_CHOICE_DEFAULT_INTRO_AR)')
+    expect(box).toMatch(/<textarea value=\{intro\}[\s\S]*?onChange=\{\(e\) => \{ setIntro\(e\.target\.value\)/)
+    expect(box).toContain('subject: subject.trim(), introAr: intro.trim()')
+    expect(box).toContain('apiPost<{ subject: string; html: string }>("/api/admin/cohort-season-choices/mail-preview", mailBody())')
+    expect(box).toMatch(/"\/api\/admin\/cohort-season-choices",\s*mailBody\(\),/)
+    /* وعنوانٌ أو نصٌّ فارغٌ لا يُرسل */
+    expect(box).toContain('disabled={chosen.length === 0 || Boolean(problem) || Boolean(textProblem) || busy}')
+    expect(SEASON_CHOICE_DEFAULT_SUBJECT_AR).toBe('شعبتك وموسم الربيع 2027')
+    expect(SEASON_CHOICE_DEFAULT_INTRO_AR.split('\n\n')).toHaveLength(3)
+    expect(SEASON_CHOICE_DEFAULT_INTRO_AR).not.toContain('عرضك')
   })
 })
 

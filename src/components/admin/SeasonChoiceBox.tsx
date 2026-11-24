@@ -5,7 +5,11 @@
    افتراضا)، وما يقع بكلّ خيارٍ وبالسكوت، ثمّ تأكيدٌ يقول من يصله وما يقع إن لم يختر — والإرسالُ قرارُه هو.
 
    والمسوّدةُ تُوسَم ولا تُختار سلفا، كما في «أجّل شعب الشهر» (`prePicked`، قرارُه ٢٤ أكتوبر ٢٠٢٦) — و«اختر الكل»
-   يضمّها بضغطة إن أراد أن يُسأل كلُّ مدرّبٍ له شعبةٌ لم تبدأ. */
+   يضمّها بضغطة إن أراد أن يُسأل كلُّ مدرّبٍ له شعبةٌ لم تبدأ.
+
+   ═══ والرسالةُ يكتبها هو، ويعاينها قبل الإرسال (٢٤ نوفمبر ٢٠٢٦) ═══
+   «اسمح لي أن أعدّلها قبل إرسالها»: العنوانُ والنصُّ يبدآن بالافتراضيّ ويغيّرهما، و«عاين الرسالة» يريه ما يصل أوّلَ مدرّبٍ
+   في اختياره. والشعبُ والخياران والمهلةُ والزرُّ تُضاف وحدَها (`season-choice-mail.ts`). */
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -13,12 +17,13 @@ import { apiGet, apiPost, permissionMessage } from "@/services/api";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip, { type ChipTone } from "@/components/ui/Chip";
-import { staffControlCls } from "@/components/FormKit";
+import { staffAreaCls, staffControlCls } from "@/components/FormKit";
 import { fmtDateTimeAr } from "@/utils/format";
 import { zonedAt, zonedClock, zonedDay } from "@/application/trainer/cohort-period";
 import { NOT_ON_SITE_AR, isOnSite, prePicked, type PostponeStatus } from "@/application/trainer/postpone-offer";
 import {
-  COHORTS, SEASON_CHOICE_STATUS_AR, SEASON_OUTCOMES_AR, TRAINERS, defaultSeasonDeadline, seasonSendConfirmAr,
+  COHORTS, SEASON_CHOICE_DEFAULT_INTRO_AR, SEASON_CHOICE_DEFAULT_SUBJECT_AR, SEASON_CHOICE_INTRO_MAX, SEASON_CHOICE_STATUS_AR,
+  SEASON_CHOICE_SUBJECT_MAX, SEASON_OUTCOMES_AR, TRAINERS, defaultSeasonDeadline, seasonSendConfirmAr,
 } from "@/application/trainer/season-choice";
 import { countAr } from "@/application/text/count-ar";
 
@@ -53,6 +58,10 @@ export default function SeasonChoiceBox({ onChanged, onFlash }: {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<Sent[]>([]);
+  const [subject, setSubject] = useState(SEASON_CHOICE_DEFAULT_SUBJECT_AR);
+  const [intro, setIntro] = useState(SEASON_CHOICE_DEFAULT_INTRO_AR);
+  const [mailHtml, setMailHtml] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
 
   const loadSent = useCallback(() => {
     apiGet<Sent[]>("/api/admin/cohort-season-choices").then(setSent).catch(() => setSent([]));
@@ -80,13 +89,32 @@ export default function SeasonChoiceBox({ onChanged, onFlash }: {
     return n;
   });
 
+  /** ما يُرسل ويُعاين: الشعبُ والمهلةُ، والعنوانُ والنصُّ كما كتبهما */
+  const mailBody = () => ({
+    cohortIds: chosen.map((c) => c.cohortId), deadlineAt: deadlineAt!.toISOString(), subject: subject.trim(), introAr: intro.trim(),
+  });
+  const textProblem = !subject.trim() ? "اكتب عنوان الرسالة" : !intro.trim() ? "اكتب نص الرسالة" : null;
+
+  const previewMail = async () => {
+    if (!deadlineAt || chosen.length === 0) return;
+    setPreviewing(true);
+    try {
+      const r = await apiPost<{ subject: string; html: string }>("/api/admin/cohort-season-choices/mail-preview", mailBody());
+      setMailHtml(r.html);
+    } catch (e) {
+      onFlash({ kind: "error", text: permissionMessage(e, "تعذرت المعاينة") });
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
   const send = async () => {
     if (!deadlineAt) return;
     setBusy(true);
     try {
       const r = await apiPost<{ sent: number; trainers: number; skipped: { title: string; reasonAr: string }[] }>(
         "/api/admin/cohort-season-choices",
-        { cohortIds: chosen.map((c) => c.cohortId), deadlineAt: deadlineAt.toISOString() },
+        mailBody(),
       );
       const skippedAr = r.skipped.length ? ` · لم يرسل لـ${r.skipped.length}: ${r.skipped.map((s) => `${s.title} (${s.reasonAr})`).join("، ")}` : "";
       onFlash({ kind: "ok", text: `أرسلنا السؤال عن ${countAr(r.sent, COHORTS)} إلى ${countAr(r.trainers, TRAINERS)}${skippedAr}` });
@@ -181,11 +209,42 @@ export default function SeasonChoiceBox({ onChanged, onFlash }: {
             <li><b>لا يختار حتى المهلة:</b> {SEASON_OUTCOMES_AR.silence}</li>
           </Inset>
 
-          {problem && chosen.length > 0 && <p className="text-read text-danger-ink" role="alert">{problem}</p>}
+          <div className="space-y-2" data-testid="season-mail-text">
+            <h3 className="text-read font-bold">الرسالة</h3>
+            <label className="block">
+              <span className="mb-1.5 block text-read font-bold text-muted-foreground">العنوان</span>
+              <input value={subject} maxLength={SEASON_CHOICE_SUBJECT_MAX} className={staffControlCls}
+                onChange={(e) => { setSubject(e.target.value); setMailHtml(null); setConfirming(false); }} />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-read font-bold text-muted-foreground">النص</span>
+              <span className="mb-1.5 block text-read text-muted-foreground">
+                تبدأ الرسالة بـ«مرحبا» واسم المدرب. وبعد نصك نضيف وحدنا: شعبه، والخيارين، والمهلة، وزر صفحته. سطر فارغ يفصل الفقرات.
+              </span>
+              <textarea value={intro} rows={7} maxLength={SEASON_CHOICE_INTRO_MAX} className={staffAreaCls}
+                onChange={(e) => { setIntro(e.target.value); setMailHtml(null); setConfirming(false); }} />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button tone="secondary" size="sm" loading={previewing} disabled={chosen.length === 0 || !deadlineAt || Boolean(textProblem)}
+                onClick={() => void previewMail()}>
+                عاين الرسالة
+              </Button>
+              {(subject !== SEASON_CHOICE_DEFAULT_SUBJECT_AR || intro !== SEASON_CHOICE_DEFAULT_INTRO_AR) && (
+                <Button tone="ghost" size="sm" onClick={() => { setSubject(SEASON_CHOICE_DEFAULT_SUBJECT_AR); setIntro(SEASON_CHOICE_DEFAULT_INTRO_AR); setMailHtml(null); }}>
+                  ارجع للنص الأول
+                </Button>
+              )}
+            </div>
+            {mailHtml && (
+              <iframe title="معاينة رسالة الموسم" srcDoc={mailHtml} sandbox="" className="h-[32rem] w-full rounded-lg border border-border bg-white" />
+            )}
+          </div>
+
+          {(problem ?? textProblem) && chosen.length > 0 && <p className="text-read text-danger-ink" role="alert">{problem ?? textProblem}</p>}
 
           <div className="flex flex-wrap items-center gap-2">
             {!confirming ? (
-              <Button tone="confirm" disabled={chosen.length === 0 || Boolean(problem) || busy} onClick={() => setConfirming(true)}>
+              <Button tone="confirm" disabled={chosen.length === 0 || Boolean(problem) || Boolean(textProblem) || busy} onClick={() => setConfirming(true)}>
                 أرسل السؤال عن {countAr(chosen.length, COHORTS)}
               </Button>
             ) : (

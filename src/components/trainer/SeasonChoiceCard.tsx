@@ -1,4 +1,6 @@
-/* ═══ بطاقةُ اختيار الموسم — الربيعُ أو موسمٌ لاحقٌ أو الإلغاء، بضغطةٍ واحدة (٢١ نوفمبر ٢٠٢٦) ═══
+/* ═══ بطاقةُ اختيار الموسم — الربيعُ أو الإلغاء، بضغطةٍ واحدة (٢١ نوفمبر ٢٠٢٦، وخياران منذ ٢٤ نوفمبر) ═══
+
+   وما سُئل بثلاثة قبل الخيارين («موسمٌ لاحق» معها) يبقى بخياراته المحفوظة، فالبطاقةُ ترسم ما في صفّه.
 
    قرارُ صاحب المنصّة وعلّتُه في `src/application/trainer/season-choice.ts`، والأثرُ في `cohort-postpone.service.ts`
    (`choose`). والبطاقةُ تقول قبل أن يختار: أوّلَ لقاءٍ في كلّ موسمٍ يختاره، وأنّ الإلغاءَ لا شيءَ عليه فيه ويبقى في فريق
@@ -38,6 +40,8 @@ export default function SeasonChoiceCard({ offer, busy, error, onChoose }: {
 }) {
   const [asking, setAsking] = useState<SeasonPick | null>(null);
   const [first, ...later] = offer.options;
+  /* الإلغاءُ آخرُ الخيارات برقمه: ثانيها في سؤال الخيارين، وثالثُها فيما سُئل بثلاثة قبله */
+  const cancelNo = (first ? 1 : 0) + (later.length > 0 ? 1 : 0) + 1;
 
   const ask = (pick: SeasonPick) => setAsking(pick);
   const optionOf = (p: SeasonPick) => (p.kind === "season" ? offer.options.find((o) => o.year === p.year && o.season === p.season) : undefined);
@@ -93,7 +97,7 @@ export default function SeasonChoiceCard({ offer, busy, error, onChoose }: {
         )}
         <li>
           <Inset>
-            <p className="font-bold">3. {CANCEL_OPTION_AR}</p>
+            <p className="font-bold">{cancelNo}. {CANCEL_OPTION_AR}</p>
             <p className="text-read text-muted-foreground">يصل متعلميها الخبر، ولا تعقد لقاءاتها.</p>
             <Button className="mt-2" tone="secondary" size="sm" disabled={busy} onClick={() => ask({ kind: "cancel" })}>ألغها</Button>
           </Inset>
