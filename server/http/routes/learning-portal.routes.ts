@@ -47,7 +47,6 @@ import { SESSION_AXES_MAX, WORKBOOK_WHERE_MAX } from '../../../src/application/t
 import { COHORT_LEVELS } from '../../../src/application/trainer/cohort-level'
 import { AUDIENCE_GOALS, AUDIENCE_STAGES, MAX_AUDIENCE_GOALS, MAX_AUDIENCE_STAGES } from '../../../src/application/trainer/cohort-audience'
 import { WORKBOOK_MODES } from '../../../src/application/trainer/cohort-workbooks'
-import { SEASON_CHOICE_INTRO_MAX, SEASON_CHOICE_SUBJECT_MAX } from '../../../src/application/trainer/season-choice'
 
 /** محاورُ اللقاء: محورٌ أو أكثر بلا تكرار — وسقفُ «محورٍ أو محورين» نُسخ (٤ أكتوبر
     ٢٠٢٦). والحدُّ هنا حجمُ المدخل وحدَه (ما تحمله الخطّةُ من محاور)، أمّا الحدُّ
@@ -1281,12 +1280,9 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   /* ═══ اختيارُ الموسم لشعب الموسم الأوّل — الإدارةُ تعاين ثمّ ترسل، والمدرّبُ يختار (٢١ نوفمبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة وعلّتُه في `season-choice.ts`، والأثرُ في `cohort-postpone.service.ts`. والسحبُ بباب
      `/api/admin/cohort-postpones/:id/withdraw` نفسِه، والعاملُ نفسُه يلغي ما مضت مهلتُه. */
-  /* والعنوانُ والنصُّ ما كتبه صاحبُ المنصّة في الصندوق — «اسمح لي أن أعدّلها قبل إرسالها» (٢٤ نوفمبر ٢٠٢٦) */
   const seasonSendBody = z.object({
     cohortIds: z.array(z.string().uuid()).min(1).max(500),
     deadlineAt: z.coerce.date(),
-    subject: z.string().max(SEASON_CHOICE_SUBJECT_MAX).optional(),
-    introAr: z.string().max(SEASON_CHOICE_INTRO_MAX).optional(),
   })
   app.get('/api/admin/cohort-season-choices/preview', {
     preHandler: requirePermission('cohort.manage'),
@@ -1300,10 +1296,10 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return reply.status(201).send(await postpones.seasonSend(req.auth!.userId, seasonSendBody.parse(req.body)))
   })
 
-  /* معاينةُ الرسالة بنصّه قبل إرسالها — لا يُكتب بها شيء (٢٤ نوفمبر ٢٠٢٦) */
+  /* معاينةُ الرسالة لأوّل مدرّبٍ في الاختيار قبل إرسالها — لا يُكتب بها شيء (٢٤ نوفمبر ٢٠٢٦) */
   app.post('/api/admin/cohort-season-choices/mail-preview', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-cohorts'], summary: 'معاينة رسالة سؤال الموسم بالنص المكتوب — لا يرسل شيء' },
+    schema: { tags: ['admin-cohorts'], summary: 'معاينة رسالة سؤال الموسم لأول مدرب في الاختيار — لا يرسل شيء' },
   }, async (req) => postpones.seasonMailPreview(seasonSendBody.parse(req.body)))
 
   app.get('/api/admin/cohort-season-choices', {

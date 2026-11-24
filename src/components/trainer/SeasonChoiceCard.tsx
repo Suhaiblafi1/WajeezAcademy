@@ -1,10 +1,10 @@
-/* ═══ بطاقةُ اختيار الموسم — الربيعُ أو الإلغاء، بضغطةٍ واحدة (٢١ نوفمبر ٢٠٢٦، وخياران منذ ٢٤ نوفمبر) ═══
+/* ═══ بطاقةُ اختيار الموسم — الإلغاءُ (نوصي به) أو الربيع، بضغطةٍ واحدة (٢١ نوفمبر ٢٠٢٦، وخياران منذ ٢٤ نوفمبر) ═══
 
    وما سُئل بثلاثة قبل الخيارين («موسمٌ لاحق» معها) يبقى بخياراته المحفوظة، فالبطاقةُ ترسم ما في صفّه.
 
    قرارُ صاحب المنصّة وعلّتُه في `src/application/trainer/season-choice.ts`، والأثرُ في `cohort-postpone.service.ts`
    (`choose`). والبطاقةُ تقول قبل أن يختار: أوّلَ لقاءٍ في كلّ موسمٍ يختاره، وأنّ الإلغاءَ لا شيءَ عليه فيه ويبقى في فريق
-   المدرّبين، والمهلةَ وما يقع إن لم يختر حتّى تمضي («b»: تُلغى). وكلُّ خيارٍ يُسأل مرّةً بجملةٍ تقول أثرَه على شعبته
+   المدرّبين، والمهلةَ وما يقع إن لم يختر حتّى تمضي (منذ ٢٤ نوفمبر: لا يتغيّر شيءٌ ونتواصل معه). وكلُّ خيارٍ يُسأل مرّةً بجملةٍ تقول أثرَه على شعبته
    ومتعلّميها — ثمّ «نعم» تنفّذه. لا يُفرض عليه خيار، ولا يُطلب منه عملٌ يعمله بنفسه. */
 
 import { useState } from "react";
@@ -13,7 +13,8 @@ import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { fmtDateTimeAr, untilLabelAr } from "@/utils/format";
 import {
-  CANCEL_OPTION_AR, DEFAULT_CANCEL_AR, NO_OBLIGATION_AR, seasonPickConsequenceAr, type SeasonPick,
+  SEASON_CANCEL_POINTS_AR, SEASON_CANCEL_TITLE_AR, SEASON_SILENCE_AR, seasonPickConsequenceAr, seasonRelaunchPointsAr,
+  seasonRelaunchTitleAr, type SeasonPick,
 } from "@/application/trainer/season-choice";
 import type { TrainingSeason } from "@/application/trainer/application-options";
 
@@ -40,8 +41,8 @@ export default function SeasonChoiceCard({ offer, busy, error, onChoose }: {
 }) {
   const [asking, setAsking] = useState<SeasonPick | null>(null);
   const [first, ...later] = offer.options;
-  /* الإلغاءُ آخرُ الخيارات برقمه: ثانيها في سؤال الخيارين، وثالثُها فيما سُئل بثلاثة قبله */
-  const cancelNo = (first ? 1 : 0) + (later.length > 0 ? 1 : 0) + 1;
+  /* الإلغاءُ أوّلُ الخيارين ونوصي به، ثمّ الربيع — كما رتّبهما صاحبُ المنصّة (٢٤ نوفمبر ٢٠٢٦). وما سُئل بثلاثة قبله يبقى
+     موسمُه اللاحقُ ثالثا */
 
   const ask = (pick: SeasonPick) => setAsking(pick);
   const optionOf = (p: SeasonPick) => (p.kind === "season" ? offer.options.find((o) => o.year === p.year && o.season === p.season) : undefined);
@@ -67,13 +68,25 @@ export default function SeasonChoiceCard({ offer, busy, error, onChoose }: {
       </p>
 
       <ol className="mt-3 space-y-2">
+        <li>
+          <Inset tone="accent">
+            <p className="font-bold">1. {SEASON_CANCEL_TITLE_AR}</p>
+            <ul className="mt-1 list-disc space-y-0.5 ps-5 text-read">
+              {SEASON_CANCEL_POINTS_AR.map((t) => <li key={t}>{t}</li>)}
+            </ul>
+            <Button className="mt-2" tone="secondary" size="sm" disabled={busy} onClick={() => ask({ kind: "cancel" })}>ألغها</Button>
+          </Inset>
+        </li>
         {first && (
           <li>
-            <Inset tone="accent">
-              <p className="font-bold">1. أجلها إلى {first.optionAr}</p>
-              <p className="text-read text-muted-foreground">{whereItLands(first)}</p>
+            <Inset>
+              <p className="font-bold">2. {seasonRelaunchTitleAr(first)}</p>
+              <ul className="mt-1 list-disc space-y-0.5 ps-5 text-read">
+                {seasonRelaunchPointsAr(first).map((t) => <li key={t}>{t}</li>)}
+              </ul>
+              <p className="mt-1 text-read text-muted-foreground">{whereItLands(first)}</p>
               <Button className="mt-2" tone="secondary" size="sm" disabled={busy} onClick={() => ask(seasonPick(first))}>
-                أجلها إلى {monthsOf(first)}
+                أعد إطلاقها في {monthsOf(first)}
               </Button>
             </Inset>
           </li>
@@ -81,13 +94,13 @@ export default function SeasonChoiceCard({ offer, busy, error, onChoose }: {
         {later.length > 0 && (
           <li>
             <Inset>
-              <p className="font-bold">2. أجلها إلى موسم لاحق</p>
+              <p className="font-bold">3. أعد إطلاقها في موسم لاحق</p>
               <ul className="mt-1 space-y-2">
                 {later.map((o) => (
                   <li key={`${o.season}-${o.year}`}>
                     <p className="text-read"><b>{o.optionAr}:</b> <span className="text-muted-foreground">{whereItLands(o)}</span></p>
                     <Button className="mt-1" tone="secondary" size="sm" disabled={busy} onClick={() => ask(seasonPick(o))}>
-                      أجلها إلى {monthsOf(o)}
+                      أعد إطلاقها في {monthsOf(o)}
                     </Button>
                   </li>
                 ))}
@@ -95,20 +108,12 @@ export default function SeasonChoiceCard({ offer, busy, error, onChoose }: {
             </Inset>
           </li>
         )}
-        <li>
-          <Inset>
-            <p className="font-bold">{cancelNo}. {CANCEL_OPTION_AR}</p>
-            <p className="text-read text-muted-foreground">يصل متعلميها الخبر، ولا تعقد لقاءاتها.</p>
-            <Button className="mt-2" tone="secondary" size="sm" disabled={busy} onClick={() => ask({ kind: "cancel" })}>ألغها</Button>
-          </Inset>
-        </li>
       </ol>
 
       <ul className="mt-3 space-y-1 text-read">
-        <li>{NO_OBLIGATION_AR}</li>
         <li>
           اختر قبل <b>{fmtDateTimeAr(offer.deadlineAt)}</b>{" "}
-          <span className="text-muted-foreground">({untilLabelAr(offer.deadlineAt)})</span>. {DEFAULT_CANCEL_AR}
+          <span className="text-muted-foreground">({untilLabelAr(offer.deadlineAt)})</span>. {SEASON_SILENCE_AR}
         </li>
       </ul>
 
