@@ -132,8 +132,9 @@ export function weeksIntoSeason(firstAt: Date, t: SeasonRef): number {
 /** أوّلُ لقاءٍ لو اختار هذا الموسم */
 export const firstAtIn = (firstAt: Date, t: SeasonRef): Date => new Date(firstAt.getTime() + weeksIntoSeason(firstAt, t) * WEEK_MS)
 
-/** المهلةُ الافتراضيّة: سبعةُ أيّام — إلى آخر يومها بتوقيت عمّان */
-export const SEASON_CHOICE_DEFAULT_DAYS = 7
+/** المهلةُ الافتراضيّة: يومان — إلى آخر يومها بتوقيت عمّان. قرارُ صاحب المنصّة (٢٤ نوفمبر ٢٠٢٦): «اجعل المهلةَ يومين فقط»،
+    وكانت سبعة. وتُغيَّر في الصندوق قبل الإرسال */
+export const SEASON_CHOICE_DEFAULT_DAYS = 2
 export function defaultSeasonDeadline(now: Date): Date {
   return zonedAt(zonedDay(new Date(now.getTime() + SEASON_CHOICE_DEFAULT_DAYS * DAY_MS)), '23:59')
 }
