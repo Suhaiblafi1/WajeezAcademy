@@ -69,8 +69,12 @@ describe('بطاقة المدرب — الخياران، والمهلة، وما
   const cards = code('src/components/trainer/PostponeOfferCards.tsx')
 
   it('⚠️ الخياران بترتيب صاحب المنصة: الإلغاء أولا ونوصي به بنقاطه، ثم الإعادة في المواسم القادمة بنقاطه', () => {
-    expect(card).toMatch(/<p className="font-bold">1\. \{SEASON_CANCEL_TITLE_AR\}<\/p>[\s\S]*?\{SEASON_CANCEL_POINTS_AR\.map\([\s\S]*?onClick=\{\(\) => ask\(\{ kind: "cancel" \}\)\}>ألغها<\/Button>/)
-    expect(card).toMatch(/<p className="font-bold">2\. \{seasonRelaunchTitleAr\(\)\}<\/p>[\s\S]*?\{SEASON_RELAUNCH_POINTS_AR\.map\([\s\S]*?onClick=\{\(\) => ask\(\{ kind: "later" \}\)\}>/)
+    /* كلُّ خيارٍ: عنوانُه، وسطرُه، و«التفاصيل» منسدلةً بنقاطه، وزرُّه — أو تأكيدُه في مكانه (٢٤ نوفمبر: «التفاصيلُ بشريطٍ منسدل») */
+    expect(card).toMatch(/<p className="font-bold">1\. \{SEASON_CANCEL_TITLE_AR\}<\/p>\s*<p[^>]*>\{SEASON_CANCEL_SUMMARY_AR\}<\/p>\s*<Details points=\{SEASON_CANCEL_POINTS_AR\} \/>\s*<div[^>]*>\{action\(\{ kind: "cancel" \}, "ألغها"\)\}<\/div>/)
+    expect(card).toMatch(/<p className="font-bold">2\. \{seasonRelaunchTitleAr\(\)\}<\/p>\s*<p[^>]*>\{SEASON_RELAUNCH_SUMMARY_AR\}<\/p>\s*<Details points=\{SEASON_RELAUNCH_POINTS_AR\} \/>\s*<div[^>]*>\{action\(\{ kind: "later" \}, "أعد إطلاقها لاحقا"\)\}<\/div>/)
+    expect(card, 'التفاصيل مفتوحة افتراضا').toMatch(/<details className="group mt-2">/)
+    expect(card).not.toMatch(/<details[^>]*\bopen\b/)
+    expect(card, 'الخياران لا يتجاوران').toContain('<ol className="mt-3 grid gap-3 md:grid-cols-2">')
     expect(card.indexOf('{SEASON_CANCEL_TITLE_AR}'), 'الإعادة قبل الإلغاء').toBeLessThan(card.indexOf('{seasonRelaunchTitleAr()}'))
     expect(SEASON_CANCEL_TITLE_AR).toBe('إلغاء الشعبة (نوصي به)')
     expect(seasonRelaunchTitleAr()).toBe('إعادة إطلاقها في المواسم القادمة')
@@ -78,7 +82,7 @@ describe('بطاقة المدرب — الخياران، والمهلة، وما
     expect(SEASON_RELAUNCH_POINTS_AR).toContain('لكل مدرب دورة أو دورتان في كل موسم، ولا تتكرر الدورة نفسها مع مدرب آخر.')
     expect(seasonPickConsequenceAr({ kind: 'later' })).toContain('ونتواصل معك لتختار موسمها')
     /* وما سُئل بمواسمَ بعينها قبل الخيارين تبقى مواسمُه ثالثا */
-    expect(card).toMatch(/\{seasons\.length > 0 && \([\s\S]*?<p className="font-bold">3\. أو اختر موسمها الآن<\/p>/)
+    expect(card).toMatch(/\{seasons\.length > 0 && \([\s\S]*?<summary[^>]*>\s*3\. أو اختر موسمها الآن/)
   })
 
   it('⚠️ المهلة وما يقع بالسكوت — لا يتغير شيء ونتواصل معه — في البطاقة نفسها', () => {
@@ -89,7 +93,9 @@ describe('بطاقة المدرب — الخياران، والمهلة، وما
 
   it('⚠️ لا ينفذ خيار بضغطة الخيار — يقال أثره ثم «نعم»', () => {
     expect(card.match(/onChoose\(/g), 'نداء التنفيذ في غير زر التأكيد').toHaveLength(1)
-    expect(card).toMatch(/\{asking && \([\s\S]*?\{consequence\} متأكد؟[\s\S]*?onClick=\{\(\) => onChoose\(asking\)\}>نعم<\/Button>/)
+    /* والتأكيدُ داخلَ الخانة التي ضُغطت — مكانَ زرّها، لا أسفلَ البطاقة (٢٤ نوفمبر: «يظهر أسفلَ كلّ الخيارات وهذا غيرُ عمليّ») */
+    expect(card).toMatch(/asking && samePick\(asking, pick\) \? \([\s\S]*?\{consequence\} متأكد؟[\s\S]*?onClick=\{\(\) => onChoose\(asking\)\}>نعم<\/Button>[\s\S]*?\) : \(\s*<Button[^>]*onClick=\{\(\) => ask\(pick\)\}>\{label\}<\/Button>/)
+    expect(card.match(/\{consequence\} متأكد؟/g), 'تأكيد ثان أسفل البطاقة').toHaveLength(1)
     expect(seasonPickConsequenceAr({ kind: 'cancel' })).toContain('ولا شيء عليك')
     expect(seasonPickConsequenceAr({ kind: 'season', optionAr: 'موسم الربيع — أبريل ومايو 2027', firstAtAr: 'الأحد 4 أبريل' }))
       .toBe('تتحرك الشعبة إلى موسم الربيع — أبريل ومايو 2027، وأول لقاء فيها الأحد 4 أبريل، ويصل متعلميها الموعد الجديد.')

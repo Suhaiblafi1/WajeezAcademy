@@ -152,12 +152,11 @@ describe('② الإرسال — رسالة واحدة لكل مدرب', () => {
         'نطلب منك تسجيل فيديو أو بودكاست قصير، ونراجع معك وصف الدورة.',
         'بالنسبة لطلابك',
         'سنعيد رسوم المسجلين فيها كاملة، ونعتذر لهم بالنيابة عنك.',
-        'كيف ترد',
-        'أرسل لنا لكل شعبة كلمة واحدة قبل ',
-        '«إلغاء» أو «إعادة»',
-        'أو اختر من صفحتك',
+        'كيف تختار',
+        'اختر لكل شعبة من صفحتك في المنصة قبل ',
+        'اختر لشعبك',
         'فسنتواصل معك'.replace('فسنتواصل', 'نتواصل') + ' لنتأكد من رغبتك، ولن نغير شيئا دون موافقتك.',
-        `فنحن في خدمتك على ${ACADEMY_EMAILS.support}، أو بالرد على هذه الرسالة.`,
+        `فنحن في خدمتك على ${ACADEMY_EMAILS.support}.`,
         'نعتز بك، ونتطلع لموسم أقوى معا.',
         'فريق أكاديمية وجيز',
       ]
@@ -173,7 +172,9 @@ describe('② الإرسال — رسالة واحدة لكل مدرب', () => {
       expect(m.text).toContain('/trainer/board')
       expect(m.text, 'لا يقال إن الاتفاقية سقطت').not.toMatch(/باطل|ملغاة|انتهت اتفاقيتك|فسخ/)
       expect(m.text).not.toContain('عرضك')
-      expect(m.html).toContain('أو اختر من صفحتك')
+      expect(m.html).toContain('اختر لشعبك')
+      /* والاختيارُ من المنصّة وحدَها — لا ردَّ مكتوبا بالبريد */
+      expect(m.text, 'عاد الرد بكلمة').not.toMatch(/كلمة واحدة|«إلغاء» أو «إعادة»|بالرد على هذه الرسالة/)
       const bells = await prisma.notification.findMany({ where: { userId: t.userId, templateKey: 'cohort.season_choice.proposed' } })
       expect(bells.map((b) => b.channel), `${t.name}: جرس واحد`).toEqual(['in_app'])
       expect(bells[0].body).toContain('ولن نغير شيئا دون موافقتك')
@@ -199,9 +200,9 @@ describe('② الإرسال — رسالة واحدة لكل مدرب', () => {
     expect(m.subject).toBe(`قرارك بشأن شعبتك: شعبة S1 ${STAMP}`)
     expect(m.text).toContain(`لأن شعبتك «شعبة S1 ${STAMP}» لم يكتمل عدد المسجلين فيها هذا الموسم. نشكرك على وقتك وجهدك فيها، فقد كان حضورك مقدّرا عندنا.`)
     expect(m.text).toContain('اختر أحد الخيارين:')
-    expect(m.text).toContain('أرسل لنا كلمة واحدة قبل ')
+    expect(m.text).toContain('اختر من صفحتك في المنصة قبل ')
     expect(m.text).toContain(SEASON_LEARNERS_AR)
-    expect(m.text).toContain('أو اختر من صفحتك:')
+    expect(m.text).toContain('اختر لشعبتك:')
   })
 
   it('⚠️ والإعادة لا تكرر — لا صف ولا بريد ولا جرس', async () => {
