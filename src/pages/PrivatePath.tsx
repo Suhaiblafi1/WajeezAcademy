@@ -50,10 +50,12 @@ import type { PendingCheckout } from "@/application/commerce/pending-checkout";
 import { useCourseCohorts } from "@/services/cohort-prices";
 import { useListedCourses } from "@/services/listed-courses";
 import { usePublishedContent } from "@/services/public-content";
+import { loadMetaPixel, trackPixel } from "@/pages/ai-jobs/meta-pixel";
 import SeoHead from "@/components/SeoHead";
 import Modal from "@/components/Modal";
 import AuthGate from "@/components/AuthGate";
 import BuyPanel from "@/components/BuyPanel";
+import PathLeadForm from "@/components/PathLeadForm";
 import ResumeCheckout from "@/components/ResumeCheckout";
 import CourseJourney from "@/components/CourseJourney";
 import EcosystemNote from "@/components/EcosystemNote";
@@ -193,6 +195,12 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
   const isPublic = Boolean(v.publicPath);
   const signIn = Boolean(v.publicPath?.signIn);
   /* ضغط «أكمل التسجيل» قبل أن يدخل — فإذا عاد المسارُ بكوده فُتح لوحُ الدفع بما اختاره */
+  /* بكسلُ Meta في المسار العامّ وحدَه (`meta-pixel.ts`، ٢٤ نوفمبر ٢٠٢٦) — والمسارُ الخاصّ باسم إنسانٍ لا يُرسل */
+  useEffect(() => {
+    if (!isPublic) return;
+    loadMetaPixel({ quiet: true });
+    trackPixel("PageView", { content_name: v.code });
+  }, [isPublic, v.code]);
   const [payAfterAuth, setPayAfterAuth] = useState(false);
   /* والخفيفةُ لا الكاملة (٨ نوفمبر ٢٠٢٦): الرحلةُ تقرأ عنوانَ الوحدة ومخرجَها وساعاتِها لا متونَها — كـ«ابنِ مسارك».
      والكاملةُ ٢ ميغا مضغوطا كانت أكثرَ ما تنتظره الصفحة (`?lite=1` في `public.routes.ts`) */
@@ -415,6 +423,9 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
   }, [showPrice, journeyReady]);
   const buy = () => {
     if (!ready || current.state !== "ready") return;
+    if (isPublic && current.price) {
+      trackPixel("InitiateCheckout", { content_name: v.code, value: current.price.total, currency: current.price.currency, num_items: buyIds.length });
+    }
     /* يُحفظ ما يشتريه قبل أن يُطلب منه حساب — فإن خرج ليوثّق بريده عاد إلى مساره (`ResumeCheckout`) */
     savePendingCheckout({
       path: goPath(v.code),
@@ -613,6 +624,8 @@ function PathPage({ view: v, resumed, session: given, onSignedIn }: {
       {isPublic && v.publicPath?.noteAr && (
         <Inset tone="warn" className="mt-3 text-read" data-testid="public-path-note"><p>{v.publicPath.noteAr}</p></Inset>
       )}
+
+      {isPublic && <PathLeadForm code={v.code} />}
 
       <PathwayEcosystemPanel compact />
 

@@ -4,6 +4,11 @@
    `index.html`: الدورةُ دورتُه وإعلاناتُها إعلاناتُه، وصفحاتُ الأكاديميّة الأخرى لا تُرسل زوّارَها إلى حسابه
    (قرارُ «المساحة الخاصّة منفصلة» في `CLAUDE.md`).
 
+   ═══ وصفحةُ الإعلان العامّة `/go/BF80` (٢٤ نوفمبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة بين ثلاثة: **البكسلُ نفسُه في BF80 وحدَها** («Same pixel, BF80 only») — نسخا لـ«صفحاتُ الأكاديميّة الأخرى
+   لا تُرسل» فيها وحدَها. وما بعدها من صفحات الأكاديميّة لا يُرسل: الموقعُ صفحةٌ واحدة، والبكسلُ يتبع تبدّلَ العنوان ويلتقط
+   الأزرارَ وحدَه — فيُحمَّل هناك `quiet`: بلا تتبّعٍ آليّ، ولا يُرسل إلّا ما نرسله صراحة.
+
    والأحداثُ ما يبني عليه الإعلانُ جمهورَه ويقيس نتيجتَه:
    · `PageView` عند فتح الصفحة.
    · `Lead` حين يُحجز المقعد — وهو الحدثُ الذي يُحسَّن عليه الإعلان.
@@ -21,6 +26,7 @@ type Fbq = ((...args: unknown[]) => void) & {
   queue: unknown[][]
   push: Fbq
   loaded: boolean
+  disablePushState?: boolean
   version: string
 }
 
@@ -34,7 +40,7 @@ declare global {
 let initialised = false
 
 /** يحمّل البكسلَ مرّةً واحدةً في عمر الصفحة — الشيفرةُ الرسميّةُ نفسُها، مكتوبةً بلا تقليص */
-export function loadMetaPixel(): void {
+export function loadMetaPixel(opts: { quiet?: boolean } = {}): void {
   if (typeof window === 'undefined') return
   if (!window.fbq) {
     const n = function (...args: unknown[]) {
@@ -52,7 +58,9 @@ export function loadMetaPixel(): void {
     script.src = 'https://connect.facebook.net/en_US/fbevents.js'
     document.head.appendChild(script)
   }
+  if (opts.quiet) window.fbq.disablePushState = true
   if (!initialised) {
+    if (opts.quiet) window.fbq('set', 'autoConfig', false, META_PIXEL_ID)
     window.fbq('init', META_PIXEL_ID)
     initialised = true
   }

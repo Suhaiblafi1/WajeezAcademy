@@ -9,8 +9,11 @@ import { requireAuth, requirePermission } from '../auth-plugin'
 import { BuyLinkService, type BuyLinkTarget } from '../../services/buy-link.service'
 import { PrivatePathService, campaignPreview } from '../../services/private-path.service'
 import { AuthError } from '../../services/auth.service'
+import { AdvisorService } from '../../services/advisor.service'
+import { assertNotBot } from '../honeypot'
 import { CodeAttemptGuard } from '../../services/commerce/code-attempts'
 import { publicPathOf } from '../../../src/application/commerce/private-path'
+import { normalizeIntlPhone, PATH_CONTACT_CONSENT_AR } from '../../../src/application/advisor/guest-contact'
 import type { CampaignSlug } from '../../../src/application/commerce/grant'
 
 const COURSE = z.string().trim().regex(/^[A-Za-z0-9_-]{1,80}$/)
@@ -67,6 +70,26 @@ export function registerBuyLinkRoutes(app: FastifyInstance, prisma: PrismaClient
     const pub = publicPathOf(code)
     if (!pub) throw new AuthError('not_found', 'هذا الرابط غير صحيح.', 404)
     return campaignPreview(prisma, pub.campaign as CampaignSlug, cohortIds)
+  })
+  /* ═══ ومن لم يقرّر يترك اسمه ورقمَه — للمسار العامّ وحدَه (٢٤ نوفمبر ٢٠٢٦) ═══
+     حالةُ مستشارٍ بطريق «اترك رقمك» نفسِه وحدودِه (`requestContactAsGuest`)، وجوابُه واحدٌ لمن له حالةٌ ومن لا. والرقمُ دوليّ */
+  const advisors = new AdvisorService(prisma)
+  app.post('/api/public/go/:code/contact', {
+    config: { rateLimit: { max: 3, timeWindow: '15 minutes' } },
+    schema: { tags: ['public'], summary: 'زائر المسار العام يترك اسمه ورقمه ليتواصل معه مستشار' },
+  }, async (req, reply) => {
+    assertNotBot(req.body)
+    const { code } = z.object({ code: z.string().trim().max(40) }).parse(req.params)
+    const pub = publicPathOf(code)
+    if (!pub) throw new AuthError('not_found', 'هذا الرابط غير صحيح.', 404)
+    const body = z.object({
+      fullName: z.string().trim().min(2, 'اكتب اسمك — حرفان على الأقل').max(120),
+      phone: z.string().trim().max(30),
+    }).parse(req.body)
+    const phone = normalizeIntlPhone(body.phone)
+    if (!phone) throw new AuthError('bad_phone', 'اختر الدولة واكتب رقم واتساب', 400)
+    await advisors.requestContactAsGuest({ fullName: body.fullName, phone, pathCode: pub.code }, req.ip)
+    return reply.status(201).send({ ok: true, consentAr: PATH_CONTACT_CONSENT_AR })
   })
   /* وبحسابه: المسارُ العامّ باسمه وكودِ منحته — يُعطاه فورا إن لم يكن له (`publicPathCode`، «Give code instantly») */
   app.get('/api/learner/go/:code', {

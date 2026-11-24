@@ -8,7 +8,7 @@ import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
 import { ROLE_PERMISSIONS } from '../auth/permissions'
 import {
-  GUEST_CONTACT_CONSENT_AR, GUEST_SNAPSHOT_MAX_CHARS, normalizePhone,
+  GUEST_CONTACT_CONSENT_AR, GUEST_SNAPSHOT_MAX_CHARS, PATH_CONTACT_CONSENT_AR, normalizePhone,
 } from '../../src/application/advisor/guest-contact'
 import {
   ESCALATE_AFTER_HOURS, FOLLOW_UP_GRACE_HOURS, FOLLOW_UP_LEAD_MINUTES, REMIND_AFTER_HOURS, REMIND_WINDOW_DAYS,
@@ -1055,7 +1055,10 @@ export class AdvisorService {
         لأيّ أحدٍ من يتعامل معنا — فلا يُقال عن الموجود شيء. */
   async requestContactAsGuest(input: {
     fullName: string; email?: string | null; phone?: string | null; snapshot?: unknown
+    /** من المسار العامّ لا من التشخيص — رمزُه (`/go/BF80`، ٢٤ نوفمبر ٢٠٢٦) */
+    pathCode?: string
   }, ip?: string): Promise<{ ok: true }> {
+    const from = input.pathCode ? `صفحة ${input.pathCode}` : 'آخر التشخيص'
     const fullName = input.fullName.trim()
     const email = input.email?.trim().toLowerCase() || null
     const typedPhone = input.phone?.trim() || null
@@ -1080,14 +1083,14 @@ export class AdvisorService {
       await this.prisma.contactEvent.create({
         data: {
           caseId: open.id, channel: 'in_app', direction: 'in',
-          summary: `عاد يطلب أن نتواصل معه من آخر التشخيص — ${[
+          summary: `عاد يطلب أن نتواصل معه من ${from} — ${[
             `الاسم: ${fullName}`, phone ? `واتساب: ${phone}` : null, email ? `البريد: ${email}` : null,
           ].filter(Boolean).join(' · ')}`,
         },
       })
       await recordAudit(this.prisma, {
         action: 'advisor.case.guest_request', entityType: 'advisor_case', entityId: open.id, ip,
-        meta: { repeated: true, byPhone: Boolean(phone), byEmail: Boolean(email) },
+        meta: { repeated: true, byPhone: Boolean(phone), byEmail: Boolean(email), ...(input.pathCode ? { path: input.pathCode } : {}) },
       })
       return { ok: true }
     }
@@ -1095,19 +1098,22 @@ export class AdvisorService {
     const created = await this.prisma.$transaction(async (tx) => {
       const lead = await tx.lead.create({
         data: {
-          fullName, email, phone, source: 'diagnostic', consentAr: GUEST_CONTACT_CONSENT_AR,
+          fullName, email, phone,
+          ...(input.pathCode
+            ? { source: 'campaign', channel: `go-${input.pathCode}`, consentAr: PATH_CONTACT_CONSENT_AR }
+            : { source: 'diagnostic', consentAr: GUEST_CONTACT_CONSENT_AR }),
           ...(snapshot ? { diagnosticSnapshot: snapshot } : {}),
         },
       })
       const kase = await tx.advisorCase.create({
         data: {
-          leadId: lead.id, nextAction: 'تواصل أول — طلبه بنفسه آخر التشخيص',
+          leadId: lead.id, nextAction: input.pathCode ? `تواصل أول — ترك رقمه في ${from}` : 'تواصل أول — طلبه بنفسه آخر التشخيص',
           ...(snapshot ? { diagnosticSnapshot: snapshot } : {}),
         },
       })
       await recordAudit(tx, {
         action: 'advisor.case.guest_request', entityType: 'advisor_case', entityId: kase.id, ip,
-        meta: { leadId: lead.id, byPhone: Boolean(phone), byEmail: Boolean(email), withResult: Boolean(snapshot) },
+        meta: { leadId: lead.id, byPhone: Boolean(phone), byEmail: Boolean(email), withResult: Boolean(snapshot), ...(input.pathCode ? { path: input.pathCode } : {}) },
       })
       return kase
     })
