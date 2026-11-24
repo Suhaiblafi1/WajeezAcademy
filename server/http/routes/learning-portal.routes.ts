@@ -1280,6 +1280,10 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   /* ═══ اختيارُ الموسم لشعب الموسم الأوّل — الإدارةُ تعاين ثمّ ترسل، والمدرّبُ يختار (٢١ نوفمبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة وعلّتُه في `season-choice.ts`، والأثرُ في `cohort-postpone.service.ts`. والسحبُ بباب
      `/api/admin/cohort-postpones/:id/withdraw` نفسِه، والعاملُ نفسُه يلغي ما مضت مهلتُه. */
+  const seasonSendBody = z.object({
+    cohortIds: z.array(z.string().uuid()).min(1).max(500),
+    deadlineAt: z.coerce.date(),
+  })
   app.get('/api/admin/cohort-season-choices/preview', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-cohorts'], summary: 'شعب الموسم الجاري التي لم تبدأ ومدربوها — لا يرسل شيء' },
@@ -1289,12 +1293,14 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-cohorts'], summary: 'إرسال سؤال الموسم لمدربي الشعب المختارة — رسالة واحدة لكل مدرب' },
   }, async (req, reply) => {
-    const body = z.object({
-      cohortIds: z.array(z.string().uuid()).min(1).max(500),
-      deadlineAt: z.coerce.date(),
-    }).parse(req.body)
-    return reply.status(201).send(await postpones.seasonSend(req.auth!.userId, body))
+    return reply.status(201).send(await postpones.seasonSend(req.auth!.userId, seasonSendBody.parse(req.body)))
   })
+
+  /* معاينةُ الرسالة لأوّل مدرّبٍ في الاختيار قبل إرسالها — لا يُكتب بها شيء (٢٤ نوفمبر ٢٠٢٦) */
+  app.post('/api/admin/cohort-season-choices/mail-preview', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'معاينة رسالة سؤال الموسم لأول مدرب في الاختيار — لا يرسل شيء' },
+  }, async (req) => postpones.seasonMailPreview(seasonSendBody.parse(req.body)))
 
   app.get('/api/admin/cohort-season-choices', {
     preHandler: requirePermission('cohort.manage'),
@@ -1325,12 +1331,13 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/cohort-postpones/:id/choose', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'اختيار موسم لشعبتي — أو إلغاؤها بلا التزام' },
+    schema: { tags: ['trainer-ops'], summary: 'إلغاء شعبتي بلا التزام، أو إعادة إطلاقها في موسم قادم أختاره لاحقا' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.discriminatedUnion('kind', [
       z.object({ kind: z.literal('season'), year: z.number().int().min(2020).max(2100), season: z.enum(TRAINING_SEASON_VALUES) }),
       z.object({ kind: z.literal('cancel') }),
+      z.object({ kind: z.literal('later') }),
     ]).parse(req.body)
     return postpones.choose(req.auth!.userId, id, body)
   })

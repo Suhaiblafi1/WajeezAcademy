@@ -122,13 +122,19 @@ export function confirmLinesAr(c: SendCheck): string[] {
   return lines
 }
 
-/* ═══ حذفُ حملةٍ لم تصل أحدا (٢٤ نوفمبر ٢٠٢٦) ═══
-   قرارُ صاحب المنصّة: «إن فشلت الحملةُ فأعطني خيارَ حذفها». فالحذفُ لما لم يصل أحدا: المسودّة، وما انتهى أو أُوقف ولم يصل منه
-   شيء، وما يُرسَل ولم يصل منه شيءٌ وقد تعذّر منه — ويُلغى معه ما بقي في الطابور من مراحله. وما وصل منه واحدٌ يبقى أثرُه. */
-export function campaignDeletable(c: { status: string; sent: number; failed: number }): boolean {
-  if (c.status === 'draft') return true
-  if (c.sent > 0) return false
-  return c.status === 'sending' ? c.failed > 0 : true
+/* ═══ حذفُ الحملة — أيِّ حملة (٢٤ نوفمبر ٢٠٢٦) ═══
+   كان (صباحَ اليوم) لما لم يصل أحدا وحدَه: «إن فشلت الحملةُ فأعطني خيارَ حذفها». ثمّ قال صاحبُ المنصّة: «ألغِ كلَّ حملات
+   الإيميلات لأنّي لا أستطيع أن أحذفها من جهتي». فكلُّ حملةٍ تُحذف: ما لم يخرج منها يُلغى من الطابور أوّلا، وما وصل لا يرجع.
+   وسجلُّ من وصلته يبقى في الطابور حتّى يُقلَّم (`RETENTION_DAYS.outboxSent`) — فـ«تخطَّ من وصلته حملةٌ قريبا» يبقى يعمل. */
+
+/** ما يُقال قبل حذف حملةٍ أُرسلت — كم وصل، وكم يُلغى مما بقي */
+export function campaignDeleteNoteAr(c: { status: string; sent: number; waiting: number }): string {
+  const parts: string[] = []
+  if (c.sent > 0) parts.push(`وصلت إلى ${peopleAr(c.sent)}، وما وصل لا يرجع.`)
+  else parts.push('لم تصل لأحد.')
+  if (c.status === 'sending' && c.waiting > 0) parts.push(`ويلغى ما بقي منها (${c.waiting}).`)
+  parts.push('وتختفي من القائمة.')
+  return parts.join(' ')
 }
 
 /** لماذا يُكتب العدد — يُقال ولا يُفرض بلا سبب */

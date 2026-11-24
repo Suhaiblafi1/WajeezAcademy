@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  BULK_TYPE_COUNT_OVER, DEFAULT_STAGE_CAPS, campaignDeletable, STAGED_DEFAULT_OVER, confirmLinesAr, etaAr, etaMinutes, firstNameOf, greetingAr,
+  BULK_TYPE_COUNT_OVER, DEFAULT_STAGE_CAPS, campaignDeleteNoteAr, STAGED_DEFAULT_OVER, confirmLinesAr, etaAr, etaMinutes, firstNameOf, greetingAr,
   needsTypedCount, parseAudience, stageLinesAr, stagePlan, stagedByDefault, typedCountMatches,
 } from '@/application/marketing/bulk-mail'
 import { allSections } from '@/pages/admin/nav-map'
@@ -144,16 +144,15 @@ describe('تخطي من في المنصة ومن في قائمة أخرى', () =
   })
 })
 
-/* حذفُ حملةٍ لم تصل أحدا (٢٤ نوفمبر ٢٠٢٦): «إن فشلت الحملةُ فأعطني خيارَ حذفها». */
-describe('حذف حملة لم تصل أحدا', () => {
-  it('⚠️ المسودة وما لم يصل منه شيء يحذف — وما وصل منه واحد لا، وما يرسل بلا تعذر لا', () => {
-    expect(campaignDeletable({ status: 'draft', sent: 0, failed: 0 })).toBe(true)
-    expect(campaignDeletable({ status: 'sent', sent: 0, failed: 80 })).toBe(true)
-    expect(campaignDeletable({ status: 'stopped', sent: 0, failed: 0 })).toBe(true)
-    expect(campaignDeletable({ status: 'sending', sent: 0, failed: 2000 })).toBe(true)
-    expect(campaignDeletable({ status: 'sent', sent: 1, failed: 79 })).toBe(false)
-    expect(campaignDeletable({ status: 'sending', sent: 0, failed: 0 })).toBe(false)
-    expect(page).toMatch(/\{campaignDeletable\(\{ status: c\.status, sent: p\.sent, failed: p\.failed \}\) && \(/)
+/* حذفُ الحملة — أيِّ حملة (٢٤ نوفمبر ٢٠٢٦): «ألغِ كلَّ حملات الإيميلات لأنّي لا أستطيع أن أحذفها من جهتي». */
+describe('حذف أي حملة', () => {
+  it('⚠️ زر الحذف على كل حملة — ويقال قبله كم وصل وكم يلغى مما بقي', () => {
+    /* الزرُّ في سطره بلا شرطٍ قبله — لا «{c.status === "draft" && …» */
+    expect(page).toMatch(/\n\s+<Button tone="ghost" icon=\{Trash2\} disabled=\{busy\} onClick=\{onDelete\}>احذف<\/Button>/)
+    expect(page, 'عاد الحذف مشروطا').not.toMatch(/\{campaignDeletable\(/)
     expect(page).toMatch(/if \(c\.status !== "draft"\) \{ setDeleting\(c\); return; \}/)
+    expect(page).toContain('{campaignDeleteNoteAr({ status: c.status, sent: c.progress.sent, waiting: c.progress.waiting })}')
+    expect(campaignDeleteNoteAr({ status: 'sending', sent: 0, waiting: 2000 })).toBe('لم تصل لأحد. ويلغى ما بقي منها (2000). وتختفي من القائمة.')
+    expect(campaignDeleteNoteAr({ status: 'sent', sent: 80, waiting: 0 })).toBe('وصلت إلى 80 شخصا، وما وصل لا يرجع. وتختفي من القائمة.')
   })
 })

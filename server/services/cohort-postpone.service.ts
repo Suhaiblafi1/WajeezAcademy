@@ -41,13 +41,17 @@ import { enqueueMail } from './outbox.service'
 import { renderMail } from './mail-template'
 import { publicSiteUrl } from './site-url'
 import { seasonChoiceMail } from './season-choice-mail'
-import { latestStartedTerm, monthWithinTerm, plannedMonthOk, termTitleAr, type SeasonRef } from '../../src/application/terms/season'
+import { ACADEMY_EMAILS } from './integrations.service'
+import { latestStartedTerm, monthWithinTerm, nextSeason, plannedMonthOk, termTitleAr, type SeasonRef } from '../../src/application/terms/season'
 import { MOVABLE_STATUSES, moveShiftFor } from '../../src/application/trainer/cohort-move'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
 import {
-  DEFAULT_CANCEL_AR, SEASON_CANCEL_REASON_AR, SEASON_CHOICE_REASON_AR, SEASON_EXPIRED_REASON_AR,
+  SEASON_CANCEL_REASON_AR, SEASON_CHOICE_REASON_AR, SEASON_RELAUNCH_REASON_AR, SEASON_SILENCE_AR,
   firstAtIn, readChoices, sameSeason, seasonChoicesAfter, seasonOptionAr, weeksIntoSeason, type OfferKind, type SeasonPick,
 } from '../../src/application/trainer/season-choice'
+
+/** ما يُرسل في سؤال الموسم: الشعبُ والمهلة — والنصُّ نصُّ صاحب المنصّة (`season-choice-mail.ts`) */
+export interface SeasonSendInput { cohortIds: string[]; deadlineAt: Date }
 
 const DAY_MS = 86_400_000
 
@@ -93,6 +97,8 @@ export interface SeasonCandidate {
 export interface SeasonPreview {
   source: { year: number; season: string; titleAr: string }
   choices: { year: number; season: string; optionAr: string }[]
+  /** أوّلُ المواسم القادمة — يُذكر في الخيار الثاني */
+  next: { year: number; season: string; titleAr: string }
   rows: SeasonCandidate[]
 }
 
@@ -198,6 +204,7 @@ export class CohortPostponeService {
   async seasonPreview(now = new Date(), source?: SeasonRef): Promise<SeasonPreview> {
     const from = source ?? latestStartedTerm(now)
     const choices = seasonChoicesAfter(from)
+    const next = nextSeason(from)
     const rows = await this.notStartedCohorts()
     const moves = new CohortMoveService(this.prisma)
     const out: { row: SeasonCandidate; at: number }[] = []
@@ -221,14 +228,37 @@ export class CohortPostponeService {
     return {
       source: { year: from.year, season: from.season, titleAr: termTitleAr(from.year, from.season) },
       choices: choices.map((t) => ({ year: t.year, season: t.season, optionAr: seasonOptionAr(t) })),
+      next: { year: next.year, season: next.season, titleAr: termTitleAr(next.year, next.season) },
       rows: out.sort((a, b) => a.at - b.at || a.row.title.localeCompare(b.row.title)).map((x) => x.row),
     }
+  }
+
+  /* ═══ معاينةُ الرسالة قبل إرسالها (٢٤ نوفمبر ٢٠٢٦) ═══
+     يرى صاحبُ المنصّة ما يصل أوّلَ مدرّبٍ في اختياره — باسمه وشعبه ومسجَّليها والخيارين والمهلة — قبل أن يُرسل شيء.
+     ولا يُكتب بها صفٌّ ولا بريد. */
+  async seasonMailPreview(input: SeasonSendInput, now = new Date()) {
+    const preview = await this.seasonPreview(now)
+    const rows = await this.notStartedCohorts({ id: { in: input.cohortIds } })
+    const firstTrainer = rows.flatMap((c) => c.trainers).find((t) => t.profile.userId)
+    const userId = firstTrainer?.profile.userId ?? null
+    const mine = userId
+      ? preview.rows.filter((r) => input.cohortIds.includes(r.cohortId)
+        && rows.find((c) => c.id === r.cohortId)?.trainers.some((t) => t.profile.userId === userId))
+      : []
+    const mail = seasonChoiceMail({
+      name: firstTrainer?.profile.application.fullName ?? 'اسم المدرب',
+      next: readChoices([preview.next])[0] ?? null, deadlineAr: deadlineAr(input.deadlineAt), href: `${publicSiteUrl()}/trainer/board`, supportEmail: ACADEMY_EMAILS.support,
+      cohorts: mine.length
+        ? mine.map((r) => ({ title: r.title, firstAtAr: r.firstAt ? dayAr(new Date(r.firstAt)) : null, enrolled: r.enrolled }))
+        : [{ title: 'اسم الشعبة', firstAtAr: null, enrolled: 0 }],
+    })
+    return { subject: mail.subject, html: renderMail(mail.doc).html }
   }
 
   /* ═══ اختيارُ الموسم — الإرسال ═══
      صفٌّ لكلّ شعبةٍ اختيرت، ثمّ **رسالةٌ واحدةٌ لكلّ مدرّب** تعدّ ما أُرسل له في هذه الدفعة: بريدٌ في الطابور (`enqueueMail`)
      وجرس. وما لا يُرسل يُقال لماذا. والإعادةُ لا تكرّر: شعبةٌ لها سؤالٌ ينتظر تُتخطّى، ومن لم يُكتب له صفٌّ جديدٌ لا يصله شيء. */
-  async seasonSend(actorId: string, input: { cohortIds: string[]; deadlineAt: Date }, now = new Date()) {
+  async seasonSend(actorId: string, input: SeasonSendInput, now = new Date()) {
     if (input.deadlineAt.getTime() <= now.getTime()) throw new AuthError('bad_deadline', 'المهلة مضت — اختر موعدا قادما')
     const preview = await this.seasonPreview(now)
     const choices = readChoices(preview.choices)
@@ -236,7 +266,7 @@ export class CohortPostponeService {
     const sent: string[] = []
     const skipped: { cohortId: string; title: string; reasonAr: string }[] = []
     /** لكلّ مدرّبٍ ما أُرسل له — فتصله رسالةٌ واحدة */
-    const byTrainer = new Map<string, { offerId: string; cohortId: string; title: string; firstAt: Date | null }[]>()
+    const byTrainer = new Map<string, { offerId: string; cohortId: string; title: string; firstAt: Date | null; enrolled: number }[]>()
     for (const id of new Set(input.cohortIds)) {
       const row = preview.rows.find((r) => r.cohortId === id)
       const c = rows.find((r) => r.id === id)
@@ -258,7 +288,7 @@ export class CohortPostponeService {
       })
       for (const userId of trainerIds) {
         const list = byTrainer.get(userId) ?? []
-        list.push({ offerId: offer.id, cohortId: id, title: row.title, firstAt })
+        list.push({ offerId: offer.id, cohortId: id, title: row.title, firstAt, enrolled: row.enrolled })
         byTrainer.set(userId, list)
       }
       sent.push(id)
@@ -280,13 +310,13 @@ export class CohortPostponeService {
       await safeNotify(this.prisma, {
         userId: u.id, channel: 'in_app', audience: 'trainer', templateKey: 'cohort.season_choice.proposed',
         title: many ? `اختر ما يناسب شعبك (${mine.length})` : `اختر ما يناسب شعبة ${titles}`,
-        body: `لم يكتمل عدد المسجلين هذا الموسم في ${titles}. اختر من صفحتك قبل ${when}: أجلها إلى ${seasonOptionAr(choices[0])}، أو إلى موسم لاحق، أو ألغها بلا أي التزام عليك. ${DEFAULT_CANCEL_AR}`,
+        body: `لم يكتمل عدد المسجلين هذا الموسم في ${titles}. اختر من صفحتك قبل ${when}: ألغها (نوصي به) بلا أي التزام عليك، أو أعد إطلاقها في المواسم القادمة وتختار موسمها لاحقا. ${SEASON_SILENCE_AR}`,
         data: { offerIds: mine.map((m) => m.offerId), cohortIds: mine.map((m) => m.cohortId) },
       })
       if (!u.email) continue
       const mail = seasonChoiceMail({
-        name, choices, deadlineAr: when, href,
-        cohorts: mine.map((m) => ({ title: m.title, firstAtAr: m.firstAt ? dayAr(m.firstAt) : null })),
+        name, next: readChoices([preview.next])[0] ?? null, deadlineAr: when, href, supportEmail: ACADEMY_EMAILS.support,
+        cohorts: mine.map((m) => ({ title: m.title, firstAtAr: m.firstAt ? dayAr(m.firstAt) : null, enrolled: m.enrolled })),
       })
       await enqueueMail(this.prisma, { to: u.email, subject: mail.subject, ...renderMail(mail.doc), purpose: SEASON_CHOICE_MAIL_PURPOSE, batchId })
       emailed += 1
@@ -294,7 +324,9 @@ export class CohortPostponeService {
     if (sent.length) {
       await recordAudit(this.prisma, {
         actorId, action: 'cohort.season_choice.send', entityType: 'cohort', entityId: 'batch',
-        meta: { batchId, offers: sent.length, trainers: users.length, emailed, deadlineAt: input.deadlineAt.toISOString() },
+        meta: {
+          batchId, offers: sent.length, trainers: users.length, emailed, deadlineAt: input.deadlineAt.toISOString(),
+        },
       })
     }
     return { sent: sent.length, trainers: users.length, emailed, skipped }
@@ -318,7 +350,7 @@ export class CohortPostponeService {
     if (offer.status !== 'pending') throw new AuthError('not_pending', 'حسم هذا السؤال من قبل', 409)
     if (offer.deadlineAt.getTime() <= now.getTime()) {
       await this.expireDue(now)
-      throw new AuthError('expired', 'مضت المهلة — ألغيت الشعبة', 409)
+      throw new AuthError('expired', 'مضت المهلة — نتواصل معك لنعرف رغبتك، ولم نغير شيئا في شعبتك', 409)
     }
 
     if (pick.kind === 'season') {
@@ -371,6 +403,28 @@ export class CohortPostponeService {
       return { status: 'accepted' as const, season: target, toFirstAt }
     }
 
+    /* ═══ إعادةُ إطلاقها في المواسم القادمة — يختار موسمَها لاحقا (٢٤ نوفمبر ٢٠٢٦) ═══
+       تخرج الشعبةُ من هذا الموسم بالإلغاء نفسِه — فلا تبقى بمواعيدَ لن تُعقد، ويصل متعلّميها الخبر — بسببٍ يقول إنّه اختار
+       الإعادة. والسؤالُ «اختار إعادة إطلاقها» بلا موسم، والإدارةُ تُجرَس لتختار معه موسمَها. ولا يُكتب عليه شيء. */
+    if (pick.kind === 'later') {
+      const later = await this.prisma.cohortPostponeOffer.updateMany({
+        where: { id: offerId, status: 'pending' }, data: { status: 'accepted', decidedBy: userId, decidedAt: now, chosenYear: null, chosenSeason: null },
+      })
+      if (later.count === 0) throw new AuthError('not_pending', 'حسم هذا السؤال من قبل', 409)
+      await recordAudit(this.prisma, {
+        actorId: userId, action: 'cohort.season_choice.choose', entityType: 'cohort', entityId: offer.cohortId,
+        meta: { offerId, choice: 'later', obligationsWaived: true },
+      })
+      await this.stop(offer.cohortId, userId, SEASON_RELAUNCH_REASON_AR, 'اختار المدرب إعادة إطلاقها في موسم قادم')
+      await notifyRole(this.prisma, COHORT_MOVE_STAFF_ROLES, {
+        channel: 'in_app',
+        title: `اختار المدرب إعادة إطلاق «${offer.cohort.title}» في موسم قادم`,
+        body: 'خرجت من هذا الموسم ووصل متعلميها الخبر. تواصل معه لتختارا موسمها.',
+        data: { cohortId: offer.cohortId, offerId },
+      })
+      return { status: 'accepted' as const, season: null, toFirstAt: null }
+    }
+
     const claimed = await this.prisma.cohortPostponeOffer.updateMany({
       where: { id: offerId, status: 'pending' }, data: { status: 'declined', decidedBy: userId, decidedAt: now },
     })
@@ -403,7 +457,8 @@ export class CohortPostponeService {
     return rows.map(({ cohort, ...r }) => ({
       ...r, title: cohort.title,
       chosenAr: r.chosenYear !== null && r.chosenSeason
-        ? readChoices([{ year: r.chosenYear, season: r.chosenSeason }]).map(seasonOptionAr)[0] ?? null : null,
+        ? readChoices([{ year: r.chosenYear, season: r.chosenSeason }]).map(seasonOptionAr)[0] ?? null
+        : r.kind === 'season_choice' && r.status === 'accepted' ? 'إعادة إطلاقها في موسم قادم يختاره لاحقا' : null,
     }))
   }
 
@@ -527,7 +582,7 @@ export class CohortPostponeService {
     return { status: 'withdrawn' as const }
   }
 
-  /** من العامل: ما مضت مهلتُه بلا ردٍّ يوقف شعبتَه. وما بدأت شعبتُه أو أُلغيت بغيره يُسحب بلا أثر */
+  /** من العامل: ما مضت مهلتُه بلا ردٍّ — تأجيلُ الشهر يوقف شعبتَه، وسؤالُ الموسم لا يغيّرها ويُجرَس به. وما بدأت شعبتُه أو أُلغيت بغيره يُسحب بلا أثر */
   async expireDue(now = new Date()): Promise<{ expired: number; withdrawn: number }> {
     const due = await this.prisma.cohortPostponeOffer.findMany({
       where: { status: 'pending', deadlineAt: { lte: now } },
@@ -547,12 +602,23 @@ export class CohortPostponeService {
         actorId: null, action: season ? 'cohort.season_choice.expire' : 'cohort.postpone.expire',
         entityType: 'cohort', entityId: o.cohortId, meta: { offerId: o.id },
       })
-      /* وسكوتُه عن اختيار الموسم يلغيها كما قيل له — ولا يُكتب عليه شيء: الإلغاءُ نفسُه بسببٍ يقول ذلك */
-      await this.stop(o.cohortId, null, season ? SEASON_EXPIRED_REASON_AR : expiredReasonAr,
-        season ? 'لم يختر المدرب موسما قبل المهلة' : 'لم يقبل المدرب تأجيلها')
+      /* ═══ وسكوتُه عن سؤال الموسم لا يغيّر شيئا (٢٤ نوفمبر ٢٠٢٦) ═══
+         نصُّ صاحب المنصّة: «إن لم يصلنا ردُّك قبل [التاريخ] فسنتواصل معك لنتأكّد من رغبتك، ولن نغيّر شيئا دون موافقتك».
+         فالشعبةُ كما هي، والسؤالُ «لم يرد»، والإدارةُ تُجرَس لتتواصل معه. وتأجيلُ الشهر التالي يوقفها كما كان. */
+      if (season) {
+        await notifyRole(this.prisma, COHORT_MOVE_STAFF_ROLES, {
+          channel: 'in_app',
+          title: `لم يرد المدرب على سؤال موسم «${o.cohort.title}» — تواصل معه`,
+          body: 'مضت المهلة بلا رد، ولم نغير شيئا في الشعبة كما وعدناه. اسأله عن رغبته، ثم ألغها أو انقلها من صفحتها.',
+          data: { cohortId: o.cohortId, offerId: o.id },
+        })
+        expired += 1
+        continue
+      }
+      await this.stop(o.cohortId, null, expiredReasonAr, 'لم يقبل المدرب تأجيلها')
       await notifyRole(this.prisma, COHORT_MOVE_STAFF_ROLES, {
         channel: 'in_app',
-        title: season ? `لم يختر المدرب موسم «${o.cohort.title}» — ألغيت` : `لم يرد المدرب على تأجيل «${o.cohort.title}» — أوقفت`,
+        title: `لم يرد المدرب على تأجيل «${o.cohort.title}» — أوقفت`,
         body: 'مضت المهلة بلا رد، ووصل متعلميها ومدربها الخبر.',
         data: { cohortId: o.cohortId, offerId: o.id },
       })
