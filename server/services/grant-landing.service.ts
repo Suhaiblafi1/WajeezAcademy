@@ -186,7 +186,9 @@ export class GrantLandingService {
       sharePath: SHARE_PATH[this.slug] ? await this.shareLink(SHARE_PATH[this.slug]!) : null,
       termAr: open.termAr,
       openCourses: open.courses.map((c) => ({
-        courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: c.startsAt, price: c.price,
+        /* و«تبدأ» أوّلُ لقاءٍ معلَنٍ لها لا تاريخُ الشعبة المخطّط (٢٥ نوفمبر ٢٠٢٦): سأل متعلّمٌ عن دورةٍ قالت صفحةُ المنحة إنّها تبدأ
+           ١ ديسمبر وتفاصيلُها ٥ ديسمبر — فالتاريخُ ما يحضره. وبلا لقاءٍ معلَنٍ تاريخُ الشعبة كما كان */
+        courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: sessions.get(c.cohortId)?.[0]?.startsAt ?? c.startsAt, price: c.price,
         domainAr: courseDomain(c.courseId),
         /* والمقاعدُ والمدرّبُ لـ«بقي X مقاعد» و«مع مدربك» في صفّ الدورة */
         seatsLeft: c.seatsLeft, trainer: c.trainer,

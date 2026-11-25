@@ -257,6 +257,17 @@ describe('⑤ والدورات للزائر بلا أجور المدربين', (
     expect(row.sessions.map((x) => x.startsAt.toISOString()), 'خرج لقاء لا يعلن').toEqual([at(31).toISOString(), at(35).toISOString()])
     expect(Object.keys(row.sessions[0]).sort(), 'خرج من اللقاء غير موعده').toEqual(['endsAt', 'startsAt'])
   })
+
+  /* «تبدأ ١ ديسمبر» في صفحة المنحة و«٥ ديسمبر» في تفاصيلها (٢٥ نوفمبر ٢٠٢٦): التاريخُ أوّلُ لقاءٍ معلَن، لا تاريخُ الشعبة */
+  it('⚠️ وتاريخ بدئها أول لقاء معلن — لا تاريخ الشعبة المخطط، ولا لقاء ملغى قبله', async () => {
+    const a = nextCourse()
+    const c = await cohort(a)
+    const at = (d: number) => new Date(NOW.getTime() + d * DAY)
+    await prisma.cohortSession.create({ data: { cohortId: c.id, title: 'ملغى', startsAt: at(40), endsAt: at(40), status: 'cancelled' } as never })
+    await prisma.cohortSession.create({ data: { cohortId: c.id, title: 'الأول', startsAt: at(44), endsAt: at(44) } as never })
+    const row = (await landing.view(NOW)).openCourses.find((x) => x.courseId === a)!
+    expect(row.startsAt?.toISOString(), 'قيل تاريخ الشعبة لا أول لقاء').toBe(at(44).toISOString())
+  })
 })
 
 describe('⑥ وتواصل مع مستشار حالة واحدة', () => {
