@@ -46,7 +46,7 @@ import { latestStartedTerm, monthWithinTerm, nextSeason, plannedMonthOk, termTit
 import { MOVABLE_STATUSES, moveShiftFor } from '../../src/application/trainer/cohort-move'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
 import {
-  SEASON_CANCEL_REASON_AR, SEASON_CHOICE_REASON_AR, SEASON_RELAUNCH_REASON_AR, SEASON_SILENCE_AR,
+  SEASON_CANCEL_REASON_AR, SEASON_CHOICE_REASON_AR, SEASON_EXPIRED_REASON_AR, SEASON_RELAUNCH_REASON_AR, SEASON_SILENCE_AR,
   firstAtIn, readChoices, sameSeason, seasonChoicesAfter, seasonOptionAr, weeksIntoSeason, type OfferKind, type SeasonPick,
 } from '../../src/application/trainer/season-choice'
 
@@ -350,7 +350,7 @@ export class CohortPostponeService {
     if (offer.status !== 'pending') throw new AuthError('not_pending', 'حسم هذا السؤال من قبل', 409)
     if (offer.deadlineAt.getTime() <= now.getTime()) {
       await this.expireDue(now)
-      throw new AuthError('expired', 'مضت المهلة — نتواصل معك لنعرف رغبتك، ولم نغير شيئا في شعبتك', 409)
+      throw new AuthError('expired', 'مضت المهلة — ألغيت الشعبة', 409)
     }
 
     if (pick.kind === 'season') {
@@ -582,7 +582,7 @@ export class CohortPostponeService {
     return { status: 'withdrawn' as const }
   }
 
-  /** من العامل: ما مضت مهلتُه بلا ردٍّ — تأجيلُ الشهر يوقف شعبتَه، وسؤالُ الموسم لا يغيّرها ويُجرَس به. وما بدأت شعبتُه أو أُلغيت بغيره يُسحب بلا أثر */
+  /** من العامل: ما مضت مهلتُه بلا ردٍّ يوقف شعبتَه — تأجيلُ الشهر وسؤالُ الموسم معا. وما بدأت شعبتُه أو أُلغيت بغيره يُسحب بلا أثر */
   async expireDue(now = new Date()): Promise<{ expired: number; withdrawn: number }> {
     const due = await this.prisma.cohortPostponeOffer.findMany({
       where: { status: 'pending', deadlineAt: { lte: now } },
@@ -602,14 +602,14 @@ export class CohortPostponeService {
         actorId: null, action: season ? 'cohort.season_choice.expire' : 'cohort.postpone.expire',
         entityType: 'cohort', entityId: o.cohortId, meta: { offerId: o.id },
       })
-      /* ═══ وسكوتُه عن سؤال الموسم لا يغيّر شيئا (٢٤ نوفمبر ٢٠٢٦) ═══
-         نصُّ صاحب المنصّة: «إن لم يصلنا ردُّك قبل [التاريخ] فسنتواصل معك لنتأكّد من رغبتك، ولن نغيّر شيئا دون موافقتك».
-         فالشعبةُ كما هي، والسؤالُ «لم يرد»، والإدارةُ تُجرَس لتتواصل معه. وتأجيلُ الشهر التالي يوقفها كما كان. */
+      /* ═══ وسكوتُه عن سؤال الموسم يلغيها (٢٨ نوفمبر ٢٠٢٦: «اجعله يلغي تلقائيّا، لا حاجةَ لإدخالي») ═══
+         الإلغاءُ نفسُه الذي تفعله الإدارة، بسببٍ يقول إنّ المهلة مضت — ويصل متعلّميها ومدرّبَها الخبر، ولا يُكتب عليه شيء. */
       if (season) {
+        await this.stop(o.cohortId, null, SEASON_EXPIRED_REASON_AR, 'لم يختر المدرب قبل المهلة')
         await notifyRole(this.prisma, COHORT_MOVE_STAFF_ROLES, {
           channel: 'in_app',
-          title: `لم يرد المدرب على سؤال موسم «${o.cohort.title}» — تواصل معه`,
-          body: 'مضت المهلة بلا رد، ولم نغير شيئا في الشعبة كما وعدناه. اسأله عن رغبته، ثم ألغها أو انقلها من صفحتها.',
+          title: `لم يختر المدرب لـ«${o.cohort.title}» قبل المهلة — ألغيت`,
+          body: 'مضت المهلة بلا اختيار، فألغيت تلقائيا ووصل متعلميها ومدربها الخبر.',
           data: { cohortId: o.cohortId, offerId: o.id },
         })
         expired += 1
@@ -620,6 +620,31 @@ export class CohortPostponeService {
         channel: 'in_app',
         title: `لم يرد المدرب على تأجيل «${o.cohort.title}» — أوقفت`,
         body: 'مضت المهلة بلا رد، ووصل متعلميها ومدربها الخبر.',
+        data: { cohortId: o.cohortId, offerId: o.id },
+      })
+      expired += 1
+    }
+
+    /* ═══ وما مضت مهلتُه قبل قرار الإلغاء التلقائيّ (٢٨ نوفمبر ٢٠٢٦) ═══
+       بين ٢٤ و٢٨ نوفمبر كان السكوتُ لا يغيّر شيئا، فبقيت أسئلةٌ «لم يرد» وشعبُها مفتوحة. فتُلغى هنا مرّةً واحدة: سؤالُ موسمٍ
+       «لم يرد»، وشعبتُه لم تبدأ، ولا سؤالَ آخرَ ينتظر لها (أُعيد إرسالُه فهو المعتبَر). والإلغاءُ يُخرجها من الشرط فلا يتكرّر. */
+    const stale = await this.prisma.cohortPostponeOffer.findMany({
+      where: {
+        kind: 'season_choice', status: 'expired',
+        cohort: { status: { in: [...UPCOMING_STATUSES] }, postponeOffers: { none: { status: 'pending' } } },
+      },
+      include: { cohort: { select: { title: true } } },
+      distinct: ['cohortId'],
+    })
+    for (const o of stale) {
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'cohort.season_choice.expire', entityType: 'cohort', entityId: o.cohortId, meta: { offerId: o.id, lateCancel: true },
+      })
+      await this.stop(o.cohortId, null, SEASON_EXPIRED_REASON_AR, 'لم يختر المدرب قبل المهلة')
+      await notifyRole(this.prisma, COHORT_MOVE_STAFF_ROLES, {
+        channel: 'in_app',
+        title: `لم يختر المدرب لـ«${o.cohort.title}» قبل المهلة — ألغيت`,
+        body: 'مضت المهلة بلا اختيار، فألغيت تلقائيا ووصل متعلميها ومدربها الخبر.',
         data: { cohortId: o.cohortId, offerId: o.id },
       })
       expired += 1
